@@ -8,6 +8,8 @@ independent repository and does not copy B1/B2 source code.
 - `doctor`: verify `GODOT_PATH` and read the real Godot version.
 - `list_projects`: discover `project.godot` files below a directory.
 - `get_project_info`: read project metadata and relative files.
+- `get_scene_tree`: parse nodes from a real `.tscn` file. This is a static
+  editor-plane query and is explicitly returned with `runtime: false`.
 - `launch`: start a Godot project and write process metadata plus raw stdout/stderr.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.
@@ -22,10 +24,13 @@ Tool failures use the versioned schema in `schemas/error.schema.json`, with
 stable `code`, `retryable`, and `timed_out` fields. `stop_project` accepts an
 optional `timeoutMs` value.
 
-The current implementation is intentionally a runtime adapter. MCP JSON-RPC
-transport, Scene/Node operations, input injection, screenshots, and Git
-recovery will be added only with a task contract, evidence fixture, and
-negative control linked to a real Failure ID.
+The MCP server exposes the same operations over newline-delimited JSON-RPC
+stdio (`initialize`, `notifications/initialized`, `tools/list`, and
+`tools/call`). Runtime launch/log/stop and static project/scene inspection are
+available today. Runtime SceneTree mutation, property read/write, input
+injection, and MCP screenshots remain `UNAVAILABLE` until a real Godot bridge
+and task-linked evidence fixture exist; Godot CLI output cannot substitute for
+those capabilities.
 
 ## Usage
 
