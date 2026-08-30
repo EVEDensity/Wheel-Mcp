@@ -2,9 +2,20 @@
 import readline from 'node:readline';
 import { getGodotVersion, getProjectInfo, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
 import { createEvidenceEnvelope } from './evidence.mjs';
+import { gitCheckpoint, gitRecovery } from './git-recovery.mjs';
 
 const launches = new Map();
 const tools = [
+  {
+    name: 'git_checkpoint',
+    description: 'Capture Git HEAD, status, and a binary diff into an evidence directory.',
+    inputSchema: { type: 'object', required: ['projectPath'], properties: { projectPath: { type: 'string' }, evidenceDir: { type: 'string' } } }
+  },
+  {
+    name: 'git_recovery',
+    description: 'Apply the reverse of an explicitly provided Git diff patch.',
+    inputSchema: { type: 'object', required: ['projectPath', 'patchPath'], properties: { projectPath: { type: 'string' }, patchPath: { type: 'string' } } }
+  },
   {
     name: 'list_projects',
     description: 'Find Godot projects below a bounded directory.',
@@ -60,6 +71,8 @@ async function handleTool(request) {
     const args = request.params?.arguments || {};
     let value;
     switch (request.params?.name) {
+      case 'git_checkpoint': value = await gitCheckpoint(args.projectPath, args.evidenceDir); break;
+      case 'git_recovery': value = await gitRecovery(args.projectPath, args.patchPath); break;
       case 'list_projects': value = await listProjects(args.directory, args.recursive === true); break;
       case 'get_project_info': value = await getProjectInfo(args.projectPath); break;
       case 'get_godot_version': value = { version: await getGodotVersion(resolveGodotPath(args.godotPath)) }; break;
