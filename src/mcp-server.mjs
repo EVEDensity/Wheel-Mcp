@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { getGodotVersion, getProjectInfo, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
+import { getGodotVersion, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
 import { createEvidenceEnvelope } from './evidence.mjs';
 import { gitCheckpoint, gitRecovery } from './git-recovery.mjs';
 import { classifyError } from './error-schema.mjs';
@@ -26,6 +26,11 @@ const tools = [
     name: 'get_project_info',
     description: 'Read project.godot metadata and a relative project file list.',
     inputSchema: { type: 'object', required: ['projectPath'], properties: { projectPath: { type: 'string' } } }
+  },
+  {
+    name: 'get_scene_tree',
+    description: 'Read nodes from a real Godot .tscn file (static editor-plane capability; not runtime state).',
+    inputSchema: { type: 'object', required: ['projectPath'], properties: { projectPath: { type: 'string' }, scenePath: { type: 'string' } } }
   },
   {
     name: 'get_godot_version',
@@ -76,6 +81,7 @@ async function handleTool(request) {
       case 'git_recovery': value = await gitRecovery(args.projectPath, args.patchPath); break;
       case 'list_projects': value = await listProjects(args.directory, args.recursive === true); break;
       case 'get_project_info': value = await getProjectInfo(args.projectPath); break;
+      case 'get_scene_tree': value = await getSceneTree(args.projectPath, args.scenePath); break;
       case 'get_godot_version': value = { version: await getGodotVersion(resolveGodotPath(args.godotPath)) }; break;
       case 'launch_project': {
         const launch = await launchProject({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH });

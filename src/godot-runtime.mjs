@@ -52,6 +52,32 @@ export async function getProjectInfo(projectPath) {
   return { schema_version: '0.1', source: 'REAL', projectPath: root, projectFile, name, mainScene, files: files.sort() };
 }
 
+// Static editor-plane query: this reads a real .tscn and never claims runtime state.
+export async function getSceneTree(projectPath, scenePath = null) {
+  const root = path.resolve(projectPath);
+  await stat(root);
+  const relative = scenePath || (await getProjectInfo(root)).mainScene;
+  if (!relative || !relative.startsWith('res://')) throw new Error('scenePath must use res:// or project main_scene must be configured');
+  const sceneFile = path.resolve(root, relative.slice('res://'.length));
+  if (sceneFile !== root && !sceneFile.startsWith(`${root}${path.sep}`)) throw new Error('scenePath escapes project root');
+  if (path.extname(sceneFile).toLowerCase() !== '.tscn') throw new Error('scenePath must reference a .tscn file');
+  const text = await readFile(sceneFile, 'utf8');
+  const nodes = [];
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\[node\s+([^\]]+)\]/);
+    if (!match) continue;
+    const attrs = {};
+    for (const item of match[1].matchAll(/(\w+)="([^"]*)"|(\w+)=([^\s]+)/g)) {
+      attrs[item[1] || item[3]] = item[2] ?? item[4];
+    }
+    if (!attrs.name || !attrs.type) continue;
+    nodes.push({ name: attrs.name, type: attrs.type, parent: attrs.parent || null, owner: attrs.owner || null });
+  }
+  if (nodes.length === 0) throw new Error('scene contains no parseable nodes');
+  return { schema_version: '0.1', source: 'REAL', capability: 'STATIC_SCENE_TREE', runtime: false,
+    projectPath: root, scenePath: relative, sceneFile, nodes };
+}
+
 export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runs'));

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { getProjectInfo, listProjects } from '../src/godot-runtime.mjs';
+import { getProjectInfo, getSceneTree, listProjects } from '../src/godot-runtime.mjs';
 
 test('listProjects discovers bounded Godot projects recursively', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-projects-'));
@@ -23,4 +23,16 @@ test('getProjectInfo returns metadata and relative files', async () => {
   assert.equal(result.name, 'Fixture');
   assert.equal(result.mainScene, 'res://main.tscn');
   assert.deepEqual(result.files, ['project.godot', 'scenes/main.tscn']);
+});
+
+test('getSceneTree parses real static nodes and labels capability', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-scene-'));
+  await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
+  await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n\n[node name="Main" type="Node2D"]\n[node name="Player" type="Sprite2D" parent="."]\n');
+  const result = await getSceneTree(root);
+  assert.equal(result.source, 'REAL');
+  assert.equal(result.runtime, false);
+  assert.equal(result.capability, 'STATIC_SCENE_TREE');
+  assert.deepEqual(result.nodes.map(node => node.name), ['Main', 'Player']);
+  await assert.rejects(() => getSceneTree(root, 'res://../outside.tscn'), /escapes project root/);
 });
