@@ -20,7 +20,7 @@ func _initialize() -> void:
 	if request_file != null:
 		request = JSON.parse_string(request_file.get_as_text()) as Dictionary
 		request_file.close()
-	if request.get("method", "get_scene_tree") == "get_property":
+	if request.get("method", "get_scene_tree") == "get_property" or request.get("method", "get_scene_tree") == "set_property":
 		_write_property(response_path, instance, request)
 		quit()
 		return
@@ -44,8 +44,15 @@ func _write_property(response_path: String, instance: Node, request: Dictionary)
 	if not known:
 		_fail(response_path, "property does not exist: " + property_name)
 		return
-	var value = node.get(property_name)
-	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": value})
+	var before = node.get(property_name)
+	if request.get("method") == "set_property":
+		if not request.has("value"):
+			_fail(response_path, "value is required for set_property")
+			return
+		node.set(property_name, request.get("value"))
+		_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_WRITE", "runtime": true, "nodePath": node_path, "property": property_name, "before": before, "after": node.get(property_name)})
+		return
+	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": before})
 
 func _collect(node: Node, node_path: String, output: Array[Dictionary]) -> void:
 	output.append({"name": node.name, "type": node.get_class(), "path": node_path})

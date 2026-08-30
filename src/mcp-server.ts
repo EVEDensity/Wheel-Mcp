@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-nocheck
 import readline from 'node:readline';
-import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
@@ -68,6 +68,11 @@ const tools = [
     description: 'Read a property from a node in a real Godot runtime instance.',
     inputSchema: { type: 'object', required: ['projectPath', 'bridgePath', 'property'], properties: { godotPath: { type: 'string' }, projectPath: { type: 'string' }, bridgePath: { type: 'string' }, evidenceDir: { type: 'string' }, nodePath: { type: 'string' }, property: { type: 'string' } } }
   }
+  ,{
+    name: 'set_runtime_property',
+    description: 'Set and read back a property in a real Godot runtime instance; does not modify scene files.',
+    inputSchema: { type: 'object', required: ['projectPath', 'bridgePath', 'property', 'value'], properties: { godotPath: { type: 'string' }, projectPath: { type: 'string' }, bridgePath: { type: 'string' }, evidenceDir: { type: 'string' }, nodePath: { type: 'string' }, property: { type: 'string' }, value: {} } }
+  }
 ];
 
 const serverInfo = { name: 'godot-game-harness-mcp', version: '0.1.0' };
@@ -110,6 +115,7 @@ async function handleTool(request) {
       case 'get_process_status': value = getProcessStatus(args.pid); break;
       case 'get_runtime_scene_tree': value = await queryRuntimeSceneTree({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'get_runtime_property': value = await queryRuntimeProperty({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
+      case 'set_runtime_property': value = await mutateRuntimeProperty({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });
