@@ -1,0 +1,160 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Requested V-Sync mode: Enabled - FPS will likely be capped to the monitor refresh rate.
+
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started 项目初始化 (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | 正在扫描文件结构……[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | 正在加载全局类名……[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | 正在校验 GDExtension……[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | 正在创建自动加载脚本……[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | 正在初始化插件……[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | 正在启动文件扫描……[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started 正在注册全局类…… (35 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   2% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   5% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[   8% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  11% ] [90m[1mupdate_scripts_classes[22m | Bean[39m[0m
+[  13% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  16% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  19% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  22% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  25% ] [90m[1mupdate_scripts_classes[22m | Enemy[39m[0m
+[  27% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  30% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  33% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  36% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  38% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  41% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  44% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  47% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  50% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  52% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  55% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  58% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  61% ] [90m[1mupdate_scripts_classes[22m | FlickController[39m[0m
+[  63% ] [90m[1mupdate_scripts_classes[22m | FlickTrail[39m[0m
+[  66% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  69% ] [90m[1mupdate_scripts_classes[22m | MoveController[39m[0m
+[  72% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  75% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  77% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  80% ] [90m[1mupdate_scripts_classes[22m | Player[39m[0m
+[  83% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  86% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  88% ] [90m[1mupdate_scripts_classes[22m | Spud[39m[0m
+[  91% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  94% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started 正在扫描动作…… (33 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Chewy.ttf[39m[0m
+[   2% ] [90m[1m_update_scan_actions[22m | beans.png[39m[0m
+[   5% ] [90m[1m_update_scan_actions[22m | fx_bubble.png[39m[0m
+[   8% ] [90m[1m_update_scan_actions[22m | hoop.png[39m[0m
+[  11% ] [90m[1m_update_scan_actions[22m | minicloud.png[39m[0m
+[  14% ] [90m[1m_update_scan_actions[22m | ministar.png[39m[0m
+[  17% ] [90m[1m_update_scan_actions[22m | sky_day.png[39m[0m
+[  20% ] [90m[1m_update_scan_actions[22m | sky_night.png[39m[0m
+[  23% ] [90m[1m_update_scan_actions[22m | sky_overcast.png[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | sky_sunset.png[39m[0m
+[  29% ] [90m[1m_update_scan_actions[22m | bean_collect.wav[39m[0m
+[  32% ] [90m[1m_update_scan_actions[22m | tomato_bro.png[39m[0m
+[  35% ] [90m[1m_update_scan_actions[22m | tomato_bro_flying.png[39m[0m
+[  38% ] [90m[1m_update_scan_actions[22m | exit.png[39m[0m
+[  41% ] [90m[1m_update_scan_actions[22m | world_1_icon.png[39m[0m
+[  44% ] [90m[1m_update_scan_actions[22m | world_map.png[39m[0m
+[  47% ] [90m[1m_update_scan_actions[22m | click_radius.png[39m[0m
+[  50% ] [90m[1m_update_scan_actions[22m | flick.wav[39m[0m
+[  52% ] [90m[1m_update_scan_actions[22m | flick_the_bean.png[39m[0m
+[  55% ] [90m[1m_update_scan_actions[22m | jump.wav[39m[0m
+[  58% ] [90m[1m_update_scan_actions[22m | logo_vertical_color_light.svg[39m[0m
+[  61% ] [90m[1m_update_scan_actions[22m | nunkware_digital_logo.png[39m[0m
+[  64% ] [90m[1m_update_scan_actions[22m | spring.png[39m[0m
+[  67% ] [90m[1m_update_scan_actions[22m | spring.wav[39m[0m
+[  70% ] [90m[1m_update_scan_actions[22m | spud_green.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | grass.png[39m[0m
+[  76% ] [90m[1m_update_scan_actions[22m | ground.png[39m[0m
+[  79% ] [90m[1m_update_scan_actions[22m | background_far.png[39m[0m
+[  82% ] [90m[1m_update_scan_actions[22m | background_near.png[39m[0m
+[  85% ] [90m[1m_update_scan_actions[22m | frame.png[39m[0m
+[  88% ] [90m[1m_update_scan_actions[22m | trees.png[39m[0m
+[  91% ] [90m[1m_update_scan_actions[22m | icon.png[39m[0m
+[  94% ] [90m[1m_update_scan_actions[22m | logo.png[39m[0m
+[92m[ DONE ][39m [1m_update_scan_actions[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started 正在导入或重新导入资产 (30 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[   3% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[   6% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[   9% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  12% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  16% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  19% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  22% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  25% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  29% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  32% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  35% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  38% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  41% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  45% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  48% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  51% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  54% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  58% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  61% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  64% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  67% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  70% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  74% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  77% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  80% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  83% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  87% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  90% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[  93% ] [90m[1mreimport[22m | 正在准备重新导入文件……[39m[0m
+[   0% ] [90m[1mreimport[22m | 正在执行重新导入的前置操作……[39m[0m
+[   0% ] [90m[1mreimport[22m | logo.png[39m[0m
+[   3% ] [90m[1mreimport[22m | icon.png[39m[0m
+[   6% ] [90m[1mreimport[22m | trees.png[39m[0m
+[   9% ] [90m[1mreimport[22m | frame.png[39m[0m
+[  12% ] [90m[1mreimport[22m | background_far.png[39m[0m
+[  16% ] [90m[1mreimport[22m | ground.png[39m[0m
+[  19% ] [90m[1mreimport[22m | grass.png[39m[0m
+[  22% ] [90m[1mreimport[22m | spud_green.png[39m[0m
+[  25% ] [90m[1mreimport[22m | spring.png[39m[0m
+[  29% ] [90m[1mreimport[22m | nunkware_digital_logo.png[39m[0m
+[  32% ] [90m[1mreimport[22m | logo_vertical_color_light.svg[39m[0m
+[  35% ] [90m[1mreimport[22m | click_radius.png[39m[0m
+[  38% ] [90m[1mreimport[22m | world_map.png[39m[0m
+[  41% ] [90m[1mreimport[22m | beans.png[39m[0m
+[  45% ] [90m[1mreimport[22m | fx_bubble.png[39m[0m
+[  48% ] [90m[1mreimport[22m | hoop.png[39m[0m
+[  51% ] [90m[1mreimport[22m | minicloud.png[39m[0m
+[  54% ] [90m[1mreimport[22m | ministar.png[39m[0m
+[  58% ] [90m[1mreimport[22m | sky_day.png[39m[0m
+[  61% ] [90m[1mreimport[22m | sky_night.png[39m[0m
+[  64% ] [90m[1mreimport[22m | sky_overcast.png[39m[0m
+[  67% ] [90m[1mreimport[22m | sky_sunset.png[39m[0m
+[  70% ] [90m[1mreimport[22m | tomato_bro.png[39m[0m
+[  74% ] [90m[1mreimport[22m | tomato_bro_flying.png[39m[0m
+[  77% ] [90m[1mreimport[22m | exit.png[39m[0m
+[  80% ] [90m[1mreimport[22m | world_1_icon.png[39m[0m
+[  83% ] [90m[1mreimport[22m | logo.png[39m[0m
+[  87% ] [90m[1mreimport[22m | icon.png[39m[0m
+[  90% ] [90m[1mreimport[22m | trees.png[39m[0m
+[  93% ] [90m[1mreimport[22m | frame.png[39m[0m
+[  96% ] [90m[1mreimport[22m | 正在结束资产导入……[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started 正在导入或重新导入资产 (30 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | 正在执行重新导入的后置操作……[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started 正在加载编辑器 (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | 正在加载编辑器布局……[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | 正在加载停靠面板……[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m

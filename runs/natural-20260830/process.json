@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "source": "REAL",
+  "started": true,
+  "pid": 37044,
+  "executable": "E:\\AI\\Godot_v4.7.2-stable_win64_console.exe",
+  "arguments": [
+    "--headless",
+    "--path",
+    "D:\\Users\\xyn\\Desktop\\AI Game Harness\\v1\\benchmark\\final-game",
+    "--editor",
+    "--quit"
+  ],
+  "project_path": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\v1\\benchmark\\final-game",
+  "started_at": "2026-08-30T10:09:44.062Z",
+  "exit_code": 0,
+  "timed_out": false,
+  "stdout": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\natural-20260830\\stdout.log",
+  "stderr": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\natural-20260830\\stderr.log",
+  "finished_at": "2026-08-30T10:09:52.417Z"
+}
