@@ -12,6 +12,8 @@ independent repository and does not copy B1/B2 source code.
   editor-plane query and is explicitly returned with `runtime: false`.
 - `get_runtime_scene_tree`: launch Godot with `godot-plugin/runtime_bridge.gd`
   and return nodes from the loaded runtime scene with `runtime: true`.
+- `get_runtime_property`: read a serializable property from a runtime node;
+  property writes are intentionally not exposed yet.
 - `launch`: start a Godot project and write process metadata plus raw stdout/stderr.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.

@@ -1,6 +1,7 @@
 extends SceneTree
 
 func _initialize() -> void:
+	var request_path: String = OS.get_environment("GODOT_HARNESS_REQUEST")
 	var response_path: String = OS.get_environment("GODOT_HARNESS_RESPONSE")
 	var main_scene: String = OS.get_environment("GODOT_HARNESS_MAIN_SCENE")
 	if main_scene.is_empty():
@@ -14,10 +15,37 @@ func _initialize() -> void:
 		return
 	var instance: Node = packed.instantiate()
 	root.add_child(instance)
+	var request: Dictionary = {}
+	var request_file := FileAccess.open(request_path, FileAccess.READ)
+	if request_file != null:
+		request = JSON.parse_string(request_file.get_as_text()) as Dictionary
+		request_file.close()
+	if request.get("method", "get_scene_tree") == "get_property":
+		_write_property(response_path, instance, request)
+		quit()
+		return
 	var nodes: Array[Dictionary] = []
 	_collect(instance, ".", nodes)
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": main_scene, "nodes": nodes})
 	quit()
+
+func _write_property(response_path: String, instance: Node, request: Dictionary) -> void:
+	var node_path: String = str(request.get("nodePath", "."))
+	var property_name: String = str(request.get("property", ""))
+	var node: Node = instance if node_path == "." else instance.get_node_or_null(NodePath(node_path))
+	if node == null or property_name.is_empty():
+		_fail(response_path, "nodePath or property is invalid")
+		return
+	var known := false
+	for item in node.get_property_list():
+		if str(item.get("name", "")) == property_name:
+			known = true
+			break
+	if not known:
+		_fail(response_path, "property does not exist: " + property_name)
+		return
+	var value = node.get(property_name)
+	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": value})
 
 func _collect(node: Node, node_path: String, output: Array[Dictionary]) -> void:
 	output.append({"name": node.name, "type": node.get_class(), "path": node_path})
