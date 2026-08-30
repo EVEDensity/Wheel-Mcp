@@ -19,6 +19,6 @@ test('stdio MCP handshake and tool discovery', async () => {
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
   const listed = await next();
-  assert.deepEqual(listed.result.tools.map(tool => tool.name), ['git_checkpoint', 'git_recovery', 'list_projects', 'get_project_info', 'get_scene_tree', 'get_godot_version', 'launch_project', 'get_debug_output', 'stop_project', 'get_process_status', 'get_runtime_scene_tree', 'get_runtime_property', 'set_runtime_property']);
+  assert.deepEqual(listed.result.tools.map(tool => tool.name), ['git_checkpoint', 'git_recovery', 'list_projects', 'get_project_info', 'get_scene_tree', 'get_godot_version', 'launch_project', 'get_debug_output', 'stop_project', 'get_process_status', 'get_runtime_scene_tree', 'get_runtime_property', 'set_runtime_property', 'inject_runtime_input']);
   child.kill();
 });

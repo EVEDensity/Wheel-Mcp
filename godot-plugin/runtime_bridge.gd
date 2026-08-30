@@ -24,6 +24,10 @@ func _initialize() -> void:
 		_write_property(response_path, instance, request)
 		quit()
 		return
+	if request.get("method", "get_scene_tree") == "inject_input":
+		_inject_input(response_path, request)
+		quit()
+		return
 	var nodes: Array[Dictionary] = []
 	_collect(instance, ".", nodes)
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": main_scene, "nodes": nodes})
@@ -53,6 +57,18 @@ func _write_property(response_path: String, instance: Node, request: Dictionary)
 		_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_WRITE", "runtime": true, "nodePath": node_path, "property": property_name, "before": before, "after": node.get(property_name)})
 		return
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": before})
+
+func _inject_input(response_path: String, request: Dictionary) -> void:
+	var keycode: int = int(request.get("keycode", 0))
+	if keycode <= 0:
+		_fail(response_path, "keycode must be a positive integer")
+		return
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.physical_keycode = keycode
+	event.pressed = bool(request.get("pressed", true))
+	Input.parse_input_event(event)
+	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true})
 
 func _collect(node: Node, node_path: String, output: Array[Dictionary]) -> void:
 	output.append({"name": node.name, "type": node.get_class(), "path": node_path})
