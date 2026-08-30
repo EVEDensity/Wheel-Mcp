@@ -1,9 +1,10 @@
 #!/usr/bin/env node
+// @ts-nocheck
 import readline from 'node:readline';
-import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
-import { createEvidenceEnvelope } from './evidence.mjs';
-import { gitCheckpoint, gitRecovery } from './git-recovery.mjs';
-import { classifyError } from './error-schema.mjs';
+import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { createEvidenceEnvelope } from './evidence.js';
+import { gitCheckpoint, gitRecovery } from './git-recovery.js';
+import { classifyError } from './error-schema.js';
 
 const launches = new Map();
 const tools = [

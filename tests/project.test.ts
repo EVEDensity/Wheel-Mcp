@@ -1,9 +1,10 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { getProjectInfo, getSceneTree, listProjects } from '../src/godot-runtime.mjs';
+import { getProjectInfo, getSceneTree, listProjects } from '../src/godot-runtime.js';
 
 test('listProjects discovers bounded Godot projects recursively', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-projects-'));

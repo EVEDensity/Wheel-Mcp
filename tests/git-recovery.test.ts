@@ -1,3 +1,4 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
@@ -5,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { gitCheckpoint, gitRecovery } from '../src/git-recovery.mjs';
+import { gitCheckpoint, gitRecovery } from '../src/git-recovery.js';
 
 const exec = promisify(execFile);
 

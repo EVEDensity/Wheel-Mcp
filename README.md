@@ -36,11 +36,11 @@ those capabilities.
 
 ```powershell
 $env:GODOT_PATH = 'E:\AI\Godot_v4.7.2-stable_win64_console.exe'
-node .\src\cli.mjs doctor
-node .\src\cli.mjs launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
-node .\src\cli.mjs logs --evidence '.\runs\example'
-node .\src\cli.mjs scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
-node .\src\cli.mjs stop --pid 12345
+node .\src\cli.js doctor
+node .\src\cli.js launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
+node .\src\cli.js logs --evidence '.\runs\example'
+node .\src\cli.js scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
+node .\src\cli.js stop --pid 12345
 ```
 
 The CLI keeps credentials out of evidence and uses `REAL` labels only for

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { getGodotVersion, getSceneTree, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
+// @ts-nocheck
+import { getGodotVersion, getSceneTree, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
 const options = parseOptions(args);

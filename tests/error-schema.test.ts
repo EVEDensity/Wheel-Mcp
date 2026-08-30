@@ -1,6 +1,7 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyError, errorEnvelope } from '../src/error-schema.mjs';
+import { classifyError, errorEnvelope } from '../src/error-schema.js';
 
 test('error envelope has stable timeout fields', () => {
   const result = classifyError(Object.assign(new Error('operation timed out'), { code: 'TIMEOUT' }));

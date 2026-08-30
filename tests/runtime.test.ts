@@ -1,6 +1,7 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getProcessStatus, resolveGodotPath } from '../src/godot-runtime.mjs';
+import { getProcessStatus, resolveGodotPath } from '../src/godot-runtime.js';
 
 test('resolveGodotPath requires an explicit executable', () => {
   assert.throws(() => resolveGodotPath(''), /GODOT_PATH is required/);

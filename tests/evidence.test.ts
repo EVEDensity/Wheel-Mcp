@@ -1,9 +1,10 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { createEvidenceEnvelope } from '../src/evidence.mjs';
+import { createEvidenceEnvelope } from '../src/evidence.js';
 
 test('Evidence Envelope writes request/response JSONL and redacts secrets', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-evidence-'));

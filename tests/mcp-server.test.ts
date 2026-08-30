@@ -1,9 +1,10 @@
+// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 
 test('stdio MCP handshake and tool discovery', async () => {
-  const child = spawn(process.execPath, ['src/mcp-server.mjs'], { stdio: ['pipe', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, ['dist/src/mcp-server.js'], { stdio: ['pipe', 'pipe', 'pipe'] });
   let buffer = '';
   const lines = [];
   child.stdout.on('data', chunk => {

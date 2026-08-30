@@ -1,3 +1,4 @@
+// @ts-nocheck
 export function errorEnvelope(code, message, options = {}) {
   return {
     schema_version: '0.1', source: 'REAL', status: 'FAIL', code,
