@@ -12,6 +12,10 @@ independent repository and does not copy B1/B2 source code.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.
 
+Set `MCP_EVIDENCE_DIR` to append every raw JSON-RPC request and response to an
+Evidence Envelope (`envelope.json`, `requests.jsonl`, `responses.jsonl`).
+Credential-like fields are redacted before persistence.
+
 The current implementation is intentionally a runtime adapter. MCP JSON-RPC
 transport, Scene/Node operations, input injection, screenshots, and Git
 recovery will be added only with a task contract, evidence fixture, and

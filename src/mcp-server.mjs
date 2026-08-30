@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
 import { getGodotVersion, getProjectInfo, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
+import { createEvidenceEnvelope } from './evidence.mjs';
 
 const launches = new Map();
 const tools = [
@@ -37,11 +38,13 @@ const tools = [
 ];
 
 const serverInfo = { name: 'godot-game-harness-mcp', version: '0.1.0' };
+const evidence = await createEvidenceEnvelope(process.env.MCP_EVIDENCE_DIR, { server: serverInfo });
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 rl.on('line', async line => {
   if (!line.trim()) return;
   let request;
   try { request = JSON.parse(line); } catch { return writeError(null, -32700, 'Parse error'); }
+  await evidence?.request(request);
   if (request.method === 'notifications/initialized') return;
   if (request.method === 'initialize') return writeResult(request.id, {
     protocolVersion: request.params?.protocolVersion || '2024-11-05', serverInfo,
@@ -76,5 +79,5 @@ async function handleTool(request) {
   }
 }
 
-function writeResult(id, result) { process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id, result })}\n`); }
-function writeError(id, code, message) { process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id, error: { code, message } })}\n`); }
+function writeResult(id, result) { const response = { jsonrpc: '2.0', id, result }; process.stdout.write(`${JSON.stringify(response)}\n`); evidence?.response(response); }
+function writeError(id, code, message) { const response = { jsonrpc: '2.0', id, error: { code, message } }; process.stdout.write(`${JSON.stringify(response)}\n`); evidence?.response(response); }
