@@ -131,6 +131,18 @@ export async function stopProcess(pid, timeoutMs = 5000) {
   return { stopped: false, pid: processHandle, timed_out: true };
 }
 
+export function getProcessStatus(pid) {
+  if (!Number.isInteger(Number(pid))) throw new Error('pid must be an integer');
+  const processHandle = Number(pid);
+  try {
+    process.kill(processHandle, 0);
+    return { schema_version: '0.1', source: 'REAL', pid: processHandle, running: true };
+  } catch (error) {
+    if (error.code === 'ESRCH') return { schema_version: '0.1', source: 'REAL', pid: processHandle, running: false };
+    throw error;
+  }
+}
+
 export async function stopLaunchedProcess(launch, timeoutMs = 5000) {
   const result = await stopProcess(launch.child.pid, timeoutMs);
   await Promise.race([launch.close, new Promise(resolve => setTimeout(resolve, timeoutMs))]);

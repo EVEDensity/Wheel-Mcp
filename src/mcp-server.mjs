@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { getGodotVersion, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
+import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
 import { createEvidenceEnvelope } from './evidence.mjs';
 import { gitCheckpoint, gitRecovery } from './git-recovery.mjs';
 import { classifyError } from './error-schema.mjs';
@@ -52,6 +52,11 @@ const tools = [
     description: 'Stop a running process by PID and report its state.',
     inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' }, timeoutMs: { type: 'integer', minimum: 0, default: 5000 } } }
   }
+  ,{
+    name: 'get_process_status',
+    description: 'Report whether an OS process is currently running without stopping it.',
+    inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' } } }
+  }
 ];
 
 const serverInfo = { name: 'godot-game-harness-mcp', version: '0.1.0' };
@@ -91,6 +96,7 @@ async function handleTool(request) {
       }
       case 'get_debug_output': value = await readEvidence(args.evidenceDir); break;
       case 'stop_project': value = await stopProcess(args.pid, args.timeoutMs ?? 5000); break;
+      case 'get_process_status': value = getProcessStatus(args.pid); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });
