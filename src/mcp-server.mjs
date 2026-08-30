@@ -3,6 +3,7 @@ import readline from 'node:readline';
 import { getGodotVersion, getProjectInfo, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
 import { createEvidenceEnvelope } from './evidence.mjs';
 import { gitCheckpoint, gitRecovery } from './git-recovery.mjs';
+import { classifyError } from './error-schema.mjs';
 
 const launches = new Map();
 const tools = [
@@ -44,7 +45,7 @@ const tools = [
   {
     name: 'stop_project',
     description: 'Stop a running process by PID and report its state.',
-    inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' } } }
+    inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' }, timeoutMs: { type: 'integer', minimum: 0, default: 5000 } } }
   }
 ];
 
@@ -83,12 +84,12 @@ async function handleTool(request) {
         break;
       }
       case 'get_debug_output': value = await readEvidence(args.evidenceDir); break;
-      case 'stop_project': value = await stopProcess(args.pid); break;
+      case 'stop_project': value = await stopProcess(args.pid, args.timeoutMs ?? 5000); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });
   } catch (error) {
-    writeResult(request.id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ source: 'REAL', status: 'FAIL', error: error.message }) }] });
+    writeResult(request.id, { isError: true, content: [{ type: 'text', text: JSON.stringify(classifyError(error)) }], structuredContent: classifyError(error) });
   }
 }
 

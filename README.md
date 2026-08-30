@@ -18,6 +18,10 @@ Set `MCP_EVIDENCE_DIR` to append every raw JSON-RPC request and response to an
 Evidence Envelope (`envelope.json`, `requests.jsonl`, `responses.jsonl`).
 Credential-like fields are redacted before persistence.
 
+Tool failures use the versioned schema in `schemas/error.schema.json`, with
+stable `code`, `retryable`, and `timed_out` fields. `stop_project` accepts an
+optional `timeoutMs` value.
+
 The current implementation is intentionally a runtime adapter. MCP JSON-RPC
 transport, Scene/Node operations, input injection, screenshots, and Git
 recovery will be added only with a task contract, evidence fixture, and

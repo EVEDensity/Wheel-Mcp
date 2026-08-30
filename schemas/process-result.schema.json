@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-game-harness.invalid/schemas/process-result.schema.json",
+  "type": "object",
+  "required": ["schema_version", "source", "pid", "exit_code", "timed_out"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "source": { "const": "REAL" },
+    "pid": { "type": ["integer", "null"] },
+    "exit_code": { "type": ["integer", "null"] },
+    "timed_out": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

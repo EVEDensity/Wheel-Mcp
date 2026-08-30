@@ -90,6 +90,7 @@ export async function launchProject({ godotPath, projectPath, evidenceDir, headl
 
 export async function stopProcess(pid, timeoutMs = 5000) {
   if (!Number.isInteger(Number(pid))) throw new Error('pid must be an integer');
+  if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0) throw new Error('timeoutMs must be a non-negative integer');
   const processHandle = Number(pid);
   try { process.kill(processHandle); } catch (error) {
     if (error.code !== 'ESRCH') throw error;
