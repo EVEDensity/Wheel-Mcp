@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export function resolveGodotPath(value = process.env.GODOT_PATH) {
@@ -11,6 +11,45 @@ export async function getGodotVersion(godotPath) {
   const result = await runProcess(godotPath, ['--version'], process.cwd(), 30);
   if (result.exitCode !== 0) throw new Error(`Godot version failed: ${result.stderr.trim()}`);
   return result.stdout.trim();
+}
+
+export async function listProjects(directory, recursive = false) {
+  const root = path.resolve(directory);
+  const projects = [];
+  async function visit(current) {
+    const entries = await readdir(current, { withFileTypes: true });
+    if (entries.some(entry => entry.isFile() && entry.name === 'project.godot')) {
+      projects.push(path.join(current, 'project.godot'));
+      if (!recursive) return;
+    }
+    if (!recursive) return;
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      await visit(path.join(current, entry.name));
+    }
+  }
+  await visit(root);
+  return { schema_version: '0.1', source: 'REAL', directory: root, recursive, projects: projects.sort() };
+}
+
+export async function getProjectInfo(projectPath) {
+  const root = path.resolve(projectPath);
+  const projectFile = path.join(root, 'project.godot');
+  const projectText = await readFile(projectFile, 'utf8');
+  const name = projectText.match(/^config\/name\s*=\s*"([^"]*)"/m)?.[1] || null;
+  const mainScene = projectText.match(/^run\/main_scene\s*=\s*"([^"]*)"/m)?.[1] || null;
+  const files = [];
+  async function collect(current) {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+      const target = path.join(current, entry.name);
+      if (entry.isDirectory()) await collect(target);
+      else files.push(path.relative(root, target).split(path.sep).join('/'));
+    }
+  }
+  await stat(root);
+  await collect(root);
+  return { schema_version: '0.1', source: 'REAL', projectPath: root, projectFile, name, mainScene, files: files.sort() };
 }
 
 export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }) {

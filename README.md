@@ -6,6 +6,8 @@ independent repository and does not copy B1/B2 source code.
 ## Current scope
 
 - `doctor`: verify `GODOT_PATH` and read the real Godot version.
+- `list_projects`: discover `project.godot` files below a directory.
+- `get_project_info`: read project metadata and relative files.
 - `launch`: start a Godot project and write process metadata plus raw stdout/stderr.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.
