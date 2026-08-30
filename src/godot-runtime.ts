@@ -144,6 +144,23 @@ export function getProcessStatus(pid) {
   }
 }
 
+export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDir, bridgePath }) {
+  const root = path.resolve(projectPath);
+  const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-bridge'));
+  await mkdir(evidence, { recursive: true });
+  const requestPath = path.join(evidence, 'request.json');
+  const responsePath = path.join(evidence, 'response.json');
+  await writeFile(requestPath, JSON.stringify({ method: 'get_scene_tree' }));
+  const projectInfo = await getProjectInfo(root);
+  const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
+    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath,
+    GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
+  });
+  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
+  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+}
+
 export async function stopLaunchedProcess(launch, timeoutMs = 5000) {
   const result = await stopProcess(launch.child.pid, timeoutMs);
   await Promise.race([launch.close, new Promise(resolve => setTimeout(resolve, timeoutMs))]);
@@ -160,9 +177,9 @@ export async function readEvidence(evidenceDir) {
   return { metadata, stdout, stderr };
 }
 
-function runProcess(executable, args, cwd, timeoutSeconds) {
+function runProcess(executable, args, cwd, timeoutSeconds, extraEnv = {}) {
   return new Promise(resolve => {
-    const child = spawn(executable, args, { cwd, windowsHide: true });
+    const child = spawn(executable, args, { cwd, windowsHide: true, env: { ...process.env, ...extraEnv } });
     let stdout = '', stderr = '', timedOut = false;
     child.stdout.on('data', chunk => { stdout += chunk; });
     child.stderr.on('data', chunk => { stderr += chunk; });

@@ -10,6 +10,8 @@ independent repository and does not copy B1/B2 source code.
 - `get_project_info`: read project metadata and relative files.
 - `get_scene_tree`: parse nodes from a real `.tscn` file. This is a static
   editor-plane query and is explicitly returned with `runtime: false`.
+- `get_runtime_scene_tree`: launch Godot with `godot-plugin/runtime_bridge.gd`
+  and return nodes from the loaded runtime scene with `runtime: true`.
 - `launch`: start a Godot project and write process metadata plus raw stdout/stderr.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.
@@ -36,12 +38,16 @@ those capabilities.
 
 ```powershell
 $env:GODOT_PATH = 'E:\AI\Godot_v4.7.2-stable_win64_console.exe'
-node .\src\cli.js doctor
-node .\src\cli.js launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
-node .\src\cli.js logs --evidence '.\runs\example'
-node .\src\cli.js scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
-node .\src\cli.js stop --pid 12345
+node .\dist\src\cli.js doctor
+node .\dist\src\cli.js launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
+node .\dist\src\cli.js logs --evidence '.\runs\example'
+node .\dist\src\cli.js scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
+node .\dist\src\cli.js stop --pid 12345
 ```
 
 The CLI keeps credentials out of evidence and uses `REAL` labels only for
 observations obtained from actual local processes.
+
+The first runtime bridge is read-only. It receives the main scene from the
+adapter, writes a JSON response, exits, and leaves stdout/stderr plus request
+and response files in the evidence directory.

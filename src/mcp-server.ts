@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-nocheck
 import readline from 'node:readline';
-import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, launchProject, listProjects, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
@@ -58,6 +58,11 @@ const tools = [
     description: 'Report whether an OS process is currently running without stopping it.',
     inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' } } }
   }
+  ,{
+    name: 'get_runtime_scene_tree',
+    description: 'Load the project main scene in a real Godot process and return its runtime node tree.',
+    inputSchema: { type: 'object', required: ['projectPath', 'bridgePath'], properties: { godotPath: { type: 'string' }, projectPath: { type: 'string' }, bridgePath: { type: 'string' }, evidenceDir: { type: 'string' } } }
+  }
 ];
 
 const serverInfo = { name: 'godot-game-harness-mcp', version: '0.1.0' };
@@ -98,6 +103,7 @@ async function handleTool(request) {
       case 'get_debug_output': value = await readEvidence(args.evidenceDir); break;
       case 'stop_project': value = await stopProcess(args.pid, args.timeoutMs ?? 5000); break;
       case 'get_process_status': value = getProcessStatus(args.pid); break;
+      case 'get_runtime_scene_tree': value = await queryRuntimeSceneTree({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });
