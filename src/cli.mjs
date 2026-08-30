@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { getGodotVersion, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
+import { getGodotVersion, getSceneTree, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.mjs';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
 const options = parseOptions(args);
@@ -13,10 +13,12 @@ try {
     console.log(JSON.stringify(result.metadata, null, 2));
   } else if (command === 'logs') {
     console.log(JSON.stringify(await readEvidence(required(options.evidence, '--evidence')), null, 2));
+  } else if (command === 'scene-tree') {
+    console.log(JSON.stringify(await getSceneTree(required(options.project, '--project'), options.scene), null, 2));
   } else if (command === 'stop') {
     console.log(JSON.stringify(await stopProcess(required(options.pid, '--pid')), null, 2));
   } else {
-    throw new Error(`Unknown command: ${command}. Use doctor, launch, logs, or stop.`);
+    throw new Error(`Unknown command: ${command}. Use doctor, launch, logs, scene-tree, or stop.`);
   }
 } catch (error) {
   console.error(JSON.stringify({ schema_version: '0.1', source: 'REAL', status: 'FAIL', error: error.message }, null, 2));
