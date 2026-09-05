@@ -57,6 +57,7 @@ export type EventSubscriptionRecord = {
   subscription_id: string;
   evidence_dir: string;
   cursor: EventCursor | number;
+  pending_cursor?: EventCursor | number;
   filter?: RuntimeEventFilter;
   status: 'ACTIVE' | 'CANCELLED';
   created_at: string;
@@ -258,10 +259,27 @@ export async function pollEventSubscription(
   }
   const page = await readRuntimeEventsSince(root, record.cursor, limit);
   const events = page.events.filter((event) => matchesRuntimeEvent(event, record.filter));
-  if (page.next_cursor !== null) record.cursor = page.next_cursor;
+  if (page.next_cursor !== null) record.pending_cursor = page.next_cursor;
   record.updated_at = new Date().toISOString();
   await writeSubscriptions(root, store);
   return { ...page, events, subscription_id: subscriptionId, status: record.status };
+}
+
+export async function acknowledgeEventSubscription(
+  evidenceDir: string,
+  subscriptionId: string,
+  cursor: EventCursor | number,
+): Promise<EventSubscriptionRecord> {
+  const root = path.resolve(evidenceDir);
+  const store = await readSubscriptions(root);
+  const record = store[subscriptionId];
+  if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+  const normalized = normalizeCursor(cursor, (await readRuntimeEvents(root)).run_id);
+  record.cursor = normalized;
+  record.pending_cursor = undefined;
+  record.updated_at = new Date().toISOString();
+  await writeSubscriptions(root, store);
+  return record;
 }
 
 export async function cancelEventSubscription(

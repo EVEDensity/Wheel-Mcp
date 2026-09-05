@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   cancelEventSubscription,
+  acknowledgeEventSubscription,
   createEventSubscription,
   pollEventSubscription,
   readRuntimeEvents,
@@ -73,6 +74,7 @@ test('persistent subscriptions support reconnect and cancellation', async () => 
     first.events.map((item) => item.sequence),
     [1],
   );
+  await acknowledgeEventSubscription(root, created.subscription_id, first.next_cursor ?? 1);
   await writeFile(path.join(root, 'events.jsonl'), `${event(1, 'started')}\n${event(2, 'finished')}\n`);
   const resumed = await pollEventSubscription(root, created.subscription_id);
   assert.deepEqual(

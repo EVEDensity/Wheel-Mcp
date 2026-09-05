@@ -20,9 +20,11 @@ import {
   cancelProcess,
   readRuntimeEventsSince,
   subscribeRuntimeEvents,
+  streamRuntimeEvents,
   createEventSubscription,
   pollEventSubscription,
   cancelEventSubscription,
+  acknowledgeEventSubscription,
 } from './godot-runtime.js';
 import { runRegistry } from './run-registry.js';
 import { buildContextPack } from './context-pack.js';
@@ -213,15 +215,39 @@ server.tool(
     extra,
   ) =>
     invoke(
-      (context) =>
-        subscribeRuntimeEvents(evidenceDir, {
+      async (context) => {
+        const filter = event || runId || payload ? { event, run_id: runId, payload } : undefined;
+        if (!continuous) {
+          return subscribeRuntimeEvents(evidenceDir, {
+            cursor,
+            signal: context.signal,
+            limit,
+            maxEvents: 1,
+            pollIntervalMs,
+            filter,
+          });
+        }
+        const events = [];
+        const stream = streamRuntimeEvents(evidenceDir, {
           cursor,
           signal: context.signal,
           limit,
-          maxEvents: continuous ? (maxEvents ?? 100) : 1,
+          maxEvents: maxEvents ?? 100,
           pollIntervalMs,
-          filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
-        }),
+          filter,
+        });
+        while (events.length < (maxEvents ?? 100)) {
+          const next = await stream.next();
+          if (next.done) return { ...next.value, events };
+          events.push(next.value);
+          await server.sendLoggingMessage({
+            level: 'info',
+            logger: 'runtime-events',
+            data: next.value,
+          });
+        }
+        return { schema_version: '0.1', source: 'REAL', evidenceDir, events, cancelled: false };
+      },
       timeoutMs,
       extra.signal,
     ),
@@ -267,6 +293,26 @@ server.tool(
   { evidenceDir: z.string(), subscriptionId: z.string().min(1), timeoutMs },
   async ({ evidenceDir, subscriptionId, timeoutMs }, extra) =>
     invoke((context) => cancelEventSubscription(evidenceDir, subscriptionId), timeoutMs, extra.signal),
+);
+server.tool(
+  'ack_event_subscription',
+  'Acknowledge a received event cursor for reconnect-safe delivery.',
+  {
+    evidenceDir: z.string(),
+    subscriptionId: z.string().min(1),
+    cursor,
+    timeoutMs,
+  },
+  async ({ evidenceDir, subscriptionId, cursor, timeoutMs }, extra) =>
+    invoke(
+      (context) => {
+        context.throwIfCancelled();
+        if (cursor === undefined) throw new Error('cursor is required');
+        return acknowledgeEventSubscription(evidenceDir, subscriptionId, cursor);
+      },
+      timeoutMs,
+      extra.signal,
+    ),
 );
 server.tool('list_active_runs', 'List currently active isolated runs.', { timeoutMs }, async ({ timeoutMs }, extra) =>
   invoke(

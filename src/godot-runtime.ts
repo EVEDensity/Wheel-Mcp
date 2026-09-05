@@ -8,9 +8,11 @@ export {
   readRuntimeEvents,
   readRuntimeEventsSince,
   subscribeRuntimeEvents,
+  streamRuntimeEvents,
   createEventSubscription,
   pollEventSubscription,
   cancelEventSubscription,
+  acknowledgeEventSubscription,
 } from './runtime-events.js';
 
 type LaunchOptions = {
