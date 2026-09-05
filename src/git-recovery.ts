@@ -33,7 +33,7 @@ export async function gitRecovery(projectPath, patchPath) {
   };
 }
 
-function runGit(cwd, args) {
+export function runGit(cwd, args) {
   return new Promise(resolve => {
     const child = spawn('git', args, { cwd, windowsHide: true });
     let stdout = '', stderr = '';
