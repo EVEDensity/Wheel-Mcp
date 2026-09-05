@@ -34,7 +34,7 @@ export async function buildContextPack({
         error: error instanceof Error ? error.message : String(error),
       }))
     : null;
-  const git = await gitSnapshot(root);
+  const git = await gitSnapshot(root, timeout);
   const recent_errors = evidenceDir ? await readRecentErrors(evidenceDir, maxErrorBytes) : [];
   return {
     schema_version: '0.1',
@@ -48,9 +48,9 @@ export async function buildContextPack({
   };
 }
 
-async function gitSnapshot(root: string) {
-  const head = await runGit(root, ['rev-parse', 'HEAD']);
-  const status = await runGit(root, ['status', '--short']);
+async function gitSnapshot(root: string, timeout?: TimeoutContext) {
+  const head = await runGit(root, ['rev-parse', 'HEAD'], timeout);
+  const status = await runGit(root, ['status', '--short'], timeout);
   return { head: head.stdout.trim(), status: status.stdout.trim(), source: 'REAL' };
 }
 

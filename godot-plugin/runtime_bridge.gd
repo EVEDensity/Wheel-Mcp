@@ -121,5 +121,6 @@ func _emit_event(events_path: String, event_name: String, payload: Dictionary) -
 		var run_id := OS.get_environment("GODOT_HARNESS_RUN_ID")
 		if run_id.is_empty():
 			run_id = "godot-run"
-		file.store_string(JSON.stringify({"schema_version": "0.1", "source": "REAL", "run_id": run_id, "sequence": event_sequence, "timestamp": Time.get_datetime_string_from_system(true), "event": event_name, "payload": payload}) + "\n")
+		file.store_string(JSON.stringify({"schema_version": "0.1", "source": "REAL", "run_id": run_id, "sequence": event_sequence, "timestamp": Time.get_datetime_string_from_system(true, true), "event": event_name, "payload": payload}) + "\n")
 		file.close()
+

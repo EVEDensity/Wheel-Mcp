@@ -3,7 +3,8 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { CancelledError, createTimeoutContext, TimeoutContext, TimeoutError } from './timeout.js';
 import { runRegistry } from './run-registry.js';
-import { parseRuntimeEvent, RuntimeEvent, EventReadResult } from './runtime-events.js';
+import { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
+export { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
 
 type LaunchOptions = {
   godotPath?: string;
@@ -228,11 +229,12 @@ export async function launchProject({
   return { metadata, child, close };
 }
 
-export async function stopProcess(pid: number, timeoutMs = 5000) {
+export async function stopProcess(pid: number, timeoutMs = 5000, timeout?: TimeoutContext) {
   if (!Number.isInteger(Number(pid))) throw new Error('pid must be an integer');
   if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0)
     throw new Error('timeoutMs must be a non-negative integer');
   const processHandle = Number(pid);
+  timeout?.throwIfCancelled();
   try {
     if (process.platform === 'win32') {
       const killer = spawn('taskkill', ['/PID', String(processHandle), '/T', '/F'], { windowsHide: true });
@@ -243,6 +245,7 @@ export async function stopProcess(pid: number, timeoutMs = 5000) {
   }
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    timeout?.throwIfCancelled();
     try {
       process.kill(processHandle, 0);
     } catch (error: unknown) {
@@ -254,8 +257,8 @@ export async function stopProcess(pid: number, timeoutMs = 5000) {
   return { stopped: false, pid: processHandle, timed_out: true };
 }
 
-export async function cancelProcess(pid: number, timeoutMs = 5000) {
-  const result = await stopProcess(pid, timeoutMs);
+export async function cancelProcess(pid: number, timeoutMs = 5000, timeout?: TimeoutContext) {
+  const result = await stopProcess(pid, timeoutMs, timeout);
   return { ...result, cancelled: true, lifecycle: result.stopped ? 'CANCELLED' : 'TIMEOUT' };
 }
 
@@ -301,6 +304,7 @@ export async function queryRuntimeSceneTree({
     },
     timeout,
   );
+  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
@@ -347,6 +351,7 @@ export async function queryRuntimeProperty({
     },
     timeout,
   );
+  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
@@ -393,6 +398,7 @@ export async function mutateRuntimeProperty({
     },
     timeout,
   );
+  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
@@ -438,6 +444,7 @@ export async function injectRuntimeInput({
     },
     timeout,
   );
+  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
@@ -482,6 +489,7 @@ export async function captureRuntimeScreenshot({
     },
     timeout,
   );
+  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
@@ -519,76 +527,6 @@ export async function readEvidence(evidenceDir: string) {
     readFile(path.join(root, 'stderr.log'), 'utf8').catch(() => ''),
   ]);
   return { metadata, stdout, stderr };
-}
-
-export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadResult> {
-  const root = path.resolve(evidenceDir);
-  const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
-  const lines = text.split(/\r?\n/);
-  const pending_partial = text.length > 0 && !text.endsWith('\n');
-  const completeLines = pending_partial ? lines.slice(0, -1) : lines;
-  const events: RuntimeEvent[] = [];
-  const invalid_lines: Array<{ line: number; reason: string }> = [];
-  for (let index = 0; index < completeLines.length; index += 1) {
-    const line = completeLines[index];
-    if (!line.trim()) continue;
-    try {
-      const event = parseRuntimeEvent(JSON.parse(line));
-      if (!event) invalid_lines.push({ line: index + 1, reason: 'schema validation failed' });
-      else events.push(event);
-    } catch (error: unknown) {
-      invalid_lines.push({ line: index + 1, reason: error instanceof Error ? error.message : String(error) });
-    }
-  }
-  events.sort((left, right) => left.sequence - right.sequence);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events, invalid_lines, pending_partial };
-}
-
-export async function readRuntimeEventsSince(evidenceDir: string, cursor = 0, limit = 100) {
-  if (!Number.isInteger(cursor) || cursor < 0) throw new Error('cursor must be a non-negative integer');
-  if (!Number.isInteger(limit) || limit < 1) throw new Error('limit must be a positive integer');
-  const result = await readRuntimeEvents(evidenceDir);
-  const start = result.events.findIndex((event) => event.sequence > cursor);
-  const offset = start === -1 ? result.events.length : start;
-  const events = result.events.slice(offset, offset + limit);
-  const next_cursor = events.length ? events[events.length - 1].sequence : cursor;
-  return {
-    ...result,
-    cursor,
-    next_cursor,
-    events,
-  };
-}
-
-export async function subscribeRuntimeEvents(
-  evidenceDir: string,
-  options: { cursor?: number; limit?: number; signal?: AbortSignal; filter?: (event: unknown) => boolean } = {},
-) {
-  const cursorPath = path.join(path.resolve(evidenceDir), 'event-cursor.json');
-  const persisted = await readFile(cursorPath, 'utf8')
-    .then((text) => JSON.parse(text).cursor as number)
-    .catch(() => 0);
-  let cursor = options.cursor ?? persisted;
-  const events: RuntimeEvent[] = [];
-  while (!options.signal?.aborted) {
-    const page = await readRuntimeEventsSince(evidenceDir, cursor, options.limit ?? 100);
-    cursor = page.next_cursor;
-    events.push(...(options.filter ? page.events.filter(options.filter) : page.events));
-    if (page.events.length === 0) await new Promise((resolve) => setTimeout(resolve, 100));
-    if (events.length) {
-      await writeFile(cursorPath, JSON.stringify({ cursor, updated_at: new Date().toISOString() }));
-      return { ...page, cursor, events };
-    }
-  }
-  await writeFile(cursorPath, JSON.stringify({ cursor, updated_at: new Date().toISOString() }));
-  return {
-    schema_version: '0.1',
-    source: 'REAL',
-    evidenceDir: path.resolve(evidenceDir),
-    cursor,
-    events,
-    cancelled: true,
-  };
 }
 
 function runProcess(
@@ -667,3 +605,10 @@ function runProcess(
     });
   });
 }
+
+function ensureProcessSuccess(result: ProcessResult): void {
+  if (result.code === 'TIMEOUT') throw new TimeoutError('Godot bridge timed out');
+  if (result.code === 'CANCELLED') throw new CancelledError('Godot bridge cancelled');
+  if (result.code === 'FAILED') throw new Error(`Godot bridge failed: ${result.stderr.trim() || 'process exited with an error'}`);
+}
+

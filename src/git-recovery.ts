@@ -1,14 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import type { TimeoutContext } from './timeout.js';
 
-export async function gitCheckpoint(projectPath: string, evidenceDir?: string) {
+export async function gitCheckpoint(projectPath: string, evidenceDir?: string, timeout?: TimeoutContext) {
+  timeout?.throwIfCancelled();
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'git'));
   await mkdir(evidence, { recursive: true });
-  const head = await runGit(root, ['rev-parse', 'HEAD']);
-  const status = await runGit(root, ['status', '--short']);
-  const diff = await runGit(root, ['diff', '--binary']);
+  const head = await runGit(root, ['rev-parse', 'HEAD'], timeout);
+  const status = await runGit(root, ['status', '--short'], timeout);
+  const diff = await runGit(root, ['diff', '--binary'], timeout);
   if (head.exitCode !== 0) throw new Error(`Not a Git repository: ${head.stderr.trim()}`);
   const metadata = {
     schema_version: '0.1',
@@ -26,11 +28,12 @@ export async function gitCheckpoint(projectPath: string, evidenceDir?: string) {
   return metadata;
 }
 
-export async function gitRecovery(projectPath: string, patchPath: string) {
+export async function gitRecovery(projectPath: string, patchPath: string, timeout?: TimeoutContext) {
+  timeout?.throwIfCancelled();
   const root = path.resolve(projectPath);
   const patch = path.resolve(patchPath);
   await readFile(patch);
-  const result = await runGit(root, ['apply', '--reverse', '--whitespace=nowarn', '--', patch]);
+  const result = await runGit(root, ['apply', '--reverse', '--whitespace=nowarn', '--', patch], timeout);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -44,7 +47,7 @@ export async function gitRecovery(projectPath: string, patchPath: string) {
 }
 
 type GitResult = { exitCode: number | null; stdout: string; stderr: string };
-export function runGit(cwd: string, args: string[]): Promise<GitResult> {
+export function runGit(cwd: string, args: string[], timeout?: TimeoutContext): Promise<GitResult> {
   return new Promise((resolve) => {
     const child = spawn('git', args, { cwd, windowsHide: true });
     let stdout = '',
@@ -55,7 +58,11 @@ export function runGit(cwd: string, args: string[]): Promise<GitResult> {
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    child.once('error', (error) => resolve({ exitCode: null, stdout, stderr: `${stderr}${error.message}` }));
-    child.once('close', (exitCode) => resolve({ exitCode, stdout, stderr }));
+    let settled = false;
+    const finish = (value: GitResult) => { if (settled) return; settled = true; timeout?.signal.removeEventListener('abort', onAbort); resolve(value); };
+    const onAbort = () => { if (child.pid) child.kill(); finish({ exitCode: null, stdout, stderr: 'git operation cancelled' }); };
+    timeout?.signal.addEventListener('abort', onAbort, { once: true });
+    child.once('error', (error) => finish({ exitCode: null, stdout, stderr: `${stderr}${error.message}` }));
+    child.once('close', (exitCode) => finish({ exitCode, stdout, stderr }));
   });
 }

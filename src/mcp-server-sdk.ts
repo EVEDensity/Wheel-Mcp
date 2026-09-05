@@ -39,6 +39,9 @@ const failure = (error: unknown) => ({
   content: [{ type: 'text' as const, text: JSON.stringify(classifyError(error)) }],
 });
 const timeoutMs = z.number().int().nonnegative().optional();
+const cursor = z.union([z.number().int().nonnegative(), z.object({ run_id: z.string().min(1), sequence: z.number().int().nonnegative() })]).optional();
+const eventNames = z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional();
+const eventPayload = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional();
 async function invoke<T>(
   operation: (context: TimeoutContext) => Promise<T>,
   requested: number | undefined,
@@ -131,14 +134,14 @@ server.tool(
   'Stop a process.',
   { pid: z.number().int(), timeoutMs },
   async ({ pid, timeoutMs }, extra) =>
-    invoke((context) => stopProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining())), timeoutMs, extra.signal),
+    invoke((context) => stopProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining()), context), timeoutMs, extra.signal),
 );
 server.tool(
   'cancel_project',
   'Cancel a process.',
   { pid: z.number().int(), timeoutMs },
   async ({ pid, timeoutMs }, extra) =>
-    invoke((context) => cancelProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining())), timeoutMs, extra.signal),
+    invoke((context) => cancelProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining()), context), timeoutMs, extra.signal),
 );
 server.tool(
   'get_process_status',
@@ -159,7 +162,7 @@ server.tool(
   'Read runtime events from a cursor.',
   {
     evidenceDir: z.string(),
-    cursor: z.number().int().nonnegative().optional(),
+    cursor,
     limit: z.number().int().positive().optional(),
     timeoutMs,
   },
@@ -175,23 +178,29 @@ server.tool(
 );
 server.tool(
   'subscribe_runtime_events',
-  'Wait for the next matching runtime event.',
+  'Subscribe to runtime events with resumable cursor and filters.',
   {
     evidenceDir: z.string(),
-    cursor: z.number().int().nonnegative().optional(),
-    event: z.string().optional(),
+    cursor,
+    event: eventNames,
+    runId: z.string().min(1).optional(),
+    payload: eventPayload,
+    continuous: z.boolean().optional(),
+    maxEvents: z.number().int().positive().optional(),
+    pollIntervalMs: z.number().int().positive().optional(),
+    limit: z.number().int().positive().optional(),
     timeoutMs: z.number().int().positive().optional(),
   },
-  async ({ evidenceDir, cursor, event, timeoutMs }, extra) =>
+  async ({ evidenceDir, cursor, event, runId, payload, continuous, maxEvents, pollIntervalMs, limit, timeoutMs }, extra) =>
     invoke(
       (context) =>
         subscribeRuntimeEvents(evidenceDir, {
           cursor,
           signal: context.signal,
-          filter: event
-            ? (item: unknown) =>
-                typeof item === 'object' && item !== null && (item as { event?: unknown }).event === event
-            : undefined,
+          limit,
+          maxEvents: continuous ? maxEvents ?? 100 : 1,
+          pollIntervalMs,
+          filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
         }),
       timeoutMs,
       extra.signal,
@@ -343,7 +352,7 @@ server.tool(
     invoke(
       async (context) => {
         context.throwIfCancelled();
-        return gitCheckpoint(projectPath, evidenceDir);
+        return gitCheckpoint(projectPath, evidenceDir, context);
       },
       timeoutMs,
       extra.signal,
@@ -357,7 +366,7 @@ server.tool(
     invoke(
       async (context) => {
         context.throwIfCancelled();
-        return gitRecovery(projectPath, patchPath);
+        return gitRecovery(projectPath, patchPath, context);
       },
       timeoutMs,
       extra.signal,
@@ -365,3 +374,4 @@ server.tool(
 );
 
 await server.connect(new StdioServerTransport());
+
