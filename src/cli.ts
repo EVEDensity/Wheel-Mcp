@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { getGodotVersion, getSceneTree, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { executeScenario, loadScenario } from './scenario-executor.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
 const options = parseOptions(args);
@@ -15,10 +16,14 @@ try {
     console.log(JSON.stringify(await readEvidence(required(options.evidence, '--evidence')), null, 2));
   } else if (command === 'scene-tree') {
     console.log(JSON.stringify(await getSceneTree(required(options.project, '--project'), options.scene), null, 2));
+  } else if (command === 'scenario') {
+    const scenarioPath = required(options.file, '--file');
+    const scenario = await loadScenario(scenarioPath);
+    console.log(JSON.stringify(await executeScenario({ scenario, scenarioPath, godotPath: options.godot || process.env.GODOT_PATH, bridgePath: required(options.bridge, '--bridge'), evidenceDir: options.evidence, globalTimeoutMs: Number(options.timeout || 120000) }), null, 2));
   } else if (command === 'stop') {
     console.log(JSON.stringify(await stopProcess(required(options.pid, '--pid')), null, 2));
   } else {
-    throw new Error(`Unknown command: ${command}. Use doctor, launch, logs, scene-tree, or stop.`);
+    throw new Error(`Unknown command: ${command}. Use doctor, launch, logs, scene-tree, scenario, or stop.`);
   }
 } catch (error) {
   console.error(JSON.stringify({ schema_version: '0.1', source: 'REAL', status: 'FAIL', error: error.message }, null, 2));
