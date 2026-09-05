@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from '../src/godot-runtime.js';
+import {
+  cancelEventSubscription,
+  createEventSubscription,
+  pollEventSubscription,
+  readRuntimeEvents,
+  readRuntimeEventsSince,
+  subscribeRuntimeEvents,
+} from '../src/godot-runtime.js';
 
 const event = (sequence: number, name: string) =>
   JSON.stringify({
@@ -54,6 +61,28 @@ test('runtime event cursor is sequence based and subscription resumes after pers
     [3],
   );
   controller.abort();
+});
+
+test('persistent subscriptions support reconnect and cancellation', async () => {
+  const root = await fsEvidence();
+  await writeFile(path.join(root, 'events.jsonl'), `${event(1, 'started')}\n`);
+  const created = await createEventSubscription(root);
+  assert.equal(created.status, 'ACTIVE');
+  const first = await pollEventSubscription(root, created.subscription_id);
+  assert.deepEqual(
+    first.events.map((item) => item.sequence),
+    [1],
+  );
+  await writeFile(path.join(root, 'events.jsonl'), `${event(1, 'started')}\n${event(2, 'finished')}\n`);
+  const resumed = await pollEventSubscription(root, created.subscription_id);
+  assert.deepEqual(
+    resumed.events.map((item) => item.sequence),
+    [2],
+  );
+  const cancelled = await cancelEventSubscription(root, created.subscription_id);
+  assert.equal(cancelled.status, 'CANCELLED');
+  const afterCancel = await pollEventSubscription(root, created.subscription_id);
+  assert.deepEqual(afterCancel.events, []);
 });
 
 async function fsEvidence(): Promise<string> {

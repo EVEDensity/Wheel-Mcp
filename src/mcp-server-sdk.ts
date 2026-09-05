@@ -20,6 +20,9 @@ import {
   cancelProcess,
   readRuntimeEventsSince,
   subscribeRuntimeEvents,
+  createEventSubscription,
+  pollEventSubscription,
+  cancelEventSubscription,
 } from './godot-runtime.js';
 import { runRegistry } from './run-registry.js';
 import { buildContextPack } from './context-pack.js';
@@ -222,6 +225,48 @@ server.tool(
       timeoutMs,
       extra.signal,
     ),
+);
+server.tool(
+  'create_event_subscription',
+  'Create a resumable runtime event subscription.',
+  {
+    evidenceDir: z.string(),
+    cursor,
+    event: eventNames,
+    runId: z.string().min(1).optional(),
+    payload: eventPayload,
+  },
+  async ({ evidenceDir, cursor, event, runId, payload }, extra) =>
+    invoke(
+      (context) => {
+        context.throwIfCancelled();
+        return createEventSubscription(evidenceDir, {
+          cursor,
+          filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
+        });
+      },
+      undefined,
+      extra.signal,
+    ),
+);
+server.tool(
+  'poll_event_subscription',
+  'Poll a subscription and advance its persistent cursor.',
+  {
+    evidenceDir: z.string(),
+    subscriptionId: z.string().min(1),
+    limit: z.number().int().positive().optional(),
+    timeoutMs,
+  },
+  async ({ evidenceDir, subscriptionId, limit, timeoutMs }, extra) =>
+    invoke((context) => pollEventSubscription(evidenceDir, subscriptionId, limit ?? 100), timeoutMs, extra.signal),
+);
+server.tool(
+  'cancel_event_subscription',
+  'Cancel a persistent runtime event subscription.',
+  { evidenceDir: z.string(), subscriptionId: z.string().min(1), timeoutMs },
+  async ({ evidenceDir, subscriptionId, timeoutMs }, extra) =>
+    invoke((context) => cancelEventSubscription(evidenceDir, subscriptionId), timeoutMs, extra.signal),
 );
 server.tool('list_active_runs', 'List currently active isolated runs.', { timeoutMs }, async ({ timeoutMs }, extra) =>
   invoke(

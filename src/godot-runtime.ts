@@ -4,7 +4,14 @@ import path from 'node:path';
 import { CancelledError, createTimeoutContext, TimeoutContext, TimeoutError } from './timeout.js';
 import { runRegistry } from './run-registry.js';
 import { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
-export { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
+export {
+  readRuntimeEvents,
+  readRuntimeEventsSince,
+  subscribeRuntimeEvents,
+  createEventSubscription,
+  pollEventSubscription,
+  cancelEventSubscription,
+} from './runtime-events.js';
 
 type LaunchOptions = {
   godotPath?: string;
