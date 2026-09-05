@@ -7,7 +7,7 @@
   "license": "MIT",
   "bin": {
     "godot-harness": "build/src/cli.js",
-    "godot-harness-mcp": "build/src/mcp-server.js"
+    "godot-harness-mcp": "build/src/mcp-server-sdk.js"
   },
   "scripts": {
     "build": "tsc",

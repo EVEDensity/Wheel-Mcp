@@ -6,10 +6,10 @@
     "rootDir": ".",
     "outDir": "build",
     "strict": false,
-    "noCheck": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["src/mcp-server.ts"]
 }
