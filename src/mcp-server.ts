@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { cancelProcess, captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, readRuntimeEvents, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { cancelProcess, captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, readRuntimeEventsSince, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
@@ -145,7 +145,7 @@ async function handleTool(request) {
       case 'inject_runtime_input': value = await injectRuntimeInput({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'capture_runtime_screenshot': value = await captureRuntimeScreenshot({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'get_context_pack': value = await buildContextPack({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
-      case 'get_runtime_events': value = await readRuntimeEvents(args.evidenceDir); break;
+      case 'get_runtime_events': value = await readRuntimeEventsSince(args.evidenceDir, args.cursor ?? 0, args.limit ?? 100); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });

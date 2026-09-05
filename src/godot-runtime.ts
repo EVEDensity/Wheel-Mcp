@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createTimeoutContext, TimeoutContext } from './timeout.js';
 
 type LaunchOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; headless?: boolean; extraArgs?: string[] };
 type BridgeOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; bridgePath: string };
@@ -268,6 +269,11 @@ export async function readRuntimeEvents(evidenceDir: string) {
   const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
   const events = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
   return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events };
+}
+
+export async function readRuntimeEventsSince(evidenceDir: string, cursor = 0, limit = 100) {
+  const result = await readRuntimeEvents(evidenceDir);
+  return { ...result, cursor, next_cursor: Math.min(result.events.length, cursor + limit), events: result.events.slice(cursor, cursor + limit) };
 }
 
 function runProcess(executable: string, args: string[], cwd: string, timeoutSeconds: number, extraEnv: Record<string, string> = {}): Promise<any> {
