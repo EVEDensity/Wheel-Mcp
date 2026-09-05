@@ -2,10 +2,16 @@
 import {
   getGodotVersion,
   getSceneTree,
+  queryRuntimeSceneTree,
+  queryRuntimeProperty,
+  mutateRuntimeProperty,
+  injectRuntimeInput,
+  captureRuntimeScreenshot,
   launchProject,
   readEvidence,
   resolveGodotPath,
   stopProcess,
+  cancelProcess,
 } from './godot-runtime.js';
 import { executeScenario, loadScenario } from './scenario-executor.js';
 import { buildContextPack } from './context-pack.js';
@@ -52,6 +58,91 @@ try {
         2,
       ),
     );
+  } else if (command === 'runtime-scene-tree') {
+    console.log(
+      JSON.stringify(
+        await queryRuntimeSceneTree({
+          godotPath: options.godot || process.env.GODOT_PATH,
+          projectPath: required(options.project, '--project'),
+          evidenceDir: options.evidence,
+          bridgePath: required(options.bridge, '--bridge'),
+          timeout: commandContext,
+        }),
+        null,
+        2,
+      ),
+    );
+  } else if (command === 'runtime-property') {
+    console.log(
+      JSON.stringify(
+        await queryRuntimeProperty({
+          godotPath: options.godot || process.env.GODOT_PATH,
+          projectPath: required(options.project, '--project'),
+          evidenceDir: options.evidence,
+          bridgePath: required(options.bridge, '--bridge'),
+          nodePath: options.node,
+          property: required(options.property, '--property'),
+          timeout: commandContext,
+        }),
+        null,
+        2,
+      ),
+    );
+  } else if (command === 'set-runtime-property') {
+    const rawValue = required(options.value, '--value');
+    let value: unknown = rawValue;
+    try {
+      value = JSON.parse(rawValue) as unknown;
+    } catch {
+      /* preserve string values */
+    }
+    console.log(
+      JSON.stringify(
+        await mutateRuntimeProperty({
+          godotPath: options.godot || process.env.GODOT_PATH,
+          projectPath: required(options.project, '--project'),
+          evidenceDir: options.evidence,
+          bridgePath: required(options.bridge, '--bridge'),
+          nodePath: options.node,
+          property: required(options.property, '--property'),
+          value,
+          timeout: commandContext,
+        }),
+        null,
+        2,
+      ),
+    );
+  } else if (command === 'inject-input') {
+    console.log(
+      JSON.stringify(
+        await injectRuntimeInput({
+          godotPath: options.godot || process.env.GODOT_PATH,
+          projectPath: required(options.project, '--project'),
+          evidenceDir: options.evidence,
+          bridgePath: required(options.bridge, '--bridge'),
+          keycode: Number(required(options.keycode, '--keycode')),
+          pressed: options.pressed !== 'false',
+          timeout: commandContext,
+        }),
+        null,
+        2,
+      ),
+    );
+  } else if (command === 'screenshot') {
+    console.log(
+      JSON.stringify(
+        await captureRuntimeScreenshot({
+          godotPath: options.godot || process.env.GODOT_PATH,
+          projectPath: required(options.project, '--project'),
+          evidenceDir: options.evidence,
+          bridgePath: required(options.bridge, '--bridge'),
+          screenshotPath: options.output,
+          timeout: commandContext,
+        }),
+        null,
+        2,
+      ),
+    );
   } else if (command === 'scenario') {
     const scenarioPath = required(options.file, '--file');
     const scenario = await loadScenario(scenarioPath);
@@ -92,9 +183,21 @@ try {
         2,
       ),
     );
+  } else if (command === 'cancel') {
+    console.log(
+      JSON.stringify(
+        await cancelProcess(
+          Number(required(options.pid, '--pid')),
+          Math.min(5000, commandContext.remaining()),
+          commandContext,
+        ),
+        null,
+        2,
+      ),
+    );
   } else {
     throw new Error(
-      `Unknown command: ${command}. Use doctor, launch, logs, scene-tree, scenario, context-pack, or stop.`,
+      `Unknown command: ${command}. Use doctor, launch, logs, scene-tree, runtime-scene-tree, runtime-property, set-runtime-property, inject-input, screenshot, scenario, context-pack, stop, or cancel.`,
     );
   }
 } catch (error) {

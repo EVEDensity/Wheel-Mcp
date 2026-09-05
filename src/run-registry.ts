@@ -69,6 +69,7 @@ export class RunRegistry {
     run.finishedAt = new Date().toISOString();
     run.updatedAt = run.finishedAt;
     this.persist();
+    this.writeEvidenceTerminal(run, state, exitCode);
     return run;
   }
 
@@ -88,6 +89,7 @@ export class RunRegistry {
       run.state = 'STOPPED';
       run.finishedAt = new Date().toISOString();
       run.updatedAt = run.finishedAt;
+      this.writeEvidenceTerminal(run, 'STOPPED', null);
       reclaimed.push(run);
     }
     if (reclaimed.length) this.persist();
@@ -147,6 +149,32 @@ export class RunRegistry {
     const temporary = `${this.storagePath}.${process.pid}.tmp`;
     writeFileSync(temporary, JSON.stringify([...this.runs.values()], null, 2), 'utf8');
     renameSync(temporary, this.storagePath);
+  }
+
+  private writeEvidenceTerminal(
+    run: RunRecord,
+    state: Exclude<RunState, 'RUNNING' | 'ORPHANED'>,
+    exitCode: number | null,
+  ): void {
+    const metadataPath = path.join(run.evidenceDir, 'process.json');
+    try {
+      if (!existsSync(metadataPath)) return;
+      const parsed = JSON.parse(readFileSync(metadataPath, 'utf8')) as Record<string, unknown>;
+      const lifecycle = state === 'CANCELLED' ? 'CANCELLED' : state === 'STOPPED' ? 'STOPPED' : 'FAILED';
+      const metadata = {
+        ...parsed,
+        lifecycle,
+        exit_code: exitCode,
+        timed_out: parsed.timed_out === true,
+        cancelled: lifecycle === 'CANCELLED',
+        finished_at: run.finishedAt ?? new Date().toISOString(),
+      };
+      const temporary = `${metadataPath}.${process.pid}.tmp`;
+      writeFileSync(temporary, JSON.stringify(metadata, null, 2), 'utf8');
+      renameSync(temporary, metadataPath);
+    } catch {
+      // Evidence updates must not prevent registry state from being persisted.
+    }
   }
 
   private require(runId: string): RunRecord {

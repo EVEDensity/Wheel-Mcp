@@ -24,6 +24,24 @@ type BridgeOptions = {
 type PropertyOptions = BridgeOptions & { nodePath?: string; property: string; value?: unknown };
 type InputOptions = BridgeOptions & { keycode: number; pressed?: boolean };
 type ScreenshotOptions = BridgeOptions & { screenshotPath?: string };
+export type ProcessMetadata = {
+  schema_version: '0.1';
+  source: 'REAL';
+  started: boolean;
+  pid?: number;
+  executable: string;
+  arguments: string[];
+  project_path: string;
+  started_at: string;
+  finished_at?: string;
+  exit_code: number | null;
+  timed_out: boolean;
+  cancelled: boolean;
+  lifecycle: 'STARTING' | 'RUNNING' | 'EXITED' | 'STOPPED' | 'CANCELLED' | 'TIMEOUT' | 'FAILED';
+  stdout: string;
+  stderr: string;
+};
+
 type ProcessResult = {
   stdout: string;
   stderr: string;
@@ -161,7 +179,7 @@ export async function launchProject({
     env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) },
     detached: process.platform !== 'win32',
   });
-  const metadata: any = {
+  const metadata: ProcessMetadata = {
     schema_version: '0.1',
     source: 'REAL',
     started: true,
@@ -172,6 +190,7 @@ export async function launchProject({
     started_at: new Date().toISOString(),
     exit_code: null,
     timed_out: false,
+    cancelled: false,
     lifecycle: 'STARTING',
     stdout: stdoutPath,
     stderr: stderrPath,
