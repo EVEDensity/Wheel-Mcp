@@ -28,6 +28,10 @@ func _initialize() -> void:
 		_inject_input(response_path, request)
 		quit()
 		return
+	if request.get("method", "get_scene_tree") == "capture_screenshot":
+		_capture_screenshot(response_path, request)
+		quit()
+		return
 	var nodes: Array[Dictionary] = []
 	_collect(instance, ".", nodes)
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": main_scene, "nodes": nodes})
@@ -69,6 +73,21 @@ func _inject_input(response_path: String, request: Dictionary) -> void:
 	event.pressed = bool(request.get("pressed", true))
 	Input.parse_input_event(event)
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true})
+
+func _capture_screenshot(response_path: String, request: Dictionary) -> void:
+	var screenshot_path: String = str(request.get("path", ""))
+	if screenshot_path.is_empty():
+		_fail(response_path, "path is required for capture_screenshot")
+		return
+	var image := get_root().get_texture().get_image()
+	if image == null or image.is_empty():
+		_fail(response_path, "viewport image is empty")
+		return
+	var error := image.save_png(screenshot_path)
+	if error != OK:
+		_fail(response_path, "save_png failed with code: " + str(error))
+		return
+	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height()})
 
 func _collect(node: Node, node_path: String, output: Array[Dictionary]) -> void:
 	output.append({"name": node.name, "type": node.get_class(), "path": node_path})

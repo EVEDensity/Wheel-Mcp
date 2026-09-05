@@ -6,17 +6,17 @@
   "description": "CLI-first Godot runtime adapter for AI Game Harness.",
   "license": "MIT",
   "bin": {
-    "godot-harness": "dist/src/cli.js",
-    "godot-harness-mcp": "dist/src/mcp-server.js"
+    "godot-harness": "build/src/cli.js",
+    "godot-harness-mcp": "build/src/mcp-server.js"
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/src/cli.js doctor",
-    "test": "npm run build && node --test dist/tests/*.test.js",
+    "start": "node build/src/cli.js doctor",
+    "test": "npm run build && node --test build/tests/*.test.js",
     "format": "prettier --write src tests godot-plugin *.json",
     "format:check": "prettier --check src tests godot-plugin *.json",
     "lint": "eslint src tests",
-    "check": "npm run build && npm run format:check && npm run lint && node --test dist/tests/*.test.js"
+    "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js"
   },
   "engines": {
     "node": ">=20"

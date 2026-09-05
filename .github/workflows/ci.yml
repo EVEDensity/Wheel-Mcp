@@ -20,4 +20,4 @@ jobs:
       - run: npm run build
       - run: npm run format:check
       - run: npm run lint
-      - run: node --test dist/tests/*.test.js
+      - run: node --test build/tests/*.test.js

@@ -10,7 +10,7 @@ test('CLI scene-tree returns static capability result', async () => {
   await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
   await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
   const result = await new Promise(resolve => {
-    const child = spawn(process.execPath, ['dist/src/cli.js', 'scene-tree', '--project', root], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, ['build/src/cli.js', 'scene-tree', '--project', root], { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '', stderr = '';
     child.stdout.on('data', chunk => { stdout += chunk; });
     child.stderr.on('data', chunk => { stderr += chunk; });
