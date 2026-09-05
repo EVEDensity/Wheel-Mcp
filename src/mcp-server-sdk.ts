@@ -18,11 +18,14 @@ import {
   resolveGodotPath,
   stopProcess,
   cancelProcess,
+  readRuntimeEventsSince,
+  subscribeRuntimeEvents,
 } from './godot-runtime.js';
+import { runRegistry } from './run-registry.js';
 import { buildContextPack } from './context-pack.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 
-const info = { name: 'godot-game-harness-mcp', version: '0.1.0' };
+const info = { name: 'godot-game-harness-mcp', version: '0.1.0-preview.1' };
 const server = new McpServer(info, { capabilities: { tools: {} } });
 const projectPath = z.string();
 const godotPath = z.string().optional();
@@ -80,6 +83,45 @@ server.tool(
 );
 server.tool('get_process_status', 'Inspect process state.', { pid: z.number().int() }, async ({ pid }) =>
   result(getProcessStatus(pid)),
+);
+server.tool(
+  'get_runtime_events',
+  'Read runtime events from a cursor.',
+  {
+    evidenceDir: z.string(),
+    cursor: z.number().int().nonnegative().optional(),
+    limit: z.number().int().positive().optional(),
+  },
+  async ({ evidenceDir, cursor, limit }) =>
+    result(await readRuntimeEventsSince(evidenceDir, cursor ?? 0, limit ?? 100)),
+);
+server.tool(
+  'subscribe_runtime_events',
+  'Wait for the next matching runtime event.',
+  {
+    evidenceDir: z.string(),
+    cursor: z.number().int().nonnegative().optional(),
+    event: z.string().optional(),
+    timeoutMs: z.number().int().positive().optional(),
+  },
+  async ({ evidenceDir, cursor, event, timeoutMs }) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs ?? 30000);
+    try {
+      return result(
+        await subscribeRuntimeEvents(evidenceDir, {
+          cursor,
+          signal: controller.signal,
+          filter: event ? (item: any) => item.event === event : undefined,
+        }),
+      );
+    } finally {
+      clearTimeout(timer);
+    }
+  },
+);
+server.tool('list_runs', 'List isolated runs and detect orphans.', {}, async () =>
+  result({ source: 'REAL', runs: runRegistry.list() }),
 );
 server.tool(
   'get_runtime_scene_tree',

@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createTimeoutContext, TimeoutContext } from './timeout.js';
+import { runRegistry } from './run-registry.js';
 
 type LaunchOptions = {
   godotPath?: string;
@@ -130,6 +131,7 @@ export async function launchProject({
     cwd: root,
     windowsHide: true,
     env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) },
+    detached: process.platform !== 'win32',
   });
   const metadata: any = {
     schema_version: '0.1',
@@ -147,6 +149,8 @@ export async function launchProject({
     stderr: stderrPath,
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+  const runIdValue = path.basename(evidence);
+  if (child.pid) runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });
   let stdout = '',
     stderr = '';
   child.stdout.on('data', (chunk) => {
@@ -182,7 +186,7 @@ export async function stopProcess(pid, timeoutMs = 5000) {
     if (process.platform === 'win32') {
       const killer = spawn('taskkill', ['/PID', String(processHandle), '/T', '/F'], { windowsHide: true });
       await new Promise((resolve) => killer.once('close', resolve));
-    } else process.kill(processHandle);
+    } else process.kill(-processHandle);
   } catch (error: unknown) {
     if (!(error instanceof Error) || (error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
   }
@@ -454,6 +458,30 @@ export async function readRuntimeEventsSince(evidenceDir: string, cursor = 0, li
     cursor,
     next_cursor: Math.min(result.events.length, cursor + limit),
     events: result.events.slice(cursor, cursor + limit),
+  };
+}
+
+export async function subscribeRuntimeEvents(
+  evidenceDir: string,
+  options: { cursor?: number; limit?: number; signal?: AbortSignal; filter?: (event: unknown) => boolean } = {},
+) {
+  let cursor = options.cursor ?? 0;
+  const events: unknown[] = [];
+  while (!options.signal?.aborted) {
+    const page = await readRuntimeEventsSince(evidenceDir, cursor, options.limit ?? 100);
+    cursor = page.next_cursor;
+    events.push(...(options.filter ? page.events.filter(options.filter) : page.events));
+    if (page.next_cursor >= page.events.length + (options.cursor ?? 0))
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    if (events.length) return { ...page, cursor, events };
+  }
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: path.resolve(evidenceDir),
+    cursor,
+    events,
+    cancelled: true,
   };
 }
 

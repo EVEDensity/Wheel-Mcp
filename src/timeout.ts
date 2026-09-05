@@ -13,6 +13,7 @@ export function createTimeoutContext(timeoutMs: number, parent?: AbortSignal): T
   const deadline = Date.now() + timeoutMs;
   const timer = setTimeout(() => controller.abort(new TimeoutError()), timeoutMs);
   parent?.addEventListener('abort', () => controller.abort(parent.reason), { once: true });
+  controller.signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
   return {
     signal: controller.signal,
     deadline,

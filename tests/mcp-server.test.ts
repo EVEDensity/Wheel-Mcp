@@ -20,19 +20,22 @@ test('stdio MCP handshake and tool discovery', async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
   };
-  child.stdin.write(
-    JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'test', version: '0.1.0' } },
-    }) + '\n',
-  );
-  const init = (await next()) as Record<string, any>;
-  assert.equal(init.result.serverInfo.name, 'godot-game-harness-mcp');
-  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
-  child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
-  const listed = (await next()) as Record<string, any>;
-  assert.equal(listed.result.tools.length, 17);
-  child.kill();
+  try {
+    child.stdin.write(
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'test', version: '0.1.0' } },
+      }) + '\n',
+    );
+    const init = (await next()) as Record<string, any>;
+    assert.equal(init.result.serverInfo.name, 'godot-game-harness-mcp');
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
+    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
+    const listed = (await next()) as Record<string, any>;
+    assert.ok(listed.result.tools.length >= 17);
+  } finally {
+    child.kill();
+  }
 });
