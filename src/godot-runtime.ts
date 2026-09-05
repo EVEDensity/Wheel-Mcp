@@ -178,7 +178,14 @@ export async function launchProject({
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
   const runIdValue = path.basename(evidence);
-  if (child.pid) runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });
+  if (child.pid) {
+    try {
+      runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });
+    } catch (error) {
+      child.kill();
+      throw error;
+    }
+  }
   let stdout = '',
     stderr = '';
   let cancelled = false;
@@ -220,6 +227,14 @@ export async function launchProject({
       metadata.lifecycle = timedOut ? 'TIMEOUT' : cancelled ? 'CANCELLED' : code === 0 ? 'EXITED' : 'FAILED';
       metadata.timed_out = timedOut;
       metadata.cancelled = cancelled;
+      if (child.pid) {
+        const terminalState = timedOut ? 'FAILED' : cancelled ? 'CANCELLED' : code === 0 ? 'STOPPED' : 'FAILED';
+        try {
+          runRegistry.markTerminal(runIdValue, terminalState, code);
+        } catch {
+          /* preserve process evidence */
+        }
+      }
       await writeFile(stdoutPath, stdout);
       await writeFile(stderrPath, stderr);
       await writeFile(metadataPath, JSON.stringify(metadata, null, 2));

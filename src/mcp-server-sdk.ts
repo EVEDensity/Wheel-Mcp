@@ -222,6 +222,49 @@ server.tool(
       extra.signal,
     ),
 );
+server.tool('list_active_runs', 'List currently active isolated runs.', { timeoutMs }, async ({ timeoutMs }, extra) =>
+  invoke(
+    async (context) => {
+      context.throwIfCancelled();
+      return { source: 'REAL', runs: runRegistry.active() };
+    },
+    timeoutMs,
+    extra.signal,
+  ),
+);
+server.tool(
+  'stop_run',
+  'Stop an isolated run by its run id.',
+  { runId: z.string().min(1), timeoutMs },
+  async ({ runId, timeoutMs }, extra) =>
+    invoke(
+      (context) => runRegistry.stop(runId, Math.min(timeoutMs ?? 5000, context.remaining())),
+      timeoutMs,
+      extra.signal,
+    ),
+);
+server.tool(
+  'cancel_run',
+  'Cancel an isolated run by its run id.',
+  { runId: z.string().min(1), timeoutMs },
+  async ({ runId, timeoutMs }, extra) =>
+    invoke(
+      (context) => runRegistry.cancel(runId, Math.min(timeoutMs ?? 5000, context.remaining())),
+      timeoutMs,
+      extra.signal,
+    ),
+);
+server.tool(
+  'reclaim_orphan_runs',
+  'Reclaim orphaned processes recorded by the run registry.',
+  { timeoutMs },
+  async ({ timeoutMs }, extra) =>
+    invoke(
+      (context) => runRegistry.reclaimOrphans(Math.min(timeoutMs ?? 5000, context.remaining())),
+      timeoutMs,
+      extra.signal,
+    ),
+);
 server.tool('list_runs', 'List isolated runs and detect orphans.', { timeoutMs }, async ({ timeoutMs }, extra) =>
   invoke(
     async (context) => {
