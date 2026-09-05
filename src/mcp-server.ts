@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { cancelProcess, captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { cancelProcess, captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, readRuntimeEvents, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
@@ -93,6 +93,11 @@ const tools = [
     description: 'Build a read-only project context pack for an agent.',
     inputSchema: { type: 'object', required: ['projectPath'], properties: { godotPath: { type: 'string' }, projectPath: { type: 'string' }, evidenceDir: { type: 'string' }, scenePath: { type: 'string' } } }
   }
+  ,{
+    name: 'get_runtime_events',
+    description: 'Read real runtime events recorded in an evidence directory.',
+    inputSchema: { type: 'object', required: ['evidenceDir'], properties: { evidenceDir: { type: 'string' } } }
+  }
 ];
 
 const serverInfo = { name: 'godot-game-harness-mcp', version: '0.1.0' };
@@ -140,6 +145,7 @@ async function handleTool(request) {
       case 'inject_runtime_input': value = await injectRuntimeInput({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'capture_runtime_screenshot': value = await captureRuntimeScreenshot({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'get_context_pack': value = await buildContextPack({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
+      case 'get_runtime_events': value = await readRuntimeEvents(args.evidenceDir); break;
       default: return writeError(request.id, -32602, `Unknown tool: ${request.params?.name}`);
     }
     writeResult(request.id, { content: [{ type: 'text', text: JSON.stringify(value) }], structuredContent: value });

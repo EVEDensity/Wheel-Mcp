@@ -17,6 +17,6 @@ test('stdio MCP handshake and tool discovery', async () => {
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
   child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
   const listed = await next();
-  assert.equal(listed.result.tools.length, 16);
+  assert.equal(listed.result.tools.length, 17);
   child.kill();
 });

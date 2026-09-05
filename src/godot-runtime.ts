@@ -7,7 +7,7 @@ export function resolveGodotPath(value = process.env.GODOT_PATH) {
   return path.resolve(value);
 }
 
-export async function getGodotVersion(godotPath) {
+export async function getGodotVersion(godotPath: string): Promise<string> {
   const result = await runProcess(godotPath, ['--version'], process.cwd(), 30);
   if (result.exitCode !== 0) throw new Error(`Godot version failed: ${result.stderr.trim()}`);
   return result.stdout.trim();
@@ -66,7 +66,7 @@ export async function getSceneTree(projectPath, scenePath = null) {
   for (const line of text.split(/\r?\n/)) {
     const match = line.match(/^\[node\s+([^\]]+)\]/);
     if (!match) continue;
-    const attrs = {};
+    const attrs: any = {};
     for (const item of match[1].matchAll(/(\w+)="([^"]*)"|(\w+)=([^\s]+)/g)) {
       attrs[item[1] || item[3]] = item[2] ?? item[4];
     }
@@ -80,7 +80,8 @@ export async function getSceneTree(projectPath, scenePath = null) {
 
 export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }) {
   const root = path.resolve(projectPath);
-  const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runs'));
+  const runId = new Date().toISOString().replace(/[:.]/g, '-');
+  const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runs', runId));
   await mkdir(evidence, { recursive: true });
   const stdoutPath = path.join(evidence, 'stdout.log');
   const stderrPath = path.join(evidence, 'stderr.log');
@@ -93,7 +94,7 @@ export async function launchProject({ godotPath, projectPath, evidenceDir, headl
     windowsHide: true,
     env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) }
   });
-  const metadata = {
+  const metadata: any = {
     schema_version: '0.1', source: 'REAL', started: true,
     pid: child.pid, executable: resolveGodotPath(godotPath), arguments: args,
     project_path: root, started_at: new Date().toISOString(), exit_code: null,
@@ -120,7 +121,12 @@ export async function stopProcess(pid, timeoutMs = 5000) {
   if (!Number.isInteger(Number(pid))) throw new Error('pid must be an integer');
   if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0) throw new Error('timeoutMs must be a non-negative integer');
   const processHandle = Number(pid);
-  try { process.kill(processHandle); } catch (error) {
+  try {
+    if (process.platform === 'win32') {
+      const killer = spawn('taskkill', ['/PID', String(processHandle), '/T', '/F'], { windowsHide: true });
+      await new Promise(resolve => killer.once('close', resolve));
+    } else process.kill(processHandle);
+  } catch (error) {
     if (error.code !== 'ESRCH') throw error;
   }
   const deadline = Date.now() + timeoutMs;
@@ -251,13 +257,24 @@ export async function readEvidence(evidenceDir) {
   return { metadata, stdout, stderr };
 }
 
-function runProcess(executable, args, cwd, timeoutSeconds, extraEnv = {}) {
+export async function readRuntimeEvents(evidenceDir: string) {
+  const root = path.resolve(evidenceDir);
+  const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
+  const events = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+  return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events };
+}
+
+function runProcess(executable: string, args: string[], cwd: string, timeoutSeconds: number, extraEnv: Record<string, string> = {}): Promise<any> {
   return new Promise(resolve => {
     const child = spawn(executable, args, { cwd, windowsHide: true, env: { ...process.env, ...extraEnv } });
     let stdout = '', stderr = '', timedOut = false;
     child.stdout.on('data', chunk => { stdout += chunk; });
     child.stderr.on('data', chunk => { stderr += chunk; });
-    const timer = setTimeout(() => { timedOut = true; child.kill(); }, timeoutSeconds * 1000);
+    const timer = setTimeout(() => {
+      timedOut = true;
+      if (process.platform === 'win32' && child.pid) spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
+      else child.kill();
+    }, timeoutSeconds * 1000);
     child.once('close', exitCode => { clearTimeout(timer); resolve({ stdout, stderr, exitCode: timedOut ? null : exitCode }); });
     child.once('error', error => { clearTimeout(timer); resolve({ stdout, stderr: `${stderr}${error.message}`, exitCode: null }); });
   });
