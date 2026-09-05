@@ -6,7 +6,7 @@
     "rootDir": ".",
     "outDir": "build",
     "strict": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "types": ["node"]

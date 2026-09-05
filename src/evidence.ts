@@ -19,13 +19,13 @@ export async function createEvidenceEnvelope(directory: string | undefined, meta
   await writeFile(path.join(root, 'envelope.json'), JSON.stringify(envelope, null, 2));
   return {
     directory: root,
-    async request(value) {
+    async request(value: unknown): Promise<void> {
       await appendFile(
         envelope.requests,
         `${JSON.stringify({ at: new Date().toISOString(), direction: 'request', payload: redact(value) })}\n`,
       );
     },
-    async response(value) {
+    async response(value: unknown): Promise<void> {
       await appendFile(
         envelope.responses,
         `${JSON.stringify({ at: new Date().toISOString(), direction: 'response', payload: redact(value) })}\n`,

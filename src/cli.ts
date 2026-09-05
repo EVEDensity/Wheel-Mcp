@@ -66,7 +66,7 @@ try {
       ),
     );
   } else if (command === 'stop') {
-    console.log(JSON.stringify(await stopProcess(required(options.pid, '--pid')), null, 2));
+    console.log(JSON.stringify(await stopProcess(Number(required(options.pid, '--pid'))), null, 2));
   } else {
     throw new Error(
       `Unknown command: ${command}. Use doctor, launch, logs, scene-tree, scenario, context-pack, or stop.`,
@@ -88,12 +88,12 @@ try {
   process.exitCode = 1;
 }
 
-function required(value, name) {
+function required(value: string | undefined, name: string): string {
   if (!value) throw new Error(`${name} is required`);
   return value;
 }
-function parseOptions(values: string[]): any {
-  const result = {};
+function parseOptions(values: string[]): Record<string, string> {
+  const result: Record<string, string> = {};
   for (let i = 0; i < values.length; i += 1) {
     const value = values[i];
     if (!value.startsWith('--')) continue;

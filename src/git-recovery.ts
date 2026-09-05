@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-export async function gitCheckpoint(projectPath, evidenceDir) {
+export async function gitCheckpoint(projectPath: string, evidenceDir?: string) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'git'));
   await mkdir(evidence, { recursive: true });
@@ -26,7 +26,7 @@ export async function gitCheckpoint(projectPath, evidenceDir) {
   return metadata;
 }
 
-export async function gitRecovery(projectPath, patchPath) {
+export async function gitRecovery(projectPath: string, patchPath: string) {
   const root = path.resolve(projectPath);
   const patch = path.resolve(patchPath);
   await readFile(patch);
@@ -43,7 +43,8 @@ export async function gitRecovery(projectPath, patchPath) {
   };
 }
 
-export function runGit(cwd: string, args: string[]): Promise<any> {
+type GitResult = { exitCode: number | null; stdout: string; stderr: string };
+export function runGit(cwd: string, args: string[]): Promise<GitResult> {
   return new Promise((resolve) => {
     const child = spawn('git', args, { cwd, windowsHide: true });
     let stdout = '',
