@@ -177,7 +177,7 @@ export async function launchProject({
     stderr: stderrPath,
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-  const runIdValue = path.basename(evidence);
+  const runIdValue = path.basename(evidence) + '-' + Date.now().toString() + '-' + (child.pid ?? 'unknown').toString();
   if (child.pid) {
     try {
       runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });

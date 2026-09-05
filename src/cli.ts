@@ -40,7 +40,7 @@ try {
       headless: options.headless === 'true',
       timeout: commandContext,
     });
-    console.log(JSON.stringify(result.metadata, null, 2));
+    process.stdout.write(JSON.stringify(result.metadata, null, 2) + '\n', () => process.exit(0));
   } else if (command === 'logs') {
     console.log(JSON.stringify(await readEvidence(required(options.evidence, '--evidence')), null, 2));
   } else if (command === 'scene-tree') {

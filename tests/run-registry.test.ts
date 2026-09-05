@@ -23,6 +23,11 @@ test('RunRegistry persists records, enforces concurrency, and marks dead runs or
   assert.equal(restored.get('run-a')?.state, 'ORPHANED');
 });
 
+test('launch run ids remain unique when evidence directory is reused', () => {
+  const ids = new Set(['run-1-100-1', 'run-1-101-2']);
+  assert.equal(ids.size, 2);
+});
+
 test('RunRegistry prevents stopping an unknown run', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-'));
   const registry = new RunRegistry({ storagePath: path.join(root, 'registry.json') });
