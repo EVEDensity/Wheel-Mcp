@@ -1,6 +1,6 @@
 {
   "name": "godot-game-harness-mcp",
-  "version": "0.1.0",
+  "version": "0.1.0-preview.1",
   "private": false,
   "type": "module",
   "description": "CLI-first Godot runtime adapter for AI Game Harness.",

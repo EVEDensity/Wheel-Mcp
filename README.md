@@ -1,5 +1,11 @@
 # Godot Game Harness MCP
 
+Current release: `0.1.0-preview.1` (developer preview; not yet a stable
+release).
+
+Supported and verified in CI: Node.js 20/22 on Linux. Windows is exercised
+locally with Godot 4.7.2; macOS has not yet been executed in this environment.
+
 CLI-first Godot runtime adapter for the AI Game Harness project. This is an
 independent repository and does not copy B1/B2 source code.
 
