@@ -83,7 +83,10 @@ export function parseRuntimeEvent(value: unknown): RuntimeEvent | null {
   };
 }
 
-export function matchesRuntimeEvent(event: RuntimeEvent, filter?: RuntimeEventFilter | ((event: RuntimeEvent) => boolean)): boolean {
+export function matchesRuntimeEvent(
+  event: RuntimeEvent,
+  filter?: RuntimeEventFilter | ((event: RuntimeEvent) => boolean),
+): boolean {
   if (!filter) return true;
   if (typeof filter === 'function') return filter(event);
   if (filter.run_id !== undefined && event.run_id !== filter.run_id) return false;
@@ -112,7 +115,8 @@ export function normalizeCursor(cursor: number | EventCursor | undefined, runId:
     cursor.sequence < 0
   )
     throw new Error('cursor must contain run_id and non-negative sequence');
-  if (runId && cursor.run_id !== runId) throw new Error(`cursor run_id ${cursor.run_id} does not match event run_id ${runId}`);
+  if (runId && cursor.run_id !== runId)
+    throw new Error(`cursor run_id ${cursor.run_id} does not match event run_id ${runId}`);
   return cursor;
 }
 
@@ -135,7 +139,12 @@ async function writeCursor(evidenceDir: string, cursor: EventCursor): Promise<vo
     await writeFile(
       temporary,
       JSON.stringify(
-        { schema_version: '0.1', run_id: cursor.run_id, sequence: cursor.sequence, updated_at: new Date().toISOString() },
+        {
+          schema_version: '0.1',
+          run_id: cursor.run_id,
+          sequence: cursor.sequence,
+          updated_at: new Date().toISOString(),
+        },
         null,
         2,
       ),
@@ -150,8 +159,16 @@ async function writeCursor(evidenceDir: string, cursor: EventCursor): Promise<vo
 
 async function readCursor(evidenceDir: string): Promise<EventCursor | null> {
   try {
-    const value = JSON.parse(await readFile(path.join(path.resolve(evidenceDir), 'event-cursor.json'), 'utf8')) as Record<string, unknown>;
-    if (typeof value.run_id !== 'string' || !value.run_id || !Number.isInteger(value.sequence) || Number(value.sequence) < 0) return null;
+    const value = JSON.parse(
+      await readFile(path.join(path.resolve(evidenceDir), 'event-cursor.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    if (
+      typeof value.run_id !== 'string' ||
+      !value.run_id ||
+      !Number.isInteger(value.sequence) ||
+      Number(value.sequence) < 0
+    )
+      return null;
     return { run_id: value.run_id, sequence: Number(value.sequence) };
   } catch {
     return null;
@@ -194,10 +211,23 @@ export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadR
     previousSequence = event.sequence;
     events.push(event);
   }
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: root, run_id, max_sequence: previousSequence, events, invalid_lines, pending_partial };
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: root,
+    run_id,
+    max_sequence: previousSequence,
+    events,
+    invalid_lines,
+    pending_partial,
+  };
 }
 
-export async function readRuntimeEventsSince(evidenceDir: string, cursor: number | EventCursor = 0, limit = 100): Promise<EventPage> {
+export async function readRuntimeEventsSince(
+  evidenceDir: string,
+  cursor: number | EventCursor = 0,
+  limit = 100,
+): Promise<EventPage> {
   if (!Number.isInteger(limit) || limit < 1) throw new Error('limit must be a positive integer');
   const result = await readRuntimeEvents(evidenceDir);
   const normalized = normalizeCursor(cursor, result.run_id);
@@ -215,7 +245,10 @@ export async function readRuntimeEventsSince(evidenceDir: string, cursor: number
   return { ...result, cursor, next_cursor, cursor_ahead: effectiveSequence > result.max_sequence, events };
 }
 
-export async function* streamRuntimeEvents(evidenceDir: string, options: EventSubscriptionOptions = {}): AsyncGenerator<RuntimeEvent, SubscriptionResult, void> {
+export async function* streamRuntimeEvents(
+  evidenceDir: string,
+  options: EventSubscriptionOptions = {},
+): AsyncGenerator<RuntimeEvent, SubscriptionResult, void> {
   const initial = await readRuntimeEvents(evidenceDir);
   const persisted = await readCursor(evidenceDir);
   let cursor = normalizeCursor(options.cursor ?? persisted ?? 0, initial.run_id);
@@ -239,7 +272,10 @@ export async function* streamRuntimeEvents(evidenceDir: string, options: EventSu
   return { ...page, cursor, events: collected, cancelled: options.signal?.aborted === true };
 }
 
-export async function subscribeRuntimeEvents(evidenceDir: string, options: EventSubscriptionOptions = {}): Promise<SubscriptionResult> {
+export async function subscribeRuntimeEvents(
+  evidenceDir: string,
+  options: EventSubscriptionOptions = {},
+): Promise<SubscriptionResult> {
   const iterator = streamRuntimeEvents(evidenceDir, { ...options, maxEvents: options.maxEvents ?? 1 });
   const events: RuntimeEvent[] = [];
   while (true) {
@@ -247,15 +283,12 @@ export async function subscribeRuntimeEvents(evidenceDir: string, options: Event
     if (next.done) return { ...next.value, events };
     events.push(next.value);
     if (!options.maxEvents || events.length >= options.maxEvents) {
-      const page = await readRuntimeEventsSince(evidenceDir, { run_id: next.value.run_id, sequence: next.value.sequence }, options.limit ?? 100);
+      const page = await readRuntimeEventsSince(
+        evidenceDir,
+        { run_id: next.value.run_id, sequence: next.value.sequence },
+        options.limit ?? 100,
+      );
       return { ...page, cursor: { run_id: next.value.run_id, sequence: next.value.sequence }, events };
     }
   }
 }
-
-
-
-
-
-
-

@@ -59,8 +59,16 @@ export function runGit(cwd: string, args: string[], timeout?: TimeoutContext): P
       stderr += chunk;
     });
     let settled = false;
-    const finish = (value: GitResult) => { if (settled) return; settled = true; timeout?.signal.removeEventListener('abort', onAbort); resolve(value); };
-    const onAbort = () => { if (child.pid) child.kill(); finish({ exitCode: null, stdout, stderr: 'git operation cancelled' }); };
+    const finish = (value: GitResult) => {
+      if (settled) return;
+      settled = true;
+      timeout?.signal.removeEventListener('abort', onAbort);
+      resolve(value);
+    };
+    const onAbort = () => {
+      if (child.pid) child.kill();
+      finish({ exitCode: null, stdout, stderr: 'git operation cancelled' });
+    };
     timeout?.signal.addEventListener('abort', onAbort, { once: true });
     child.once('error', (error) => finish({ exitCode: null, stdout, stderr: `${stderr}${error.message}` }));
     child.once('close', (exitCode) => finish({ exitCode, stdout, stderr }));

@@ -609,6 +609,6 @@ function runProcess(
 function ensureProcessSuccess(result: ProcessResult): void {
   if (result.code === 'TIMEOUT') throw new TimeoutError('Godot bridge timed out');
   if (result.code === 'CANCELLED') throw new CancelledError('Godot bridge cancelled');
-  if (result.code === 'FAILED') throw new Error(`Godot bridge failed: ${result.stderr.trim() || 'process exited with an error'}`);
+  if (result.code === 'FAILED')
+    throw new Error(`Godot bridge failed: ${result.stderr.trim() || 'process exited with an error'}`);
 }
-
