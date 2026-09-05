@@ -15,7 +15,7 @@ export async function buildContextPack({ projectPath, godotPath, evidenceDir, sc
 
 async function gitSnapshot(root: string) {
   const head = await runGit(root, ['rev-parse', 'HEAD']);
-  const status = await runGit(root, ['status', '--short']);
+  const status: any = await runGit(root, ['status', '--short']);
   return { head: head.stdout.trim(), status: status.stdout.trim(), source: 'REAL' };
 }
 

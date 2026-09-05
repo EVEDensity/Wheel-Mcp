@@ -4,7 +4,7 @@ import { executeScenario, loadScenario } from './scenario-executor.js';
 import { buildContextPack } from './context-pack.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
-const options = parseOptions(args);
+const options: any = parseOptions(args);
 
 try {
   if (command === 'doctor') {
@@ -34,7 +34,7 @@ try {
 }
 
 function required(value, name) { if (!value) throw new Error(`${name} is required`); return value; }
-function parseOptions(values) {
+function parseOptions(values: string[]): any {
   const result = {};
   for (let i = 0; i < values.length; i += 1) {
     const value = values[i];

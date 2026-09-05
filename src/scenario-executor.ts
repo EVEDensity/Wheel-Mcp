@@ -20,7 +20,7 @@ export async function executeScenario({ scenario, scenarioPath, godotPath, bridg
   let failed = false;
   for (let index = 0; index < scenario.steps.length; index += 1) {
     const step = scenario.steps[index] || {};
-    const [kind, options] = Object.entries(step)[0] || [];
+    const [kind, options]: any = Object.entries(step)[0] || [];
     const attempts = Math.max(1, Number(options?.retries ?? retries) + 1);
     let result: any = null;
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
