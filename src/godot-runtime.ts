@@ -97,15 +97,17 @@ export async function launchProject({ godotPath, projectPath, evidenceDir, headl
     schema_version: '0.1', source: 'REAL', started: true,
     pid: child.pid, executable: resolveGodotPath(godotPath), arguments: args,
     project_path: root, started_at: new Date().toISOString(), exit_code: null,
-    timed_out: false, stdout: stdoutPath, stderr: stderrPath
+    timed_out: false, lifecycle: 'STARTING', stdout: stdoutPath, stderr: stderrPath
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
   let stdout = '', stderr = '';
   child.stdout.on('data', chunk => { stdout += chunk; });
   child.stderr.on('data', chunk => { stderr += chunk; });
+  child.once('spawn', async () => { metadata.lifecycle = 'RUNNING'; await writeFile(metadataPath, JSON.stringify(metadata, null, 2)); });
   const close = new Promise(resolve => child.once('close', async code => {
     metadata.exit_code = code;
     metadata.finished_at = new Date().toISOString();
+    metadata.lifecycle = code === 0 ? 'EXITED' : 'FAILED';
     await writeFile(stdoutPath, stdout);
     await writeFile(stderrPath, stderr);
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
@@ -129,6 +131,11 @@ export async function stopProcess(pid, timeoutMs = 5000) {
     await new Promise(resolve => setTimeout(resolve, 100));
   }
   return { stopped: false, pid: processHandle, timed_out: true };
+}
+
+export async function cancelProcess(pid, timeoutMs = 5000) {
+  const result = await stopProcess(pid, timeoutMs);
+  return { ...result, cancelled: true, lifecycle: result.stopped ? 'CANCELLED' : 'TIMEOUT' };
 }
 
 export function getProcessStatus(pid) {

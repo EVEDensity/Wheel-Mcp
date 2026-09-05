@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import readline from 'node:readline';
-import { captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
+import { cancelProcess, captureRuntimeScreenshot, getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
@@ -52,6 +52,11 @@ const tools = [
     name: 'stop_project',
     description: 'Stop a running process by PID and report its state.',
     inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' }, timeoutMs: { type: 'integer', minimum: 0, default: 5000 } } }
+  }
+  ,{
+    name: 'cancel_project',
+    description: 'Cancel a running Godot process and report lifecycle state.',
+    inputSchema: { type: 'object', required: ['pid'], properties: { pid: { type: 'integer' }, timeoutMs: { type: 'integer', minimum: 0 } } }
   }
   ,{
     name: 'get_process_status',
@@ -127,6 +132,7 @@ async function handleTool(request) {
       }
       case 'get_debug_output': value = await readEvidence(args.evidenceDir); break;
       case 'stop_project': value = await stopProcess(args.pid, args.timeoutMs ?? 5000); break;
+      case 'cancel_project': value = await cancelProcess(args.pid, args.timeoutMs ?? 5000); break;
       case 'get_process_status': value = getProcessStatus(args.pid); break;
       case 'get_runtime_scene_tree': value = await queryRuntimeSceneTree({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
       case 'get_runtime_property': value = await queryRuntimeProperty({ ...args, godotPath: args.godotPath || process.env.GODOT_PATH }); break;
