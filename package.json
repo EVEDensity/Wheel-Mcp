@@ -16,7 +16,8 @@
     "format": "prettier --write src tests godot-plugin *.json",
     "format:check": "prettier --check src tests godot-plugin *.json",
     "lint": "eslint src tests",
-    "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js"
+    "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js",
+    "release:check": "node scripts/release-check.mjs"
   },
   "engines": {
     "node": ">=20"

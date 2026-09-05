@@ -10,8 +10,15 @@ type LaunchOptions = {
   evidenceDir?: string;
   headless?: boolean;
   extraArgs?: string[];
+  timeout?: TimeoutContext;
 };
-type BridgeOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; bridgePath: string };
+type BridgeOptions = {
+  godotPath?: string;
+  projectPath: string;
+  evidenceDir?: string;
+  bridgePath: string;
+  timeout?: TimeoutContext;
+};
 type PropertyOptions = BridgeOptions & { nodePath?: string; property: string; value?: unknown };
 type InputOptions = BridgeOptions & { keycode: number; pressed?: boolean };
 type ScreenshotOptions = BridgeOptions & { screenshotPath?: string };
@@ -221,7 +228,13 @@ export function getProcessStatus(pid) {
   }
 }
 
-export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDir, bridgePath }: BridgeOptions) {
+export async function queryRuntimeSceneTree({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  bridgePath,
+  timeout,
+}: BridgeOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-bridge'));
   await mkdir(evidence, { recursive: true });
@@ -241,6 +254,7 @@ export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDi
       GODOT_HARNESS_EVENTS: eventsPath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
+    timeout,
   );
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
@@ -264,6 +278,7 @@ export async function queryRuntimeProperty({
   bridgePath,
   nodePath = '.',
   property,
+  timeout,
 }: PropertyOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property'));
@@ -282,6 +297,7 @@ export async function queryRuntimeProperty({
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
+    timeout,
   );
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
@@ -305,6 +321,7 @@ export async function mutateRuntimeProperty({
   nodePath = '.',
   property,
   value,
+  timeout,
 }: PropertyOptions & { value: unknown }) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property-write'));
@@ -323,6 +340,7 @@ export async function mutateRuntimeProperty({
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
+    timeout,
   );
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
@@ -345,6 +363,7 @@ export async function injectRuntimeInput({
   bridgePath,
   keycode,
   pressed = true,
+  timeout,
 }: InputOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-input'));
@@ -363,6 +382,7 @@ export async function injectRuntimeInput({
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
+    timeout,
   );
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
@@ -384,6 +404,7 @@ export async function captureRuntimeScreenshot({
   evidenceDir,
   bridgePath,
   screenshotPath,
+  timeout,
 }: ScreenshotOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-screenshot'));
@@ -405,6 +426,7 @@ export async function captureRuntimeScreenshot({
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
+    timeout,
   );
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
@@ -465,7 +487,11 @@ export async function subscribeRuntimeEvents(
   evidenceDir: string,
   options: { cursor?: number; limit?: number; signal?: AbortSignal; filter?: (event: unknown) => boolean } = {},
 ) {
-  let cursor = options.cursor ?? 0;
+  const cursorPath = path.join(path.resolve(evidenceDir), 'event-cursor.json');
+  const persisted = await readFile(cursorPath, 'utf8')
+    .then((text) => JSON.parse(text).cursor as number)
+    .catch(() => 0);
+  let cursor = options.cursor ?? persisted;
   const events: unknown[] = [];
   while (!options.signal?.aborted) {
     const page = await readRuntimeEventsSince(evidenceDir, cursor, options.limit ?? 100);
@@ -473,8 +499,12 @@ export async function subscribeRuntimeEvents(
     events.push(...(options.filter ? page.events.filter(options.filter) : page.events));
     if (page.next_cursor >= page.events.length + (options.cursor ?? 0))
       await new Promise((resolve) => setTimeout(resolve, 100));
-    if (events.length) return { ...page, cursor, events };
+    if (events.length) {
+      await writeFile(cursorPath, JSON.stringify({ cursor, updated_at: new Date().toISOString() }));
+      return { ...page, cursor, events };
+    }
   }
+  await writeFile(cursorPath, JSON.stringify({ cursor, updated_at: new Date().toISOString() }));
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -491,8 +521,10 @@ function runProcess(
   cwd: string,
   timeoutSeconds: number,
   extraEnv: Record<string, string> = {},
+  timeout?: TimeoutContext,
 ): Promise<any> {
   return new Promise((resolve) => {
+    const context = timeout ?? createTimeoutContext(timeoutSeconds * 1000);
     const child = spawn(executable, args, { cwd, windowsHide: true, env: { ...process.env, ...extraEnv } });
     let stdout = '',
       stderr = '',
@@ -503,14 +535,17 @@ function runProcess(
     child.stderr.on('data', (chunk) => {
       stderr += chunk;
     });
-    const timer = setTimeout(() => {
+    const terminate = () => {
       timedOut = true;
       if (process.platform === 'win32' && child.pid)
         spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
-      else child.kill();
-    }, timeoutSeconds * 1000);
+      else if (child.pid) process.kill(-child.pid, 'SIGTERM');
+    };
+    const timer = setTimeout(terminate, context.remaining());
+    context.signal.addEventListener('abort', terminate, { once: true });
     child.once('close', (exitCode) => {
       clearTimeout(timer);
+      context.signal.removeEventListener('abort', terminate);
       resolve({ stdout, stderr, exitCode: timedOut ? null : exitCode });
     });
     child.once('error', (error) => {

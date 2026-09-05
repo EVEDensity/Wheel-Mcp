@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { captureRuntimeScreenshot, injectRuntimeInput, launchProject, stopProcess } from './godot-runtime.js';
 import { parse } from 'yaml';
+import { createTimeoutContext } from './timeout.js';
 
 export async function loadScenario(filePath: string) {
   const text = await readFile(filePath, 'utf8');
@@ -37,6 +38,7 @@ export async function executeScenario({
   const evidence = path.resolve(evidenceDir || path.join(process.cwd(), '.harness', 'scenario'));
   await mkdir(evidence, { recursive: true });
   const deadline = Date.now() + globalTimeoutMs;
+  const globalContext = createTimeoutContext(globalTimeoutMs);
   const results: any[] = [];
   let launch: any = null;
   let failed = false;
@@ -52,7 +54,15 @@ export async function executeScenario({
         break;
       }
       const timeoutMs = Math.min(Number(options?.timeoutMs ?? defaultStepTimeoutMs), remaining);
-      result = await runStep(kind, options || {}, { scenario, evidence, bridgePath, godotPath, launch, timeoutMs });
+      result = await runStep(kind, options || {}, {
+        scenario,
+        evidence,
+        bridgePath,
+        godotPath,
+        launch,
+        timeoutMs,
+        timeout: createTimeoutContext(timeoutMs, globalContext.signal),
+      });
       if (kind === 'launch' && result.status === 'PASS') launch = result.launch;
       if (result.status === 'PASS') break;
     }
@@ -90,6 +100,7 @@ async function runStep(kind: string, options: any, context: any) {
           projectPath: options.project || context.scenario.project,
           evidenceDir: context.evidence,
           headless: options.mode !== 'windowed',
+          timeout: context.timeout,
         }),
       };
     if (kind === 'input')
@@ -101,6 +112,7 @@ async function runStep(kind: string, options: any, context: any) {
           bridgePath: context.bridgePath,
           keycode: options.keycode,
           pressed: options.pressed !== false,
+          timeout: context.timeout,
         })
       ).response?.accepted
         ? { status: 'PASS' }
@@ -112,6 +124,7 @@ async function runStep(kind: string, options: any, context: any) {
           projectPath: context.scenario.project,
           evidenceDir: path.join(context.evidence, `step-${options.name || 'screenshot'}`),
           bridgePath: context.bridgePath,
+          timeout: context.timeout,
         })
       ).response?.capability === 'RUNTIME_SCREENSHOT'
         ? { status: 'PASS' }
