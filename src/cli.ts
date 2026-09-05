@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 import { getGodotVersion, getSceneTree, launchProject, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);

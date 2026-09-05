@@ -12,13 +12,24 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/src/cli.js doctor",
-    "test": "npm run build && node --test dist/tests/*.test.js"
+    "test": "npm run build && node --test dist/tests/*.test.js",
+    "format": "prettier --write src tests godot-plugin *.json",
+    "format:check": "prettier --check src tests godot-plugin *.json",
+    "lint": "eslint src tests",
+    "check": "npm run build && npm run format:check && npm run lint && node --test dist/tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@eslint/js": "9.17.0",
     "@types/node": "^22.10.1",
-    "typescript": "^5.6.3"
+    "eslint": "9.17.0",
+    "prettier": "3.5.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "8.18.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.20.2"
   }
 }

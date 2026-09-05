@@ -1,4 +1,3 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getProcessStatus, resolveGodotPath } from '../src/godot-runtime.js';

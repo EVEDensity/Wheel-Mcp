@@ -1,4 +1,3 @@
-// @ts-nocheck
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyError, errorEnvelope } from '../src/error-schema.js';

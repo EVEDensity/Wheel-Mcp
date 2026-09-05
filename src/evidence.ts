@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 

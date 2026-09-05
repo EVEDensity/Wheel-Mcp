@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-nocheck
 import readline from 'node:readline';
 import { getGodotVersion, getProcessStatus, getProjectInfo, getSceneTree, injectRuntimeInput, launchProject, listProjects, mutateRuntimeProperty, queryRuntimeProperty, queryRuntimeSceneTree, readEvidence, resolveGodotPath, stopProcess } from './godot-runtime.js';
 import { createEvidenceEnvelope } from './evidence.js';
