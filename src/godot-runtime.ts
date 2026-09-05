@@ -156,14 +156,15 @@ export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDi
   await mkdir(evidence, { recursive: true });
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
+  const eventsPath = path.join(evidence, 'events.jsonl');
   await writeFile(requestPath, JSON.stringify({ method: 'get_scene_tree' }));
   const projectInfo = await getProjectInfo(root);
   const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath,
+    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_EVENTS: eventsPath,
     GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
   });
   const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath,
+  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath, eventsPath,
     process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
 }
 

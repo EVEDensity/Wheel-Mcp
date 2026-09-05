@@ -3,6 +3,7 @@ extends SceneTree
 func _initialize() -> void:
 	var request_path: String = OS.get_environment("GODOT_HARNESS_REQUEST")
 	var response_path: String = OS.get_environment("GODOT_HARNESS_RESPONSE")
+	var events_path: String = OS.get_environment("GODOT_HARNESS_EVENTS")
 	var main_scene: String = OS.get_environment("GODOT_HARNESS_MAIN_SCENE")
 	if main_scene.is_empty():
 		main_scene = str(ProjectSettings.get_setting("run/main_scene", ""))
@@ -15,6 +16,7 @@ func _initialize() -> void:
 		return
 	var instance: Node = packed.instantiate()
 	root.add_child(instance)
+	_emit_event(events_path, "level_started", {"scene": main_scene})
 	var request: Dictionary = {}
 	var request_file := FileAccess.open(request_path, FileAccess.READ)
 	if request_file != null:
@@ -72,6 +74,7 @@ func _inject_input(response_path: String, request: Dictionary) -> void:
 	event.physical_keycode = keycode
 	event.pressed = bool(request.get("pressed", true))
 	Input.parse_input_event(event)
+	_emit_event(OS.get_environment("GODOT_HARNESS_EVENTS"), "input_injected", {"keycode": keycode, "pressed": event.pressed})
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true})
 
 func _capture_screenshot(response_path: String, request: Dictionary) -> void:
@@ -102,4 +105,15 @@ func _write(response_path: String, value: Dictionary) -> void:
 	var file := FileAccess.open(response_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(value))
+		file.close()
+
+func _emit_event(events_path: String, event_name: String, payload: Dictionary) -> void:
+	if events_path.is_empty():
+		return
+	var file := FileAccess.open(events_path, FileAccess.READ_WRITE)
+	if file == null:
+		file = FileAccess.open(events_path, FileAccess.WRITE)
+	if file != null:
+		file.seek_end()
+		file.store_string(JSON.stringify({"timestamp": Time.get_datetime_string_from_system(true), "event": event_name, "payload": payload, "source": "REAL"}) + "\n")
 		file.close()
