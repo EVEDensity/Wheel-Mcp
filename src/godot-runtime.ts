@@ -2,6 +2,12 @@ import { spawn } from 'node:child_process';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+type LaunchOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; headless?: boolean; extraArgs?: string[] };
+type BridgeOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; bridgePath: string };
+type PropertyOptions = BridgeOptions & { nodePath?: string; property: string; value?: unknown };
+type InputOptions = BridgeOptions & { keycode: number; pressed?: boolean };
+type ScreenshotOptions = BridgeOptions & { screenshotPath?: string };
+
 export function resolveGodotPath(value = process.env.GODOT_PATH) {
   if (!value) throw new Error('GODOT_PATH is required');
   return path.resolve(value);
@@ -78,7 +84,7 @@ export async function getSceneTree(projectPath, scenePath = null) {
     projectPath: root, scenePath: relative, sceneFile, nodes };
 }
 
-export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }) {
+export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }: LaunchOptions) {
   const root = path.resolve(projectPath);
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runs', runId));
@@ -156,7 +162,7 @@ export function getProcessStatus(pid) {
   }
 }
 
-export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDir, bridgePath }) {
+export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDir, bridgePath }: BridgeOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-bridge'));
   await mkdir(evidence, { recursive: true });
@@ -174,7 +180,7 @@ export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDi
     process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
 }
 
-export async function queryRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property }) {
+export async function queryRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property }: PropertyOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property'));
   await mkdir(evidence, { recursive: true });
@@ -190,7 +196,7 @@ export async function queryRuntimeProperty({ godotPath, projectPath, evidenceDir
     process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
 }
 
-export async function mutateRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property, value }) {
+export async function mutateRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property, value }: PropertyOptions & { value: unknown }) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property-write'));
   await mkdir(evidence, { recursive: true });
@@ -206,7 +212,7 @@ export async function mutateRuntimeProperty({ godotPath, projectPath, evidenceDi
     process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
 }
 
-export async function injectRuntimeInput({ godotPath, projectPath, evidenceDir, bridgePath, keycode, pressed = true }) {
+export async function injectRuntimeInput({ godotPath, projectPath, evidenceDir, bridgePath, keycode, pressed = true }: InputOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-input'));
   await mkdir(evidence, { recursive: true });
@@ -222,7 +228,7 @@ export async function injectRuntimeInput({ godotPath, projectPath, evidenceDir, 
     process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
 }
 
-export async function captureRuntimeScreenshot({ godotPath, projectPath, evidenceDir, bridgePath, screenshotPath }) {
+export async function captureRuntimeScreenshot({ godotPath, projectPath, evidenceDir, bridgePath, screenshotPath }: ScreenshotOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-screenshot'));
   await mkdir(evidence, { recursive: true });
