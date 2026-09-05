@@ -1,9 +1,11 @@
 import { CancelledError, TimeoutError } from './timeout.js';
 export type ErrorCode = 'TIMEOUT' | 'CANCELLED' | 'FAILED' | 'INVALID_ARGUMENT' | 'INTERNAL_ERROR';
-export interface ErrorEnvelope { schema_version: '0.1'; source: 'REAL'; status: 'FAIL'; code: ErrorCode; message: string; retryable: boolean; timed_out: boolean; cancelled: boolean; details: unknown; }
+export interface ErrorEnvelope { schema_version: '0.1'; source: 'REAL'; status: 'FAIL'; code: ErrorCode; message: string; retryable: boolean; timed_out: boolean; cancelled?: boolean; details: unknown; }
 export interface ErrorOptions { retryable?: boolean; timed_out?: boolean; cancelled?: boolean; details?: unknown; }
 export function errorEnvelope(code: ErrorCode, message: string, options: ErrorOptions = {}): ErrorEnvelope {
-  return { schema_version: '0.1', source: 'REAL', status: 'FAIL', code, message, retryable: options.retryable ?? code === 'TIMEOUT', timed_out: options.timed_out ?? code === 'TIMEOUT', cancelled: options.cancelled ?? code === 'CANCELLED', details: options.details ?? null };
+  const envelope: ErrorEnvelope = { schema_version: '0.1', source: 'REAL', status: 'FAIL', code, message, retryable: options.retryable ?? code === 'TIMEOUT', timed_out: options.timed_out ?? code === 'TIMEOUT', details: options.details ?? null };
+  if (code === 'CANCELLED' || options.cancelled === true) envelope.cancelled = true;
+  return envelope;
 }
 export function classifyError(error: unknown): ErrorEnvelope {
   const message = error instanceof Error ? error.message : String(error);

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { captureRuntimeScreenshot, injectRuntimeInput, launchProject, stopProcess } from './godot-runtime.js';
 import { parse } from 'yaml';
 import { createTimeoutContext } from './timeout.js';
+import { classifyError } from './error-schema.js';
 
 export async function loadScenario(filePath: string) {
   const text = await readFile(filePath, 'utf8');
@@ -22,6 +23,7 @@ export interface ScenarioOptions {
   globalTimeoutMs?: number;
   retries?: number;
   onFailure?: string;
+  signal?: AbortSignal;
 }
 export async function executeScenario({
   scenario,
@@ -33,12 +35,13 @@ export async function executeScenario({
   globalTimeoutMs = 120000,
   retries = 0,
   onFailure = 'stop',
+  signal,
 }: ScenarioOptions) {
   const startedAt = new Date().toISOString();
   const evidence = path.resolve(evidenceDir || path.join(process.cwd(), '.harness', 'scenario'));
   await mkdir(evidence, { recursive: true });
   const deadline = Date.now() + globalTimeoutMs;
-  const globalContext = createTimeoutContext(globalTimeoutMs);
+  const globalContext = createTimeoutContext(globalTimeoutMs, signal);
   const results: any[] = [];
   let launch: any = null;
   let failed = false;
@@ -73,20 +76,30 @@ export async function executeScenario({
       if (onFailure === 'stop') break;
     }
   }
-  if (launch && !launch.child.killed) await stopProcess(launch.child.pid, 5000).catch(() => undefined);
+  let cleanup = { attempted: false, stopped: true };
+  if (launch && !launch.child.killed && launch.child.pid) {
+    const stopped = await stopProcess(launch.child.pid, Math.min(5000, Math.max(0, globalContext.remaining()))).catch(() => ({ stopped: false }));
+    cleanup = { attempted: true, stopped: stopped.stopped === true };
+  }
+  const cancelled = globalContext.cancelled || signal?.aborted === true;
+  const timedOut = globalContext.timedOut || Date.now() >= deadline;
   const summary = {
     schema_version: '0.1',
     source: 'REAL',
-    status: failed ? 'FAIL' : 'PASS',
+    status: failed || cancelled || timedOut ? 'FAIL' : 'PASS',
+    code: cancelled ? 'CANCELLED' : timedOut ? 'TIMEOUT' : failed ? 'FAILED' : null,
     scenario: scenario.name || null,
     scenarioPath: scenarioPath ? path.resolve(scenarioPath) : null,
     evidenceDir: evidence,
     started_at: startedAt,
     finished_at: new Date().toISOString(),
     steps: results,
-    timed_out: Date.now() > deadline,
+    timed_out: timedOut,
+    cancelled,
+    cleanup,
   };
   await writeFile(path.join(evidence, 'summary.json'), JSON.stringify(summary, null, 2));
+  globalContext.dispose();
   return summary;
 }
 
@@ -130,21 +143,22 @@ async function runStep(kind: string, options: any, context: any) {
         ? { status: 'PASS' }
         : { status: 'FAIL' };
     if (kind === 'wait' || kind === 'assert')
-      return await waitForEvent(context.evidence, options.event, context.timeoutMs);
+      return await waitForEvent(context.evidence, options.event, context.timeoutMs, context.timeout.signal);
     if (kind === 'stop')
       return context.launch
         ? { status: (await stopProcess(context.launch.child.pid, context.timeoutMs)).stopped ? 'PASS' : 'FAIL' }
         : { status: 'PASS' };
     return { status: 'FAIL', error: `unknown scenario step: ${kind}` };
-  } catch (error: any) {
-    return { status: 'FAIL', error: error.message };
+  } catch (error: unknown) {
+    const envelope = classifyError(error);
+    return { status: 'FAIL', code: envelope.code, error: envelope.message, timed_out: envelope.timed_out, cancelled: envelope.cancelled };
   }
 }
 
-async function waitForEvent(evidence: string, expected: string, timeoutMs: number) {
+async function waitForEvent(evidence: string, expected: string, timeoutMs: number, signal?: AbortSignal) {
   const file = path.join(evidence, 'events.jsonl');
   const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && !signal?.aborted) {
     const events = await readFile(file, 'utf8').catch(() => '');
     if (
       events.split(/\r?\n/).some((line) => {
@@ -156,7 +170,15 @@ async function waitForEvent(evidence: string, expected: string, timeoutMs: numbe
       })
     )
       return { status: 'PASS', event: expected };
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, 100);
+      signal?.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+    });
+  }
+  if (signal?.aborted) {
+    const reason = signal.reason as { code?: unknown } | undefined;
+    if (reason?.code === 'TIMEOUT') return { status: 'FAIL', code: 'TIMEOUT', error: `event not observed: ${expected}`, timed_out: true };
+    return { status: 'FAIL', code: 'CANCELLED', error: 'operation cancelled', cancelled: true };
   }
   return { status: 'FAIL', error: `event not observed: ${expected}`, timed_out: true };
 }

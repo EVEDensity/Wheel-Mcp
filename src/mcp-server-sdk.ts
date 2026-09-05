@@ -24,6 +24,8 @@ import {
 import { runRegistry } from './run-registry.js';
 import { buildContextPack } from './context-pack.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
+import { classifyError } from './error-schema.js';
+import { createTimeoutContext, TimeoutContext } from './timeout.js';
 
 const info = { name: 'godot-game-harness-mcp', version: '0.1.0-preview.1' };
 const server = new McpServer(info, { capabilities: { tools: {} } });
@@ -32,57 +34,56 @@ const godotPath = z.string().optional();
 const bridgePath = z.string();
 const evidenceDir = z.string().optional();
 const result = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
+const failure = (error: unknown) => ({ isError: true, content: [{ type: 'text' as const, text: JSON.stringify(classifyError(error)) }] });
+const timeoutMs = z.number().int().nonnegative().optional();
+async function invoke<T>(operation: (context: TimeoutContext) => Promise<T>, requested: number | undefined, signal?: AbortSignal) {
+  const context = createTimeoutContext(requested ?? 30000, signal);
+  try { return result(await operation(context)); }
+  catch (error: unknown) { return failure(error); }
+  finally { context.dispose(); }
+}
 
-server.tool('get_godot_version', 'Read the configured Godot version.', { godotPath }, async ({ godotPath }) =>
-  result({ version: await getGodotVersion(resolveGodotPath(godotPath)) }),
+server.tool('get_godot_version', 'Read the configured Godot version.', { godotPath, timeoutMs }, async ({ godotPath, timeoutMs }, extra) =>
+  invoke(async (context) => ({ version: await getGodotVersion(resolveGodotPath(godotPath), context) }), timeoutMs, extra.signal),
 );
 server.tool(
   'list_projects',
   'Find Godot projects below a directory.',
-  { directory: z.string(), recursive: z.boolean().optional() },
-  async ({ directory, recursive }) => result(await listProjects(directory, recursive === true)),
+  { directory: z.string(), recursive: z.boolean().optional(), timeoutMs },
+  async ({ directory, recursive, timeoutMs }, extra) => invoke((context) => listProjects(directory, recursive === true, context), timeoutMs, extra.signal),
 );
-server.tool('get_project_info', 'Read project metadata and files.', { projectPath }, async ({ projectPath }) =>
-  result(await getProjectInfo(projectPath)),
+server.tool('get_project_info', 'Read project metadata and files.', { projectPath, timeoutMs }, async ({ projectPath, timeoutMs }, extra) =>
+  invoke((context) => getProjectInfo(projectPath, context), timeoutMs, extra.signal),
 );
 server.tool(
   'get_scene_tree',
   'Read a static Godot scene tree.',
-  { projectPath, scenePath: z.string().optional() },
-  async ({ projectPath, scenePath }) => result(await getSceneTree(projectPath, scenePath ?? null)),
+  { projectPath, scenePath: z.string().optional(), timeoutMs },
+  async ({ projectPath, scenePath, timeoutMs }, extra) => invoke((context) => getSceneTree(projectPath, scenePath ?? null, context), timeoutMs, extra.signal),
 );
 server.tool(
   'launch_project',
   'Launch a Godot project.',
-  { godotPath, projectPath, evidenceDir, headless: z.boolean().optional(), extraArgs: z.array(z.string()).optional() },
-  async (args) =>
-    result(
-      (
-        await launchProject({
-          ...args,
-          projectPath: args.projectPath as string,
-          godotPath: args.godotPath || process.env.GODOT_PATH,
-        } as Parameters<typeof launchProject>[0])
-      ).metadata,
-    ),
+  { godotPath, projectPath, evidenceDir, headless: z.boolean().optional(), extraArgs: z.array(z.string()).optional(), timeoutMs },
+  async (args, extra) => invoke(async (context) => (await launchProject({ ...args, timeout: context, projectPath: args.projectPath, godotPath: args.godotPath || process.env.GODOT_PATH })).metadata, args.timeoutMs, extra.signal),
 );
-server.tool('get_debug_output', 'Read process evidence.', { evidenceDir: z.string() }, async ({ evidenceDir }) =>
-  result(await readEvidence(evidenceDir)),
+server.tool('get_debug_output', 'Read process evidence.', { evidenceDir: z.string(), timeoutMs }, async ({ evidenceDir, timeoutMs }, extra) =>
+  invoke(async (context) => { context.throwIfCancelled(); return readEvidence(evidenceDir); }, timeoutMs, extra.signal),
 );
 server.tool(
   'stop_project',
   'Stop a process.',
-  { pid: z.number().int(), timeoutMs: z.number().int().nonnegative().optional() },
-  async ({ pid, timeoutMs }) => result(await stopProcess(pid, timeoutMs ?? 5000)),
+  { pid: z.number().int(), timeoutMs },
+  async ({ pid, timeoutMs }, extra) => invoke((context) => stopProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining())), timeoutMs, extra.signal),
 );
 server.tool(
   'cancel_project',
   'Cancel a process.',
-  { pid: z.number().int(), timeoutMs: z.number().int().nonnegative().optional() },
-  async ({ pid, timeoutMs }) => result(await cancelProcess(pid, timeoutMs ?? 5000)),
+  { pid: z.number().int(), timeoutMs },
+  async ({ pid, timeoutMs }, extra) => invoke((context) => cancelProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining())), timeoutMs, extra.signal),
 );
-server.tool('get_process_status', 'Inspect process state.', { pid: z.number().int() }, async ({ pid }) =>
-  result(getProcessStatus(pid)),
+server.tool('get_process_status', 'Inspect process state.', { pid: z.number().int(), timeoutMs }, async ({ pid, timeoutMs }, extra) =>
+  invoke(async (context) => { context.throwIfCancelled(); return getProcessStatus(pid); }, timeoutMs, extra.signal),
 );
 server.tool(
   'get_runtime_events',
@@ -91,9 +92,9 @@ server.tool(
     evidenceDir: z.string(),
     cursor: z.number().int().nonnegative().optional(),
     limit: z.number().int().positive().optional(),
+    timeoutMs,
   },
-  async ({ evidenceDir, cursor, limit }) =>
-    result(await readRuntimeEventsSince(evidenceDir, cursor ?? 0, limit ?? 100)),
+  async ({ evidenceDir, cursor, limit, timeoutMs }, extra) => invoke(async (context) => { context.throwIfCancelled(); return readRuntimeEventsSince(evidenceDir, cursor ?? 0, limit ?? 100); }, timeoutMs, extra.signal),
 );
 server.tool(
   'subscribe_runtime_events',
@@ -104,53 +105,22 @@ server.tool(
     event: z.string().optional(),
     timeoutMs: z.number().int().positive().optional(),
   },
-  async ({ evidenceDir, cursor, event, timeoutMs }) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs ?? 30000);
-    try {
-      return result(
-        await subscribeRuntimeEvents(evidenceDir, {
-          cursor,
-          signal: controller.signal,
-          filter: event ? (item: any) => item.event === event : undefined,
-        }),
-      );
-    } finally {
-      clearTimeout(timer);
-    }
-  },
+  async ({ evidenceDir, cursor, event, timeoutMs }, extra) => invoke((context) => subscribeRuntimeEvents(evidenceDir, { cursor, signal: context.signal, filter: event ? (item: unknown) => typeof item === 'object' && item !== null && (item as { event?: unknown }).event === event : undefined }), timeoutMs, extra.signal),
 );
-server.tool('list_runs', 'List isolated runs and detect orphans.', {}, async () =>
-  result({ source: 'REAL', runs: runRegistry.list() }),
+server.tool('list_runs', 'List isolated runs and detect orphans.', { timeoutMs }, async ({ timeoutMs }, extra) =>
+  invoke(async (context) => { context.throwIfCancelled(); return { source: 'REAL', runs: runRegistry.list() }; }, timeoutMs, extra.signal),
 );
 server.tool(
   'get_runtime_scene_tree',
   'Query runtime scene tree.',
-  { godotPath, projectPath, bridgePath, evidenceDir },
-  async (args) =>
-    result(
-      await queryRuntimeSceneTree({
-        ...args,
-        projectPath: args.projectPath as string,
-        bridgePath: args.bridgePath as string,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof queryRuntimeSceneTree>[0]),
-    ),
+  { godotPath, projectPath, bridgePath, evidenceDir, timeoutMs },
+  async (args, extra) => invoke((context) => queryRuntimeSceneTree({ ...args, timeout: context, projectPath: args.projectPath, bridgePath: args.bridgePath, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'get_runtime_property',
   'Read a runtime property.',
-  { godotPath, projectPath, bridgePath, evidenceDir, nodePath: z.string().optional(), property: z.string() },
-  async (args) =>
-    result(
-      await queryRuntimeProperty({
-        ...args,
-        projectPath: args.projectPath as string,
-        bridgePath: args.bridgePath as string,
-        property: args.property as string,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof queryRuntimeProperty>[0]),
-    ),
+  { godotPath, projectPath, bridgePath, evidenceDir, nodePath: z.string().optional(), property: z.string(), timeoutMs },
+  async (args, extra) => invoke((context) => queryRuntimeProperty({ ...args, timeout: context, projectPath: args.projectPath, bridgePath: args.bridgePath, property: args.property, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'set_runtime_property',
@@ -163,72 +133,39 @@ server.tool(
     nodePath: z.string().optional(),
     property: z.string(),
     value: z.unknown(),
+    timeoutMs,
   },
-  async (args) =>
-    result(
-      await mutateRuntimeProperty({
-        ...args,
-        projectPath: args.projectPath as string,
-        bridgePath: args.bridgePath as string,
-        property: args.property as string,
-        value: args.value,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof mutateRuntimeProperty>[0]),
-    ),
+  async (args, extra) => invoke((context) => mutateRuntimeProperty({ ...args, timeout: context, projectPath: args.projectPath, bridgePath: args.bridgePath, property: args.property, value: args.value, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'inject_runtime_input',
   'Inject a runtime key event.',
-  { godotPath, projectPath, bridgePath, evidenceDir, keycode: z.number().int(), pressed: z.boolean().optional() },
-  async (args) =>
-    result(
-      await injectRuntimeInput({
-        ...args,
-        projectPath: args.projectPath as string,
-        bridgePath: args.bridgePath as string,
-        keycode: args.keycode as number,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof injectRuntimeInput>[0]),
-    ),
+  { godotPath, projectPath, bridgePath, evidenceDir, keycode: z.number().int(), pressed: z.boolean().optional(), timeoutMs },
+  async (args, extra) => invoke((context) => injectRuntimeInput({ ...args, timeout: context, projectPath: args.projectPath, bridgePath: args.bridgePath, keycode: args.keycode, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'capture_runtime_screenshot',
   'Capture a runtime PNG.',
-  { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional() },
-  async (args) =>
-    result(
-      await captureRuntimeScreenshot({
-        ...args,
-        projectPath: args.projectPath as string,
-        bridgePath: args.bridgePath as string,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof captureRuntimeScreenshot>[0]),
-    ),
+  { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
+  async (args, extra) => invoke((context) => captureRuntimeScreenshot({ ...args, timeout: context, projectPath: args.projectPath, bridgePath: args.bridgePath, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'get_context_pack',
   'Build a read-only context pack.',
-  { godotPath, projectPath, evidenceDir, scenePath: z.string().optional() },
-  async (args) =>
-    result(
-      await buildContextPack({
-        ...args,
-        projectPath: args.projectPath as string,
-        godotPath: args.godotPath || process.env.GODOT_PATH,
-      } as Parameters<typeof buildContextPack>[0]),
-    ),
+  { godotPath, projectPath, evidenceDir, scenePath: z.string().optional(), timeoutMs },
+  async (args, extra) => invoke((context) => buildContextPack({ ...args, timeout: context, projectPath: args.projectPath, godotPath: args.godotPath || process.env.GODOT_PATH }), args.timeoutMs, extra.signal),
 );
 server.tool(
   'git_checkpoint',
   'Capture Git checkpoint evidence.',
-  { projectPath, evidenceDir },
-  async ({ projectPath, evidenceDir }) => result(await gitCheckpoint(projectPath, evidenceDir)),
+  { projectPath, evidenceDir, timeoutMs },
+  async ({ projectPath, evidenceDir, timeoutMs }, extra) => invoke(async (context) => { context.throwIfCancelled(); return gitCheckpoint(projectPath, evidenceDir); }, timeoutMs, extra.signal),
 );
 server.tool(
   'git_recovery',
   'Reverse an explicit patch.',
-  { projectPath, patchPath: z.string() },
-  async ({ projectPath, patchPath }) => result(await gitRecovery(projectPath, patchPath)),
+  { projectPath, patchPath: z.string(), timeoutMs },
+  async ({ projectPath, patchPath, timeoutMs }, extra) => invoke(async (context) => { context.throwIfCancelled(); return gitRecovery(projectPath, patchPath); }, timeoutMs, extra.signal),
 );
 
 await server.connect(new StdioServerTransport());
