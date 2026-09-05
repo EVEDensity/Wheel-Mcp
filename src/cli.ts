@@ -11,9 +11,10 @@ import { executeScenario, loadScenario } from './scenario-executor.js';
 import { buildContextPack } from './context-pack.js';
 import { classifyError } from './error-schema.js';
 import { createTimeoutContext } from './timeout.js';
+import type { CliOptions } from './tool-types.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
-const options: any = parseOptions(args);
+const options: CliOptions = parseOptions(args);
 const commandTimeoutMs = Number(options.timeout || 30000);
 const commandContext = createTimeoutContext(commandTimeoutMs);
 

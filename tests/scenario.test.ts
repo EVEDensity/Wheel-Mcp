@@ -24,5 +24,5 @@ test('scenario loader accepts YAML and failed event assertions are recorded', as
   assert.equal(result.source, 'REAL');
   assert.equal(result.status, 'FAIL');
   assert.equal(result.steps[0].kind, 'assert');
-  assert.match(result.steps[0].error, /never_emitted/);
+  assert.match(result.steps[0].error ?? '', /never_emitted/);
 });

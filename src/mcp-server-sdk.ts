@@ -26,6 +26,7 @@ import { buildContextPack } from './context-pack.js';
 import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
 import { createTimeoutContext, TimeoutContext } from './timeout.js';
+import type { McpFailureResult, McpToolResult } from './tool-types.js';
 
 const info = { name: 'godot-game-harness-mcp', version: '0.1.0-preview.1' };
 const server = new McpServer(info, { capabilities: { tools: {} } });
@@ -33,8 +34,8 @@ const projectPath = z.string();
 const godotPath = z.string().optional();
 const bridgePath = z.string();
 const evidenceDir = z.string().optional();
-const result = (value: unknown) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
-const failure = (error: unknown) => ({
+const result = (value: unknown): McpToolResult => ({ content: [{ type: 'text', text: JSON.stringify(value) }] });
+const failure = (error: unknown): McpFailureResult => ({
   isError: true,
   content: [{ type: 'text' as const, text: JSON.stringify(classifyError(error)) }],
 });

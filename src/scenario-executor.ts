@@ -4,13 +4,21 @@ import { captureRuntimeScreenshot, injectRuntimeInput, launchProject, stopProces
 import { parse } from 'yaml';
 import { createTimeoutContext } from './timeout.js';
 import { classifyError } from './error-schema.js';
+import type {
+  LaunchHandle,
+  ScenarioDefinition,
+  ScenarioExecutionContext,
+  ScenarioRunStepResult,
+  ScenarioStepOptions,
+  ScenarioStepResult,
+} from './tool-types.js';
 
 export async function loadScenario(filePath: string) {
   const text = await readFile(filePath, 'utf8');
   const value = parse(text);
   if (!value || typeof value !== 'object' || !Array.isArray(value.steps))
     throw new Error('scenario must contain steps[]');
-  return value;
+  return value as ScenarioDefinition;
 }
 
 export interface ScenarioOptions {
@@ -42,14 +50,15 @@ export async function executeScenario({
   await mkdir(evidence, { recursive: true });
   const deadline = Date.now() + globalTimeoutMs;
   const globalContext = createTimeoutContext(globalTimeoutMs, signal);
-  const results: any[] = [];
-  let launch: any = null;
+  const results: ScenarioStepResult[] = [];
+  let launch: LaunchHandle | null = null;
   let failed = false;
   for (let index = 0; index < scenario.steps.length; index += 1) {
     const step = scenario.steps[index] || {};
-    const [kind, options]: any = Object.entries(step)[0] || [];
+    const [kind, rawOptions] = Object.entries(step as Record<string, unknown>)[0] || [];
+    const options = (rawOptions && typeof rawOptions === 'object' ? rawOptions : {}) as ScenarioStepOptions;
     const attempts = Math.max(1, Number(options?.retries ?? retries) + 1);
-    let result: any = null;
+    let result: ScenarioRunStepResult = { status: 'FAIL' };
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       const remaining = deadline - Date.now();
       if (remaining <= 0) {
@@ -57,7 +66,7 @@ export async function executeScenario({
         break;
       }
       const timeoutMs = Math.min(Number(options?.timeoutMs ?? defaultStepTimeoutMs), remaining);
-      result = await runStep(kind, options || {}, {
+      result = await runStep(kind, options, {
         scenario,
         evidence,
         bridgePath,
@@ -66,12 +75,12 @@ export async function executeScenario({
         timeoutMs,
         timeout: createTimeoutContext(timeoutMs, globalContext.signal),
       });
-      if (kind === 'launch' && result.status === 'PASS') launch = result.launch;
+      if (kind === 'launch' && result.status === 'PASS' && result.launch) launch = result.launch;
       if (result.status === 'PASS') break;
     }
-    if (result?.launch) delete result.launch;
-    results.push({ index, kind, attempts: result?.attempts || 1, ...result });
-    if (result?.status !== 'PASS') {
+    if (result.launch) delete result.launch;
+    results.push({ ...result, index, kind, attempts: 1, status: result.status as ScenarioStepResult['status'] });
+    if (result.status !== 'PASS') {
       failed = true;
       if (onFailure === 'stop') break;
     }
@@ -105,14 +114,18 @@ export async function executeScenario({
   return summary;
 }
 
-async function runStep(kind: string, options: any, context: any) {
+async function runStep(
+  kind: string,
+  options: ScenarioStepOptions,
+  context: ScenarioExecutionContext,
+): Promise<ScenarioRunStepResult> {
   try {
     if (kind === 'launch')
       return {
         status: 'PASS',
         launch: await launchProject({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: options.project || context.scenario.project,
+          projectPath: requiredScenarioValue(options.project || context.scenario.project, 'project'),
           evidenceDir: context.evidence,
           headless: options.mode !== 'windowed',
           timeout: context.timeout,
@@ -122,10 +135,10 @@ async function runStep(kind: string, options: any, context: any) {
       return (
         await injectRuntimeInput({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: context.scenario.project,
+          projectPath: requiredScenarioValue(context.scenario.project, 'project'),
           evidenceDir: context.evidence,
-          bridgePath: context.bridgePath,
-          keycode: options.keycode,
+          bridgePath: requiredScenarioValue(context.bridgePath, 'bridgePath'),
+          keycode: requiredScenarioNumber(options.keycode, 'keycode'),
           pressed: options.pressed !== false,
           timeout: context.timeout,
         })
@@ -136,19 +149,28 @@ async function runStep(kind: string, options: any, context: any) {
       return (
         await captureRuntimeScreenshot({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: context.scenario.project,
+          projectPath: requiredScenarioValue(context.scenario.project, 'project'),
           evidenceDir: path.join(context.evidence, `step-${options.name || 'screenshot'}`),
-          bridgePath: context.bridgePath,
+          bridgePath: requiredScenarioValue(context.bridgePath, 'bridgePath'),
           timeout: context.timeout,
         })
       ).response?.capability === 'RUNTIME_SCREENSHOT'
         ? { status: 'PASS' }
         : { status: 'FAIL' };
     if (kind === 'wait' || kind === 'assert')
-      return await waitForEvent(context.evidence, options.event, context.timeoutMs, context.timeout.signal);
+      return await waitForEvent(
+        context.evidence,
+        requiredScenarioValue(options.event, 'event'),
+        context.timeoutMs,
+        context.timeout.signal,
+      );
     if (kind === 'stop')
       return context.launch
-        ? { status: (await stopProcess(context.launch.child.pid, context.timeoutMs)).stopped ? 'PASS' : 'FAIL' }
+        ? {
+            status: (await stopProcess(context.launch.child.pid!, context.timeoutMs)).stopped
+              ? ('PASS' as const)
+              : ('FAIL' as const),
+          }
         : { status: 'PASS' };
     return { status: 'FAIL', error: `unknown scenario step: ${kind}` };
   } catch (error: unknown) {
@@ -161,6 +183,16 @@ async function runStep(kind: string, options: any, context: any) {
       cancelled: envelope.cancelled,
     };
   }
+}
+
+function requiredScenarioValue(value: string | undefined, name: string): string {
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+
+function requiredScenarioNumber(value: number | undefined, name: string): number {
+  if (value === undefined || !Number.isFinite(value)) throw new Error(`${name} is required`);
+  return value;
 }
 
 async function waitForEvent(evidence: string, expected: string, timeoutMs: number, signal?: AbortSignal) {
