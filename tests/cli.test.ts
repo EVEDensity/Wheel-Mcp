@@ -9,12 +9,19 @@ test('CLI scene-tree returns static capability result', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-cli-'));
   await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
   await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
-  const result = await new Promise(resolve => {
-    const child = spawn(process.execPath, ['build/src/cli.js', 'scene-tree', '--project', root], { stdio: ['ignore', 'pipe', 'pipe'] });
-    let stdout = '', stderr = '';
-    child.stdout.on('data', chunk => { stdout += chunk; });
-    child.stderr.on('data', chunk => { stderr += chunk; });
-    child.once('close', code => resolve({ code, stdout, stderr }));
+  const result = await new Promise<{ code: number | null; stdout: string; stderr: string }>((resolve) => {
+    const child = spawn(process.execPath, ['build/src/cli.js', 'scene-tree', '--project', root], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '',
+      stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.once('close', (code) => resolve({ code, stdout, stderr }));
   });
   assert.equal(result.code, 0, result.stderr);
   const value = JSON.parse(result.stdout);

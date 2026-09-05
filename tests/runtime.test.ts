@@ -7,7 +7,10 @@ test('resolveGodotPath requires an explicit executable', () => {
 });
 
 test('resolveGodotPath normalizes an executable path', () => {
-  assert.equal(resolveGodotPath('E:/AI/Godot_v4.7.2-stable_win64_console.exe').endsWith('Godot_v4.7.2-stable_win64_console.exe'), true);
+  assert.equal(
+    resolveGodotPath('E:/AI/Godot_v4.7.2-stable_win64_console.exe').endsWith('Godot_v4.7.2-stable_win64_console.exe'),
+    true,
+  );
 });
 
 test('getProcessStatus reports a real missing process', () => {

@@ -3,19 +3,47 @@ import path from 'node:path';
 import { getGodotVersion, getProjectInfo, getSceneTree, resolveGodotPath } from './godot-runtime.js';
 import { runGit } from './git-recovery.js';
 
-export async function buildContextPack({ projectPath, godotPath, evidenceDir, scenePath = null, maxErrorBytes = 12000 }) {
+export interface ContextPackOptions {
+  projectPath: string;
+  godotPath?: string;
+  evidenceDir?: string;
+  scenePath?: string | null;
+  maxErrorBytes?: number;
+}
+export async function buildContextPack({
+  projectPath,
+  godotPath,
+  evidenceDir,
+  scenePath = null,
+  maxErrorBytes = 12000,
+}: ContextPackOptions) {
   const root = path.resolve(projectPath);
   const project = await getProjectInfo(root);
   const godot = { path: resolveGodotPath(godotPath), version: await getGodotVersion(resolveGodotPath(godotPath)) };
-  const scene_tree = project.mainScene ? await getSceneTree(root, scenePath || project.mainScene).catch(error => ({ source: 'REAL', status: 'FAIL', error: error.message })) : null;
+  const scene_tree = project.mainScene
+    ? await getSceneTree(root, scenePath || project.mainScene).catch((error: unknown) => ({
+        source: 'REAL',
+        status: 'FAIL',
+        error: error instanceof Error ? error.message : String(error),
+      }))
+    : null;
   const git = await gitSnapshot(root);
   const recent_errors = evidenceDir ? await readRecentErrors(evidenceDir, maxErrorBytes) : [];
-  return { schema_version: '0.1', source: 'REAL', project: { path: root, name: project.name, files: project.files }, godot, main_scene: { path: project.mainScene, scene_tree }, recent_errors, git, active_run: null };
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    project: { path: root, name: project.name, files: project.files },
+    godot,
+    main_scene: { path: project.mainScene, scene_tree },
+    recent_errors,
+    git,
+    active_run: null,
+  };
 }
 
 async function gitSnapshot(root: string) {
   const head = await runGit(root, ['rev-parse', 'HEAD']);
-  const status: any = await runGit(root, ['status', '--short']);
+  const status = await runGit(root, ['status', '--short']);
   return { head: head.stdout.trim(), status: status.stdout.trim(), source: 'REAL' };
 }
 

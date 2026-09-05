@@ -8,6 +8,7 @@ import { createEvidenceEnvelope } from '../src/evidence.js';
 test('Evidence Envelope writes request/response JSONL and redacts secrets', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-evidence-'));
   const envelope = await createEvidenceEnvelope(root, { run_id: 'test-run' });
+  assert.ok(envelope);
   await envelope.request({ method: 'tools/call', params: { api_key: 'hidden', value: 1 } });
   await envelope.response({ jsonrpc: '2.0', id: 1, result: { status: 'PASS' } });
   const requests = await readFile(path.join(root, 'requests.jsonl'), 'utf8');

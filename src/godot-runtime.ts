@@ -3,7 +3,13 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createTimeoutContext, TimeoutContext } from './timeout.js';
 
-type LaunchOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; headless?: boolean; extraArgs?: string[] };
+type LaunchOptions = {
+  godotPath?: string;
+  projectPath: string;
+  evidenceDir?: string;
+  headless?: boolean;
+  extraArgs?: string[];
+};
 type BridgeOptions = { godotPath?: string; projectPath: string; evidenceDir?: string; bridgePath: string };
 type PropertyOptions = BridgeOptions & { nodePath?: string; property: string; value?: unknown };
 type InputOptions = BridgeOptions & { keycode: number; pressed?: boolean };
@@ -20,12 +26,12 @@ export async function getGodotVersion(godotPath: string): Promise<string> {
   return result.stdout.trim();
 }
 
-export async function listProjects(directory, recursive = false) {
+export async function listProjects(directory: string, recursive = false) {
   const root = path.resolve(directory);
-  const projects = [];
+  const projects: string[] = [];
   async function visit(current) {
     const entries = await readdir(current, { withFileTypes: true });
-    if (entries.some(entry => entry.isFile() && entry.name === 'project.godot')) {
+    if (entries.some((entry) => entry.isFile() && entry.name === 'project.godot')) {
       projects.push(path.join(current, 'project.godot'));
       if (!recursive) return;
     }
@@ -39,13 +45,13 @@ export async function listProjects(directory, recursive = false) {
   return { schema_version: '0.1', source: 'REAL', directory: root, recursive, projects: projects.sort() };
 }
 
-export async function getProjectInfo(projectPath) {
+export async function getProjectInfo(projectPath: string) {
   const root = path.resolve(projectPath);
   const projectFile = path.join(root, 'project.godot');
   const projectText = await readFile(projectFile, 'utf8');
   const name = projectText.match(/^config\/name\s*=\s*"([^"]*)"/m)?.[1] || null;
   const mainScene = projectText.match(/^run\/main_scene\s*=\s*"([^"]*)"/m)?.[1] || null;
-  const files = [];
+  const files: string[] = [];
   async function collect(current) {
     for (const entry of await readdir(current, { withFileTypes: true })) {
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
@@ -56,20 +62,30 @@ export async function getProjectInfo(projectPath) {
   }
   await stat(root);
   await collect(root);
-  return { schema_version: '0.1', source: 'REAL', projectPath: root, projectFile, name, mainScene, files: files.sort() };
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    projectPath: root,
+    projectFile,
+    name,
+    mainScene,
+    files: files.sort(),
+  };
 }
 
 // Static editor-plane query: this reads a real .tscn and never claims runtime state.
-export async function getSceneTree(projectPath, scenePath = null) {
+export async function getSceneTree(projectPath: string, scenePath: string | null = null) {
   const root = path.resolve(projectPath);
   await stat(root);
   const relative = scenePath || (await getProjectInfo(root)).mainScene;
-  if (!relative || !relative.startsWith('res://')) throw new Error('scenePath must use res:// or project main_scene must be configured');
+  if (!relative || !relative.startsWith('res://'))
+    throw new Error('scenePath must use res:// or project main_scene must be configured');
   const sceneFile = path.resolve(root, relative.slice('res://'.length));
-  if (sceneFile !== root && !sceneFile.startsWith(`${root}${path.sep}`)) throw new Error('scenePath escapes project root');
+  if (sceneFile !== root && !sceneFile.startsWith(`${root}${path.sep}`))
+    throw new Error('scenePath escapes project root');
   if (path.extname(sceneFile).toLowerCase() !== '.tscn') throw new Error('scenePath must reference a .tscn file');
   const text = await readFile(sceneFile, 'utf8');
-  const nodes = [];
+  const nodes: Array<{ name: string; type: string; parent: string | null; owner: string | null }> = [];
   for (const line of text.split(/\r?\n/)) {
     const match = line.match(/^\[node\s+([^\]]+)\]/);
     if (!match) continue;
@@ -81,11 +97,25 @@ export async function getSceneTree(projectPath, scenePath = null) {
     nodes.push({ name: attrs.name, type: attrs.type, parent: attrs.parent || null, owner: attrs.owner || null });
   }
   if (nodes.length === 0) throw new Error('scene contains no parseable nodes');
-  return { schema_version: '0.1', source: 'REAL', capability: 'STATIC_SCENE_TREE', runtime: false,
-    projectPath: root, scenePath: relative, sceneFile, nodes };
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    capability: 'STATIC_SCENE_TREE',
+    runtime: false,
+    projectPath: root,
+    scenePath: relative,
+    sceneFile,
+    nodes,
+  };
 }
 
-export async function launchProject({ godotPath, projectPath, evidenceDir, headless = false, extraArgs = [] }: LaunchOptions) {
+export async function launchProject({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  headless = false,
+  extraArgs = [],
+}: LaunchOptions) {
   const root = path.resolve(projectPath);
   const runId = new Date().toISOString().replace(/[:.]/g, '-');
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runs', runId));
@@ -93,55 +123,78 @@ export async function launchProject({ godotPath, projectPath, evidenceDir, headl
   const stdoutPath = path.join(evidence, 'stdout.log');
   const stderrPath = path.join(evidence, 'stderr.log');
   const metadataPath = path.join(evidence, 'process.json');
-  const args = [];
+  const args: string[] = [];
   if (headless) args.push('--headless');
   args.push('--path', root, ...extraArgs);
   const child = spawn(resolveGodotPath(godotPath), args, {
     cwd: root,
     windowsHide: true,
-    env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) }
+    env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) },
   });
   const metadata: any = {
-    schema_version: '0.1', source: 'REAL', started: true,
-    pid: child.pid, executable: resolveGodotPath(godotPath), arguments: args,
-    project_path: root, started_at: new Date().toISOString(), exit_code: null,
-    timed_out: false, lifecycle: 'STARTING', stdout: stdoutPath, stderr: stderrPath
+    schema_version: '0.1',
+    source: 'REAL',
+    started: true,
+    pid: child.pid,
+    executable: resolveGodotPath(godotPath),
+    arguments: args,
+    project_path: root,
+    started_at: new Date().toISOString(),
+    exit_code: null,
+    timed_out: false,
+    lifecycle: 'STARTING',
+    stdout: stdoutPath,
+    stderr: stderrPath,
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-  let stdout = '', stderr = '';
-  child.stdout.on('data', chunk => { stdout += chunk; });
-  child.stderr.on('data', chunk => { stderr += chunk; });
-  child.once('spawn', async () => { metadata.lifecycle = 'RUNNING'; await writeFile(metadataPath, JSON.stringify(metadata, null, 2)); });
-  const close = new Promise(resolve => child.once('close', async code => {
-    metadata.exit_code = code;
-    metadata.finished_at = new Date().toISOString();
-    metadata.lifecycle = code === 0 ? 'EXITED' : 'FAILED';
-    await writeFile(stdoutPath, stdout);
-    await writeFile(stderrPath, stderr);
+  let stdout = '',
+    stderr = '';
+  child.stdout.on('data', (chunk) => {
+    stdout += chunk;
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr += chunk;
+  });
+  child.once('spawn', async () => {
+    metadata.lifecycle = 'RUNNING';
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-    resolve(metadata);
-  }));
+  });
+  const close = new Promise((resolve) =>
+    child.once('close', async (code) => {
+      metadata.exit_code = code;
+      metadata.finished_at = new Date().toISOString();
+      metadata.lifecycle = code === 0 ? 'EXITED' : 'FAILED';
+      await writeFile(stdoutPath, stdout);
+      await writeFile(stderrPath, stderr);
+      await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+      resolve(metadata);
+    }),
+  );
   return { metadata, child, close };
 }
 
 export async function stopProcess(pid, timeoutMs = 5000) {
   if (!Number.isInteger(Number(pid))) throw new Error('pid must be an integer');
-  if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0) throw new Error('timeoutMs must be a non-negative integer');
+  if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0)
+    throw new Error('timeoutMs must be a non-negative integer');
   const processHandle = Number(pid);
   try {
     if (process.platform === 'win32') {
       const killer = spawn('taskkill', ['/PID', String(processHandle), '/T', '/F'], { windowsHide: true });
-      await new Promise(resolve => killer.once('close', resolve));
+      await new Promise((resolve) => killer.once('close', resolve));
     } else process.kill(processHandle);
-  } catch (error) {
-    if (error.code !== 'ESRCH') throw error;
+  } catch (error: unknown) {
+    if (!(error instanceof Error) || (error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
   }
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    try { process.kill(processHandle, 0); } catch (error) {
-      if (error.code === 'ESRCH') return { stopped: true, pid: processHandle };
+    try {
+      process.kill(processHandle, 0);
+    } catch (error: unknown) {
+      if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ESRCH')
+        return { stopped: true, pid: processHandle };
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return { stopped: false, pid: processHandle, timed_out: true };
 }
@@ -157,8 +210,9 @@ export function getProcessStatus(pid) {
   try {
     process.kill(processHandle, 0);
     return { schema_version: '0.1', source: 'REAL', pid: processHandle, running: true };
-  } catch (error) {
-    if (error.code === 'ESRCH') return { schema_version: '0.1', source: 'REAL', pid: processHandle, running: false };
+  } catch (error: unknown) {
+    if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ESRCH')
+      return { schema_version: '0.1', source: 'REAL', pid: processHandle, running: false };
     throw error;
   }
 }
@@ -172,16 +226,41 @@ export async function queryRuntimeSceneTree({ godotPath, projectPath, evidenceDi
   const eventsPath = path.join(evidence, 'events.jsonl');
   await writeFile(requestPath, JSON.stringify({ method: 'get_scene_tree' }));
   const projectInfo = await getProjectInfo(root);
-  const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_EVENTS: eventsPath,
-    GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
-  });
-  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath, eventsPath,
-    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+  const result = await runProcess(
+    resolveGodotPath(godotPath),
+    ['--headless', '--path', root, '--script', path.resolve(bridgePath)],
+    root,
+    30,
+    {
+      GODOT_HARNESS_REQUEST: requestPath,
+      GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_EVENTS: eventsPath,
+      GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+    },
+  );
+  const response = await readFile(responsePath, 'utf8')
+    .then(JSON.parse)
+    .catch(() => null);
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: evidence,
+    requestPath,
+    responsePath,
+    eventsPath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr },
+    response,
+  };
 }
 
-export async function queryRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property }: PropertyOptions) {
+export async function queryRuntimeProperty({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  bridgePath,
+  nodePath = '.',
+  property,
+}: PropertyOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property'));
   await mkdir(evidence, { recursive: true });
@@ -189,15 +268,40 @@ export async function queryRuntimeProperty({ godotPath, projectPath, evidenceDir
   const responsePath = path.join(evidence, 'response.json');
   await writeFile(requestPath, JSON.stringify({ method: 'get_property', nodePath, property }));
   const projectInfo = await getProjectInfo(root);
-  const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
-  });
-  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath,
-    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+  const result = await runProcess(
+    resolveGodotPath(godotPath),
+    ['--headless', '--path', root, '--script', path.resolve(bridgePath)],
+    root,
+    30,
+    {
+      GODOT_HARNESS_REQUEST: requestPath,
+      GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+    },
+  );
+  const response = await readFile(responsePath, 'utf8')
+    .then(JSON.parse)
+    .catch(() => null);
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: evidence,
+    requestPath,
+    responsePath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr },
+    response,
+  };
 }
 
-export async function mutateRuntimeProperty({ godotPath, projectPath, evidenceDir, bridgePath, nodePath = '.', property, value }: PropertyOptions & { value: unknown }) {
+export async function mutateRuntimeProperty({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  bridgePath,
+  nodePath = '.',
+  property,
+  value,
+}: PropertyOptions & { value: unknown }) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property-write'));
   await mkdir(evidence, { recursive: true });
@@ -205,15 +309,39 @@ export async function mutateRuntimeProperty({ godotPath, projectPath, evidenceDi
   const responsePath = path.join(evidence, 'response.json');
   await writeFile(requestPath, JSON.stringify({ method: 'set_property', nodePath, property, value }));
   const projectInfo = await getProjectInfo(root);
-  const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
-  });
-  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath,
-    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+  const result = await runProcess(
+    resolveGodotPath(godotPath),
+    ['--headless', '--path', root, '--script', path.resolve(bridgePath)],
+    root,
+    30,
+    {
+      GODOT_HARNESS_REQUEST: requestPath,
+      GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+    },
+  );
+  const response = await readFile(responsePath, 'utf8')
+    .then(JSON.parse)
+    .catch(() => null);
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: evidence,
+    requestPath,
+    responsePath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr },
+    response,
+  };
 }
 
-export async function injectRuntimeInput({ godotPath, projectPath, evidenceDir, bridgePath, keycode, pressed = true }: InputOptions) {
+export async function injectRuntimeInput({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  bridgePath,
+  keycode,
+  pressed = true,
+}: InputOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-input'));
   await mkdir(evidence, { recursive: true });
@@ -221,36 +349,81 @@ export async function injectRuntimeInput({ godotPath, projectPath, evidenceDir, 
   const responsePath = path.join(evidence, 'response.json');
   await writeFile(requestPath, JSON.stringify({ method: 'inject_input', keycode, pressed }));
   const projectInfo = await getProjectInfo(root);
-  const result = await runProcess(resolveGodotPath(godotPath), ['--headless', '--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
-  });
-  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, requestPath, responsePath,
-    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+  const result = await runProcess(
+    resolveGodotPath(godotPath),
+    ['--headless', '--path', root, '--script', path.resolve(bridgePath)],
+    root,
+    30,
+    {
+      GODOT_HARNESS_REQUEST: requestPath,
+      GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+    },
+  );
+  const response = await readFile(responsePath, 'utf8')
+    .then(JSON.parse)
+    .catch(() => null);
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: evidence,
+    requestPath,
+    responsePath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr },
+    response,
+  };
 }
 
-export async function captureRuntimeScreenshot({ godotPath, projectPath, evidenceDir, bridgePath, screenshotPath }: ScreenshotOptions) {
+export async function captureRuntimeScreenshot({
+  godotPath,
+  projectPath,
+  evidenceDir,
+  bridgePath,
+  screenshotPath,
+}: ScreenshotOptions) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-screenshot'));
   await mkdir(evidence, { recursive: true });
   const outputPath = path.resolve(screenshotPath || path.join(evidence, 'screenshot.png'));
-  if (outputPath !== evidence && !outputPath.startsWith(`${evidence}${path.sep}`)) throw new Error('screenshotPath must be inside evidenceDir');
+  if (outputPath !== evidence && !outputPath.startsWith(`${evidence}${path.sep}`))
+    throw new Error('screenshotPath must be inside evidenceDir');
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
   await writeFile(requestPath, JSON.stringify({ method: 'capture_screenshot', path: outputPath }));
   const projectInfo = await getProjectInfo(root);
-  const result = await runProcess(resolveGodotPath(godotPath), ['--path', root, '--script', path.resolve(bridgePath)], root, 30, {
-    GODOT_HARNESS_REQUEST: requestPath, GODOT_HARNESS_RESPONSE: responsePath, GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || ''
-  });
-  const response = await readFile(responsePath, 'utf8').then(JSON.parse).catch(() => null);
-  const imageStat = await stat(outputPath).then(value => ({ bytes: value.size })).catch(() => null);
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: evidence, screenshotPath: outputPath, image: imageStat,
-    requestPath, responsePath, process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr }, response };
+  const result = await runProcess(
+    resolveGodotPath(godotPath),
+    ['--path', root, '--script', path.resolve(bridgePath)],
+    root,
+    30,
+    {
+      GODOT_HARNESS_REQUEST: requestPath,
+      GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+    },
+  );
+  const response = await readFile(responsePath, 'utf8')
+    .then(JSON.parse)
+    .catch(() => null);
+  const imageStat = await stat(outputPath)
+    .then((value) => ({ bytes: value.size }))
+    .catch(() => null);
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    evidenceDir: evidence,
+    screenshotPath: outputPath,
+    image: imageStat,
+    requestPath,
+    responsePath,
+    process: { exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr },
+    response,
+  };
 }
 
 export async function stopLaunchedProcess(launch, timeoutMs = 5000) {
   const result = await stopProcess(launch.child.pid, timeoutMs);
-  await Promise.race([launch.close, new Promise(resolve => setTimeout(resolve, timeoutMs))]);
+  await Promise.race([launch.close, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
   return result;
 }
 
@@ -259,7 +432,7 @@ export async function readEvidence(evidenceDir) {
   const [metadata, stdout, stderr] = await Promise.all([
     readFile(path.join(root, 'process.json'), 'utf8').then(JSON.parse),
     readFile(path.join(root, 'stdout.log'), 'utf8').catch(() => ''),
-    readFile(path.join(root, 'stderr.log'), 'utf8').catch(() => '')
+    readFile(path.join(root, 'stderr.log'), 'utf8').catch(() => ''),
   ]);
   return { metadata, stdout, stderr };
 }
@@ -267,27 +440,54 @@ export async function readEvidence(evidenceDir) {
 export async function readRuntimeEvents(evidenceDir: string) {
   const root = path.resolve(evidenceDir);
   const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
-  const events = text.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+  const events = text
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
   return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events };
 }
 
 export async function readRuntimeEventsSince(evidenceDir: string, cursor = 0, limit = 100) {
   const result = await readRuntimeEvents(evidenceDir);
-  return { ...result, cursor, next_cursor: Math.min(result.events.length, cursor + limit), events: result.events.slice(cursor, cursor + limit) };
+  return {
+    ...result,
+    cursor,
+    next_cursor: Math.min(result.events.length, cursor + limit),
+    events: result.events.slice(cursor, cursor + limit),
+  };
 }
 
-function runProcess(executable: string, args: string[], cwd: string, timeoutSeconds: number, extraEnv: Record<string, string> = {}): Promise<any> {
-  return new Promise(resolve => {
+function runProcess(
+  executable: string,
+  args: string[],
+  cwd: string,
+  timeoutSeconds: number,
+  extraEnv: Record<string, string> = {},
+): Promise<any> {
+  return new Promise((resolve) => {
     const child = spawn(executable, args, { cwd, windowsHide: true, env: { ...process.env, ...extraEnv } });
-    let stdout = '', stderr = '', timedOut = false;
-    child.stdout.on('data', chunk => { stdout += chunk; });
-    child.stderr.on('data', chunk => { stderr += chunk; });
+    let stdout = '',
+      stderr = '',
+      timedOut = false;
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
     const timer = setTimeout(() => {
       timedOut = true;
-      if (process.platform === 'win32' && child.pid) spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
+      if (process.platform === 'win32' && child.pid)
+        spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
       else child.kill();
     }, timeoutSeconds * 1000);
-    child.once('close', exitCode => { clearTimeout(timer); resolve({ stdout, stderr, exitCode: timedOut ? null : exitCode }); });
-    child.once('error', error => { clearTimeout(timer); resolve({ stdout, stderr: `${stderr}${error.message}`, exitCode: null }); });
+    child.once('close', (exitCode) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr, exitCode: timedOut ? null : exitCode });
+    });
+    child.once('error', (error) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr: `${stderr}${error.message}`, exitCode: null });
+    });
   });
 }

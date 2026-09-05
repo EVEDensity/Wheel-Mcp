@@ -11,9 +11,14 @@ export async function gitCheckpoint(projectPath, evidenceDir) {
   const diff = await runGit(root, ['diff', '--binary']);
   if (head.exitCode !== 0) throw new Error(`Not a Git repository: ${head.stderr.trim()}`);
   const metadata = {
-    schema_version: '0.1', source: 'REAL', project_path: root,
-    head: head.stdout.trim(), status: status.stdout, created_at: new Date().toISOString(),
-    patch: path.join(evidence, 'diff.patch'), status_file: path.join(evidence, 'status.txt')
+    schema_version: '0.1',
+    source: 'REAL',
+    project_path: root,
+    head: head.stdout.trim(),
+    status: status.stdout,
+    created_at: new Date().toISOString(),
+    patch: path.join(evidence, 'diff.patch'),
+    status_file: path.join(evidence, 'status.txt'),
   };
   await writeFile(metadata.patch, diff.stdout);
   await writeFile(metadata.status_file, status.stdout);
@@ -27,19 +32,29 @@ export async function gitRecovery(projectPath, patchPath) {
   await readFile(patch);
   const result = await runGit(root, ['apply', '--reverse', '--whitespace=nowarn', '--', patch]);
   return {
-    schema_version: '0.1', source: 'REAL', project_path: root, patch_path: patch,
-    exit_code: result.exitCode, stdout: result.stdout, stderr: result.stderr,
-    status: result.exitCode === 0 ? 'PASS' : 'FAIL'
+    schema_version: '0.1',
+    source: 'REAL',
+    project_path: root,
+    patch_path: patch,
+    exit_code: result.exitCode,
+    stdout: result.stdout,
+    stderr: result.stderr,
+    status: result.exitCode === 0 ? 'PASS' : 'FAIL',
   };
 }
 
 export function runGit(cwd: string, args: string[]): Promise<any> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const child = spawn('git', args, { cwd, windowsHide: true });
-    let stdout = '', stderr = '';
-    child.stdout.on('data', chunk => { stdout += chunk; });
-    child.stderr.on('data', chunk => { stderr += chunk; });
-    child.once('error', error => resolve({ exitCode: null, stdout, stderr: `${stderr}${error.message}` }));
-    child.once('close', exitCode => resolve({ exitCode, stdout, stderr }));
+    let stdout = '',
+      stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.once('error', (error) => resolve({ exitCode: null, stdout, stderr: `${stderr}${error.message}` }));
+    child.once('close', (exitCode) => resolve({ exitCode, stdout, stderr }));
   });
 }

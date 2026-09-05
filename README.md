@@ -12,8 +12,8 @@ independent repository and does not copy B1/B2 source code.
   editor-plane query and is explicitly returned with `runtime: false`.
 - `get_runtime_scene_tree`: launch Godot with `godot-plugin/runtime_bridge.gd`
   and return nodes from the loaded runtime scene with `runtime: true`.
-- `get_runtime_property`: read a serializable property from a runtime node;
-  property writes are intentionally not exposed yet.
+- `get_runtime_property` / `set_runtime_property`: read and write serializable
+  runtime node properties through the bridge.
 - `launch`: start a Godot project and write process metadata plus raw stdout/stderr.
 - `logs`: read a completed evidence directory without killing its process first.
 - `stop`: stop a process and report whether it exited.
@@ -28,23 +28,23 @@ Tool failures use the versioned schema in `schemas/error.schema.json`, with
 stable `code`, `retryable`, and `timed_out` fields. `stop_project` accepts an
 optional `timeoutMs` value.
 
-The MCP server exposes the same operations over newline-delimited JSON-RPC
-stdio (`initialize`, `notifications/initialized`, `tools/list`, and
-`tools/call`). Runtime launch/log/stop and static project/scene inspection are
-available today. Runtime SceneTree mutation, property read/write, input
-injection, and MCP screenshots remain `UNAVAILABLE` until a real Godot bridge
-and task-linked evidence fixture exist; Godot CLI output cannot substitute for
-those capabilities.
+The MCP server uses the official Model Context Protocol TypeScript SDK and
+exposes the same operations over newline-delimited stdio (`initialize`,
+`notifications/initialized`, `tools/list`, and `tools/call`). Runtime launch,
+logs, stop/cancel, SceneTree, properties, input, screenshots, event cursors,
+Scenario Executor, and Context Pack are available when a Godot 4 project and
+bridge are configured. Results are always labelled `REAL`, `UNAVAILABLE`, or
+`FAIL`; CLI output never substitutes for an MCP capability.
 
 ## Usage
 
 ```powershell
 $env:GODOT_PATH = 'E:\AI\Godot_v4.7.2-stable_win64_console.exe'
-node .\dist\src\cli.js doctor
-node .\dist\src\cli.js launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
-node .\dist\src\cli.js logs --evidence '.\runs\example'
-node .\dist\src\cli.js scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
-node .\dist\src\cli.js stop --pid 12345
+node .\build\src\cli.js doctor
+node .\build\src\cli.js launch --project 'D:\path\to\godot-project' --evidence '.\runs\example'
+node .\build\src\cli.js logs --evidence '.\runs\example'
+node .\build\src\cli.js scene-tree --project 'D:\path\to\godot-project' --scene 'res://main.tscn'
+node .\build\src\cli.js stop --pid 12345
 ```
 
 The CLI keeps credentials out of evidence and uses `REAL` labels only for

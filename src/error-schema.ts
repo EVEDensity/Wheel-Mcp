@@ -1,9 +1,13 @@
 export function errorEnvelope(code: string, message: string, options: any = {}): any {
   return {
-    schema_version: '0.1', source: 'REAL', status: 'FAIL', code,
-    message, retryable: options.retryable === true,
+    schema_version: '0.1',
+    source: 'REAL',
+    status: 'FAIL',
+    code,
+    message,
+    retryable: options.retryable === true,
     timed_out: options.timed_out === true,
-    details: options.details ?? null
+    details: options.details ?? null,
   };
 }
 

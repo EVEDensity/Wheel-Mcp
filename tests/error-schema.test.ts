@@ -4,7 +4,16 @@ import { classifyError, errorEnvelope } from '../src/error-schema.js';
 
 test('error envelope has stable timeout fields', () => {
   const result = classifyError(Object.assign(new Error('operation timed out'), { code: 'TIMEOUT' }));
-  assert.deepEqual(result, { schema_version: '0.1', source: 'REAL', status: 'FAIL', code: 'TIMEOUT', message: 'operation timed out', retryable: true, timed_out: true, details: null });
+  assert.deepEqual(result, {
+    schema_version: '0.1',
+    source: 'REAL',
+    status: 'FAIL',
+    code: 'TIMEOUT',
+    message: 'operation timed out',
+    retryable: true,
+    timed_out: true,
+    details: null,
+  });
 });
 
 test('custom errors preserve non-retryable classification', () => {

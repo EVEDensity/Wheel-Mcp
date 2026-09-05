@@ -5,7 +5,8 @@
     "moduleResolution": "NodeNext",
     "rootDir": ".",
     "outDir": "build",
-    "strict": false,
+    "strict": true,
+    "noImplicitAny": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "types": ["node"]
