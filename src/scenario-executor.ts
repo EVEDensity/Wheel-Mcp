@@ -78,7 +78,9 @@ export async function executeScenario({
   }
   let cleanup = { attempted: false, stopped: true };
   if (launch && !launch.child.killed && launch.child.pid) {
-    const stopped = await stopProcess(launch.child.pid, Math.min(5000, Math.max(0, globalContext.remaining()))).catch(() => ({ stopped: false }));
+    const stopped = await stopProcess(launch.child.pid, Math.min(5000, Math.max(0, globalContext.remaining()))).catch(
+      () => ({ stopped: false }),
+    );
     cleanup = { attempted: true, stopped: stopped.stopped === true };
   }
   const cancelled = globalContext.cancelled || signal?.aborted === true;
@@ -151,7 +153,13 @@ async function runStep(kind: string, options: any, context: any) {
     return { status: 'FAIL', error: `unknown scenario step: ${kind}` };
   } catch (error: unknown) {
     const envelope = classifyError(error);
-    return { status: 'FAIL', code: envelope.code, error: envelope.message, timed_out: envelope.timed_out, cancelled: envelope.cancelled };
+    return {
+      status: 'FAIL',
+      code: envelope.code,
+      error: envelope.message,
+      timed_out: envelope.timed_out,
+      cancelled: envelope.cancelled,
+    };
   }
 }
 
@@ -172,12 +180,20 @@ async function waitForEvent(evidence: string, expected: string, timeoutMs: numbe
       return { status: 'PASS', event: expected };
     await new Promise<void>((resolve) => {
       const timer = setTimeout(resolve, 100);
-      signal?.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+      signal?.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+          resolve();
+        },
+        { once: true },
+      );
     });
   }
   if (signal?.aborted) {
     const reason = signal.reason as { code?: unknown } | undefined;
-    if (reason?.code === 'TIMEOUT') return { status: 'FAIL', code: 'TIMEOUT', error: `event not observed: ${expected}`, timed_out: true };
+    if (reason?.code === 'TIMEOUT')
+      return { status: 'FAIL', code: 'TIMEOUT', error: `event not observed: ${expected}`, timed_out: true };
     return { status: 'FAIL', code: 'CANCELLED', error: 'operation cancelled', cancelled: true };
   }
   return { status: 'FAIL', error: `event not observed: ${expected}`, timed_out: true };

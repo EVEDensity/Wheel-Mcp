@@ -23,7 +23,10 @@ export async function buildContextPack({
   const root = path.resolve(projectPath);
   timeout?.throwIfCancelled();
   const project = await getProjectInfo(root, timeout);
-  const godot = { path: resolveGodotPath(godotPath), version: await getGodotVersion(resolveGodotPath(godotPath), timeout) };
+  const godot = {
+    path: resolveGodotPath(godotPath),
+    version: await getGodotVersion(resolveGodotPath(godotPath), timeout),
+  };
   const scene_tree = project.mainScene
     ? await getSceneTree(root, scenePath || project.mainScene, timeout).catch((error: unknown) => ({
         source: 'REAL',

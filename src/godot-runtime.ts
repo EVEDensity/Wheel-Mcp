@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { CancelledError, createTimeoutContext, TimeoutContext, TimeoutError } from './timeout.js';
 import { runRegistry } from './run-registry.js';
+import { parseRuntimeEvent, RuntimeEvent, EventReadResult } from './runtime-events.js';
 
 type LaunchOptions = {
   godotPath?: string;
@@ -185,8 +186,15 @@ export async function launchProject({
     if (child.killed) return;
     cancelled = timeout?.cancelled === true;
     timedOut = timeout?.timedOut === true;
-    if (process.platform === 'win32' && child.pid) spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
-    else if (child.pid) { try { process.kill(-child.pid, 'SIGTERM'); } catch { child.kill('SIGTERM'); } }
+    if (process.platform === 'win32' && child.pid)
+      spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
+    else if (child.pid) {
+      try {
+        process.kill(-child.pid, 'SIGTERM');
+      } catch {
+        child.kill('SIGTERM');
+      }
+    }
     metadata.lifecycle = timedOut ? 'TIMEOUT' : 'CANCELLED';
     metadata.timed_out = timedOut;
     metadata.cancelled = cancelled;
@@ -288,6 +296,7 @@ export async function queryRuntimeSceneTree({
       GODOT_HARNESS_REQUEST: requestPath,
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_EVENTS: eventsPath,
+      GODOT_HARNESS_RUN_ID: path.basename(evidence),
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
     timeout,
@@ -321,6 +330,7 @@ export async function queryRuntimeProperty({
   await mkdir(evidence, { recursive: true });
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
+  const eventsPath = path.join(evidence, 'events.jsonl');
   await writeFile(requestPath, JSON.stringify({ method: 'get_property', nodePath, property }));
   const projectInfo = await getProjectInfo(root, timeout);
   const result = await runProcess(
@@ -331,6 +341,8 @@ export async function queryRuntimeProperty({
     {
       GODOT_HARNESS_REQUEST: requestPath,
       GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_EVENTS: eventsPath,
+      GODOT_HARNESS_RUN_ID: path.basename(evidence),
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
     timeout,
@@ -364,6 +376,7 @@ export async function mutateRuntimeProperty({
   await mkdir(evidence, { recursive: true });
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
+  const eventsPath = path.join(evidence, 'events.jsonl');
   await writeFile(requestPath, JSON.stringify({ method: 'set_property', nodePath, property, value }));
   const projectInfo = await getProjectInfo(root, timeout);
   const result = await runProcess(
@@ -374,6 +387,8 @@ export async function mutateRuntimeProperty({
     {
       GODOT_HARNESS_REQUEST: requestPath,
       GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_EVENTS: eventsPath,
+      GODOT_HARNESS_RUN_ID: path.basename(evidence),
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
     timeout,
@@ -406,6 +421,7 @@ export async function injectRuntimeInput({
   await mkdir(evidence, { recursive: true });
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
+  const eventsPath = path.join(evidence, 'events.jsonl');
   await writeFile(requestPath, JSON.stringify({ method: 'inject_input', keycode, pressed }));
   const projectInfo = await getProjectInfo(root, timeout);
   const result = await runProcess(
@@ -416,6 +432,8 @@ export async function injectRuntimeInput({
     {
       GODOT_HARNESS_REQUEST: requestPath,
       GODOT_HARNESS_RESPONSE: responsePath,
+      GODOT_HARNESS_EVENTS: eventsPath,
+      GODOT_HARNESS_RUN_ID: path.basename(evidence),
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
     },
     timeout,
@@ -483,7 +501,10 @@ export async function captureRuntimeScreenshot({
   };
 }
 
-export async function stopLaunchedProcess(launch: { child: { pid?: number }; close: Promise<unknown> }, timeoutMs = 5000) {
+export async function stopLaunchedProcess(
+  launch: { child: { pid?: number }; close: Promise<unknown> },
+  timeoutMs = 5000,
+) {
   if (!launch.child.pid) throw new Error('launched process has no pid');
   const result = await stopProcess(launch.child.pid, timeoutMs);
   await Promise.race([launch.close, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
@@ -500,23 +521,42 @@ export async function readEvidence(evidenceDir: string) {
   return { metadata, stdout, stderr };
 }
 
-export async function readRuntimeEvents(evidenceDir: string) {
+export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadResult> {
   const root = path.resolve(evidenceDir);
   const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
-  const events = text
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-  return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events };
+  const lines = text.split(/\r?\n/);
+  const pending_partial = text.length > 0 && !text.endsWith('\n');
+  const completeLines = pending_partial ? lines.slice(0, -1) : lines;
+  const events: RuntimeEvent[] = [];
+  const invalid_lines: Array<{ line: number; reason: string }> = [];
+  for (let index = 0; index < completeLines.length; index += 1) {
+    const line = completeLines[index];
+    if (!line.trim()) continue;
+    try {
+      const event = parseRuntimeEvent(JSON.parse(line));
+      if (!event) invalid_lines.push({ line: index + 1, reason: 'schema validation failed' });
+      else events.push(event);
+    } catch (error: unknown) {
+      invalid_lines.push({ line: index + 1, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  events.sort((left, right) => left.sequence - right.sequence);
+  return { schema_version: '0.1', source: 'REAL', evidenceDir: root, events, invalid_lines, pending_partial };
 }
 
 export async function readRuntimeEventsSince(evidenceDir: string, cursor = 0, limit = 100) {
+  if (!Number.isInteger(cursor) || cursor < 0) throw new Error('cursor must be a non-negative integer');
+  if (!Number.isInteger(limit) || limit < 1) throw new Error('limit must be a positive integer');
   const result = await readRuntimeEvents(evidenceDir);
+  const start = result.events.findIndex((event) => event.sequence > cursor);
+  const offset = start === -1 ? result.events.length : start;
+  const events = result.events.slice(offset, offset + limit);
+  const next_cursor = events.length ? events[events.length - 1].sequence : cursor;
   return {
     ...result,
     cursor,
-    next_cursor: Math.min(result.events.length, cursor + limit),
-    events: result.events.slice(cursor, cursor + limit),
+    next_cursor,
+    events,
   };
 }
 
@@ -529,13 +569,12 @@ export async function subscribeRuntimeEvents(
     .then((text) => JSON.parse(text).cursor as number)
     .catch(() => 0);
   let cursor = options.cursor ?? persisted;
-  const events: unknown[] = [];
+  const events: RuntimeEvent[] = [];
   while (!options.signal?.aborted) {
     const page = await readRuntimeEventsSince(evidenceDir, cursor, options.limit ?? 100);
     cursor = page.next_cursor;
     events.push(...(options.filter ? page.events.filter(options.filter) : page.events));
-    if (page.next_cursor >= page.events.length + (options.cursor ?? 0))
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    if (page.events.length === 0) await new Promise((resolve) => setTimeout(resolve, 100));
     if (events.length) {
       await writeFile(cursorPath, JSON.stringify({ cursor, updated_at: new Date().toISOString() }));
       return { ...page, cursor, events };
@@ -564,7 +603,10 @@ function runProcess(
     const context = timeout ?? createTimeoutContext(timeoutSeconds * 1000);
     const ownsContext = !timeout;
     const child = spawn(executable, args, {
-      cwd, windowsHide: true, detached: process.platform !== 'win32', env: { ...process.env, ...extraEnv },
+      cwd,
+      windowsHide: true,
+      detached: process.platform !== 'win32',
+      env: { ...process.env, ...extraEnv },
     });
     let stdout = '',
       stderr = '',
@@ -584,7 +626,9 @@ function runProcess(
       if (process.platform === 'win32' && child.pid)
         spawn('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
       else if (child.pid) {
-        try { process.kill(-child.pid, 'SIGTERM'); } catch (error: unknown) {
+        try {
+          process.kill(-child.pid, 'SIGTERM');
+        } catch (error: unknown) {
           if (!(error instanceof Error) || (error as NodeJS.ErrnoException).code !== 'ESRCH') child.kill('SIGTERM');
         }
       }
@@ -596,9 +640,23 @@ function runProcess(
       settled = true;
       clearTimeout(timer);
       context.signal.removeEventListener('abort', terminate);
-      const code = timedOut || context.timedOut ? 'TIMEOUT' : cancelled || context.cancelled ? 'CANCELLED' : error || exitCode !== 0 ? 'FAILED' : 'OK';
+      const code =
+        timedOut || context.timedOut
+          ? 'TIMEOUT'
+          : cancelled || context.cancelled
+            ? 'CANCELLED'
+            : error || exitCode !== 0
+              ? 'FAILED'
+              : 'OK';
       if (ownsContext) context.dispose();
-      resolve({ stdout, stderr, exitCode: code === 'OK' ? exitCode : null, code, timed_out: code === 'TIMEOUT', cancelled: code === 'CANCELLED' });
+      resolve({
+        stdout,
+        stderr,
+        exitCode: code === 'OK' ? exitCode : null,
+        code,
+        timed_out: code === 'TIMEOUT',
+        cancelled: code === 'CANCELLED',
+      });
     };
     child.once('close', (exitCode) => {
       finish(exitCode);

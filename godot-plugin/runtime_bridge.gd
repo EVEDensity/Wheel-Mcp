@@ -1,5 +1,7 @@
 extends SceneTree
 
+var event_sequence: int = 0
+
 func _initialize() -> void:
 	var request_path: String = OS.get_environment("GODOT_HARNESS_REQUEST")
 	var response_path: String = OS.get_environment("GODOT_HARNESS_RESPONSE")
@@ -115,5 +117,9 @@ func _emit_event(events_path: String, event_name: String, payload: Dictionary) -
 		file = FileAccess.open(events_path, FileAccess.WRITE)
 	if file != null:
 		file.seek_end()
-		file.store_string(JSON.stringify({"timestamp": Time.get_datetime_string_from_system(true), "event": event_name, "payload": payload, "source": "REAL"}) + "\n")
+		event_sequence += 1
+		var run_id := OS.get_environment("GODOT_HARNESS_RUN_ID")
+		if run_id.is_empty():
+			run_id = "godot-run"
+		file.store_string(JSON.stringify({"schema_version": "0.1", "source": "REAL", "run_id": run_id, "sequence": event_sequence, "timestamp": Time.get_datetime_string_from_system(true), "event": event_name, "payload": payload}) + "\n")
 		file.close()

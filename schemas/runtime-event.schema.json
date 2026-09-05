@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-game-harness.invalid/schemas/runtime-event.schema.json",
+  "title": "Godot Harness Runtime Event",
+  "type": "object",
+  "required": ["schema_version", "source", "run_id", "sequence", "timestamp", "event", "payload"],
+  "properties": {
+    "schema_version": { "const": "0.1" },
+    "source": { "const": "REAL" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "event": { "type": "string", "minLength": 1 },
+    "payload": { "type": "object" }
+  },
+  "additionalProperties": false
+}

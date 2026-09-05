@@ -23,4 +23,3 @@ test('deadline cancellation is classified as TIMEOUT', async () => {
   assert.equal(classifyError(context.signal.reason).code, 'TIMEOUT');
   context.dispose();
 });
-

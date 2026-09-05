@@ -22,7 +22,12 @@ try {
     const executable = resolveGodotPath(options.godot || process.env.GODOT_PATH);
     console.log(
       JSON.stringify(
-        { schema_version: '0.1', source: 'REAL', godot_path: executable, version: await getGodotVersion(executable, commandContext) },
+        {
+          schema_version: '0.1',
+          source: 'REAL',
+          godot_path: executable,
+          version: await getGodotVersion(executable, commandContext),
+        },
         null,
         2,
       ),
@@ -39,7 +44,13 @@ try {
   } else if (command === 'logs') {
     console.log(JSON.stringify(await readEvidence(required(options.evidence, '--evidence')), null, 2));
   } else if (command === 'scene-tree') {
-    console.log(JSON.stringify(await getSceneTree(required(options.project, '--project'), options.scene, commandContext), null, 2));
+    console.log(
+      JSON.stringify(
+        await getSceneTree(required(options.project, '--project'), options.scene, commandContext),
+        null,
+        2,
+      ),
+    );
   } else if (command === 'scenario') {
     const scenarioPath = required(options.file, '--file');
     const scenario = await loadScenario(scenarioPath);
@@ -73,20 +84,20 @@ try {
       ),
     );
   } else if (command === 'stop') {
-    console.log(JSON.stringify(await stopProcess(Number(required(options.pid, '--pid')), Math.min(5000, commandContext.remaining())), null, 2));
+    console.log(
+      JSON.stringify(
+        await stopProcess(Number(required(options.pid, '--pid')), Math.min(5000, commandContext.remaining())),
+        null,
+        2,
+      ),
+    );
   } else {
     throw new Error(
       `Unknown command: ${command}. Use doctor, launch, logs, scene-tree, scenario, context-pack, or stop.`,
     );
   }
 } catch (error) {
-  console.error(
-    JSON.stringify(
-      classifyError(error),
-      null,
-      2,
-    ),
-  );
+  console.error(JSON.stringify(classifyError(error), null, 2));
   process.exitCode = 1;
 } finally {
   commandContext.dispose();
