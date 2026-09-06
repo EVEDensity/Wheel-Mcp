@@ -359,7 +359,10 @@ export async function pauseEventSubscription(
   });
 }
 
-export async function closeEventSubscription(evidenceDir: string, subscriptionId: string): Promise<EventSubscriptionRecord> {
+export async function closeEventSubscription(
+  evidenceDir: string,
+  subscriptionId: string,
+): Promise<EventSubscriptionRecord> {
   return mutateSubscriptions(evidenceDir, (store) => {
     const record = store[subscriptionId];
     if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
