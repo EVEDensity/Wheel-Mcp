@@ -8,6 +8,11 @@ It does not copy the B1/B2 benchmark implementations.
 
 ## Verification Status
 
+Release readiness is tracked in [`docs/RELEASE-READINESS.md`](docs/RELEASE-READINESS.md).
+The current preview is not release-clean: the real matrix still has MCP
+stop/cancel and Scenario failures, and `npm run release:check` is expected to
+fail until those are fixed.
+
 - Node.js 20 and 22 are covered by the CI matrix on Linux, Windows, and macOS
   for build, lint, unit tests, and release checks.
 - Real Godot runtime evidence has been collected locally on Windows with Godot

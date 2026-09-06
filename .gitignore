@@ -3,3 +3,9 @@ runs/
 .harness/
 dist/
 build/
+
+# Local environment and generated release evidence.
+.env
+.env.*
+!.env.example
+*.local

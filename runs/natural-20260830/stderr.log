@@ -1,8 +1,0 @@
-ERROR: Cannot open file 'res://.godot/imported/Chewy.ttf-fe55285232e51862a593afcc385ff5ef.fontdata'.
-   at: load (core/io/resource_format_binary.cpp:1156)
-ERROR: Failed loading resource: res://.godot/imported/Chewy.ttf-fe55285232e51862a593afcc385ff5ef.fontdata.
-   at: _load (core/io/resource_loader.cpp:317)
-ERROR: Failed loading resource: res://global/fonts/Chewy.ttf.
-   at: _load (core/io/resource_loader.cpp:317)
-ERROR: Error loading custom project font 'res://global/fonts/Chewy.ttf'
-   at: initialize_theme (scene/theme/theme_db.cpp:84)
