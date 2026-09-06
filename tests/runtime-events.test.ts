@@ -6,6 +6,9 @@ import path from 'node:path';
 import {
   cancelEventSubscription,
   acknowledgeEventSubscription,
+  closeEventSubscription,
+  listEventSubscriptions,
+  pauseEventSubscription,
   createEventSubscription,
   pollEventSubscription,
   readRuntimeEvents,
@@ -85,6 +88,31 @@ test('persistent subscriptions support reconnect and cancellation', async () => 
   assert.equal(cancelled.status, 'CANCELLED');
   const afterCancel = await pollEventSubscription(root, created.subscription_id);
   assert.deepEqual(afterCancel.events, []);
+});
+
+test('subscription state machine supports pause, resume, close, and ack timeout', async () => {
+  const root = await fsEvidence();
+  await writeFile(path.join(root, 'events.jsonl'), `${event(1, 'started')}\n`);
+  const created = await createEventSubscription(root, { ackTimeoutMs: 1 });
+  await pauseEventSubscription(root, created.subscription_id);
+  assert.equal((await listEventSubscriptions(root))[0].status, 'PAUSED');
+  await acknowledgeEventSubscription(root, created.subscription_id, 0);
+  assert.equal((await listEventSubscriptions(root))[0].status, 'ACTIVE');
+  const page = await pollEventSubscription(root, created.subscription_id);
+  assert.equal(page.events.length, 1);
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const timedOut = await pollEventSubscription(root, created.subscription_id);
+  assert.equal(timedOut.status, 'PAUSED');
+  await closeEventSubscription(root, created.subscription_id);
+  assert.equal((await listEventSubscriptions(root))[0].status, 'CLOSED');
+});
+
+test('concurrent subscription writes preserve all records and corrupt files recover empty', async () => {
+  const root = await fsEvidence();
+  await Promise.all(Array.from({ length: 8 }, () => createEventSubscription(root)));
+  assert.equal((await listEventSubscriptions(root)).length, 8);
+  await writeFile(path.join(root, 'subscriptions.json'), '{broken');
+  assert.deepEqual(await listEventSubscriptions(root), []);
 });
 
 async function fsEvidence(): Promise<string> {

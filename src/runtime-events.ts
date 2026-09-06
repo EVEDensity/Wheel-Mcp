@@ -46,6 +46,7 @@ export interface EventSubscriptionOptions {
   filter?: RuntimeEventFilter | ((event: RuntimeEvent) => boolean);
   pollIntervalMs?: number;
   maxEvents?: number;
+  ackTimeoutMs?: number;
 }
 
 export interface SubscriptionResult extends EventPage {
@@ -58,8 +59,10 @@ export type EventSubscriptionRecord = {
   evidence_dir: string;
   cursor: EventCursor | number;
   pending_cursor?: EventCursor | number;
+  ack_deadline_at?: string;
+  ack_timeout_ms: number;
   filter?: RuntimeEventFilter;
-  status: 'ACTIVE' | 'CANCELLED';
+  status: 'ACTIVE' | 'PAUSED' | 'CANCELLED' | 'CLOSED';
   created_at: string;
   updated_at: string;
 };
@@ -223,9 +226,35 @@ async function writeSubscriptions(evidenceDir: string, store: SubscriptionStore)
   }
 }
 
+async function mutateSubscriptions<T>(
+  evidenceDir: string,
+  mutator: (store: SubscriptionStore) => T | Promise<T>,
+): Promise<T> {
+  const target = subscriptionPath(evidenceDir);
+  const previous = subscriptionLocks.get(target) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const queued = previous.then(() => current);
+  subscriptionLocks.set(target, queued);
+  await previous;
+  try {
+    const store = await readSubscriptions(evidenceDir);
+    const result = await mutator(store);
+    const temporary = `${target}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(temporary, JSON.stringify(store, null, 2), 'utf8');
+    await rename(temporary, target);
+    return result;
+  } finally {
+    release();
+    if (subscriptionLocks.get(target) === queued) subscriptionLocks.delete(target);
+  }
+}
+
 export async function createEventSubscription(
   evidenceDir: string,
-  options: Pick<EventSubscriptionOptions, 'cursor' | 'filter'> = {},
+  options: Pick<EventSubscriptionOptions, 'cursor' | 'filter' | 'ackTimeoutMs'> = {},
 ): Promise<EventSubscriptionRecord> {
   const root = path.resolve(evidenceDir);
   const events = await readRuntimeEvents(root);
@@ -233,15 +262,16 @@ export async function createEventSubscription(
     subscription_id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     evidence_dir: root,
     cursor: normalizeCursor(options.cursor ?? 0, events.run_id),
+    ack_timeout_ms: Math.max(1, options.ackTimeoutMs ?? 30000),
     filter: typeof options.filter === 'function' ? undefined : options.filter,
     status: 'ACTIVE',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  const store = await readSubscriptions(root);
-  store[record.subscription_id] = record;
-  await writeSubscriptions(root, store);
-  return record;
+  return mutateSubscriptions(root, (store) => {
+    store[record.subscription_id] = record;
+    return record;
+  });
 }
 
 export async function pollEventSubscription(
@@ -250,19 +280,32 @@ export async function pollEventSubscription(
   limit = 100,
 ): Promise<SubscriptionResult & { subscription_id: string; status: EventSubscriptionRecord['status'] }> {
   const root = path.resolve(evidenceDir);
-  const store = await readSubscriptions(root);
-  const record = store[subscriptionId];
-  if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
-  if (record.status === 'CANCELLED') {
+  return mutateSubscriptions(root, async (store) => {
+    const record = store[subscriptionId];
+    if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+    if (record.status === 'CANCELLED' || record.status === 'CLOSED') {
+      const page = await readRuntimeEventsSince(root, record.cursor, limit);
+      return { ...page, subscription_id: subscriptionId, status: record.status, events: [] };
+    }
+    if (record.ack_deadline_at && Date.parse(record.ack_deadline_at) <= Date.now()) {
+      record.status = 'PAUSED';
+      record.updated_at = new Date().toISOString();
+      const page = await readRuntimeEventsSince(root, record.cursor, limit);
+      return { ...page, subscription_id: subscriptionId, status: record.status, events: [], timed_out: true };
+    }
+    if (record.status === 'PAUSED') {
+      const page = await readRuntimeEventsSince(root, record.cursor, limit);
+      return { ...page, subscription_id: subscriptionId, status: record.status, events: [] };
+    }
     const page = await readRuntimeEventsSince(root, record.cursor, limit);
-    return { ...page, subscription_id: subscriptionId, status: record.status, events: [] };
-  }
-  const page = await readRuntimeEventsSince(root, record.cursor, limit);
-  const events = page.events.filter((event) => matchesRuntimeEvent(event, record.filter));
-  if (page.next_cursor !== null) record.pending_cursor = page.next_cursor;
-  record.updated_at = new Date().toISOString();
-  await writeSubscriptions(root, store);
-  return { ...page, events, subscription_id: subscriptionId, status: record.status };
+    const events = page.events.filter((event) => matchesRuntimeEvent(event, record.filter));
+    if (page.next_cursor !== null && events.length > 0) {
+      record.pending_cursor = page.next_cursor;
+      record.ack_deadline_at = new Date(Date.now() + record.ack_timeout_ms).toISOString();
+    }
+    record.updated_at = new Date().toISOString();
+    return { ...page, events, subscription_id: subscriptionId, status: record.status };
+  });
 }
 
 export async function acknowledgeEventSubscription(
@@ -271,15 +314,21 @@ export async function acknowledgeEventSubscription(
   cursor: EventCursor | number,
 ): Promise<EventSubscriptionRecord> {
   const root = path.resolve(evidenceDir);
-  const store = await readSubscriptions(root);
-  const record = store[subscriptionId];
-  if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
-  const normalized = normalizeCursor(cursor, (await readRuntimeEvents(root)).run_id);
-  record.cursor = normalized;
-  record.pending_cursor = undefined;
-  record.updated_at = new Date().toISOString();
-  await writeSubscriptions(root, store);
-  return record;
+  return mutateSubscriptions(root, async (store) => {
+    const record = store[subscriptionId];
+    if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+    const normalized = normalizeCursor(cursor, (await readRuntimeEvents(root)).run_id);
+    if (record.pending_cursor !== undefined) {
+      const pending = normalizeCursor(record.pending_cursor, (await readRuntimeEvents(root)).run_id);
+      if (normalized.sequence < pending.sequence) throw new Error('ack cursor cannot move backwards');
+    }
+    record.cursor = normalized;
+    record.pending_cursor = undefined;
+    record.ack_deadline_at = undefined;
+    if (record.status === 'PAUSED') record.status = 'ACTIVE';
+    record.updated_at = new Date().toISOString();
+    return record;
+  });
 }
 
 export async function cancelEventSubscription(
@@ -287,13 +336,43 @@ export async function cancelEventSubscription(
   subscriptionId: string,
 ): Promise<EventSubscriptionRecord> {
   const root = path.resolve(evidenceDir);
-  const store = await readSubscriptions(root);
-  const record = store[subscriptionId];
-  if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
-  record.status = 'CANCELLED';
-  record.updated_at = new Date().toISOString();
-  await writeSubscriptions(root, store);
-  return record;
+  return mutateSubscriptions(root, (store) => {
+    const record = store[subscriptionId];
+    if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+    record.status = 'CANCELLED';
+    record.ack_deadline_at = undefined;
+    record.updated_at = new Date().toISOString();
+    return record;
+  });
+}
+
+export async function pauseEventSubscription(
+  evidenceDir: string,
+  subscriptionId: string,
+): Promise<EventSubscriptionRecord> {
+  return mutateSubscriptions(evidenceDir, (store) => {
+    const record = store[subscriptionId];
+    if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+    if (record.status === 'ACTIVE') record.status = 'PAUSED';
+    record.updated_at = new Date().toISOString();
+    return record;
+  });
+}
+
+export async function closeEventSubscription(evidenceDir: string, subscriptionId: string): Promise<EventSubscriptionRecord> {
+  return mutateSubscriptions(evidenceDir, (store) => {
+    const record = store[subscriptionId];
+    if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
+    record.status = 'CLOSED';
+    record.ack_deadline_at = undefined;
+    record.updated_at = new Date().toISOString();
+    return record;
+  });
+}
+
+export async function listEventSubscriptions(evidenceDir: string): Promise<EventSubscriptionRecord[]> {
+  const store = await readSubscriptions(path.resolve(evidenceDir));
+  return Object.values(store);
 }
 
 export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadResult> {

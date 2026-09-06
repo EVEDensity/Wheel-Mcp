@@ -25,6 +25,9 @@ import {
   pollEventSubscription,
   cancelEventSubscription,
   acknowledgeEventSubscription,
+  pauseEventSubscription,
+  closeEventSubscription,
+  listEventSubscriptions,
 } from './godot-runtime.js';
 import { runRegistry } from './run-registry.js';
 import { buildContextPack } from './context-pack.js';
@@ -261,15 +264,17 @@ server.tool(
     event: eventNames,
     runId: z.string().min(1).optional(),
     payload: eventPayload,
+    ackTimeoutMs: z.number().int().positive().optional(),
     timeoutMs,
   },
-  async ({ evidenceDir, cursor, event, runId, payload, timeoutMs }, extra) =>
+  async ({ evidenceDir, cursor, event, runId, payload, ackTimeoutMs, timeoutMs }, extra) =>
     invoke(
       (context) => {
         context.throwIfCancelled();
         return createEventSubscription(evidenceDir, {
           cursor,
           filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
+          ackTimeoutMs,
         });
       },
       timeoutMs,
@@ -314,6 +319,27 @@ server.tool(
       timeoutMs,
       extra.signal,
     ),
+);
+server.tool(
+  'pause_event_subscription',
+  'Pause a runtime event subscription.',
+  { evidenceDir: z.string(), subscriptionId: z.string().min(1), timeoutMs },
+  async ({ evidenceDir, subscriptionId, timeoutMs }, extra) =>
+    invoke((context) => pauseEventSubscription(evidenceDir, subscriptionId), timeoutMs, extra.signal),
+);
+server.tool(
+  'close_event_subscription',
+  'Close a runtime event subscription permanently.',
+  { evidenceDir: z.string(), subscriptionId: z.string().min(1), timeoutMs },
+  async ({ evidenceDir, subscriptionId, timeoutMs }, extra) =>
+    invoke((context) => closeEventSubscription(evidenceDir, subscriptionId), timeoutMs, extra.signal),
+);
+server.tool(
+  'list_event_subscriptions',
+  'List persisted runtime event subscriptions.',
+  { evidenceDir: z.string(), timeoutMs },
+  async ({ evidenceDir, timeoutMs }, extra) =>
+    invoke((context) => listEventSubscriptions(evidenceDir), timeoutMs, extra.signal),
 );
 server.tool('list_active_runs', 'List currently active isolated runs.', { timeoutMs }, async ({ timeoutMs }, extra) =>
   invoke(

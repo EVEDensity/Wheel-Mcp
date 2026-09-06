@@ -13,6 +13,9 @@ export {
   pollEventSubscription,
   cancelEventSubscription,
   acknowledgeEventSubscription,
+  pauseEventSubscription,
+  closeEventSubscription,
+  listEventSubscriptions,
 } from './runtime-events.js';
 
 type LaunchOptions = {
