@@ -188,6 +188,8 @@ export async function launchProject({
     env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) },
     detached: process.platform !== 'win32',
   });
+  let cancelled = timeout?.cancelled === true;
+  let timedOut = timeout?.timedOut === true;
   const metadata: ProcessMetadata = {
     schema_version: '0.1',
     source: 'REAL',
@@ -216,8 +218,6 @@ export async function launchProject({
   }
   let stdout = '',
     stderr = '';
-  let cancelled = false;
-  let timedOut = false;
   const terminate = () => {
     if (child.killed) return;
     cancelled = timeout?.cancelled === true;
@@ -244,6 +244,16 @@ export async function launchProject({
     stderr += chunk;
   });
   child.once('spawn', async () => {
+    if (timeout?.signal.aborted) {
+      cancelled = timeout.cancelled;
+      timedOut = timeout.timedOut;
+      metadata.lifecycle = timedOut ? 'TIMEOUT' : 'CANCELLED';
+      metadata.timed_out = timedOut;
+      metadata.cancelled = cancelled;
+      await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+      terminate();
+      return;
+    }
     metadata.lifecycle = 'RUNNING';
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
   });

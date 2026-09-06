@@ -34,7 +34,7 @@ export function errorEnvelope(code: ErrorCode, message: string, options: ErrorOp
 export function classifyError(error: unknown): ErrorEnvelope {
   const message = error instanceof Error ? error.message : String(error);
   const candidate = error as { code?: unknown; cancelled?: unknown } | null;
-  if (error instanceof TimeoutError || candidate?.code === 'TIMEOUT' || /timed out|timeout/i.test(message))
+  if (error instanceof TimeoutError || candidate?.code === 'TIMEOUT')
     return errorEnvelope('TIMEOUT', message, { retryable: true, timed_out: true });
   if (error instanceof CancelledError || candidate?.code === 'CANCELLED' || candidate?.cancelled === true)
     return errorEnvelope('CANCELLED', message, { cancelled: true });
