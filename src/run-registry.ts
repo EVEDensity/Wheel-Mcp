@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { cancelProcess, getProcessStatus, stopProcess } from './godot-runtime.js';
+import { TimeoutError } from './timeout.js';
 
 export type RunState = 'RUNNING' | 'STOPPED' | 'CANCELLED' | 'FAILED' | 'ORPHANED';
 
@@ -33,6 +34,7 @@ export class RunRegistry {
   }
 
   register(record: Omit<RunRecord, 'createdAt' | 'updatedAt' | 'state'>): RunRecord {
+    this.refreshStates();
     const active = [...this.runs.values()].filter((run) => run.state === 'RUNNING');
     if (active.length >= this.maxConcurrent) throw new Error(`maximum concurrent runs exceeded: ${this.maxConcurrent}`);
     if (this.runs.has(record.runId)) throw new Error(`run already exists: ${record.runId}`);
@@ -81,11 +83,14 @@ export class RunRegistry {
   async reclaimOrphans(timeoutMs = 1000): Promise<RunRecord[]> {
     const reclaimed: RunRecord[] = [];
     for (const run of this.scanOrphans()) {
+      let stopped = false;
       try {
-        await stopProcess(run.pid, timeoutMs);
+        stopped = (await stopProcess(run.pid, timeoutMs)).stopped;
       } catch {
         // The process may already have exited.
+        stopped = true;
       }
+      if (!stopped) continue;
       run.state = 'STOPPED';
       run.finishedAt = new Date().toISOString();
       run.updatedAt = run.finishedAt;
@@ -98,13 +103,15 @@ export class RunRegistry {
 
   async stop(runId: string, timeoutMs?: number): Promise<RunRecord> {
     const run = this.require(runId);
-    await stopProcess(run.pid, timeoutMs);
+    const result = await stopProcess(run.pid, timeoutMs);
+    if (!result.stopped) throw new TimeoutError(`run did not stop before timeout: ${runId}`);
     return this.markTerminal(runId, 'STOPPED');
   }
 
   async cancel(runId: string, timeoutMs?: number): Promise<RunRecord> {
     const run = this.require(runId);
-    await cancelProcess(run.pid, timeoutMs);
+    const result = await cancelProcess(run.pid, timeoutMs);
+    if (!result.stopped) throw new TimeoutError(`run was not cancelled before timeout: ${runId}`);
     return this.markTerminal(runId, 'CANCELLED');
   }
 
@@ -163,6 +170,9 @@ export class RunRegistry {
       const lifecycle = state === 'CANCELLED' ? 'CANCELLED' : state === 'STOPPED' ? 'STOPPED' : 'FAILED';
       const metadata = {
         ...parsed,
+        schema_version: '0.1',
+        source: 'REAL',
+        started: parsed.started !== false,
         lifecycle,
         exit_code: exitCode,
         timed_out: parsed.timed_out === true,

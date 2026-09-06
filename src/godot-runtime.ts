@@ -291,7 +291,8 @@ export async function stopProcess(pid: number, timeoutMs = 5000, timeout?: Timeo
   try {
     if (process.platform === 'win32') {
       const killer = spawn('taskkill', ['/PID', String(processHandle), '/T', '/F'], { windowsHide: true });
-      await new Promise((resolve) => killer.once('close', resolve));
+      const killerExitCode = await new Promise<number | null>((resolve) => killer.once('close', resolve));
+      if (killerExitCode === 0) return { stopped: true, pid: processHandle, process_tree_terminated: true };
     } else process.kill(-processHandle);
   } catch (error: unknown) {
     if (!(error instanceof Error) || (error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
