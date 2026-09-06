@@ -115,6 +115,28 @@ test('concurrent subscription writes preserve all records and corrupt files reco
   assert.deepEqual(await listEventSubscriptions(root), []);
 });
 
+test('multiple long-lived subscriptions remain isolated under concurrent polling', async () => {
+  const root = await fsEvidence();
+  await writeFile(
+    path.join(root, 'events.jsonl'),
+    `${event(1, 'started')}\n${event(2, 'target')}\n${event(3, 'finished')}\n`,
+  );
+  const subscriptions = await Promise.all(
+    Array.from({ length: 16 }, (_, index) =>
+      createEventSubscription(root, { filter: { event: index % 2 ? 'target' : ['started', 'finished'] } }),
+    ),
+  );
+  const pages = await Promise.all(subscriptions.map((item) => pollEventSubscription(root, item.subscription_id, 10)));
+  assert.equal(pages.filter((page) => page.events.length === 2).length, 8);
+  assert.equal(pages.filter((page) => page.events.length === 1).length, 8);
+  await Promise.all(subscriptions.map((item) => acknowledgeEventSubscription(root, item.subscription_id, 3)));
+  const replay = await Promise.all(subscriptions.map((item) => pollEventSubscription(root, item.subscription_id, 10)));
+  assert.equal(
+    replay.every((page) => page.events.length === 0),
+    true,
+  );
+});
+
 async function fsEvidence(): Promise<string> {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-events-'));
   await mkdir(root, { recursive: true });

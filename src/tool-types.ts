@@ -1,5 +1,25 @@
 ﻿export type CliOptions = Record<string, string>;
 
+export type LifecycleState =
+  | 'STARTING'
+  | 'RUNNING'
+  | 'STOPPING'
+  | 'CANCELLING'
+  | 'EXITED'
+  | 'STOPPED'
+  | 'CANCELLED'
+  | 'TIMEOUT'
+  | 'FAILED'
+  | 'ORPHANED';
+
+const terminalLifecycleStates = new Set<LifecycleState>(['EXITED', 'STOPPED', 'CANCELLED', 'TIMEOUT', 'FAILED']);
+
+export function transitionLifecycle(current: LifecycleState, next: LifecycleState): LifecycleState {
+  if (terminalLifecycleStates.has(current) && current !== next)
+    throw new Error(`terminal lifecycle ${current} cannot transition to ${next}`);
+  return next;
+}
+
 export type ScenarioDefinition = {
   steps: unknown[];
   name?: string;

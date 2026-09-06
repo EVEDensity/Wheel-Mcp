@@ -3,7 +3,9 @@ import path from 'node:path';
 import { captureRuntimeScreenshot, injectRuntimeInput, launchProject, stopProcess } from './godot-runtime.js';
 import { parse } from 'yaml';
 import { createTimeoutContext } from './timeout.js';
+import { DEFAULT_SCENARIO_TIMEOUT_MS, DEFAULT_STEP_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { classifyError } from './error-schema.js';
+import { parseScenario } from './scenario-schema.js';
 import type {
   LaunchHandle,
   ScenarioDefinition,
@@ -16,13 +18,11 @@ import type {
 export async function loadScenario(filePath: string) {
   const text = await readFile(filePath, 'utf8');
   const value = parse(text);
-  if (!value || typeof value !== 'object' || !Array.isArray(value.steps))
-    throw new Error('scenario must contain steps[]');
-  return value as ScenarioDefinition;
+  return parseScenario(parse(text));
 }
 
 export interface ScenarioOptions {
-  scenario: { steps: unknown[]; name?: string; project?: string };
+  scenario: ScenarioDefinition;
   scenarioPath?: string;
   godotPath?: string;
   bridgePath?: string;
@@ -39,8 +39,8 @@ export async function executeScenario({
   godotPath,
   bridgePath,
   evidenceDir,
-  defaultStepTimeoutMs = 10000,
-  globalTimeoutMs = 120000,
+  defaultStepTimeoutMs = DEFAULT_STEP_TIMEOUT_MS,
+  globalTimeoutMs = DEFAULT_SCENARIO_TIMEOUT_MS,
   retries = 0,
   onFailure = 'stop',
   signal,
@@ -59,6 +59,7 @@ export async function executeScenario({
     const options = (rawOptions && typeof rawOptions === 'object' ? rawOptions : {}) as ScenarioStepOptions;
     const attempts = Math.max(1, Number(options?.retries ?? retries) + 1);
     let result: ScenarioRunStepResult = { status: 'FAIL' };
+    let attemptsUsed = 0;
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       const remaining = deadline - Date.now();
       if (remaining <= 0) {
@@ -87,9 +88,13 @@ export async function executeScenario({
   }
   let cleanup = { attempted: false, stopped: true };
   if (launch && !launch.child.killed && launch.child.pid) {
-    const stopped = await stopProcess(launch.child.pid, Math.min(5000, Math.max(0, globalContext.remaining()))).catch(
-      () => ({ stopped: false }),
-    );
+    const stopped = await stopProcess(
+      launch.child.pid,
+      Math.min(DEFAULT_STOP_TIMEOUT_MS, Math.max(0, globalContext.remaining())),
+      globalContext,
+    )
+      .then(() => ({ stopped: true }))
+      .catch(() => ({ stopped: false }));
     cleanup = { attempted: true, stopped: stopped.stopped === true };
   }
   const cancelled = globalContext.cancelled || signal?.aborted === true;
@@ -167,9 +172,7 @@ async function runStep(
     if (kind === 'stop')
       return context.launch
         ? {
-            status: (await stopProcess(context.launch.child.pid!, context.timeoutMs)).stopped
-              ? ('PASS' as const)
-              : ('FAIL' as const),
+            status: (await stopProcess(context.launch.child.pid!, context.timeoutMs, context.timeout), 'PASS' as const),
           }
         : { status: 'PASS' };
     return { status: 'FAIL', error: `unknown scenario step: ${kind}` };

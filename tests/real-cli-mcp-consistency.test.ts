@@ -2,14 +2,20 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { spawn } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-const projectPath = 'D:\\Users\\xyn\\Desktop\\AI Game Harness\\v1\\benchmark\\final-game';
-const godotPath = 'E:\\AI\\Godot_v4.7.2-stable_win64_console.exe';
+const projectPath =
+  process.env.REAL_GODOT_PROJECT ?? 'D:\\Users\\xyn\\Desktop\\AI Game Harness\\v1\\benchmark\\final-game';
+const godotPath = process.env.GODOT_PATH ?? 'E:\\AI\\Godot_v4.7.2-stable_win64_console.exe';
 const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
 const evidenceRoot = path.resolve('runs/real-cli-mcp-consistency');
 
-test('real Godot CLI and MCP runtime capabilities produce equivalent evidence', async () => {
+test('real Godot CLI and MCP runtime capabilities produce equivalent evidence', async (t) => {
+  if (!existsSync(projectPath) || !existsSync(godotPath)) {
+    t.skip('REAL_GODOT_PROJECT and GODOT_PATH are not configured in this CI environment');
+    return;
+  }
   await mkdir(evidenceRoot, { recursive: true });
   const cases = [
     [

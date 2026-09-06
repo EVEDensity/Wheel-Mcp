@@ -21,6 +21,7 @@ import {
   readRuntimeEventsSince,
   subscribeRuntimeEvents,
   streamRuntimeEvents,
+  streamEventSubscription,
   createEventSubscription,
   pollEventSubscription,
   cancelEventSubscription,
@@ -35,9 +36,13 @@ import { gitCheckpoint, gitRecovery } from './git-recovery.js';
 import { classifyError } from './error-schema.js';
 import { createTimeoutContext, TimeoutContext } from './timeout.js';
 import type { McpFailureResult, McpToolResult } from './tool-types.js';
+import { serverCapabilities, serverInfo } from './server-info.js';
+import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
+import { executeScenario, loadScenario } from './scenario-executor.js';
+import { scenarioSchema } from './scenario-schema.js';
+import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from './input-schemas.js';
 
-const info = { name: 'godot-game-harness-mcp', version: '0.1.0-preview.1' };
-const server = new McpServer(info, { capabilities: { tools: {} } });
+const server = new McpServer(serverInfo, { capabilities: serverCapabilities });
 const projectPath = z.string();
 const godotPath = z.string().optional();
 const bridgePath = z.string();
@@ -47,7 +52,7 @@ const failure = (error: unknown): McpFailureResult => ({
   isError: true,
   content: [{ type: 'text' as const, text: JSON.stringify(classifyError(error)) }],
 });
-const timeoutMs = z.number().int().nonnegative().optional();
+const timeoutMs = timeoutMsSchema;
 const cursor = z
   .union([
     z.number().int().nonnegative(),
@@ -61,7 +66,7 @@ async function invoke<T>(
   requested: number | undefined,
   signal?: AbortSignal,
 ) {
-  const context = createTimeoutContext(requested ?? 30000, signal);
+  const context = createTimeoutContext(requested ?? DEFAULT_COMMAND_TIMEOUT_MS, signal);
   try {
     return result(await operation(context));
   } catch (error: unknown) {
@@ -146,10 +151,10 @@ server.tool(
 server.tool(
   'stop_project',
   'Stop a process.',
-  { pid: z.number().int(), timeoutMs },
+  { pid: pidSchema, timeoutMs },
   async ({ pid, timeoutMs }, extra) =>
     invoke(
-      (context) => stopProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining()), context),
+      (context) => stopProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
       timeoutMs,
       extra.signal,
     ),
@@ -157,10 +162,10 @@ server.tool(
 server.tool(
   'cancel_project',
   'Cancel a process.',
-  { pid: z.number().int(), timeoutMs },
+  { pid: pidSchema, timeoutMs },
   async ({ pid, timeoutMs }, extra) =>
     invoke(
-      (context) => cancelProcess(pid, Math.min(timeoutMs ?? 5000, context.remaining()), context),
+      (context) => cancelProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
       timeoutMs,
       extra.signal,
     ),
@@ -168,7 +173,7 @@ server.tool(
 server.tool(
   'get_process_status',
   'Inspect process state.',
-  { pid: z.number().int(), timeoutMs },
+  { pid: pidSchema, timeoutMs },
   async ({ pid, timeoutMs }, extra) =>
     invoke(
       async (context) => {
@@ -184,6 +189,7 @@ server.tool(
   'Read runtime events from a cursor.',
   {
     evidenceDir: z.string(),
+    subscriptionId: z.string().min(1).optional(),
     cursor,
     limit: z.number().int().positive().optional(),
     timeoutMs,
@@ -203,6 +209,7 @@ server.tool(
   'Subscribe to runtime events with resumable cursor and filters.',
   {
     evidenceDir: z.string(),
+    subscriptionId: z.string().min(1).optional(),
     cursor,
     event: eventNames,
     runId: z.string().min(1).optional(),
@@ -214,7 +221,7 @@ server.tool(
     timeoutMs: z.number().int().positive().optional(),
   },
   async (
-    { evidenceDir, cursor, event, runId, payload, continuous, maxEvents, pollIntervalMs, limit, timeoutMs },
+    { evidenceDir, subscriptionId, cursor, event, runId, payload, continuous, maxEvents, pollIntervalMs, limit, timeoutMs },
     extra,
   ) =>
     invoke(
@@ -230,14 +237,15 @@ server.tool(
             filter,
           });
         }
+        const subscription = subscriptionId
+          ? { subscription_id: subscriptionId }
+          : await createEventSubscription(evidenceDir, { cursor, filter });
         const events = [];
-        const stream = streamRuntimeEvents(evidenceDir, {
-          cursor,
+        const stream = streamEventSubscription(evidenceDir, subscription.subscription_id, {
           signal: context.signal,
           limit,
           maxEvents: maxEvents ?? 100,
           pollIntervalMs,
-          filter,
         });
         while (events.length < (maxEvents ?? 100)) {
           const next = await stream.next();
@@ -249,7 +257,15 @@ server.tool(
             data: next.value,
           });
         }
-        return { schema_version: '0.1', source: 'REAL', evidenceDir, events, cancelled: false };
+        return {
+          schema_version: '0.1',
+          source: 'REAL',
+          evidenceDir,
+          subscription_id: subscription.subscription_id,
+          status: 'ACTIVE',
+          events,
+          cancelled: false,
+        };
       },
       timeoutMs,
       extra.signal,
@@ -355,34 +371,20 @@ server.tool(
   'stop_run',
   'Stop an isolated run by its run id.',
   { runId: z.string().min(1), timeoutMs },
-  async ({ runId, timeoutMs }, extra) =>
-    invoke(
-      (context) => runRegistry.stop(runId, Math.min(timeoutMs ?? 5000, context.remaining())),
-      timeoutMs,
-      extra.signal,
-    ),
+  async ({ runId, timeoutMs }, extra) => invoke((context) => runRegistry.stop(runId, context), timeoutMs, extra.signal),
 );
 server.tool(
   'cancel_run',
   'Cancel an isolated run by its run id.',
   { runId: z.string().min(1), timeoutMs },
   async ({ runId, timeoutMs }, extra) =>
-    invoke(
-      (context) => runRegistry.cancel(runId, Math.min(timeoutMs ?? 5000, context.remaining())),
-      timeoutMs,
-      extra.signal,
-    ),
+    invoke((context) => runRegistry.cancel(runId, context), timeoutMs, extra.signal),
 );
 server.tool(
   'reclaim_orphan_runs',
   'Reclaim orphaned processes recorded by the run registry.',
   { timeoutMs },
-  async ({ timeoutMs }, extra) =>
-    invoke(
-      (context) => runRegistry.reclaimOrphans(Math.min(timeoutMs ?? 5000, context.remaining())),
-      timeoutMs,
-      extra.signal,
-    ),
+  async ({ timeoutMs }, extra) => invoke((context) => runRegistry.reclaimOrphans(context), timeoutMs, extra.signal),
 );
 server.tool('list_runs', 'List isolated runs and detect orphans.', { timeoutMs }, async ({ timeoutMs }, extra) =>
   invoke(
@@ -468,8 +470,8 @@ server.tool(
     projectPath,
     bridgePath,
     evidenceDir,
-    keycode: z.number().int(),
-    pressed: z.boolean().optional(),
+    keycode: keycodeSchema,
+    pressed: pressedSchema,
     timeoutMs,
   },
   async (args, extra) =>
@@ -546,6 +548,44 @@ server.tool(
         context.throwIfCancelled();
         return gitRecovery(projectPath, patchPath, context);
       },
+      timeoutMs,
+      extra.signal,
+    ),
+);
+
+server.tool(
+  'execute_scenario',
+  'Execute a declarative Godot scenario with shared timeout and evidence semantics.',
+  {
+    scenario: scenarioSchema,
+    scenarioPath: z.string().optional(),
+    godotPath,
+    bridgePath,
+    evidenceDir,
+    defaultStepTimeoutMs: z.number().int().positive().optional(),
+    globalTimeoutMs: z.number().int().positive().optional(),
+    retries: z.number().int().nonnegative().optional(),
+    onFailure: z.enum(['stop', 'continue']).optional(),
+    timeoutMs,
+  },
+  async (
+    { scenario, scenarioPath, godotPath, bridgePath, evidenceDir, defaultStepTimeoutMs, globalTimeoutMs, retries, onFailure, timeoutMs },
+    extra,
+  ) =>
+    invoke(
+      (context) =>
+        executeScenario({
+          scenario,
+          scenarioPath,
+          godotPath: godotPath || process.env.GODOT_PATH,
+          bridgePath,
+          evidenceDir,
+          defaultStepTimeoutMs,
+          globalTimeoutMs,
+          retries,
+          onFailure,
+          signal: context.signal,
+        }),
       timeoutMs,
       extra.signal,
     ),

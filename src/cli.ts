@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import {
   getGodotVersion,
+  listProjects,
+  getProjectInfo,
   getSceneTree,
   queryRuntimeSceneTree,
   queryRuntimeProperty,
@@ -17,12 +19,17 @@ import { executeScenario, loadScenario } from './scenario-executor.js';
 import { buildContextPack } from './context-pack.js';
 import { classifyError } from './error-schema.js';
 import { createTimeoutContext } from './timeout.js';
+import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_SCENARIO_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import type { CliOptions } from './tool-types.js';
+import { parseCliBoolean, parseCliJson, parseCliNumber } from './input-schemas.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
 const options: CliOptions = parseOptions(args);
-const commandTimeoutMs = Number(options.timeout || 30000);
+const commandTimeoutMs = parseCliNumber(options.timeout, 'timeout', DEFAULT_COMMAND_TIMEOUT_MS);
 const commandContext = createTimeoutContext(commandTimeoutMs);
+const cancelProcessSignals = () => commandContext.cancel('CLI process interrupted');
+process.once('SIGINT', cancelProcessSignals);
+process.once('SIGTERM', cancelProcessSignals);
 
 try {
   if (command === 'doctor') {
@@ -39,12 +46,22 @@ try {
         2,
       ),
     );
+  } else if (command === 'list-projects') {
+    console.log(
+      JSON.stringify(
+        await listProjects(required(options.directory, '--directory'), parseCliBoolean(options.recursive, false), commandContext),
+        null,
+        2,
+      ),
+    );
+  } else if (command === 'project-info') {
+    console.log(JSON.stringify(await getProjectInfo(required(options.project, '--project'), commandContext), null, 2));
   } else if (command === 'launch') {
     const result = await launchProject({
       godotPath: options.godot || process.env.GODOT_PATH,
       projectPath: required(options.project, '--project'),
       evidenceDir: options.evidence,
-      headless: options.headless === 'true',
+      headless: parseCliBoolean(options.headless),
       timeout: commandContext,
     });
     process.stdout.write(JSON.stringify(result.metadata, null, 2) + '\n', () => process.exit(0));
@@ -90,12 +107,7 @@ try {
     );
   } else if (command === 'set-runtime-property') {
     const rawValue = required(options.value, '--value');
-    let value: unknown = rawValue;
-    try {
-      value = JSON.parse(rawValue) as unknown;
-    } catch {
-      /* preserve string values */
-    }
+    const value: unknown = parseCliJson(rawValue, '--value');
     console.log(
       JSON.stringify(
         await mutateRuntimeProperty({
@@ -120,8 +132,8 @@ try {
           projectPath: required(options.project, '--project'),
           evidenceDir: options.evidence,
           bridgePath: required(options.bridge, '--bridge'),
-          keycode: Number(required(options.keycode, '--keycode')),
-          pressed: options.pressed !== 'false',
+          keycode: parseCliNumber(options.keycode, '--keycode'),
+          pressed: parseCliBoolean(options.pressed),
           timeout: commandContext,
         }),
         null,
@@ -154,7 +166,7 @@ try {
           godotPath: options.godot || process.env.GODOT_PATH,
           bridgePath: required(options.bridge, '--bridge'),
           evidenceDir: options.evidence,
-          globalTimeoutMs: Number(options.timeout || 120000),
+          globalTimeoutMs: parseCliNumber(options.timeout, '--timeout', DEFAULT_SCENARIO_TIMEOUT_MS),
           signal: commandContext.signal,
         }),
         null,
@@ -178,7 +190,11 @@ try {
   } else if (command === 'stop') {
     console.log(
       JSON.stringify(
-        await stopProcess(Number(required(options.pid, '--pid')), Math.min(5000, commandContext.remaining())),
+        await stopProcess(
+          Number(required(options.pid, '--pid')),
+          Math.min(DEFAULT_STOP_TIMEOUT_MS, commandContext.remaining()),
+          commandContext,
+        ),
         null,
         2,
       ),
@@ -188,7 +204,7 @@ try {
       JSON.stringify(
         await cancelProcess(
           Number(required(options.pid, '--pid')),
-          Math.min(5000, commandContext.remaining()),
+          Math.min(DEFAULT_STOP_TIMEOUT_MS, commandContext.remaining()),
           commandContext,
         ),
         null,
@@ -197,7 +213,7 @@ try {
     );
   } else {
     throw new Error(
-      `Unknown command: ${command}. Use doctor, launch, logs, scene-tree, runtime-scene-tree, runtime-property, set-runtime-property, inject-input, screenshot, scenario, context-pack, stop, or cancel.`,
+      `Unknown command: ${command}. Use doctor, list-projects, project-info, launch, logs, scene-tree, runtime-scene-tree, runtime-property, set-runtime-property, inject-input, screenshot, scenario, context-pack, stop, or cancel.`,
     );
   }
 } catch (error) {
@@ -205,6 +221,8 @@ try {
   process.exitCode = 1;
 } finally {
   commandContext.dispose();
+  process.removeListener('SIGINT', cancelProcessSignals);
+  process.removeListener('SIGTERM', cancelProcessSignals);
 }
 
 function required(value: string | undefined, name: string): string {

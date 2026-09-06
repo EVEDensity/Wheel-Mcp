@@ -66,7 +66,7 @@ export const cliMcpContracts: readonly ToolConsistencyContract[] = [
     errorCodes: ['TIMEOUT', 'FAILED'],
     timeoutCancellation: 'SHARED_CONTEXT',
     evidence: 'RUN',
-    status: 'PARTIAL',
+    status: 'VERIFIED',
   },
   {
     cliCommand: 'context-pack',
@@ -99,7 +99,7 @@ export const cliMcpContracts: readonly ToolConsistencyContract[] = [
     errorCodes: ['TIMEOUT', 'CANCELLED', 'FAILED'],
     timeoutCancellation: 'SHARED_CONTEXT',
     evidence: 'RUN',
-    status: 'UNAVAILABLE',
+    status: 'VERIFIED',
   },
 ] as const;
 
@@ -123,3 +123,24 @@ export const mcpOnlyTools = [
   'git_checkpoint',
   'git_recovery',
 ] as const;
+
+export const mcpOnlyReasons: Readonly<Record<(typeof mcpOnlyTools)[number], string>> = {
+  list_projects: 'MCP discovery API; CLI command not yet exposed',
+  get_project_info: 'MCP project metadata API; CLI command not yet exposed',
+  cancel_project: 'MCP process control alias; CLI cancel is the equivalent command',
+  get_process_status: 'MCP lifecycle inspection API',
+  get_runtime_events: 'MCP cursor/event API',
+  subscribe_runtime_events: 'MCP resumable subscription API',
+  list_runs: 'MCP registry inspection API',
+  list_active_runs: 'MCP registry inspection API',
+  stop_run: 'MCP run-id control API',
+  cancel_run: 'MCP run-id control API',
+  reclaim_orphan_runs: 'MCP registry recovery API',
+  get_runtime_scene_tree: 'MCP runtime bridge API; CLI runtime-scene-tree is equivalent',
+  get_runtime_property: 'MCP runtime bridge API; CLI runtime-property is equivalent',
+  set_runtime_property: 'MCP runtime bridge API; CLI set-runtime-property is equivalent',
+  inject_runtime_input: 'MCP runtime bridge API; CLI inject-input is equivalent',
+  capture_runtime_screenshot: 'MCP runtime bridge API; CLI screenshot is equivalent',
+  git_checkpoint: 'MCP evidence API; CLI command not yet exposed',
+  git_recovery: 'MCP recovery API; CLI command not yet exposed',
+};

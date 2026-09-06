@@ -18,6 +18,7 @@
     "lint": "eslint src tests",
     "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js",
     "release:check": "node scripts/release-check.mjs"
+    ,"matrix:generate": "node scripts/generate-matrix.mjs"
   },
   "engines": {
     "node": ">=20"

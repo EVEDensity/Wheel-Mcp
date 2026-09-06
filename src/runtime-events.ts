@@ -475,6 +475,32 @@ export async function* streamRuntimeEvents(
   return { ...page, cursor, events: collected, cancelled: options.signal?.aborted === true };
 }
 
+/** Continuous delivery backed by the persistent subscription registry. */
+export async function* streamEventSubscription(
+  evidenceDir: string,
+  subscriptionId: string,
+  options: Pick<EventSubscriptionOptions, 'signal' | 'pollIntervalMs' | 'limit' | 'maxEvents'> = {},
+): AsyncGenerator<
+  RuntimeEvent & { subscription_id: string; cursor: EventCursor | number },
+  SubscriptionResult & { subscription_id: string },
+  void
+> {
+  const collected: RuntimeEvent[] = [];
+  const pollInterval = Math.max(10, options.pollIntervalMs ?? 100);
+  while (!options.signal?.aborted && (options.maxEvents === undefined || collected.length < options.maxEvents)) {
+    const page = await pollEventSubscription(evidenceDir, subscriptionId, options.limit ?? 100);
+    for (const event of page.events) {
+      collected.push(event);
+      yield { ...event, subscription_id: subscriptionId, cursor: page.next_cursor ?? page.cursor };
+      if (options.maxEvents !== undefined && collected.length >= options.maxEvents) break;
+    }
+    if (options.maxEvents !== undefined && collected.length >= options.maxEvents) break;
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+  const page = await pollEventSubscription(evidenceDir, subscriptionId, options.limit ?? 100);
+  return { ...page, events: collected, subscription_id: subscriptionId, cancelled: options.signal?.aborted === true };
+}
+
 export async function subscribeRuntimeEvents(
   evidenceDir: string,
   options: EventSubscriptionOptions = {},
