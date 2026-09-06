@@ -261,8 +261,9 @@ server.tool(
     event: eventNames,
     runId: z.string().min(1).optional(),
     payload: eventPayload,
+    timeoutMs,
   },
-  async ({ evidenceDir, cursor, event, runId, payload }, extra) =>
+  async ({ evidenceDir, cursor, event, runId, payload, timeoutMs }, extra) =>
     invoke(
       (context) => {
         context.throwIfCancelled();
@@ -271,7 +272,7 @@ server.tool(
           filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
         });
       },
-      undefined,
+      timeoutMs,
       extra.signal,
     ),
 );
