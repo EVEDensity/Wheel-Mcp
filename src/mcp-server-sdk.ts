@@ -2,6 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { pathToFileURL } from 'node:url';
+import { authorizeToolCall, recordToolOwnership, type McpClientPolicy } from './mcp/access-policy.js';
 import { z } from 'zod';
 import {
   captureRuntimeScreenshot,
@@ -43,8 +44,46 @@ import { executeScenario, loadScenario } from './scenario-executor.js';
 import { scenarioSchema } from './scenario-schema.js';
 import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from './input-schemas.js';
 
-export function createMcpServer(): McpServer {
+export function createMcpServer(policy?: McpClientPolicy): McpServer {
   const server = new McpServer(serverInfo, { capabilities: serverCapabilities });
+  const originalTool = server.tool.bind(server);
+  Object.defineProperty(server, 'tool', {
+    value: (
+      name: string,
+      description: string,
+      schema: Record<string, z.ZodTypeAny>,
+      callback: (args: any, extra: any) => any,
+    ) =>
+      originalTool(name, description, schema, async (args, extra) => {
+        try {
+          if (policy) authorizeToolCall(policy, name, args as Record<string, unknown>);
+          const response = await callback(args, extra);
+          if (policy) recordToolOwnership(policy, name, response);
+          return response;
+        } catch (error) {
+          if (
+            error &&
+            typeof error === 'object' &&
+            'code' in error &&
+            (error as { code?: unknown }).code === 'FORBIDDEN'
+          ) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text' as const,
+                  text: JSON.stringify({
+                    code: 'FORBIDDEN',
+                    error: error instanceof Error ? error.message : 'forbidden',
+                  }),
+                },
+              ],
+            };
+          }
+          throw error;
+        }
+      }),
+  });
   const projectPath = z.string();
   const godotPath = z.string().optional();
   const bridgePath = z.string();
