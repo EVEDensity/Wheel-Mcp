@@ -5,6 +5,7 @@ import { parse } from 'yaml';
 import { createTimeoutContext } from './timeout.js';
 import { DEFAULT_SCENARIO_TIMEOUT_MS, DEFAULT_STEP_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { classifyError } from './error-schema.js';
+import { PersistentRuntimeBridge } from './persistent-runtime-bridge.js';
 import { parseScenario } from './scenario-schema.js';
 import type {
   LaunchHandle,
@@ -52,6 +53,7 @@ export async function executeScenario({
   const globalContext = createTimeoutContext(globalTimeoutMs, signal);
   const results: ScenarioStepResult[] = [];
   let launch: LaunchHandle | null = null;
+  let bridge: PersistentRuntimeBridge | null = null;
   let failed = false;
   for (let index = 0; index < scenario.steps.length; index += 1) {
     const step = scenario.steps[index] || {};
@@ -61,39 +63,60 @@ export async function executeScenario({
     let result: ScenarioRunStepResult = { status: 'FAIL' };
     let attemptsUsed = 0;
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      attemptsUsed = attempt;
       const remaining = deadline - Date.now();
       if (remaining <= 0) {
         result = { status: 'TIMEOUT', timed_out: true };
         break;
       }
       const timeoutMs = Math.min(Number(options?.timeoutMs ?? defaultStepTimeoutMs), remaining);
-      result = await runStep(kind, options, {
-        scenario,
-        evidence,
-        bridgePath,
-        godotPath,
-        launch,
-        timeoutMs,
-        timeout: createTimeoutContext(timeoutMs, globalContext.signal),
-      });
+      const stepTimeout = createTimeoutContext(timeoutMs, globalContext.signal);
+      try {
+        result = await runStep(kind, options, {
+          scenario,
+          evidence,
+          bridgePath,
+          godotPath,
+          launch,
+          bridge,
+          timeoutMs,
+          timeout: stepTimeout,
+        });
+      } finally {
+        stepTimeout.dispose();
+      }
       if (kind === 'launch' && result.status === 'PASS' && result.launch) launch = result.launch;
+      if (kind === 'launch' && result.status === 'PASS' && result.bridge) bridge = result.bridge;
       if (result.status === 'PASS') break;
     }
     if (result.launch) delete result.launch;
-    results.push({ ...result, index, kind, attempts: 1, status: result.status as ScenarioStepResult['status'] });
+    results.push({
+      ...result,
+      index,
+      kind,
+      attempts: attemptsUsed,
+      status: result.status as ScenarioStepResult['status'],
+    });
     if (result.status !== 'PASS') {
       failed = true;
       if (onFailure === 'stop') break;
     }
   }
   let cleanup = { attempted: false, stopped: true };
-  if (launch && !launch.child.killed && launch.child.pid) {
+  if (bridge) {
+    cleanup = {
+      attempted: true,
+      stopped: await bridge
+        .stop(globalContext)
+        .then(() => true)
+        .catch(() => false),
+    };
+  } else if (launch && !launch.child.killed && launch.child.pid) {
     const stopped = await stopProcess(
       launch.child.pid,
-      Math.min(DEFAULT_STOP_TIMEOUT_MS, Math.max(0, globalContext.remaining())),
-      globalContext,
+      Math.min(DEFAULT_STOP_TIMEOUT_MS, Math.max(0, deadline - Date.now())),
     )
-      .then(() => ({ stopped: true }))
+      .then((result) => ({ stopped: result.stopped === true }))
       .catch(() => ({ stopped: false }));
     cleanup = { attempted: true, stopped: stopped.stopped === true };
   }
@@ -125,22 +148,46 @@ async function runStep(
   context: ScenarioExecutionContext,
 ): Promise<ScenarioRunStepResult> {
   try {
+    const projectPath = () => requiredScenarioValue(options.project || context.scenario.project, 'project');
+    if (kind === 'launch' && context.bridgePath) {
+      const bridge = await PersistentRuntimeBridge.start({
+        godotPath: context.godotPath || process.env.GODOT_PATH,
+        projectPath: projectPath(),
+        evidenceDir: context.evidence,
+        bridgePath: context.bridgePath,
+        headless: options.mode === 'headless',
+        timeout: context.timeout,
+      });
+      await bridge.request('subscribe_events', {}, context.timeout);
+      return { status: 'PASS', bridge };
+    }
     if (kind === 'launch')
       return {
         status: 'PASS',
         launch: await launchProject({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: requiredScenarioValue(options.project || context.scenario.project, 'project'),
+          projectPath: projectPath(),
           evidenceDir: context.evidence,
           headless: options.mode !== 'windowed',
           timeout: context.timeout,
         }),
       };
+    if (kind === 'input' && context.bridge) {
+      const response = await context.bridge.request(
+        'inject_input',
+        {
+          keycode: requiredScenarioNumber(options.keycode, 'keycode'),
+          pressed: options.pressed !== false,
+        },
+        context.timeout,
+      );
+      return isAcceptedInputResponse(response) ? { status: 'PASS' } : { status: 'FAIL' };
+    }
     if (kind === 'input')
       return (
         await injectRuntimeInput({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: requiredScenarioValue(context.scenario.project, 'project'),
+          projectPath: projectPath(),
           evidenceDir: context.evidence,
           bridgePath: requiredScenarioValue(context.bridgePath, 'bridgePath'),
           keycode: requiredScenarioNumber(options.keycode, 'keycode'),
@@ -150,11 +197,18 @@ async function runStep(
       ).response?.accepted
         ? { status: 'PASS' }
         : { status: 'FAIL' };
+    if (kind === 'screenshot' && context.bridge) {
+      const screenshotDir = path.join(context.evidence, `step-${options.name || 'screenshot'}`);
+      await mkdir(screenshotDir, { recursive: true });
+      const screenshotPath = path.join(screenshotDir, 'screenshot.png');
+      const response = await context.bridge.request('capture_screenshot', { path: screenshotPath }, context.timeout);
+      return (await isValidScreenshotResponse(response, screenshotPath)) ? { status: 'PASS' } : { status: 'FAIL' };
+    }
     if (kind === 'screenshot')
       return (
         await captureRuntimeScreenshot({
           godotPath: context.godotPath || process.env.GODOT_PATH,
-          projectPath: requiredScenarioValue(context.scenario.project, 'project'),
+          projectPath: projectPath(),
           evidenceDir: path.join(context.evidence, `step-${options.name || 'screenshot'}`),
           bridgePath: requiredScenarioValue(context.bridgePath, 'bridgePath'),
           timeout: context.timeout,
@@ -162,6 +216,8 @@ async function runStep(
       ).response?.capability === 'RUNTIME_SCREENSHOT'
         ? { status: 'PASS' }
         : { status: 'FAIL' };
+    if ((kind === 'wait' || kind === 'assert') && context.bridge)
+      return await waitForBridgeEvent(context.bridge, requiredScenarioValue(options.event, 'event'), context.timeout);
     if (kind === 'wait' || kind === 'assert')
       return await waitForEvent(
         context.evidence,
@@ -169,6 +225,10 @@ async function runStep(
         context.timeoutMs,
         context.timeout.signal,
       );
+    if (kind === 'stop' && context.bridge) {
+      await context.bridge.stop(context.timeout);
+      return { status: 'PASS' };
+    }
     if (kind === 'stop')
       return context.launch
         ? {
@@ -186,6 +246,35 @@ async function runStep(
       cancelled: envelope.cancelled,
     };
   }
+}
+
+function isAcceptedInputResponse(value: unknown): boolean {
+  return isRecord(value) && value.accepted === true && value.capability === 'RUNTIME_INPUT_INJECTION';
+}
+
+async function isValidScreenshotResponse(value: unknown, screenshotPath: string): Promise<boolean> {
+  if (
+    !isRecord(value) ||
+    value.capability !== 'RUNTIME_SCREENSHOT' ||
+    value.path !== screenshotPath ||
+    !Number.isInteger(value.width) ||
+    !Number.isInteger(value.height) ||
+    Number(value.width) < 16 ||
+    Number(value.height) < 16
+  )
+    return false;
+  const png = await readFile(screenshotPath).catch(() => null);
+  return Boolean(
+    png &&
+      png.length >= 100 &&
+      png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) &&
+      png.readUInt32BE(16) === value.width &&
+      png.readUInt32BE(20) === value.height,
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function requiredScenarioValue(value: string | undefined, name: string): string {
@@ -232,4 +321,29 @@ async function waitForEvent(evidence: string, expected: string, timeoutMs: numbe
     return { status: 'FAIL', code: 'CANCELLED', error: 'operation cancelled', cancelled: true };
   }
   return { status: 'FAIL', error: `event not observed: ${expected}`, timed_out: true };
+}
+
+async function waitForBridgeEvent(
+  bridge: PersistentRuntimeBridge,
+  expected: string,
+  timeout: ScenarioExecutionContext['timeout'],
+) {
+  const observed = () => bridge.getEvents().some((notification) => notification.params?.event === expected);
+  while (!observed()) {
+    if (timeout.signal.aborted) {
+      return timeout.cancelled
+        ? { status: 'FAIL', code: 'CANCELLED', error: 'operation cancelled', cancelled: true }
+        : { status: 'FAIL', code: 'TIMEOUT', error: `event not observed: ${expected}`, timed_out: true };
+    }
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, Math.min(50, Math.max(1, timeout.remaining())));
+      const onAbort = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      timeout.signal.addEventListener('abort', onAbort, { once: true });
+      setTimeout(() => timeout.signal.removeEventListener('abort', onAbort), Math.max(1, timeout.remaining()));
+    });
+  }
+  return { status: 'PASS', event: expected };
 }
