@@ -9,15 +9,21 @@ It does not copy the B1/B2 benchmark implementations.
 ## Verification Status
 
 Release readiness is tracked in [`docs/RELEASE-READINESS.md`](docs/RELEASE-READINESS.md).
-The current preview is not release-clean: the real matrix still has MCP
-stop/cancel and Scenario failures, and `npm run release:check` is expected to
-fail until those are fixed.
+The current local Windows preview matrix is release-clean: stop/cancel,
+Scenario, screenshot validation, and the MCP/CLI parity checks pass. The
+release gate must still be run in the release environment because `runs/`
+contains machine-local evidence and is intentionally ignored by Git.
 
 - Node.js 20 and 22 are covered by the CI matrix on Linux, Windows, and macOS
   for build, lint, unit tests, and release checks.
 - Real Godot runtime evidence has been collected locally on Windows with Godot
   4.7.2. CI does not claim real Godot runtime coverage unless `GODOT_PATH` and
   `REAL_GODOT_PROJECT` are explicitly configured.
+- The Streamable HTTP server is localhost-only by default. Remote binding
+  requires `MCP_HTTP_ALLOW_REMOTE=true`, explicit allowed Host/Origin values,
+  and bearer-token client configuration.
+- HTTP sessions are isolated by client identity and scope. Project and
+  evidence paths must be inside the configured client roots.
 - Windows process-tree testing may be `SKIP` in restricted environments when
   `taskkill /T /F` returns `ACCESS_DENIED`.
 
@@ -76,6 +82,24 @@ Invalid values produce the standard error envelope with `FAILED` or
 The stdio server is `build/src/mcp-server-sdk.js`. Every tool accepts optional
 `timeoutMs` where applicable and returns JSON text in the official MCP result.
 
+The standard remote transport is Streamable HTTP, served by
+`build/src/mcp-http-server.js` and mounted at `/mcp` by default:
+
+```powershell
+$env:MCP_HTTP_BEARER_TOKEN = 'replace-with-a-secret'
+$env:MCP_HTTP_PROJECT_ROOTS = 'D:\projects\game'
+$env:MCP_HTTP_EVIDENCE_ROOTS = 'D:\evidence\game'
+node .\build\src\mcp-http-server.js
+```
+
+The HTTP server binds to `127.0.0.1:3000` by default. A non-loopback bind
+requires `MCP_HTTP_ALLOW_REMOTE=true`, explicit
+`MCP_HTTP_ALLOWED_ORIGINS`/`MCP_HTTP_ALLOWED_HOSTS`, and bearer-token client
+configuration. Multiple isolated clients can be configured with the JSON
+`MCP_HTTP_AUTH_TOKENS` value; each entry supplies `token`, `clientId`,
+`scopes`, `projectRoots`, and `evidenceRoots`. The server uses the official
+SDK `StreamableHTTPServerTransport` with stateful MCP sessions. WebSocket is
+not advertised or implemented as an MCP standard transport in this release.
 Core tools:
 
 - `get_godot_version({ godotPath, timeoutMs })`
