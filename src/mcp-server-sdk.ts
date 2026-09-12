@@ -42,6 +42,7 @@ import { serverCapabilities, serverInfo } from './server-info.js';
 import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { executeScenario, loadScenario } from './scenario-executor.js';
 import { scenarioSchema } from './scenario-schema.js';
+import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from './persistent-runtime-bridge.js';
 import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from './input-schemas.js';
 
 export function createMcpServer(policy?: McpClientPolicy): McpServer {
@@ -102,6 +103,15 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
     .optional();
   const eventNames = z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional();
   const eventPayload = z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional();
+  const runtimeMethod = z.enum([
+    'get_scene_tree',
+    'get_property',
+    'set_property',
+    'inject_input',
+    'capture_screenshot',
+    'subscribe_events',
+    'stop',
+  ]);
   async function invoke<T>(
     operation: (context: TimeoutContext) => Promise<T>,
     requested: number | undefined,
@@ -547,6 +557,53 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
         args.timeoutMs,
         extra.signal,
       ),
+  );
+  server.tool(
+    'open_runtime_bridge',
+    'Open a persistent Godot runtime bridge session.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      sessionId: z.string().min(1).optional(),
+      headless: z.boolean().optional(),
+      timeoutMs,
+    },
+    async ({ godotPath, projectPath, bridgePath, evidenceDir, sessionId, headless, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          openRuntimeBridge({
+            godotPath: godotPath || process.env.GODOT_PATH,
+            projectPath,
+            bridgePath,
+            evidenceDir,
+            runId: sessionId,
+            headless,
+            timeout: context,
+          }),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'call_runtime_bridge',
+    'Send a JSON-RPC request to a persistent Godot runtime bridge session.',
+    {
+      sessionId: z.string().min(1),
+      method: runtimeMethod,
+      params: z.record(z.string(), z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, method, params, timeoutMs }, extra) =>
+      invoke((context) => callRuntimeBridge(sessionId, method, params || {}, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'stop_runtime_bridge',
+    'Stop a persistent Godot runtime bridge session.',
+    { sessionId: z.string().min(1), timeoutMs },
+    async ({ sessionId, timeoutMs }, extra) =>
+      invoke((context) => stopRuntimeBridge(sessionId, context), timeoutMs, extra.signal),
   );
   server.tool(
     'get_context_pack',
