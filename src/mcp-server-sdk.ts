@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import {
   captureRuntimeScreenshot,
@@ -595,4 +596,11 @@ export function createMcpServer(): McpServer {
   return server;
 }
 
-await createMcpServer().connect(new StdioServerTransport());
+async function main(): Promise<void> {
+  const server = createMcpServer();
+  await server.connect(new StdioServerTransport());
+}
+
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await main();
+}
