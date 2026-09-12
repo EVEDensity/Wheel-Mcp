@@ -1,31 +1,51 @@
 extends SceneTree
 
 var event_sequence: int = 0
+var persistent_peer: StreamPeerTCP
+var persistent_buffer: String = ""
+var persistent_instance: Node
+var persistent_main_scene: String
+var persistent_run_id: String
+var persistent_level_started_sent: bool = false
 
 func _initialize() -> void:
-	var request_path: String = OS.get_environment("GODOT_HARNESS_REQUEST")
-	var response_path: String = OS.get_environment("GODOT_HARNESS_RESPONSE")
-	var events_path: String = OS.get_environment("GODOT_HARNESS_EVENTS")
-	var main_scene: String = OS.get_environment("GODOT_HARNESS_MAIN_SCENE")
-	if main_scene.is_empty():
-		main_scene = str(ProjectSettings.get_setting("run/main_scene", ""))
-	if main_scene.is_empty():
-		_fail(response_path, "project has no run/main_scene")
+	persistent_run_id = OS.get_environment("GODOT_HARNESS_RUN_ID")
+	persistent_main_scene = str(ProjectSettings.get_setting("run/main_scene", ProjectSettings.get_setting("application/run/main_scene", "")))
+	var main_scene := OS.get_environment("GODOT_HARNESS_MAIN_SCENE")
+	if not main_scene.is_empty():
+		persistent_main_scene = main_scene
+	if persistent_main_scene.is_empty():
+		push_error("project has no run/main_scene")
+		_fail(OS.get_environment("GODOT_HARNESS_RESPONSE"), "project has no run/main_scene")
 		return
-	var packed: PackedScene = load(main_scene) as PackedScene
+	var packed: PackedScene = load(persistent_main_scene) as PackedScene
 	if packed == null:
-		_fail(response_path, "unable to load main scene: " + main_scene)
+		push_error("unable to load main scene: " + persistent_main_scene)
+		_fail(OS.get_environment("GODOT_HARNESS_RESPONSE"), "unable to load main scene: " + persistent_main_scene)
 		return
-	var instance: Node = packed.instantiate()
-	root.add_child(instance)
-	_emit_event(events_path, "level_started", {"scene": main_scene})
+	persistent_instance = packed.instantiate()
+	if persistent_instance == null:
+		push_error("unable to instantiate main scene: " + persistent_main_scene)
+		_fail(OS.get_environment("GODOT_HARNESS_RESPONSE"), "unable to instantiate main scene: " + persistent_main_scene)
+		return
+	root.add_child(persistent_instance)
+	var port := _persistent_port()
+	if port > 0:
+		_start_persistent(port)
+		return
+	_emit_event(OS.get_environment("GODOT_HARNESS_EVENTS"), "level_started", {"scene": persistent_main_scene})
+	_run_legacy_request()
+
+func _run_legacy_request() -> void:
+	var request_path := OS.get_environment("GODOT_HARNESS_REQUEST")
+	var response_path := OS.get_environment("GODOT_HARNESS_RESPONSE")
 	var request: Dictionary = {}
 	var request_file := FileAccess.open(request_path, FileAccess.READ)
 	if request_file != null:
 		request = JSON.parse_string(request_file.get_as_text()) as Dictionary
 		request_file.close()
 	if request.get("method", "get_scene_tree") == "get_property" or request.get("method", "get_scene_tree") == "set_property":
-		_write_property(response_path, instance, request)
+		_write_property(response_path, persistent_instance, request)
 		quit()
 		return
 	if request.get("method", "get_scene_tree") == "inject_input":
@@ -33,13 +53,181 @@ func _initialize() -> void:
 		quit()
 		return
 	if request.get("method", "get_scene_tree") == "capture_screenshot":
+		await process_frame
+		await process_frame
 		_capture_screenshot(response_path, request)
 		quit()
 		return
 	var nodes: Array[Dictionary] = []
-	_collect(instance, ".", nodes)
-	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": main_scene, "nodes": nodes})
+	_collect(persistent_instance, ".", nodes)
+	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": persistent_main_scene, "nodes": nodes})
 	quit()
+
+func _persistent_port() -> int:
+	var environment_port := int(OS.get_environment("GODOT_HARNESS_PORT"))
+	if environment_port > 0:
+		return environment_port
+	var args := OS.get_cmdline_user_args()
+	for index in range(args.size() - 1):
+		if str(args[index]) == "--harness-port":
+			var candidate := int(args[index + 1])
+			if candidate > 0:
+				return candidate
+	return 0
+
+func _start_persistent(port: int) -> void:
+	persistent_peer = StreamPeerTCP.new()
+	var error := persistent_peer.connect_to_host("127.0.0.1", port)
+	if error != OK:
+		push_error("persistent bridge connect failed: " + str(error))
+		quit(1)
+		return
+
+func _process(_delta: float) -> bool:
+	if persistent_peer == null:
+		return false
+	persistent_peer.poll()
+	if persistent_peer.get_status() == StreamPeerTCP.STATUS_CONNECTING:
+		return false
+	if persistent_peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+		persistent_peer = null
+		persistent_buffer = ""
+		return false
+	if not persistent_level_started_sent:
+		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {"run_id": persistent_run_id, "scene": persistent_main_scene}})
+	_emit_notification("level_started", {"scene": persistent_main_scene})
+	persistent_level_started_sent = true
+	var available := persistent_peer.get_available_bytes()
+	if available > 0:
+		var packet := persistent_peer.get_data(available)
+		if packet[0] == OK:
+			persistent_buffer += (packet[1] as PackedByteArray).get_string_from_utf8()
+		_process_persistent_lines()
+
+	return false
+func _process_persistent_lines() -> void:
+	var newline := persistent_buffer.find("\n")
+	while newline >= 0:
+		var line := persistent_buffer.substr(0, newline).strip_edges()
+		persistent_buffer = persistent_buffer.substr(newline + 1)
+		if not line.is_empty():
+			var parsed = JSON.parse_string(line)
+			if parsed is Dictionary:
+				_handle_persistent_request(parsed)
+			else:
+				_respond_error(null, -32700, "invalid JSON")
+		newline = persistent_buffer.find("\n")
+
+func _handle_persistent_request(request: Dictionary) -> void:
+	var request_id = request.get("id", null)
+	var method := str(request.get("method", ""))
+	var params: Dictionary = request.get("params", {}) as Dictionary
+	if method == "stop":
+		_respond(request_id, {"stopped": true, "run_id": persistent_run_id})
+		call_deferred("quit")
+		return
+	if method == "get_scene_tree":
+		var nodes: Array[Dictionary] = []
+		_collect(persistent_instance, ".", nodes)
+		_respond(request_id, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_TREE", "runtime": true, "scene": persistent_main_scene, "nodes": nodes})
+		return
+	if method == "get_property" or method == "set_property":
+		var property_result := _property_result(persistent_instance, params, method == "set_property")
+		if property_result.has("error"):
+			_respond_error(request_id, -32602, str(property_result.get("error")))
+		else:
+			_respond(request_id, property_result)
+		return
+	if method == "inject_input":
+		var input_result := _input_result(params)
+		if input_result.has("error"):
+			_respond_error(request_id, -32602, str(input_result.get("error")))
+		else:
+			_respond(request_id, input_result)
+		return
+	if method == "capture_screenshot":
+		var screenshot_result := await _screenshot_result(params)
+		if screenshot_result.has("error"):
+			_respond_error(request_id, -32000, str(screenshot_result.get("error")))
+		else:
+			_respond(request_id, screenshot_result)
+		return
+	if method == "subscribe_events":
+		_respond(request_id, {"subscribed": true, "run_id": persistent_run_id, "sequence": event_sequence})
+		return
+	_respond_error(request_id, -32601, "method not found: " + method)
+
+func _respond(request_id, value: Dictionary) -> void:
+	_emit_json({"jsonrpc": "2.0", "id": request_id, "result": value})
+
+func _respond_error(request_id, code: int, message: String) -> void:
+	_emit_json({"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message}})
+
+func _emit_json(value: Dictionary) -> void:
+	if persistent_peer == null:
+		return
+	persistent_peer.put_data((JSON.stringify(value) + "\n").to_utf8_buffer())
+
+func _emit_notification(event_name: String, payload: Dictionary) -> void:
+	event_sequence += 1
+	_emit_json({
+		"jsonrpc": "2.0",
+		"method": "runtime/event",
+		"params": {
+			"run_id": persistent_run_id,
+			"sequence": event_sequence,
+			"event": event_name,
+			"payload": payload,
+		},
+	})
+
+func _property_result(instance: Node, request: Dictionary, write: bool) -> Dictionary:
+	var node_path := str(request.get("nodePath", "."))
+	var property_name := str(request.get("property", ""))
+	var node: Node = instance if node_path == "." else instance.get_node_or_null(NodePath(node_path))
+	if node == null or property_name.is_empty():
+		return {"error": "nodePath or property is invalid"}
+	var known := false
+	for item in node.get_property_list():
+		if str(item.get("name", "")) == property_name:
+			known = true
+			break
+	if not known:
+		return {"error": "property does not exist: " + property_name}
+	var before = node.get(property_name)
+	if write:
+		if not request.has("value"):
+			return {"error": "value is required for set_property"}
+		node.set(property_name, request.get("value"))
+		return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_WRITE", "runtime": true, "nodePath": node_path, "property": property_name, "before": before, "after": node.get(property_name)}
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": before}
+
+func _input_result(request: Dictionary) -> Dictionary:
+	var keycode := int(request.get("keycode", 0))
+	if keycode <= 0:
+		return {"error": "keycode must be a positive integer"}
+	var event := InputEventKey.new()
+	event.keycode = keycode
+	event.physical_keycode = keycode
+	event.pressed = bool(request.get("pressed", true))
+	Input.parse_input_event(event)
+	_emit_notification("input_injected", {"keycode": keycode, "pressed": event.pressed})
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true}
+
+func _screenshot_result(request: Dictionary) -> Dictionary:
+	var screenshot_path := str(request.get("path", ""))
+	if screenshot_path.is_empty():
+		return {"error": "path is required for capture_screenshot"}
+	await process_frame
+	await process_frame
+	var viewport := get_root()
+	var image := viewport.get_texture().get_image() if viewport.get_texture() != null else null
+	if image == null or image.is_empty():
+		return {"error": "viewport image is empty"}
+	var error := image.save_png(screenshot_path)
+	if error != OK:
+		return {"error": "save_png failed with code: " + str(error)}
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height()}
 
 func _write_property(response_path: String, instance: Node, request: Dictionary) -> void:
 	var node_path: String = str(request.get("nodePath", "."))
@@ -123,4 +311,3 @@ func _emit_event(events_path: String, event_name: String, payload: Dictionary) -
 			run_id = "godot-run"
 		file.store_string(JSON.stringify({"schema_version": "0.1", "source": "REAL", "run_id": run_id, "sequence": event_sequence, "timestamp": Time.get_datetime_string_from_system(true, true), "event": event_name, "payload": payload}) + "\n")
 		file.close()
-
