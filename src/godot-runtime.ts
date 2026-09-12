@@ -604,6 +604,26 @@ export async function captureRuntimeScreenshot({
   const imageStat = await stat(outputPath)
     .then((value) => ({ bytes: value.size }))
     .catch(() => null);
+  const responseWidth = response?.width;
+  const responseHeight = response?.height;
+  if (
+    response?.capability !== 'RUNTIME_SCREENSHOT' ||
+    !Number.isInteger(responseWidth) ||
+    !Number.isInteger(responseHeight) ||
+    responseWidth < 16 ||
+    responseHeight < 16 ||
+    !imageStat ||
+    imageStat.bytes < 100
+  )
+    throw new Error('Godot bridge returned an invalid screenshot');
+  const png = await readFile(outputPath);
+  if (
+    png.length < 24 ||
+    !png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
+    png.readUInt32BE(16) !== responseWidth ||
+    png.readUInt32BE(20) !== responseHeight
+  )
+    throw new Error('Godot bridge returned a malformed screenshot');
   return {
     schema_version: '0.1',
     source: 'REAL',
