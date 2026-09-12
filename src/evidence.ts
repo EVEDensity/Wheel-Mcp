@@ -115,7 +115,11 @@ export async function finalizeBridgeEvidence(
   );
   await writeFile(
     manifestPath,
-    JSON.stringify({ ...manifest, finished_at: finishedAt, lifecycle: process.exitCode === 0 ? 'EXITED' : 'FAILED' }, null, 2),
+    JSON.stringify(
+      { ...manifest, finished_at: finishedAt, lifecycle: process.exitCode === 0 ? 'EXITED' : 'FAILED' },
+      null,
+      2,
+    ),
   );
 }
 

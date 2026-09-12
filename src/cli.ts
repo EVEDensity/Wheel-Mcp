@@ -49,7 +49,11 @@ try {
   } else if (command === 'list-projects') {
     console.log(
       JSON.stringify(
-        await listProjects(required(options.directory, '--directory'), parseCliBoolean(options.recursive, false), commandContext),
+        await listProjects(
+          required(options.directory, '--directory'),
+          parseCliBoolean(options.recursive, false),
+          commandContext,
+        ),
         null,
         2,
       ),

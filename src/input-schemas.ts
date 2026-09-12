@@ -7,7 +7,10 @@ export const pressedSchema = z.boolean().optional();
 
 export function parseCliNumber(value: string | undefined, name: string, fallback?: number): number {
   const candidate = value === undefined ? fallback : Number(value);
-  return z.number().finite().parse(candidate, { path: [name] });
+  return z
+    .number()
+    .finite()
+    .parse(candidate, { path: [name] });
 }
 
 export function parseCliBoolean(value: string | undefined, fallback = true): boolean {
