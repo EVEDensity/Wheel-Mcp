@@ -54,6 +54,7 @@ export type ScenarioStepResult = {
 
 export type ScenarioRunStepResult = Omit<ScenarioStepResult, 'index' | 'kind' | 'attempts' | 'status'> & {
   status: string;
+  bridge?: import('./persistent-runtime-bridge.js').PersistentRuntimeBridge;
 };
 
 export type ScenarioExecutionContext = {
@@ -62,6 +63,7 @@ export type ScenarioExecutionContext = {
   bridgePath?: string;
   godotPath?: string;
   launch: LaunchHandle | null;
+  bridge: import('./persistent-runtime-bridge.js').PersistentRuntimeBridge | null;
   timeoutMs: number;
   timeout: import('./timeout.js').TimeoutContext;
 };
