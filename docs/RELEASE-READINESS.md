@@ -2,54 +2,59 @@
 
 ## Current decision
 
-This repository is **not ready for a public `0.1.0-preview` release**. The
-current package version is `0.1.0-preview.1`, but that is only a numbered
-preview build. It must not be described as a stable release.
+The local Windows release gate is currently **PASS** for the package version
+`0.1.0-preview.1`. This is still a numbered preview build and must not be
+described as a stable release. Public production use remains conditional on
+the security and cross-platform follow-up work listed below.
 
 ## Verified
 
 - Official MCP TypeScript SDK is the packaged server entry point:
   `build/src/mcp-server-sdk.js`.
 - `npm run build` passes.
-- `npm test` passes with 44 passing tests and one environment-dependent skip.
+- `npm test` passes with 48 passing tests.
 - `npm run lint` passes.
+- `npm run format:check` passes.
 - Node 20 and 22 build/test CI jobs exist for Linux, Windows, and macOS.
 - Real Godot 4.7.2 runtime evidence exists from a local Windows run.
 - The matrix runner executes real CLI and MCP calls and saves raw transcripts.
 - Negative invalid-project coverage is present.
+- The real Windows matrix has 19/19 passing checks, including
+  `stop_project`, repeated `cancel_project`, Scenario cleanup, and screenshot
+  evidence at 1920x1080.
+- Streamable HTTP integration tests cover bearer authentication, Host/Origin
+  validation, session ownership, session deletion, scopes, and path roots.
 
-## Blocking release failures
+## Remaining Release Risks
 
-The latest real matrix is not release-clean:
-
-- `stop_project` returns a real MCP `TIMEOUT`.
-- `cancel_project` returns a real MCP `TIMEOUT`.
-- `execute_scenario` has a real cancellation/cleanup failure in the matrix.
-- Windows process-tree success is not proven in the restricted environment;
-  the taskkill test is correctly skipped on `ACCESS_DENIED`.
 - Linux and macOS have CI build/test coverage, but no real Godot runtime
-  capability evidence.
-- `npm run release:check` intentionally fails unless a complete, passing
-  `runs/matrix` artifact is present. `runs/` is local evidence and is ignored
-  by Git, so a release operator must generate and archive it separately.
+  capability evidence in this workspace.
+- HTTP authentication currently uses configured bearer tokens; token rotation,
+  rate limiting, audit logging, and a managed secret store are not included.
+- HTTP request timeout is a request-layer upper bound. Tool-level
+  `timeoutMs` remains the authoritative operation timeout; graceful
+  cancellation of every in-flight tool should be validated with the deployed
+  SDK/runtime combination.
+- Release evidence is local and ignored by Git. A release operator must
+  generate and archive it separately.
 
 ## Required work for the next AI
 
-1. Fix MCP stop/cancel timeout propagation and verify terminal process metadata.
-2. Complete `execute_scenario` MCP tests for full steps, timeout, cancellation,
-   retry, `onFailure=stop`, `onFailure=continue`, event assertion failure,
-   summary evidence, child-process cleanup, and reconnect behavior.
-3. Run `npm run matrix:generate` against a real Godot project and inspect all
-   four JSON artifacts and every transcript.
-4. Repeat process-tree tests in an elevated Windows environment, including
+1. Validate the release gate on a clean release machine with `npm ci`, then
+   run build, test, lint, format check, matrix generation, and
+   `npm run release:check`.
+2. Repeat process-tree tests in an elevated Windows environment, including
    parent/child/grandchild termination, orphan reclaim, repeated stop, invalid
    PID, and access-denied classification.
-5. Obtain real Godot runtime evidence on Linux and macOS, or explicitly keep
-   those capabilities marked `NOT_RUN`.
-6. Run `npm run release:check`; it must return `PASS` with no failed result,
-   no `PENDING_REAL_RUN`, complete tool coverage, negative tests, manifests,
-   and platform summary.
-7. Only then update the release notes/version and publish `0.1.0-preview`.
+3. Obtain controlled real Godot runtime evidence on Linux and macOS, or keep
+   those capabilities explicitly marked `NOT_RUN` in release records.
+4. Add HTTP token rotation, rate limiting, audit logging, concurrency limits,
+   and a documented threat model before calling the service production-grade.
+5. Add MCP client compatibility E2E tests, graceful shutdown tests for
+   in-flight runs, SBOM/dependency auditing, `SECURITY.md`, `CONTRIBUTING.md`,
+   and a versioned changelog.
+6. Only after those controls are complete should the preview be promoted to a
+   production-grade public MCP release.
 
 ## Upload policy
 
