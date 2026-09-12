@@ -246,7 +246,9 @@ export async function launchProject({
         metadata.process_tree = tree;
         await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
         const manifestPath = path.join(evidence, 'manifest.json');
-        const manifest = await readFile(manifestPath, 'utf8').then(JSON.parse).catch(() => ({}));
+        const manifest = await readFile(manifestPath, 'utf8')
+          .then(JSON.parse)
+          .catch(() => ({}));
         await writeFile(manifestPath, JSON.stringify({ ...manifest, process_tree: tree }, null, 2));
       });
     }
@@ -300,7 +302,9 @@ export async function launchProject({
       await writeFile(stderrPath, stderr);
       await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
       const manifestPath = path.join(evidence, 'manifest.json');
-      const manifest = await readFile(manifestPath, 'utf8').then(JSON.parse).catch(() => ({}));
+      const manifest = await readFile(manifestPath, 'utf8')
+        .then(JSON.parse)
+        .catch(() => ({}));
       await writeFile(
         manifestPath,
         JSON.stringify({ ...manifest, finished_at: metadata.finished_at, lifecycle: metadata.lifecycle }, null, 2),
@@ -322,12 +326,13 @@ export async function stopProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_
     if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ESRCH')
       return { stopped: true, pid: processHandle };
   }
-  timeout?.throwIfCancelled();
   try {
     if (process.platform === 'win32') {
       const tree = await terminateProcessTree(processHandle);
-      if (tree.terminated) return { stopped: true, pid: processHandle, process_tree_terminated: true, process_tree: tree };
-      if (tree.error_code === 'ACCESS_DENIED') return { stopped: false, pid: processHandle, timed_out: false, process_tree: tree };
+      if (tree.terminated)
+        return { stopped: true, pid: processHandle, process_tree_terminated: true, process_tree: tree };
+      if (tree.error_code === 'ACCESS_DENIED')
+        return { stopped: false, pid: processHandle, timed_out: false, process_tree: tree };
       if (tree.error_code === 'NOT_FOUND') return { stopped: true, pid: processHandle, process_tree: tree };
     } else {
       const tree = await terminateProcessTree(processHandle);
@@ -338,7 +343,6 @@ export async function stopProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_
   }
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    timeout?.throwIfCancelled();
     try {
       process.kill(processHandle, 0);
     } catch (error: unknown) {
@@ -347,7 +351,7 @@ export async function stopProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_
     }
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  if (timeout) throw new TimeoutError(`process did not stop before timeout: ${processHandle}`);
+  if (timeout?.timedOut) throw new TimeoutError(`process did not stop before timeout: ${processHandle}`);
   return { stopped: false, pid: processHandle, timed_out: true };
 }
 
