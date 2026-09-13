@@ -178,3 +178,195 @@ export function evaluateCheck(value: unknown, check: { path: string; op: string;
       return false;
     actual = (actual as Record<string, unknown>)[key];
   }
+  switch (check.op) {
+    case 'exists':
+      return actual !== undefined && actual !== null;
+    case 'equals':
+      return isDeepStrictEqual(actual, check.expected);
+    case 'greater':
+      return typeof actual === 'number' && typeof check.expected === 'number' && actual > check.expected;
+    case 'includes':
+      return typeof actual === 'string' && typeof check.expected === 'string'
+        ? actual.includes(check.expected)
+        : Array.isArray(actual) && actual.some((v) => isDeepStrictEqual(v, check.expected));
+    default:
+      return false;
+  }
+}
+const activeProjects = new Set<string>();
+/** Serialize edits for a canonical project across MCP sessions in this server process. */
+export async function executeDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutContext) {
+  const options = developmentLoopSchema.parse(input);
+  const canonical = await realpath(options.projectPath);
+  const key = process.platform === 'win32' ? canonical.toLowerCase() : canonical;
+  if (activeProjects.has(key))
+    throw Object.assign(new Error('a dev_loop already owns this project'), { code: 'DEV_LOOP_BUSY' });
+  activeProjects.add(key);
+  try {
+    return await runDevelopmentLoop(options, parent);
+  } finally {
+    activeProjects.delete(key);
+  }
+}
+async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutContext) {
+  const options = developmentLoopSchema.parse(input);
+  const timeout = createTimeoutContext(options.timeoutMs, parent?.signal);
+  const evidenceDir = path.resolve(options.evidenceDir, 'dev-loop-' + randomUUID());
+  await mkdir(evidenceDir, { recursive: true });
+  const editor = new ProjectEdits(options.projectPath, evidenceDir);
+  const attempts: Array<Record<string, unknown>> = [];
+  const changedFiles = new Set<string>();
+  const used = new Set<string>();
+  let status = 'FAIL';
+  let error: string | undefined;
+  let cleanup = true;
+  let screenshotPath: string | undefined;
+  let errorCount = 0;
+  const started = Date.now();
+  try {
+    timeout.throwIfCancelled();
+    timeout.throwIfExpired();
+    for (const f of await editor.apply(options.edits)) changedFiles.add(f);
+    for (let index = 0; index <= options.maxRetries; index++) {
+      timeout.throwIfCancelled();
+      timeout.throwIfExpired();
+      const attemptDir = path.join(evidenceDir, 'attempt-' + index);
+      await mkdir(attemptDir, { recursive: true });
+      const checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }> = [];
+      let bridge: PersistentRuntimeBridge | undefined;
+      let attemptError: string | undefined;
+      let runtimeDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>> | undefined;
+      try {
+        bridge = await PersistentRuntimeBridge.start({
+          projectPath: options.projectPath,
+          godotPath: options.godotPath,
+          bridgePath: options.bridgePath,
+          evidenceDir: attemptDir,
+          scenePath: options.scenePath,
+          headless: !(options.screenshot || options.baselinePath),
+          timeout,
+        });
+        await bridge.waitForEvent(options.waitEvent ?? 'level_started', timeout);
+        await bridge.request('wait_physics_frames', { frames: 3 }, timeout);
+        for (const action of options.actions) await bridge.request(action.method, action.params, timeout);
+        for (const check of options.checks) {
+          try {
+            const actual = await bridge.request(check.method, check.params, timeout);
+            checks.push({ id: check.id, passed: evaluateCheck(actual, check), actual });
+          } catch (e) {
+            checks.push({ id: check.id, passed: false, error: String(e) });
+          }
+        }
+        if (options.screenshot || options.baselinePath) {
+          const requestedPath = path.join(attemptDir, 'screenshot.png');
+          const captureTimeout = createTimeoutContext(Math.min(10000, timeout.remaining()), timeout.signal);
+          try {
+            await bridge.request('capture_screenshot', { path: requestedPath }, captureTimeout);
+          } finally {
+            captureTimeout.dispose();
+          }
+          // Decode even without a baseline: a nonempty filename is not evidence of a valid framebuffer.
+          const diff = await compareScreenshots(requestedPath, options.baselinePath ?? requestedPath, {
+            threshold: options.threshold,
+            writeDiff: !!options.baselinePath,
+            diffPath: path.join(attemptDir, 'diff.png'),
+          });
+          screenshotPath = requestedPath;
+          checks.push({
+            id: 'screenshot',
+            passed: diff.width > 1 && diff.height > 1 && diff.differenceRatio <= options.maxDifferenceRatio,
+            actual: diff,
+          });
+        }
+      } catch (e) {
+        attemptError = String(e);
+        checks.push({ id: 'execution', passed: false, error: attemptError });
+      } finally {
+        if (bridge) {
+          try {
+            await bridge.flushLogs();
+            runtimeDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
+          } catch (e) {
+            checks.push({ id: 'evidence', passed: false, error: String(e) });
+          }
+          // Cleanup has its own budget: a cancelled/expired validation must still stop its process.
+          const stopTimeout = createTimeoutContext(10000);
+          try {
+            await bridge.stop(stopTimeout);
+          } catch (e) {
+            cleanup = false;
+            checks.push({ id: 'cleanup', passed: false, error: String(e) });
+          } finally {
+            stopTimeout.dispose();
+            await bridge.flushLogs();
+          }
+        }
+      }
+      const allDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
+      const diagnostics =
+        options.diagnosticsScope === 'runtime' && runtimeDiagnostics ? runtimeDiagnostics : allDiagnostics;
+      errorCount = diagnostics.diagnostics.filter((d) => d.severity === 'error').length;
+      checks.push({ id: 'diagnostics', passed: errorCount <= options.maxErrors, actual: diagnostics });
+      const passed = checks.every((c) => c.passed) && !timeout.signal.aborted && timeout.remaining() > 0;
+      attempts.push({
+        index,
+        status: passed ? 'PASS' : 'FAIL',
+        checks,
+        diagnosticsScope: options.diagnosticsScope,
+        allDiagnostics,
+        evidenceDir: attemptDir,
+      });
+      await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
+      if (passed) {
+        status = 'PASS';
+        break;
+      }
+      timeout.throwIfCancelled();
+      timeout.throwIfExpired();
+      if (index === options.maxRetries || !cleanup) break;
+      const repair = options.repairs.find(
+        (r) => !used.has(r.id) && checks.some((c) => c.id === r.whenFailedCheckId && !c.passed),
+      );
+      if (!repair) break;
+      for (const f of await editor.apply(repair.edits)) changedFiles.add(f);
+      used.add(repair.id);
+      attempts.at(-1)!.appliedRepair = repair.id;
+      await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
+    }
+  } catch (e) {
+    error = String(e);
+  } finally {
+    timeout.dispose();
+  }
+  let rollbackConflicts: string[] = [];
+  const rolledBack = status !== 'PASS' && options.rollbackOnFailure;
+  if (rolledBack) rollbackConflicts = await editor.rollback();
+  if (error) status = 'FAIL';
+  const result = {
+    status,
+    error,
+    errorCount,
+    changedFiles: [...changedFiles],
+    screenshotPath,
+    evidenceDir,
+    cleanup,
+    rolledBack,
+    rollbackConflicts,
+    summary:
+      status === 'PASS'
+        ? used.size
+          ? 'Approved repair applied and all checks passed'
+          : 'All checks passed without a repair'
+        : 'Validation failed; no verified repair',
+    repairMode: 'caller-supplied-exact-patches',
+    attempts,
+    metrics: {
+      attemptCount: attempts.length,
+      retryCount: Math.max(0, attempts.length - 1),
+      appliedRepairs: used.size,
+      durationMs: Date.now() - started,
+    },
+  };
+  await writeFile(path.join(evidenceDir, 'result.json'), JSON.stringify(result, null, 2));
+  return result;
+}
