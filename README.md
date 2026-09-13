@@ -204,3 +204,16 @@ npm run matrix:generate
 Errors use `TIMEOUT`, `CANCELLED`, `FAILED`, and `INVALID_ARGUMENT` codes.
 Successful observations are labelled `REAL`; unsupported capabilities are
 labelled `UNAVAILABLE` rather than substituted with CLI behavior.
+
+## Controlled Repair Loop and Measured Evidence
+
+`dev_loop` now runs an explicit edit/run/assert/screenshot/diagnostics/retry
+workflow with caller-approved exact patches and failure rollback. It does not
+generate arbitrary fixes. See [dev_loop usage](docs/DEV-LOOP.md) and the
+[seven-project repair evaluation](docs/REPAIR-BENCHMARK-2026-09-13.md).
+
+The evaluation verified 7/7 seeded known fixes in upstream demos. It is not a
+universal repair success rate. Reported token reductions are serialized payload
+estimates, not billable usage; runtime wall time did not improve. The measured
+benchmark uses runtime-only diagnostics and retains shutdown errors separately.
+The package remains a preview; these results do not promote it to stable.
