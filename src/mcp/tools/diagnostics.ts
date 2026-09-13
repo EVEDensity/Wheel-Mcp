@@ -1,21 +1,22 @@
-import { z } from 'zod';
-import type { ToolRegistrationContext } from '../tool-registry.js';
-export function registerDiagnosticsTools({ server, invoke, schemas, functions }: ToolRegistrationContext): void {
+﻿import { z } from 'zod';
+import { readEvidence } from '../../godot-runtime.js';
+import { analyzeScriptFile } from '../../script-analysis.js';
+import type { ToolRegistrationContext } from '../tool-context.js';
+export function registerDiagnosticsTools(context: ToolRegistrationContext): void {
+  const { server, invoke, schemas } = context;
+  const { projectPath, evidenceDir, timeoutMs, responseMode } = schemas;
   server.tool(
-    'analyze_script_semantics',
-    'Analyze GDScript structure and state-machine transitions.',
-    {
-      projectPath: schemas.projectPath,
-      scriptPath: z.string(),
-      responseMode: schemas.responseMode,
-      timeoutMs: schemas.timeoutMs,
-    },
-    async (a: any, e: any) =>
+    'get_debug_output',
+    'Read process evidence.',
+    { evidenceDir: z.string(), timeoutMs },
+    async ({ evidenceDir, timeoutMs }, extra) =>
       invoke(
-        (c: any) => functions.analyzeScriptFile(a.projectPath, a.scriptPath),
-        a.timeoutMs,
-        e.signal,
-        a.responseMode,
+        async (context) => {
+          context.throwIfCancelled();
+          return readEvidence(evidenceDir);
+        },
+        timeoutMs,
+        extra.signal,
       ),
   );
-}
+
