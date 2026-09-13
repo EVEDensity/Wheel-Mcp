@@ -1,28 +1,69 @@
-import { z } from 'zod';
-import type { ToolRegistrationContext } from '../tool-registry.js';
-export function registerProjectTools({ server, invoke, schemas, functions }: ToolRegistrationContext): void {
+﻿import { z } from 'zod';
+import { getGodotVersion, getProjectInfo, getSceneTree, listProjects, resolveGodotPath } from '../../godot-runtime.js';
+import { buildContextPack } from '../../context-pack.js';
+import { gitCheckpoint, gitRecovery } from '../../git-recovery.js';
+import {
+  readSceneFile,
+  writeSceneFile,
+  readProjectFile,
+  writeProjectFile,
+  searchProject,
+  analyzeCollisions,
+  getNodeSemantics,
+} from '../../godot-development.js';
+import type { ToolRegistrationContext } from '../tool-context.js';
+export function registerProjectTools(context: ToolRegistrationContext): void {
+  const { server, invoke, schemas } = context;
+  const { projectPath, godotPath, evidenceDir, timeoutMs, responseMode } = schemas;
   server.tool(
-    'analyze_collisions',
-    'Analyze static collision layers, masks and shapes in a Godot project.',
-    {
-      projectPath: schemas.projectPath,
-      scenePath: z.string().optional(),
-      responseMode: schemas.responseMode,
-      timeoutMs: schemas.timeoutMs,
-    },
-    async (a: any, e: any) =>
-      invoke(() => functions.analyzeCollisions(a.projectPath, a.scenePath), a.timeoutMs, e.signal, a.responseMode),
+    'get_godot_version',
+    'Read the configured Godot version.',
+    { godotPath, timeoutMs },
+    async ({ godotPath, timeoutMs }, extra) =>
+      invoke(
+        async (context) => ({ version: await getGodotVersion(resolveGodotPath(godotPath), context) }),
+        timeoutMs,
+        extra.signal,
+      ),
   );
+
   server.tool(
-    'get_node_semantics',
-    'Read semantic labels and recognized components from a Godot scene.',
-    {
-      projectPath: schemas.projectPath,
-      scenePath: z.string().optional(),
-      responseMode: schemas.responseMode,
-      timeoutMs: schemas.timeoutMs,
-    },
-    async (a: any, e: any) =>
-      invoke(() => functions.getNodeSemantics(a.projectPath, a.scenePath), a.timeoutMs, e.signal, a.responseMode),
+    'list_projects',
+    'Find Godot projects below a directory.',
+    { directory: z.string(), recursive: z.boolean().optional(), timeoutMs },
+    async ({ directory, recursive, timeoutMs }, extra) =>
+      invoke((context) => listProjects(directory, recursive === true, context), timeoutMs, extra.signal),
   );
-}
+
+  server.tool(
+    'get_project_info',
+    'Read project metadata and files.',
+    { projectPath, timeoutMs },
+    async ({ projectPath, timeoutMs }, extra) =>
+      invoke((context) => getProjectInfo(projectPath, context), timeoutMs, extra.signal),
+  );
+
+  server.tool(
+    'get_scene_tree',
+    'Read a static Godot scene tree.',
+    { projectPath, scenePath: z.string().optional(), timeoutMs },
+    async ({ projectPath, scenePath, timeoutMs }, extra) =>
+      invoke((context) => getSceneTree(projectPath, scenePath ?? null, context), timeoutMs, extra.signal),
+  );
+
+  server.tool(
+    'read_project_file',
+    'Read a text file inside a Godot project.',
+    { projectPath, filePath: z.string(), timeoutMs },
+    async ({ projectPath, filePath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readProjectFile(projectPath, filePath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
