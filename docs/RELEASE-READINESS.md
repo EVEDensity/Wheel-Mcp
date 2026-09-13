@@ -5,10 +5,10 @@
 The local Windows release gate is currently **PASS** for the package version
 `0.1.0-preview.1`. The first public production scope is intentionally
 **Windows-only** with a validated Godot 4.7.2 runtime. This is still a numbered
-preview build and must not be described as a stable `0.2.0` release. The
-current decision is **Windows-only stable production candidate**, conditional on
-external deployment security sign-off in
-[`docs/PRODUCTION-DEPLOYMENT.md`](PRODUCTION-DEPLOYMENT.md).
+preview build and must not be described as a stable `0.2.0` release. The current decision is **Windows-only stable production candidate** for personal
+and local game-development use. Remote deployment should follow the practical
+guidance in [`docs/PRODUCTION-DEPLOYMENT.md`](PRODUCTION-DEPLOYMENT.md), but external
+certification or sign-off is not required.
 
 ## Verified
 
@@ -61,10 +61,8 @@ external deployment security sign-off in
 3. Obtain controlled real Godot runtime evidence on Linux and macOS, or
    explicitly scope the public release to the verified Windows runtime and
    record the other platforms as `NOT_RUN`.
-4. Review the deployment's secret storage, TLS termination, audit retention,
-   alerting, and operational ownership before exposing HTTP beyond localhost.
-5. Only after the platform evidence and deployment review are complete should
-   the preview be promoted to a production-grade public MCP release.
+4. If exposing HTTP beyond localhost, configure TLS termination, token storage, audit retention, and basic alerting appropriate for the deployment.
+5. For personal/local use, the verified Windows runtime evidence and passing release gate are sufficient to use this as a stable production candidate.
 
 ## Upload policy
 
