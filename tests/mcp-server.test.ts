@@ -65,7 +65,7 @@ test('official MCP client receives runtime event notifications', async () => {
     args: ['build/src/mcp-server-sdk.js'],
     stderr: 'pipe',
   });
-  const client = new Client({ name: 'notification-test', version: '1.0' }, { capabilities: { logging: {} } });
+  const client = new Client({ name: 'notification-test', version: '1.0' });
   const notifications: Array<Record<string, unknown>> = [];
   client.setNotificationHandler(LoggingMessageNotificationSchema, async (notification) => {
     notifications.push(notification.params as Record<string, unknown>);
