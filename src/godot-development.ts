@@ -118,6 +118,111 @@ export async function readSceneFile(projectPath: string, scenePath: string) {
     bytes: Buffer.byteLength(content),
   };
 }
+
+type SceneResourceValue =
+  | string
+  | number
+  | boolean
+  | null
+  | SceneResourceValue[]
+  | { [key: string]: SceneResourceValue };
+function parseSceneValue(raw: string): SceneResourceValue {
+  const value = raw.trim();
+  const ref = value.match(/^(ExtResource|SubResource)\("([^"]+)"\)$/);
+  if (ref) return { kind: ref[1] === 'ExtResource' ? 'external' : 'sub', id: ref[2] } as unknown as SceneResourceValue;
+  if (value === 'null') return null;
+  if (value === 'true' || value === 'false') return value === 'true';
+  if (/^-?\d+(?:\.\d+)?$/.test(value)) return Number(value);
+  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))
+    return value.slice(1, -1);
+  if (value.startsWith('[') && value.endsWith(']'))
+    return value.slice(1, -1).trim() ? value.slice(1, -1).split(',').map(parseSceneValue) : [];
+  return value;
+}
+function headerAttributes(line: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const re = /(\w+)=((?:"[^"]*")|(?:[^\s]+))/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(line))) result[m[1]] = m[2].replace(/^"|"$/g, '');
+  return result;
+}
+/** Parse a Godot text scene into a navigable resource dependency graph. */
+export function parseSceneResourceGraph(content: string, scenePath = '') {
+  const lines = content.split(/\r?\n/),
+    extResources: any[] = [],
+    subResources: any[] = [],
+    nodes: any[] = [];
+  const reverseDependencies: Record<string, string[]> = {};
+  let current: any;
+  const addRef = (id: string, target: string) => {
+    (reverseDependencies[id] ??= []).push(target);
+  };
+  for (const line of lines) {
+    if (!line.trim() || line.startsWith(';')) continue;
+    const section = line.match(/^\[(\w+)(?:\s+([^\]]+))?\]/);
+    if (section) {
+      const attrs = headerAttributes(section[2] ?? '');
+      if (section[1] === 'ext_resource') {
+        current = {
+          id: attrs.id ?? '',
+          type: attrs.type ?? '',
+          path: attrs.path ?? '',
+          properties: {},
+          dependencies: [],
+        };
+        extResources.push(current);
+      } else if (section[1] === 'sub_resource') {
+        current = { id: attrs.id ?? '', type: attrs.type ?? '', properties: {}, dependencies: [] };
+        subResources.push(current);
+      } else if (section[1] === 'node') {
+        const parent = attrs.parent ?? '.';
+        current = {
+          id: nodes.length,
+          name: attrs.name ?? '',
+          type: attrs.type ?? '',
+          parent,
+          path: parent === '.' ? (attrs.name ?? '') : parent + '/' + (attrs.name ?? ''),
+          properties: {},
+          resourceRefs: [],
+          instance: attrs.instance,
+        };
+        nodes.push(current);
+        if (attrs.instance) {
+          const r = attrs.instance.match(/ExtResource\("([^"]+)/);
+          if (r) {
+            current.resourceRefs.push(r[1]);
+            addRef(r[1], current.path + '.instance');
+          }
+        }
+      } else current = undefined;
+      continue;
+    }
+    const property = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+    if (!property || !current) continue;
+    const key = property[1],
+      parsed = parseSceneValue(property[2]);
+    current.properties[key] = parsed;
+    for (const r of property[2].matchAll(/(ExtResource|SubResource)\("([^"]+)"\)/g)) {
+      const id = r[2];
+      current.resourceRefs?.push(id);
+      addRef(id, (current.path ?? current.id) + '.' + key);
+      current.dependencies?.push(id);
+    }
+  }
+  const sceneLine = lines.find((l) => l.startsWith('[gd_scene'));
+  const sceneAttrs = headerAttributes(sceneLine?.replace(/^\[gd_scene\s*|\]$/g, '') ?? '');
+  const inherited = extResources.find((r) => r.type === 'PackedScene');
+  return {
+    scenePath,
+    format: sceneAttrs.format,
+    loadSteps: Number(sceneAttrs.load_steps) || undefined,
+    extResources,
+    subResources,
+    nodes,
+    inheritedScene: inherited ? { path: inherited.path, type: inherited.type, ref: inherited.id } : undefined,
+    reverseDependencies,
+  };
+}
 export async function writeSceneFile(projectPath: string, scenePath: string, content: string) {
   const root = path.resolve(projectPath),
     file = inside(root, path.isAbsolute(scenePath) ? scenePath : path.join(root, scenePath));
@@ -318,23 +423,40 @@ export async function getRecentEvidence(evidenceDir: string) {
 
 export async function analyzeCollisions(projectPath: string, scenePath: string) {
   const scene = await readSceneFile(projectPath, scenePath);
-  const nodes: any[] = [];
+  const lines = scene.content.split(/\r?\n/);
   const ext = new Map<string, string>();
-  for (const line of scene.content.split(/\r?\n/)) {
-    const e = line.match(/^\[ext_resource[^\n]*path="([^"]+)"[^\n]*id="([^"]+)"/);
+  const nodes: any[] = [];
+  for (const line of lines) {
+    const e = line.match(/^\[ext_resource\s+path="([^"]+)"[^\n]*id="([^"]+)"/);
     if (e) ext.set(e[2], e[1]);
-    const n = line.match(/^\[node\s+name="([^"]+)"[^\n]*type="([^"]+)"[^\n]*(?:parent="([^"]+)")?/);
+    const n = line.match(/^\[node\s+name="([^"]+)"[^\n]*type="([^"]+)"(?:[^\n]*parent="([^"]+)")?/);
     if (n)
       nodes.push({
         name: n[1],
         type: n[2],
         parent: n[3] ?? '.',
         path: n[3] ? `${n[3]}/${n[1]}` : n[1],
-        collision: /Collision|Body|Area|RayCast/.test(n[2]),
+        properties: {},
       });
+    const pr = line.match(/^([a-zA-Z_][\w]*)\s*=\s*(.+)$/);
+    if (pr && nodes.length) nodes[nodes.length - 1].properties[pr[1]] = pr[2];
   }
-  const collisions = nodes.filter((n) => n.collision);
-  const warnings = collisions.flatMap((n) => (/CollisionShape/.test(n.type) ? [] : []));
+  const collisions = nodes.filter((n) => /Body|Area|Collision|RayCast|Shape/.test(n.type));
+  const warnings: any[] = [];
+  for (const n of collisions) {
+    if (/CollisionShape|CollisionPolygon/.test(n.type) && (!n.properties.shape || n.properties.shape === 'null'))
+      warnings.push({ code: 'EMPTY_COLLISION_SHAPE', nodePath: n.path });
+    if (n.properties.collision_layer && n.properties.collision_mask) {
+      const layer = Number(n.properties.collision_layer),
+        mask = Number(n.properties.collision_mask);
+      if (layer > 0 && mask === 0)
+        warnings.push({ code: 'LAYER_MASK_MISMATCH', nodePath: n.path, collisionLayer: layer, collisionMask: mask });
+    }
+    n.resource = n.properties.shape
+      ? (ext.get(String(n.properties.shape).match(/ExtResource\("([^"]+)/)?.[1] ?? '') ?? n.properties.shape)
+      : undefined;
+    n.transform = n.properties.transform ?? n.properties.position ?? undefined;
+  }
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -344,7 +466,6 @@ export async function analyzeCollisions(projectPath: string, scenePath: string) 
     warnings,
   };
 }
-
 export async function getNodeSemantics(projectPath: string, scenePath: string) {
   const scene = await readSceneFile(projectPath, scenePath);
   const result: any[] = [];
