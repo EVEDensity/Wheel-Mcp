@@ -6,10 +6,9 @@ of the `0.1.0-preview` release line; it is not a stable `0.2.0` release.
 **First public production scope: Windows-only.** The validated runtime target is
 Windows with Godot 4.7.2 and Node.js `>=20.19.0`. Linux and macOS have CI
 build/test coverage but no validated real Godot runtime evidence, so they are
-not supported targets for the first stable public release. Until the external
-TLS, secret-management, audit, and alerting review is signed off, this project
-is a Windows-only stable production candidate rather than an unconditionally
-hosted production service. See [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md).
+not supported targets for the first stable public release. For personal/local game-development use, this project is ready as a Windows-only
+stable production candidate. If HTTP is exposed beyond the local machine, follow
+the practical security guidance in [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md).
 
 This repository is an independent, CLI-first Godot adapter for AI Game Harness.
 It does not copy the B1/B2 benchmark implementations.
