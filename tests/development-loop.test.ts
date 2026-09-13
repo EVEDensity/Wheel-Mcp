@@ -36,3 +36,21 @@ test('exact edits validate the entire batch before writes; rollback preserves co
   assert.equal((await next.rollback()).length, 1);
   assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'external');
 });
+test('assertions fail closed and dev_loop requires non-vacuous checks', () => {
+  assert.equal(evaluateCheck({ value: { x: 4 } }, { path: 'value.x', op: 'greater', expected: 3 }), true);
+  assert.equal(evaluateCheck({}, { path: 'value', op: 'equals', expected: undefined }), false);
+  assert.equal(evaluateCheck({}, { path: '__proto__', op: 'exists' }), false);
+  assert.equal(
+    developmentLoopSchema.safeParse({ projectPath: 'a', bridgePath: 'b', evidenceDir: 'e', checks: [] }).success,
+    false,
+  );
+  assert.equal(
+    developmentLoopSchema.safeParse({
+      projectPath: 'a',
+      bridgePath: 'b',
+      evidenceDir: 'e',
+      checks: [{ id: 'x', method: 'get_property', op: 'equals' }],
+    }).success,
+    false,
+  );
+});
