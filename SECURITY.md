@@ -16,5 +16,5 @@ Do not open a public issue for a suspected vulnerability. Contact the maintainer
 - Keep each client's project and evidence roots isolated.
 - Treat audit logs and evidence as sensitive operational data.
 - Run `npm run audit:dependencies`, `npm run sbom`, and the full release gate before publication.
-- For remote HTTP deployment, complete and sign [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md) covering TLS, secret storage/rotation, audit retention, SIEM forwarding, alerting, and on-call ownership.
-- The repository does not itself provision TLS, a managed secret store, a SIEM, or an alert manager; these are deployment-owner responsibilities.
+- For remote HTTP deployment, follow [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md) for practical TLS, token storage/rotation, audit logging, and alerting guidance.
+- The repository does not itself provision TLS, a managed secret store, a SIEM, or an alert manager. These are optional deployment concerns, not prerequisites for personal/local use.
