@@ -29,31 +29,63 @@ test('official MCP client to persistent bridge to real Godot behavior scene', as
     });
     assert.equal(opened.isError, undefined, JSON.stringify(opened));
     const body = JSON.parse((opened.content as Array<{ text: string }>)[0].text) as {
-      response?: { sessionId?: string };
+      response?: { sessionId?: string; session_id?: string };
       sessionId?: string;
+      session_id?: string;
     };
     sessionId = body.sessionId ?? body.session_id ?? body.response?.sessionId ?? body.response?.session_id ?? '';
-    assert.ok(sessionId, JSON.stringify(opened));
-    const state = await client.callTool({ name: 'get_specialized_state', arguments: { sessionId, nodePath: '.' } });
-    assert.equal(state.isError, undefined, JSON.stringify(state));
+    const animation = await client.callTool({
+      name: 'get_specialized_state',
+      arguments: { sessionId, nodePath: 'AnimationPlayer' },
+    });
+    assert.equal(animation.isError, undefined, JSON.stringify(animation));
+    const animationState = JSON.parse((animation.content as Array<{ text: string }>)[0].text) as any;
+    assert.equal(animationState.state.animation.playing, true, JSON.stringify(animationState));
+    const camera = await client.callTool({
+      name: 'get_specialized_state',
+      arguments: { sessionId, nodePath: 'Camera2D' },
+    });
+    const cameraState = JSON.parse((camera.content as Array<{ text: string }>)[0].text) as any;
+    assert.equal(cameraState.state.camera.enabled, true);
+    assert.deepEqual(cameraState.state.camera.zoom, { x: 1.5, y: 1.5 });
+    const navigation = await client.callTool({
+      name: 'get_specialized_state',
+      arguments: { sessionId, nodePath: 'NavigationAgent2D' },
+    });
+    const navigationState = JSON.parse((navigation.content as Array<{ text: string }>)[0].text) as any;
+    assert.deepEqual(navigationState.state.navigation.target_position, { x: 200, y: 90 });
+    const audio = await client.callTool({
+      name: 'get_specialized_state',
+      arguments: { sessionId, nodePath: 'AudioStreamPlayer' },
+    });
+    const audioState = JSON.parse((audio.content as Array<{ text: string }>)[0].text) as any;
+    assert.equal(audioState.state.audio.playing, true, JSON.stringify(audioState));
     const collisions = await client.callTool({
       name: 'query_runtime_collisions',
       arguments: { sessionId, nodePath: 'Area', historyLimit: 8 },
     });
     assert.equal(collisions.isError, undefined, JSON.stringify(collisions));
-    const collisionBody = JSON.parse((collisions.content as Array<{ text: string }>)[0].text) as {
-      history?: unknown[];
-      updatedAt?: number;
-    };
-    assert.ok(Array.isArray(collisionBody.history));
+    const collisionBody = JSON.parse((collisions.content as Array<{ text: string }>)[0].text) as any;
+    assert.ok(collisionBody.overlaps.some((item: any) => item.name === 'Target'));
+    assert.ok(collisionBody.history.length >= 1);
     assert.equal(typeof collisionBody.updatedAt, 'number');
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    const collisionAgain = await client.callTool({
+      name: 'query_runtime_collisions',
+      arguments: { sessionId, nodePath: 'Area', historyLimit: 8 },
+    });
+    const againBody = JSON.parse((collisionAgain.content as Array<{ text: string }>)[0].text) as any;
+    assert.ok(againBody.history.length >= 2);
+    assert.ok(againBody.history[0].timestamp >= againBody.history[1].timestamp);
     const ray = await client.callTool({
       name: 'query_runtime_collisions',
       arguments: { sessionId, nodePath: 'Ray', historyLimit: 8 },
     });
     assert.equal(ray.isError, undefined, JSON.stringify(ray));
-    const rayBody = JSON.parse((ray.content as Array<{ text: string }>)[0].text) as { history?: unknown[] };
+    const rayBody = JSON.parse((ray.content as Array<{ text: string }>)[0].text) as any;
+    assert.ok(rayBody.overlaps.some((item: any) => item.name === 'Target'));
     assert.ok(Array.isArray(rayBody.history));
+    assert.notEqual(rayBody.nodePath, collisionBody.nodePath);
   } finally {
     if (sessionId)
       await client
