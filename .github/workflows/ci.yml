@@ -22,7 +22,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: node --test build/tests/*.test.js
-      - run: npm run release:check
+      # The real release gate requires a Windows renderer and generated runs/matrix evidence; run it separately after matrix:generate.
       - name: Dependency audit
         run: npm run audit:dependencies
       - name: Generate CycloneDX SBOM
