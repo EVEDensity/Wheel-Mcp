@@ -159,6 +159,27 @@ request, response, process, stdout, stderr, and events files. Legacy
 `envelope.json`, `requests.jsonl`, and `responses.jsonl` are retained for
 compatibility and redact credential-like fields.
 
+## HTTP Security Operations
+
+The Streamable HTTP endpoint is localhost-only by default. Configure a token file as a JSON array of client records:
+
+```json
+[
+  {
+    "token": "replace-me",
+    "clientId": "local-client",
+    "scopes": ["read", "run"],
+    "projectRoots": ["C:/projects/game"],
+    "evidenceRoots": ["C:/projects/runs"],
+    "expiresAt": "2030-01-01T00:00:00Z"
+  }
+]
+```
+
+Set `MCP_HTTP_AUTH_TOKENS_FILE` and optionally `MCP_HTTP_TOKEN_RELOAD_INTERVAL_MS` to rotate credentials without restarting. Keep the previous token in the file during a controlled overlap window, then remove it or set `expiresAt`. Configure `MCP_HTTP_RATE_LIMIT_*`, `MCP_HTTP_MAX_CONCURRENT_REQUESTS*`, and `MCP_HTTP_AUDIT_LOG` for operational controls. Audit records are JSONL and deliberately omit authorization headers, request bodies, and tool parameters.
+
+Before a release, run `npm run security:check`; this performs `npm audit --audit-level=high` and produces a CycloneDX SBOM through `npm sbom`. See [`SECURITY.md`](SECURITY.md) and [`docs/SECURITY-THREAT-MODEL.md`](docs/SECURITY-THREAT-MODEL.md).
+
 ## Development
 
 ```text

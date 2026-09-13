@@ -12,7 +12,8 @@ the security and cross-platform follow-up work listed below.
 - Official MCP TypeScript SDK is the packaged server entry point:
   `build/src/mcp-server-sdk.js`.
 - `npm run build` passes.
-- `npm test` passes with 48 passing tests.
+- `npm test` passes with the complete test suite, including the official MCP
+  TypeScript client Streamable HTTP E2E.
 - `npm run lint` passes.
 - `npm run format:check` passes.
 - Node 20 and 22 build/test CI jobs exist for Linux, Windows, and macOS.
@@ -29,32 +30,32 @@ the security and cross-platform follow-up work listed below.
 
 - Linux and macOS have CI build/test coverage, but no real Godot runtime
   capability evidence in this workspace.
-- HTTP authentication currently uses configured bearer tokens; token rotation,
-  rate limiting, audit logging, and a managed secret store are not included.
-- HTTP request timeout is a request-layer upper bound. Tool-level
-  `timeoutMs` remains the authoritative operation timeout; graceful
-  cancellation of every in-flight tool should be validated with the deployed
-  SDK/runtime combination.
+- HTTP authentication uses configured bearer tokens with file-backed rotation,
+  previous-token overlap, expiry, rate limiting, per-client and global
+  concurrency limits, audit logging, request cancellation, and graceful
+  shutdown. A managed secret store and external log sink remain deployment
+  responsibilities.
+- HTTP request timeout is a request-layer upper bound. Tool-level `timeoutMs`
+  remains the authoritative operation timeout; the test suite covers
+  cancellation of in-flight tools with the packaged SDK/runtime combination.
 - Release evidence is local and ignored by Git. A release operator must
   generate and archive it separately.
 
 ## Required work for the next AI
 
 1. Validate the release gate on a clean release machine with `npm ci`, then
-   run build, test, lint, format check, matrix generation, and
+   run build, test, lint, format check, matrix generation, security checks,
    `npm run release:check`.
 2. Repeat process-tree tests in an elevated Windows environment, including
    parent/child/grandchild termination, orphan reclaim, repeated stop, invalid
    PID, and access-denied classification.
-3. Obtain controlled real Godot runtime evidence on Linux and macOS, or keep
-   those capabilities explicitly marked `NOT_RUN` in release records.
-4. Add HTTP token rotation, rate limiting, audit logging, concurrency limits,
-   and a documented threat model before calling the service production-grade.
-5. Add MCP client compatibility E2E tests, graceful shutdown tests for
-   in-flight runs, SBOM/dependency auditing, `SECURITY.md`, `CONTRIBUTING.md`,
-   and a versioned changelog.
-6. Only after those controls are complete should the preview be promoted to a
-   production-grade public MCP release.
+3. Obtain controlled real Godot runtime evidence on Linux and macOS, or
+   explicitly scope the public release to the verified Windows runtime and
+   record the other platforms as `NOT_RUN`.
+4. Review the deployment's secret storage, TLS termination, audit retention,
+   alerting, and operational ownership before exposing HTTP beyond localhost.
+5. Only after the platform evidence and deployment review are complete should
+   the preview be promoted to a production-grade public MCP release.
 
 ## Upload policy
 
@@ -85,6 +86,7 @@ npm test
 npm run lint
 npm run format:check
 npm run matrix:generate
+npm run security:check
 npm run release:check
 ```
 
