@@ -315,3 +315,56 @@ export async function getRecentEvidence(evidenceDir: string) {
     files: entries.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt)),
   };
 }
+
+export async function analyzeCollisions(projectPath: string, scenePath: string) {
+  const scene = await readSceneFile(projectPath, scenePath);
+  const nodes: any[] = [];
+  const ext = new Map<string, string>();
+  for (const line of scene.content.split(/\r?\n/)) {
+    const e = line.match(/^\[ext_resource[^\n]*path="([^"]+)"[^\n]*id="([^"]+)"/);
+    if (e) ext.set(e[2], e[1]);
+    const n = line.match(/^\[node\s+name="([^"]+)"[^\n]*type="([^"]+)"[^\n]*(?:parent="([^"]+)")?/);
+    if (n)
+      nodes.push({
+        name: n[1],
+        type: n[2],
+        parent: n[3] ?? '.',
+        path: n[3] ? `${n[3]}/${n[1]}` : n[1],
+        collision: /Collision|Body|Area|RayCast/.test(n[2]),
+      });
+  }
+  const collisions = nodes.filter((n) => n.collision);
+  const warnings = collisions.flatMap((n) => (/CollisionShape/.test(n.type) ? [] : []));
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    scenePath: scene.scenePath,
+    nodes: collisions,
+    collisionCount: collisions.length,
+    warnings,
+  };
+}
+
+export async function getNodeSemantics(projectPath: string, scenePath: string) {
+  const scene = await readSceneFile(projectPath, scenePath);
+  const result: any[] = [];
+  for (const line of scene.content.split(/\r?\n/)) {
+    const m = line.match(/^\[node\s+name="([^"]+)"[^\n]*type="([^"]+)"[^\n]*(?:parent="([^"]+)")?/);
+    if (!m) continue;
+    const type = m[2],
+      name = m[1].toLowerCase();
+    const semantic = /player|hero/.test(name)
+      ? 'player'
+      : /enemy|mob/.test(name)
+        ? 'enemy'
+        : /button|label|panel|ui/.test(name) || type.startsWith('Control')
+          ? 'ui'
+          : /camera/.test(name) || type.includes('Camera')
+            ? 'camera'
+            : /item|pickup|coin|weapon/.test(name)
+              ? 'interactive'
+              : 'node';
+    result.push({ path: m[3] ? `${m[3]}/${m[1]}` : m[1], name: m[1], type, semantic, components: [type] });
+  }
+  return { schema_version: '0.1', source: 'REAL', scenePath: scene.scenePath, nodes: result };
+}
