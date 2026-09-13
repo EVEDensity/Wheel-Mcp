@@ -1,4 +1,4 @@
-﻿// Tool implementations are temporarily kept in this composition unit while domain modules expose
+// Tool implementations are temporarily kept in this composition unit while domain modules expose
 // focused registration entry points. The server-side wrapper remains the single authority for policy,
 // request lifecycle, cancellation, ownership and timeout semantics.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
