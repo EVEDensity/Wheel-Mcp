@@ -8,9 +8,25 @@ if (!/^0\.1\.0-preview\.\d+$/.test(version) && !/^0\.2\.0$/.test(version))
   throw new Error(`unsupported release version: ${version}`);
 if (packageJson.bin['godot-harness-mcp'] !== 'build/src/mcp-server-sdk.js')
   throw new Error('MCP bin must use official SDK entrypoint');
-if (packageJson.engines?.node !== '>=20') throw new Error('Node >=20 is required');
+if (packageJson.engines?.node !== '>=20.19.0') throw new Error('Node >=20.19.0 is required');
 if (!packageJson.scripts?.sbom || !packageJson.scripts?.['audit:dependencies'])
   throw new Error('security scripts are required');
+if (!/^10\./.test(String(packageJson.devDependencies?.eslint ?? '')))
+  throw new Error('ESLint 10 is required for the supported release toolchain');
+for (const requiredDoc of ['docs/PRODUCTION-DEPLOYMENT.md', 'docs/SECURITY-THREAT-MODEL.md', 'SECURITY.md']) {
+  try {
+    await access(requiredDoc);
+  } catch {
+    throw new Error('required security/release document is missing: ' + requiredDoc);
+  }
+}
+const readText = async (file) => readFile(file, 'utf8');
+const readme = await readText('README.md');
+const readiness = await readText('docs/RELEASE-READINESS.md');
+if (!/Windows-only/.test(readme) || !/Godot 4\.7\.2/.test(readme))
+  throw new Error('README must declare the Windows-only Godot 4.7.2 release scope');
+if (!/Windows-only stable production candidate/.test(readiness))
+  throw new Error('release readiness must record the Windows-only production-candidate decision');
 
 const matrixRoot = path.resolve('runs/matrix');
 const requiredFiles = [
@@ -83,7 +99,7 @@ if (errors.length) {
       {
         status: 'FAIL',
         version,
-        checks: ['version', 'sdk-entrypoint', 'node-engine', 'security-scripts', 'matrix-integrity'],
+        checks: ['version', 'sdk-entrypoint', 'node-engine', 'toolchain', 'security-scripts', 'deployment-review-docs', 'windows-scope', 'matrix-integrity'],
         errors,
       },
       null,
@@ -98,7 +114,7 @@ if (errors.length) {
         status: 'PASS',
         version,
         node: process.version,
-        checks: ['version', 'sdk-entrypoint', 'node-engine', 'security-scripts', 'matrix-integrity'],
+        checks: ['version', 'sdk-entrypoint', 'node-engine', 'toolchain', 'security-scripts', 'deployment-review-docs', 'windows-scope', 'matrix-integrity'],
       },
       null,
       2,
