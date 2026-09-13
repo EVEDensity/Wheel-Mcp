@@ -82,3 +82,40 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       extra.signal,
     ),
   );
+
+  server.tool(
+    'get_process_status',
+    'Inspect process state.',
+    { pid: pidSchema, timeoutMs },
+    async ({ pid, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          context.throwIfCancelled();
+          return getProcessStatus(pid);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'get_runtime_events',
+    'Read runtime events from a cursor.',
+    {
+      evidenceDir: z.string(),
+      subscriptionId: z.string().min(1).optional(),
+      cursor,
+      limit: z.number().int().positive().optional(),
+      timeoutMs,
+    },
+    async ({ evidenceDir, cursor, limit, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          context.throwIfCancelled();
+          return readRuntimeEventsSince(evidenceDir, cursor ?? 0, limit ?? 100);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
