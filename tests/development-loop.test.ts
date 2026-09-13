@@ -93,3 +93,104 @@ test('already cancelled loop does not edit or launch', async () => {
     context.dispose();
   }
 });
+test(
+  'official stdio MCP client -> dev_loop -> Godot: repair, render, baseline, wrong repair rollback, diagnostics',
+  { skip: !process.env.GODOT_PATH, timeout: 180000 },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'loop-real-'));
+    const project = path.join(root, 'game');
+    await mkdir(project);
+    await writeFile(
+      path.join(project, 'project.godot'),
+      '[application]\nconfig/name="Repair loop test"\nrun/main_scene="res://main.tscn"\n[display]\nwindow/size/viewport_width=320\nwindow/size/viewport_height=180\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n',
+    );
+    await writeFile(
+      path.join(project, 'main.tscn'),
+      '[gd_scene load_steps=2 format=3]\n[ext_resource type="Script" path="res://main.gd" id="1"]\n[node name="Main" type="ColorRect"]\nscript = ExtResource("1")\noffset_right = 320.0\noffset_bottom = 180.0\ncolor = Color(0.2, 0.4, 0.7, 1)\n',
+    );
+    await writeFile(path.join(project, 'main.gd'), 'extends ColorRect\nvar health = 0\n');
+    const transport = new StdioClientTransport({
+      command: process.execPath,
+      args: [path.resolve('build/src/mcp-server-sdk.js')],
+      stderr: 'pipe',
+    });
+    transport.stderr?.on('data', () => {});
+    const client = new Client({ name: 'repair-test', version: '1' });
+    const args = {
+      projectPath: project,
+      godotPath: process.env.GODOT_PATH,
+      bridgePath: path.resolve('godot-plugin/runtime_bridge.gd'),
+      evidenceDir: path.join(root, 'evidence'),
+      timeoutMs: 60000,
+      checks: [
+        {
+          id: 'health',
+          method: 'get_property',
+          params: { nodePath: '.', property: 'health' },
+          path: 'value',
+          op: 'equals',
+          expected: 100,
+        },
+      ],
+    };
+    const call = async (extra: Record<string, unknown>) => {
+      const r = await client.callTool({ name: 'dev_loop', arguments: { ...args, ...extra } }, undefined, {
+        timeout: 90000,
+      });
+      return { wire: r, value: JSON.parse((r.content as Array<{ text: string }>)[0].text) };
+    };
+    try {
+      await client.connect(transport);
+      const repaired = await call({
+        screenshot: true,
+        repairs: [
+          {
+            id: 'health-fix',
+            whenFailedCheckId: 'health',
+            edits: [{ path: 'main.gd', find: 'health = 0', replace: 'health = 100' }],
+          },
+        ],
+      });
+      assert.equal(repaired.value.status, 'PASS', JSON.stringify(repaired.value));
+      assert.equal(repaired.value.metrics.retryCount, 1);
+      assert.equal(repaired.value.attempts[0].status, 'FAIL');
+      assert.equal(repaired.value.cleanup, true);
+      const shot = repaired.value.attempts[1].checks.find((c: { id: string }) => c.id === 'screenshot').actual;
+      assert.equal(shot.width, 320);
+      assert.equal(shot.height, 180);
+      const healthy = await call({ baselinePath: repaired.value.screenshotPath });
+      assert.equal(healthy.value.status, 'PASS');
+      assert.equal(healthy.value.metrics.retryCount, 0);
+      const broken = await call({
+        edits: [{ path: 'main.gd', find: 'health = 100', replace: 'health = 0' }],
+        repairs: [
+          {
+            id: 'wrong',
+            whenFailedCheckId: 'health',
+            edits: [{ path: 'main.gd', find: 'health = 0', replace: 'health = 3' }],
+          },
+        ],
+      });
+      assert.equal(broken.value.status, 'FAIL');
+      assert.equal(broken.wire.isError, true);
+      assert.equal(broken.value.rolledBack, true);
+      assert.equal(broken.value.metrics.retryCount, 1);
+      assert.match(await readFile(path.join(project, 'main.gd'), 'utf8'), /health = 100/);
+      const diagnostic = await call({
+        edits: [
+          {
+            path: 'main.gd',
+            find: 'var health = 100',
+            replace: 'var health = 100\nfunc _ready():\n    push_error("seeded runtime fault")',
+          },
+        ],
+      });
+      assert.equal(diagnostic.value.status, 'FAIL');
+      assert.ok(diagnostic.value.errorCount > 0);
+      assert.equal(diagnostic.value.rolledBack, true);
+    } finally {
+      await client.close();
+    }
+  },
+);
+
