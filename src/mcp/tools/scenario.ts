@@ -85,3 +85,33 @@ export function registerScenarioTools(context: ToolRegistrationContext): void {
   );
 
   server.tool(
+    'wait_for_event',
+    'Wait for a runtime event in a bridge session.',
+    {
+      sessionId: z.string().min(1),
+      event: z.string().min(1),
+      timeoutMs: timeoutMs,
+      responseMode: responseMode,
+    },
+    async (a: any, e: any) =>
+      invoke((c) => getRuntimeBridge(a.sessionId).waitForEvent(a.event, c), a.timeoutMs, e.signal, a.responseMode),
+  );
+
+  server.tool(
+    'reload_scene',
+    'Reload the current or requested scene in a persistent bridge.',
+    {
+      sessionId: z.string().min(1),
+      scenePath: z.string().optional(),
+      timeoutMs: timeoutMs,
+      responseMode: responseMode,
+    },
+    async (a: any, e: any) =>
+      invoke(
+        (c: any) => callRuntimeBridge(a.sessionId, 'reload_scene', { scenePath: a.scenePath }, c),
+        a.timeoutMs,
+        e.signal,
+        a.responseMode,
+      ),
+  );
+}
