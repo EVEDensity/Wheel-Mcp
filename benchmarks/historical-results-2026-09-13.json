@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-09-13T11:55:07.530Z",
+  "output": "runs/historical-repair/2026-09-13T11-53-47.424Z",
+  "manifestHash": "ad411bab40b841018fd413e1145a83ce4156ff52f8ca232b7929c3c29031ffab",
+  "source": "https://github.com/godotengine/godot-demo-projects",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "independence": "Projects excluded from the earlier seven seeded cases; cases/conditions frozen before their first runtime evaluation. Upstream patches reviewed for provenance: NOT blind to developer, NOT an unseen-model patch-generation score. Failed first runs cannot be replaced by later runs.",
+  "candidateSource": "upstream historical commit supplied through client approval flow, not live model generation",
+  "results": [
+    {
+      "id": "tween-parser",
+      "buggyCommit": "f89c73039c378c699039acaacead67f6d9632f9c",
+      "fixCommit": "9ed97d10cac6750ec2f84441d2a7c64b3f527a08",
+      "repairFiles": [
+        "main.gd"
+      ],
+      "buggy": "NEEDS_REPAIR",
+      "fixed": "PASS",
+      "ineffective": "FAIL",
+      "rollbackVerified": true,
+      "candidate": "PASS",
+      "reverified": "PASS",
+      "reproduced": true,
+      "verifiedRepair": true,
+      "negativeControlRejected": true,
+      "candidatesSubmitted": 2,
+      "successfulCandidateDurationMs": 2166,
+      "errorCount": 0,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/tween-parser/candidate",
+      "fixedProjectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/tween-parser/upstream-fixed",
+      "screenshotPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/tween-parser/evidence/client-repair-cf8cfd1a-0ad9-4a0a-a9bd-d43eccb60bd1/candidate-2/dev-loop-f57e7ed1-663a-43a9-866c-65fe3075c83e/attempt-0/screenshot.png"
+    },
+    {
+      "id": "fsm-empty-start",
+      "buggyCommit": "68a73af0759c2e7a8d9f7b7b5c57b9b894909d8e",
+      "fixCommit": "8847de9ca00dad9b56f4a2552c9e2e54d915edd6",
+      "repairFiles": [
+        "state_machine/state_machine.gd"
+      ],
+      "buggy": "NEEDS_REPAIR",
+      "fixed": "PASS",
+      "ineffective": "FAIL",
+      "rollbackVerified": true,
+      "candidate": "PASS",
+      "reverified": "PASS",
+      "reproduced": true,
+      "verifiedRepair": true,
+      "negativeControlRejected": true,
+      "candidatesSubmitted": 2,
+      "successfulCandidateDurationMs": 2196,
+      "errorCount": 0,
+      "screenshotSize": [
+        1280,
+        720
+      ],
+      "projectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/fsm-empty-start/candidate",
+      "fixedProjectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/fsm-empty-start/upstream-fixed",
+      "screenshotPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/fsm-empty-start/evidence/client-repair-78651b78-c3b1-41ab-b209-9d5c86207556/candidate-2/dev-loop-ef281942-e7ce-4fd4-9471-276c46467e0e/attempt-0/screenshot.png"
+    },
+    {
+      "id": "custom-drawing-multifile",
+      "buggyCommit": "417732e661be7c7e3a398f9d98f830af8fa8b44a",
+      "fixCommit": "045a68c51b5b8691ab15880467fff87e18dd065f",
+      "repairFiles": [
+        "meshes.gd",
+        "project.godot"
+      ],
+      "buggy": "NEEDS_REPAIR",
+      "fixed": "PASS",
+      "ineffective": "FAIL",
+      "rollbackVerified": true,
+      "candidate": "PASS",
+      "reverified": "PASS",
+      "reproduced": true,
+      "verifiedRepair": true,
+      "negativeControlRejected": true,
+      "candidatesSubmitted": 2,
+      "successfulCandidateDurationMs": 2410,
+      "errorCount": 0,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/custom-drawing-multifile/candidate",
+      "fixedProjectPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/custom-drawing-multifile/upstream-fixed",
+      "screenshotPath": "runs/historical-repair/2026-09-13T11-53-47.424Z/custom-drawing-multifile/evidence/client-repair-dda902e1-ca32-40ed-8c75-d094c5c7840e/candidate-2/dev-loop-0ed4ea0a-f500-4bdf-8472-aecef876a5ae/attempt-0/screenshot.png"
+    }
+  ],
+  "aggregate": {
+    "planned": 3,
+    "recorded": 3,
+    "completed": 3,
+    "preparationErrors": 0,
+    "runtimeErrors": 0,
+    "reproduced": 3,
+    "verifiedRepairs": 3,
+    "negativeControlsRejected": 3,
+    "notReproduced": 0
+  },
+  "limitations": [
+    "Small source-reviewed historical set, not a blind model generation benchmark.",
+    "A fixed control failing remains a failure; no diagnostic filtering or oracle tuning.",
+    "The complete first run remains local evidence even if later regressions are rerun."
+  ],
+  "evidence": {
+    "report": "runs/historical-repair/2026-09-13T11-53-47.424Z/report.json",
+    "reportSha256": "b27bc8fcdf8ae1a8bbb8362d72a8082347af445b374bb1420e76201e0ccfd88c",
+    "transcript": "runs/historical-repair/2026-09-13T11-53-47.424Z/mcp-transcript.json",
+    "transcriptSha256": "7ce81570823bb9f789c85d9784c1742953b0a7e876497aff806faa1590be629b"
+  },
+  "preparationFailures": [
+    {
+      "report": "runs/historical-repair/2026-09-13T11-38-19.945Z/report.json",
+      "cases": 3,
+      "runtimeStarted": false,
+      "reason": "git archive promisor fetch failed"
+    },
+    {
+      "report": "runs/historical-repair/2026-09-13T11-49-02.481Z/report.json",
+      "cases": 3,
+      "runtimeStarted": false,
+      "reason": "GitHub git transport unavailable; project blob fetch failed"
+    }
+  ],
+  "sourceAcquisition": "Codeload archive at exact upstream commit supplied complete blobs into the Git object store. Runner read only object IDs referenced by pinned trees, without altering manifest or assertions."
+}
