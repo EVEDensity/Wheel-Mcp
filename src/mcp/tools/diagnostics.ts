@@ -20,3 +20,16 @@ export function registerDiagnosticsTools(context: ToolRegistrationContext): void
       ),
   );
 
+  server.tool(
+    'analyze_script_semantics',
+    'Analyze GDScript structure and state-machine transitions.',
+    {
+      projectPath: projectPath,
+      scriptPath: z.string(),
+      responseMode: responseMode,
+      timeoutMs: timeoutMs,
+    },
+    async (a: any, e: any) =>
+      invoke((c: any) => analyzeScriptFile(a.projectPath, a.scriptPath), a.timeoutMs, e.signal, a.responseMode),
+  );
+}
