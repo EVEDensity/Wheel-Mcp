@@ -53,6 +53,8 @@ const toolPermissions: Record<string, McpPermission> = {
   set_runtime_property: 'write',
   inject_runtime_input: 'write',
   execute_scenario: 'write',
+  dev_loop: 'write',
+  run_test_scene: 'write',
   git_checkpoint: 'write',
   git_recovery: 'admin',
   reclaim_orphan_runs: 'admin',
