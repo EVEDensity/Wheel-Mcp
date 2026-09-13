@@ -126,6 +126,17 @@ func _handle_persistent_request(request: Dictionary) -> void:
 		_respond(request_id, {"stopped": true, "run_id": persistent_run_id})
 		call_deferred("quit")
 		return
+	if method == "reload_scene":
+		if persistent_instance != null: persistent_instance.queue_free()
+		var packed_reload: PackedScene = load(str(params.get("scenePath", persistent_main_scene))) as PackedScene
+		if packed_reload == null:
+			_respond_error(request_id, -32602, "unable to load scene")
+		else:
+			persistent_instance = packed_reload.instantiate()
+			root.add_child(persistent_instance)
+			_emit_notification("scene_reloaded", {"scene": str(params.get("scenePath", persistent_main_scene))})
+			_respond(request_id, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_RELOAD", "runtime": true, "reloaded": true})
+		return
 	if method == "get_scene_tree":
 		var nodes: Array[Dictionary] = []
 		_collect(persistent_instance, ".", nodes)
