@@ -70,3 +70,26 @@ test('HTTP dev_loop needs both write and run and isolates baseline evidence', ()
     /authorized root/,
   );
 });
+test('already cancelled loop does not edit or launch', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'loop-cancel-'));
+  await writeFile(path.join(root, 'a.gd'), 'before');
+  const context = createTimeoutContext(10000);
+  context.cancel();
+  try {
+    const r = await executeDevelopmentLoop(
+      {
+        projectPath: root,
+        bridgePath: 'missing',
+        evidenceDir: root,
+        edits: [{ path: 'a.gd', find: 'before', replace: 'after' }],
+        checks: [{ id: 'value', method: 'get_property', op: 'exists' }],
+      },
+      context,
+    );
+    assert.equal(r.status, 'FAIL');
+    assert.equal(r.metrics.attemptCount, 0);
+    assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'before');
+  } finally {
+    context.dispose();
+  }
+});
