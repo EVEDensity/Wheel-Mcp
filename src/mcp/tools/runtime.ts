@@ -565,3 +565,68 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       invoke((context) => stopRuntimeBridge(sessionId, context), timeoutMs, extra.signal),
   );
 
+  server.tool(
+    'get_game_state',
+    'Read selected runtime properties.',
+    { sessionId, nodePath: z.string().optional(), properties: z.array(z.string()).optional(), responseMode, timeoutMs },
+    async (a: any, e: any) =>
+      invoke(
+        (c: any) =>
+          callRuntimeBridge(
+            a.sessionId,
+            'get_game_state',
+            {
+              nodePath: a.nodePath,
+              properties: a.properties,
+            },
+            c,
+          ),
+        a.timeoutMs,
+        e.signal,
+        a.responseMode,
+      ),
+  );
+
+  server.tool(
+    'get_specialized_state',
+    'Read specialized runtime state.',
+    { sessionId, nodePath: z.string().optional(), responseMode, timeoutMs },
+    async (a: any, e: any) =>
+      invoke(
+        (c: any) => callRuntimeBridge(a.sessionId, 'get_specialized_state', { nodePath: a.nodePath }, c),
+        a.timeoutMs,
+        e.signal,
+        a.responseMode,
+      ),
+  );
+
+  server.tool(
+    'query_runtime_collisions',
+    'Query runtime collisions and history.',
+    {
+      sessionId,
+      nodePath: z.string(),
+      historyLimit: z.number().int().min(1).max(256).optional(),
+      refresh: z.boolean().optional(),
+      responseMode,
+      timeoutMs,
+    },
+    async (a: any, e: any) =>
+      invoke(
+        (c: any) =>
+          callRuntimeBridge(
+            a.sessionId,
+            'query_collisions',
+            {
+              nodePath: a.nodePath,
+              historyLimit: a.historyLimit,
+              refresh: a.refresh,
+            },
+            c,
+          ),
+        a.timeoutMs,
+        e.signal,
+        a.responseMode,
+      ),
+  );
+}
