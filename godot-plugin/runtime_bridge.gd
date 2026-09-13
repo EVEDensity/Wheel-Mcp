@@ -133,17 +133,6 @@ func _handle_persistent_request(request: Dictionary) -> void:
 		_respond(request_id, {"stopped": true, "run_id": persistent_run_id})
 		call_deferred("quit")
 		return
-	if method == "reload_scene":
-		if persistent_instance != null: persistent_instance.queue_free()
-		var packed_reload: PackedScene = load(str(params.get("scenePath", persistent_main_scene))) as PackedScene
-		if packed_reload == null:
-			_respond_error(request_id, -32602, "unable to load scene")
-		else:
-			persistent_instance = packed_reload.instantiate()
-			root.add_child(persistent_instance)
-			_emit_notification("scene_reloaded", {"scene": str(params.get("scenePath", persistent_main_scene))})
-			_respond(request_id, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_RELOAD", "runtime": true, "reloaded": true})
-		return
 	if method == "get_specialized_state":
 		_respond(request_id, _specialized_state(params))
 		return
@@ -321,12 +310,30 @@ func _delete_node_result(request: Dictionary) -> Dictionary:
 	_emit_notification("node_deleted", {"path": node_path})
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_NODE_DELETE", "runtime": true, "nodePath": node_path, "deleted": true}
 
+# Explicit JSON tags only; never evaluate strings or load arbitrary resources from call arguments.
+func _decode_argument(value):
+	if value is Dictionary:
+		if value.get("type") == "Vector2" and value.has("x") and value.has("y"):
+			return Vector2(float(value.x), float(value.y))
+		if value.get("type") == "Vector3" and value.has("x") and value.has("y") and value.has("z"):
+			return Vector3(float(value.x), float(value.y), float(value.z))
+		var decoded: Dictionary = {}
+		for key in value: decoded[key] = _decode_argument(value[key])
+		return decoded
+	if value is Array:
+		var decoded: Array = []
+		for item in value: decoded.append(_decode_argument(item))
+		return decoded
+	return value
+
 func _call_method_result(request: Dictionary) -> Dictionary:
 	var node := _resolve_node(persistent_instance, str(request.get("nodePath", ".")))
 	var method_name := str(request.get("method", ""))
 	if node == null or method_name.is_empty() or not node.has_method(method_name):
 		return {"error": "node or method does not exist"}
-	var args: Array = request.get("args", []) as Array
+	var args: Array = []
+	for argument in request.get("args", []):
+		args.append(_decode_argument(argument))
 	var value = node.callv(method_name, args)
 	_emit_notification("method_called", {"nodePath": str(persistent_instance.get_path_to(node)), "method": method_name})
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_METHOD_CALL", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "method": method_name, "value": value}
@@ -349,6 +356,8 @@ func _screenshot_result(request: Dictionary) -> Dictionary:
 		return {"error": "path is required for capture_screenshot"}
 	if DisplayServer.get_name() == "headless":
 		return {"error":"screenshots require a rendering display; headless has no framebuffer"}
+	# Static/low-processor-mode projects may not schedule another draw on their own.
+	RenderingServer.force_draw.call_deferred()
 	await RenderingServer.frame_post_draw
 	var viewport := get_root()
 	var image := viewport.get_texture().get_image() if viewport.get_texture() != null else null
