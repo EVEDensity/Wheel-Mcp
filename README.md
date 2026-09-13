@@ -3,6 +3,14 @@
 Current release line: `0.1.0-preview.1`. This is the first numbered preview
 of the `0.1.0-preview` release line; it is not a stable `0.2.0` release.
 
+**First public production scope: Windows-only.** The validated runtime target is
+Windows with Godot 4.7.2 and Node.js `>=20.19.0`. Linux and macOS have CI
+build/test coverage but no validated real Godot runtime evidence, so they are
+not supported targets for the first stable public release. Until the external
+TLS, secret-management, audit, and alerting review is signed off, this project
+is a Windows-only stable production candidate rather than an unconditionally
+hosted production service. See [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md).
+
 This repository is an independent, CLI-first Godot adapter for AI Game Harness.
 It does not copy the B1/B2 benchmark implementations.
 
@@ -95,7 +103,9 @@ node .\build\src\mcp-http-server.js
 The HTTP server binds to `127.0.0.1:3000` by default. A non-loopback bind
 requires `MCP_HTTP_ALLOW_REMOTE=true`, explicit
 `MCP_HTTP_ALLOWED_ORIGINS`/`MCP_HTTP_ALLOWED_HOSTS`, and bearer-token client
-configuration. Multiple isolated clients can be configured with the JSON
+configuration. Remote production exposure also requires a separately managed
+TLS reverse proxy; the Node listener is not a TLS terminator. Follow the
+external deployment checklist in [`docs/PRODUCTION-DEPLOYMENT.md`](docs/PRODUCTION-DEPLOYMENT.md). Multiple isolated clients can be configured with the JSON
 `MCP_HTTP_AUTH_TOKENS` value; each entry supplies `token`, `clientId`,
 `scopes`, `projectRoots`, and `evidenceRoots`. The server uses the official
 SDK `StreamableHTTPServerTransport` with stateful MCP sessions. WebSocket is

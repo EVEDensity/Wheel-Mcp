@@ -3,9 +3,12 @@
 ## Current decision
 
 The local Windows release gate is currently **PASS** for the package version
-`0.1.0-preview.1`. This is still a numbered preview build and must not be
-described as a stable release. Public production use remains conditional on
-the security and cross-platform follow-up work listed below.
+`0.1.0-preview.1`. The first public production scope is intentionally
+**Windows-only** with a validated Godot 4.7.2 runtime. This is still a numbered
+preview build and must not be described as a stable `0.2.0` release. The
+current decision is **Windows-only stable production candidate**, conditional on
+external deployment security sign-off in
+[`docs/PRODUCTION-DEPLOYMENT.md`](PRODUCTION-DEPLOYMENT.md).
 
 ## Verified
 
@@ -25,6 +28,12 @@ the security and cross-platform follow-up work listed below.
   evidence at 1920x1080.
 - Streamable HTTP integration tests cover bearer authentication, Host/Origin
   validation, session ownership, session deletion, scopes, and path roots.
+
+## Platform scope
+
+- Windows with Godot 4.7.2: validated real runtime matrix, 19/19 PASS.
+- Linux and macOS: CI build/test coverage only; real Godot runtime is `NOT_RUN`
+  and these platforms are outside the first public release scope.
 
 ## Remaining Release Risks
 
