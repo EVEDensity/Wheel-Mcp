@@ -25,7 +25,10 @@
     "matrix:generate": "node scripts/generate-matrix.mjs",
     "mcp:http": "node build/src/mcp-http-server.js",
     "benchmark": "npm run build && node scripts/benchmark.mjs",
-    "benchmark:repair": "npm run build && node scripts/repair-benchmark.mjs"
+    "benchmark:repair": "npm run build && node scripts/repair-benchmark.mjs",
+    "benchmark:historical": "npm run build && node scripts/historical-repair-benchmark.mjs",
+    "benchmark:shutdown": "npm run build && node scripts/strict-shutdown-benchmark.mjs",
+    "benchmark:client-repair-rpg": "npm run build && node scripts/client-repair-rpg.mjs"
   },
   "engines": {
     "node": ">=20.19.0"
