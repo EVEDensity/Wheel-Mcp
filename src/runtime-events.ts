@@ -391,7 +391,7 @@ export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadR
   for (let index = 0; index < completeLines.length; index += 1) {
     const line = completeLines[index];
     if (!line.trim()) continue;
-    let event: RuntimeEvent | null = null;
+    let event: RuntimeEvent | null;
     try {
       event = parseRuntimeEvent(JSON.parse(line));
     } catch (error: unknown) {

@@ -142,12 +142,13 @@ export class RunRegistry {
     let changed = false;
     for (const run of this.runs.values()) {
       if (run.state === 'RUNNING') {
-        let running = false;
-        try {
-          running = getProcessStatus(run.pid).running;
-        } catch {
-          running = false;
-        }
+        const running = (() => {
+          try {
+            return getProcessStatus(run.pid).running;
+          } catch {
+            return false;
+          }
+        })();
         if (!running) {
           run.state = transitionLifecycle(run.state, 'ORPHANED');
           run.updatedAt = new Date().toISOString();
