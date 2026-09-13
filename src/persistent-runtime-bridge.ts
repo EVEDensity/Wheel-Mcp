@@ -14,6 +14,7 @@ export type PersistentBridgeOptions = {
   evidenceDir?: string;
   runId?: string;
   headless?: boolean;
+  scenePath?: string;
   timeout?: TimeoutContext;
 };
 
@@ -49,6 +50,14 @@ export class PersistentRuntimeBridge {
   private buffer = '';
   private nextId = 1;
   private closed = false;
+  private logs = { stdout: '', stderr: '' };
+
+  async flushLogs(): Promise<void> {
+    await Promise.all([
+      writeFile(path.join(this.evidenceDir, 'stdout.log'), this.logs.stdout),
+      writeFile(path.join(this.evidenceDir, 'stderr.log'), this.logs.stderr),
+    ]);
+  }
   private closePromise: Promise<void> | null = null;
 
   private constructor(
@@ -108,17 +117,31 @@ export class PersistentRuntimeBridge {
         env: {
           ...process.env,
           GODOT_HARNESS_RUN_ID: sessionId,
-          GODOT_HARNESS_MAIN_SCENE: '',
+          GODOT_HARNESS_MAIN_SCENE: options.scenePath || '',
           GODOT_HARNESS_PORT: String(address.port),
         },
       },
     );
+    const logs = { stdout: '', stderr: '' };
+    child.stdout?.on('data', (chunk) => {
+      logs.stdout += String(chunk);
+    });
+    child.stderr?.on('data', (chunk) => {
+      logs.stderr += String(chunk);
+    });
+    child.once('close', () => {
+      void Promise.all([
+        writeFile(path.join(evidenceDir, 'stdout.log'), logs.stdout),
+        writeFile(path.join(evidenceDir, 'stderr.log'), logs.stderr),
+      ]).catch(() => undefined);
+    });
     const context = options.timeout || createTimeoutContext(DEFAULT_GODOT_PROCESS_TIMEOUT_MS);
     const ownsContext = !options.timeout;
     try {
       const socket = await waitForConnection(connection, child, context);
       server.close();
       const bridge = new PersistentRuntimeBridge(sessionId, child, socket, evidenceDir, root);
+      bridge.logs = logs;
       await bridge.waitForReady(context);
       await bridge.writeManifest({ persistent: true, pid: child.pid, session_id: sessionId });
       return bridge;
@@ -132,13 +155,18 @@ export class PersistentRuntimeBridge {
   }
 
   async request(method: string, params: Record<string, unknown> = {}, timeout?: TimeoutContext): Promise<unknown> {
+    timeout?.throwIfCancelled();
+    timeout?.throwIfExpired();
     if (this.closed) throw new Error('persistent bridge is closed');
     const request: JsonRpcRequest = { jsonrpc: '2.0', id: this.nextId++, method, params };
     await appendFile(path.join(this.evidenceDir, 'requests.jsonl'), JSON.stringify(request) + '\n');
     const response = await new Promise<unknown>((resolve, reject) => {
       const timer = setTimeout(
         () => {
-          if (this.pending.delete(request.id)) reject(new TimeoutError(`bridge request timed out: ${method}`));
+          if (this.pending.has(request.id)) {
+            this.removePending(request.id);
+            reject(new TimeoutError(`bridge request timed out: ${method}`));
+          }
         },
         Math.max(1, timeout?.remaining() ?? DEFAULT_STOP_TIMEOUT_MS),
       );
