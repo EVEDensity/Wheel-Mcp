@@ -32,6 +32,7 @@ func _initialize() -> void:
 		_fail(OS.get_environment("GODOT_HARNESS_RESPONSE"), "unable to instantiate main scene: " + persistent_main_scene)
 		return
 	root.add_child(persistent_instance)
+	current_scene = persistent_instance
 	var port := _persistent_port()
 	if port > 0:
 		_start_persistent(port)
@@ -98,8 +99,11 @@ func _process(_delta: float) -> bool:
 		return false
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {"run_id": persistent_run_id, "scene": persistent_main_scene}})
-	_emit_notification("level_started", {"scene": persistent_main_scene})
-	persistent_level_started_sent = true
+		_emit_notification("level_started", {"scene": persistent_main_scene})
+		persistent_level_started_sent = true
+	if is_instance_valid(current_scene) and current_scene != persistent_instance:
+		persistent_instance = current_scene
+		persistent_main_scene = current_scene.scene_file_path
 	var available := persistent_peer.get_available_bytes()
 	if available > 0:
 		var packet := persistent_peer.get_data(available)
@@ -142,6 +146,25 @@ func _handle_persistent_request(request: Dictionary) -> void:
 		return
 	if method == "get_specialized_state":
 		_respond(request_id, _specialized_state(params))
+		return
+	if method == "wait_physics_frames":
+		var frames := clampi(int(params.get("frames", 2)), 1, 120)
+		for index in range(frames): await physics_frame
+		_respond(request_id, {"frames":frames, "physicsFrame":Engine.get_physics_frames()})
+		return
+	if method == "reload_scene":
+		var scene_path := str(params.get("scenePath", persistent_main_scene))
+		var error := change_scene_to_file(scene_path)
+		if error != OK:
+			_respond_error(request_id, -32602, "unable to reload scene: " + scene_path)
+			return
+		await scene_changed
+		persistent_instance = current_scene
+		persistent_main_scene = scene_path
+		collision_cache.clear()
+		last_collision = {}
+		_emit_notification("scene_reloaded", {"scene":scene_path})
+		_respond(request_id, {"scene":scene_path, "reloaded":true})
 		return
 	if method == "query_collisions":
 		var collision_result := _query_collisions(params)
@@ -212,7 +235,26 @@ func _respond_error(request_id, code: int, message: String) -> void:
 func _emit_json(value: Dictionary) -> void:
 	if persistent_peer == null:
 		return
-	persistent_peer.put_data((JSON.stringify(value) + "\n").to_utf8_buffer())
+	persistent_peer.put_data((JSON.stringify(_json_value(value)) + "\n").to_utf8_buffer())
+
+# Serialize at the Variant boundary: ordinary strings must never be guessed as vectors.
+func _json_value(value):
+	if value is Vector2: return {"type":"Vector2", "x":value.x, "y":value.y}
+	if value is Vector2i: return {"type":"Vector2i", "x":value.x, "y":value.y}
+	if value is Vector3: return {"type":"Vector3", "x":value.x, "y":value.y, "z":value.z}
+	if value is Color: return {"type":"Color", "r":value.r, "g":value.g, "b":value.b, "a":value.a}
+	if value is NodePath: return {"type":"NodePath", "path":str(value)}
+	if value is Resource: return {"type":"Resource", "path":value.resource_path, "resourceType":value.get_class()}
+	if value is Node: return {"type":"Node", "path":str(value.get_path()), "class":value.get_class()}
+	if value is Dictionary:
+		var out: Dictionary = {}
+		for key in value: out[str(key)] = _json_value(value[key])
+		return out
+	if value is Array:
+		var out: Array = []
+		for item in value: out.append(_json_value(item))
+		return out
+	return value
 
 func _emit_notification(event_name: String, payload: Dictionary) -> void:
 	event_sequence += 1
@@ -305,8 +347,9 @@ func _screenshot_result(request: Dictionary) -> Dictionary:
 	var screenshot_path := str(request.get("path", ""))
 	if screenshot_path.is_empty():
 		return {"error": "path is required for capture_screenshot"}
-	await process_frame
-	await process_frame
+	if DisplayServer.get_name() == "headless":
+		return {"error":"screenshots require a rendering display; headless has no framebuffer"}
+	await RenderingServer.frame_post_draw
 	var viewport := get_root()
 	var image := viewport.get_texture().get_image() if viewport.get_texture() != null else null
 	if image == null or image.is_empty():
@@ -406,41 +449,44 @@ func _query_collisions(params: Dictionary) -> Dictionary:
 	if node == null: return {"error": "node not found"}
 	var node_path := str(node.get_path())
 	var history_limit := clampi(int(params.get("historyLimit", collision_history_limit)), 1, 256)
-	var refresh := bool(params.get("refresh", true))
-	var result: Array = []
-	if refresh:
+	var cached: Dictionary = collision_cache.get(node_path, {"nodePath":node_path, "updatedAt":0, "lastCollision":{}, "history":[], "overlaps":[]})
+	if bool(params.get("refresh", true)):
+		var result: Array = []
 		if node is Area2D:
-			for body in node.get_overlapping_bodies(): result.append({"name": body.name, "path": str(node.get_path_to(body)), "type": body.get_class()})
-			for area in node.get_overlapping_areas(): result.append({"name": area.name, "path": str(node.get_path_to(area)), "type": area.get_class()})
-		if node is RayCast2D and node.is_colliding(): result.append({"name": node.get_collider().name, "point": node.get_collision_point(), "normal": node.get_collision_normal(), "type": "raycast"})
+			for body in node.get_overlapping_bodies(): result.append({"name":body.name, "path":str(body.get_path()), "type":"overlap", "class":body.get_class()})
+			for area in node.get_overlapping_areas(): result.append({"name":area.name, "path":str(area.get_path()), "type":"overlap", "class":area.get_class()})
+		if node is RayCast2D:
+			node.force_raycast_update()
+			if node.is_colliding(): result.append({"name":node.get_collider().name, "path":str(node.get_collider().get_path()), "point":node.get_collision_point(), "normal":node.get_collision_normal(), "type":"raycast"})
 		if node is CollisionObject2D:
-			var shape := CircleShape2D.new(); shape.radius = 1.0
-			var query := PhysicsShapeQueryParameters2D.new(); query.shape = shape; query.transform = node.global_transform; query.collision_mask = node.collision_mask
-			for hit in node.get_world_2d().direct_space_state.intersect_shape(query):
-				var collider = hit.get("collider")
-				result.append({"collider": collider.name if collider != null else "", "point": hit.get("position", Vector2.ZERO), "normal": hit.get("normal", Vector2.ZERO), "type": "intersect_shape"})
-		_update_collision_cache(node_path, result, history_limit)
-	var cached: Dictionary = collision_cache.get(node_path, {"nodePath": node_path, "updatedAt": 0, "lastCollision": {}, "history": [], "historyLimit": history_limit})
-	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":requested_path, "overlaps":result, "lastCollision":cached.get("lastCollision", last_collision), "updatedAt":cached.get("updatedAt", 0), "history":cached.get("history", []), "historyLimit":cached.get("historyLimit", history_limit)}
-
-func _update_collision_cache(node_path: String, collisions: Array, history_limit: int) -> void:
-	var cached: Dictionary = collision_cache.get(node_path, {"nodePath": node_path, "updatedAt": 0, "lastCollision": {}, "history": []})
-	cached["historyLimit"] = history_limit
-	if collisions.is_empty():
-		collision_cache[node_path] = cached
-		return
-	var timestamp := Time.get_ticks_msec()
-	var collision: Dictionary = collisions[0].duplicate(true)
-	collision["nodePath"] = node_path
-	collision["timestamp"] = timestamp
-	cached["updatedAt"] = timestamp
-	cached["lastCollision"] = collision
-	var history: Array = cached.get("history", [])
-	history.push_front(collision)
-	while history.size() > history_limit: history.pop_back()
-	cached["history"] = history
+			# Query actual enabled shapes with the owner's transform, excluding the queried body.
+			for owner_id in node.get_shape_owners():
+				if node.is_shape_owner_disabled(owner_id): continue
+				for shape_index in range(node.shape_owner_get_shape_count(owner_id)):
+					var query := PhysicsShapeQueryParameters2D.new()
+					query.shape = node.shape_owner_get_shape(owner_id, shape_index)
+					query.transform = node.global_transform * node.shape_owner_get_transform(owner_id)
+					query.collision_mask = node.collision_mask
+					query.exclude = [node.get_rid()]
+					for hit in node.get_world_2d().direct_space_state.intersect_shape(query):
+						var collider = hit.get("collider")
+						# intersect_shape returns identity/shape only, not contact point or normal.
+						result.append({"name":collider.name, "collider":collider.name, "path":str(collider.get_path()), "shape":hit.get("shape"), "type":"intersect_shape"})
+		var timestamp := Time.get_ticks_msec()
+		cached["updatedAt"] = timestamp
+		cached["overlaps"] = result
+		if not result.is_empty():
+			var collision: Dictionary = result[0].duplicate(true)
+			collision["nodePath"] = node_path
+			collision["timestamp"] = timestamp
+			collision["physicsFrame"] = Engine.get_physics_frames()
+			cached["lastCollision"] = collision
+			cached["history"].push_front(collision)
+			last_collision = collision
+	# History records successful query samples, not unobserved engine contacts.
+	while cached["history"].size() > history_limit: cached["history"].pop_back()
 	collision_cache[node_path] = cached
-	last_collision = collision
+	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":requested_path, "overlaps":cached["overlaps"], "lastCollision":cached["lastCollision"], "updatedAt":cached["updatedAt"], "history":cached["history"], "historyLimit":history_limit, "historyMode":"query_samples"}
 
 func _game_state_result(params: Dictionary) -> Dictionary:
 	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
@@ -460,7 +506,9 @@ func _specialized_state(params: Dictionary) -> Dictionary:
 	if node == null: return {"error":"node not found"}
 	if node is AnimationPlayer: state.animation = {"current": node.current_animation, "position": node.current_animation_position, "playing": node.is_playing()}
 	if node is Camera2D: state.camera = {"position": node.global_position, "enabled": node.enabled, "zoom": node.zoom}
-	if node is NavigationAgent2D: state.navigation = {"target_position": node.target_position, "velocity": node.velocity, "distance": node.distance_to_target()}
-	if node is AudioStreamPlayer: state.audio = {"playing": node.playing, "stream": str(node.stream), "position": node.get_playback_position()}
+	if node is NavigationAgent2D:
+		var next_position: Vector2 = node.get_next_path_position()
+		state.navigation = {"target_position":node.target_position, "velocity":node.velocity, "distance":node.distance_to_target(), "next_position":next_position, "navigation_finished":node.is_navigation_finished(), "target_reached":node.is_target_reached(), "target_reachable":node.is_target_reachable(), "path_length":node.get_current_navigation_path().size(), "map_iteration":NavigationServer2D.map_get_iteration_id(node.get_navigation_map())}
+	if node is AudioStreamPlayer: state.audio = {"playing": node.playing, "stream": node.stream, "position": node.get_playback_position()}
 	for action in InputMap.get_actions(): state.input[str(action)] = Input.is_action_pressed(str(action))
 	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_SPECIALIZED_STATE", "nodePath":str(params.get("nodePath", ".")), "state":state}
