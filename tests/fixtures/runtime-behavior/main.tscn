@@ -36,8 +36,8 @@ monitoring = true
 [node name="Shape" type="CollisionShape2D" parent="Area"]
 shape = SubResource("Shape")
 [node name="Ray" type="RayCast2D" parent="."]
-position = Vector2(80, 90)
-target_position = Vector2(100, 0)
+position = Vector2(40, 90)
+target_position = Vector2(80, 0)
 collision_mask = 1
 enabled = true
 [node name="Animated" type="Node2D" parent="."]

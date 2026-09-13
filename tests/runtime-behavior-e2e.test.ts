@@ -40,52 +40,60 @@ test('official MCP client to persistent bridge to real Godot behavior scene', as
     });
     assert.equal(animation.isError, undefined, JSON.stringify(animation));
     const animationState = JSON.parse((animation.content as Array<{ text: string }>)[0].text) as any;
-    assert.equal(animationState.state.animation.playing, true, JSON.stringify(animationState));
+    const animationRuntime = animationState.state ?? (animationState.response && animationState.response.state);
+    assert.equal(animationRuntime.animation.playing, true, JSON.stringify(animationState));
     const camera = await client.callTool({
       name: 'get_specialized_state',
       arguments: { sessionId, nodePath: 'Camera2D' },
     });
     const cameraState = JSON.parse((camera.content as Array<{ text: string }>)[0].text) as any;
-    assert.equal(cameraState.state.camera.enabled, true);
-    assert.deepEqual(cameraState.state.camera.zoom, { x: 1.5, y: 1.5 });
+    const cameraRuntime = cameraState.state ?? (cameraState.response && cameraState.response.state);
+    assert.equal(cameraRuntime.camera.enabled, true);
+    assert.deepEqual(cameraRuntime.camera.zoom, { type: 'Vector2', x: 1.5, y: 1.5 });
     const navigation = await client.callTool({
       name: 'get_specialized_state',
       arguments: { sessionId, nodePath: 'NavigationAgent2D' },
     });
     const navigationState = JSON.parse((navigation.content as Array<{ text: string }>)[0].text) as any;
-    assert.deepEqual(navigationState.state.navigation.target_position, { x: 200, y: 90 });
+    const navigationRuntime = navigationState.state ?? (navigationState.response && navigationState.response.state);
+    assert.deepEqual(navigationRuntime.navigation.target_position, { type: 'Vector2', x: 200, y: 90 });
     const audio = await client.callTool({
       name: 'get_specialized_state',
       arguments: { sessionId, nodePath: 'AudioStreamPlayer' },
     });
     const audioState = JSON.parse((audio.content as Array<{ text: string }>)[0].text) as any;
-    assert.equal(audioState.state.audio.playing, true, JSON.stringify(audioState));
+    const audioRuntime = audioState.state ?? (audioState.response && audioState.response.state);
+    assert.equal(audioRuntime.audio.playing, true, JSON.stringify(audioState));
     const collisions = await client.callTool({
       name: 'query_runtime_collisions',
       arguments: { sessionId, nodePath: 'Area', historyLimit: 8 },
     });
     assert.equal(collisions.isError, undefined, JSON.stringify(collisions));
     const collisionBody = JSON.parse((collisions.content as Array<{ text: string }>)[0].text) as any;
-    assert.ok(collisionBody.overlaps.some((item: any) => item.name === 'Target'));
-    assert.ok(collisionBody.history.length >= 1);
-    assert.equal(typeof collisionBody.updatedAt, 'number');
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    const collisionRuntime = collisionBody.response ?? collisionBody;
+    assert.ok(collisionRuntime.overlaps.some((item: any) => item.name === 'Target'));
+    assert.ok(collisionRuntime.history.length >= 1);
+    assert.equal(typeof collisionRuntime.updatedAt, 'number');
+    await new Promise((resolve) => setTimeout(resolve, 150));
     const collisionAgain = await client.callTool({
       name: 'query_runtime_collisions',
       arguments: { sessionId, nodePath: 'Area', historyLimit: 8 },
     });
     const againBody = JSON.parse((collisionAgain.content as Array<{ text: string }>)[0].text) as any;
-    assert.ok(againBody.history.length >= 2);
-    assert.ok(againBody.history[0].timestamp >= againBody.history[1].timestamp);
+    assert.ok((againBody.response ?? againBody).history.length >= 2);
+    assert.ok(
+      (againBody.response ?? againBody).history[0].timestamp >= (againBody.response ?? againBody).history[1].timestamp,
+    );
     const ray = await client.callTool({
       name: 'query_runtime_collisions',
       arguments: { sessionId, nodePath: 'Ray', historyLimit: 8 },
     });
     assert.equal(ray.isError, undefined, JSON.stringify(ray));
     const rayBody = JSON.parse((ray.content as Array<{ text: string }>)[0].text) as any;
-    assert.ok(rayBody.overlaps.some((item: any) => item.name === 'Target'));
-    assert.ok(Array.isArray(rayBody.history));
-    assert.notEqual(rayBody.nodePath, collisionBody.nodePath);
+    const rayRuntime = rayBody.response ?? rayBody;
+    assert.ok(rayRuntime.overlaps.some((item: any) => item.name === 'Target'));
+    assert.ok(Array.isArray(rayRuntime.history));
+    assert.notEqual(rayRuntime.nodePath, collisionRuntime.nodePath);
   } finally {
     if (sessionId)
       await client
