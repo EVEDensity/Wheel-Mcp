@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "registeredAt": "2026-09-13T11:27:51.332643+00:00",
+  "repository": "https://github.com/godotengine/godot-demo-projects",
+  "license": "MIT",
+  "diagnosticsScope": "including-shutdown",
+  "maxErrors": 0,
+  "maxCandidates": 2,
+  "independence": "Projects excluded from the earlier seven seeded cases; cases/conditions frozen before their first runtime evaluation. Upstream patches reviewed for provenance: NOT blind to developer, NOT an unseen-model patch-generation score. Failed first runs cannot be replaced by later runs.",
+  "candidateSource": "upstream historical commit supplied through client approval flow, not live model generation",
+  "cases": [
+    {
+      "id": "tween-parser",
+      "fixCommit": "9ed97d10cac6750ec2f84441d2a7c64b3f527a08",
+      "buggyCommit": "f89c73039c378c699039acaacead67f6d9632f9c",
+      "project": "2d/tween",
+      "repairFiles": [
+        "main.gd"
+      ],
+      "scenePath": "res://main.tscn",
+      "checks": [
+        {
+          "id": "scene-loaded",
+          "method": "get_scene_tree",
+          "params": {},
+          "path": "nodes",
+          "op": "exists"
+        }
+      ],
+      "actions": [
+        {
+          "method": "wait_physics_frames",
+          "params": {
+            "frames": 12
+          }
+        }
+      ],
+      "controls": [
+        "buggy",
+        "upstream-fixed",
+        "ineffective-candidate",
+        "upstream-candidate",
+        "independent-reverify"
+      ],
+      "successRule": "Buggy strict FAIL, upstream fixed strict PASS, approved candidate strict PASS and independent reverify PASS; ineffective candidate must FAIL and restore source."
+    },
+    {
+      "id": "fsm-empty-start",
+      "fixCommit": "8847de9ca00dad9b56f4a2552c9e2e54d915edd6",
+      "buggyCommit": "68a73af0759c2e7a8d9f7b7b5c57b9b894909d8e",
+      "project": "2d/finite_state_machine",
+      "repairFiles": [
+        "state_machine/state_machine.gd"
+      ],
+      "scenePath": "res://Demo.tscn",
+      "checks": [
+        {
+          "id": "scene-loaded",
+          "method": "get_scene_tree",
+          "params": {},
+          "path": "nodes",
+          "op": "exists"
+        },
+        {
+          "id": "state-initialized",
+          "method": "get_property",
+          "params": {
+            "nodePath": "Player/StateMachine",
+            "property": "current_state"
+          },
+          "path": "value",
+          "op": "exists"
+        }
+      ],
+      "actions": [
+        {
+          "method": "wait_physics_frames",
+          "params": {
+            "frames": 12
+          }
+        }
+      ],
+      "controls": [
+        "buggy",
+        "upstream-fixed",
+        "ineffective-candidate",
+        "upstream-candidate",
+        "independent-reverify"
+      ],
+      "successRule": "Buggy strict FAIL, upstream fixed strict PASS, approved candidate strict PASS and independent reverify PASS; ineffective candidate must FAIL and restore source.",
+      "reproduction": {
+        "file": "Demo.tscn",
+        "find": "start_state = NodePath(\"Idle\")",
+        "replace": "start_state = NodePath(\"\")"
+      }
+    },
+    {
+      "id": "custom-drawing-multifile",
+      "fixCommit": "045a68c51b5b8691ab15880467fff87e18dd065f",
+      "buggyCommit": "417732e661be7c7e3a398f9d98f830af8fa8b44a",
+      "project": "2d/custom_drawing",
+      "repairFiles": [
+        "meshes.gd",
+        "project.godot"
+      ],
+      "scenePath": null,
+      "checks": [
+        {
+          "id": "scene-loaded",
+          "method": "get_scene_tree",
+          "params": {},
+          "path": "nodes",
+          "op": "exists"
+        }
+      ],
+      "actions": [
+        {
+          "method": "wait_physics_frames",
+          "params": {
+            "frames": 12
+          }
+        }
+      ],
+      "controls": [
+        "buggy",
+        "upstream-fixed",
+        "ineffective-candidate",
+        "upstream-candidate",
+        "independent-reverify"
+      ],
+      "successRule": "Buggy strict FAIL, upstream fixed strict PASS, approved candidate strict PASS and independent reverify PASS; ineffective candidate must FAIL and restore source."
+    }
+  ]
+}
