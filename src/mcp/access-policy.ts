@@ -61,7 +61,7 @@ const toolPermissions: Record<string, McpPermission> = {
 };
 
 const projectPathKeys = new Set(['projectPath', 'directory', 'scenePath', 'scenarioPath', 'bridgePath', 'patchPath']);
-const evidencePathKeys = new Set(['evidenceDir']);
+const evidencePathKeys = new Set(['evidenceDir', 'baselinePath']);
 
 export function createClientPolicy(input: {
   clientId: string;
@@ -84,7 +84,18 @@ export function authorizeToolCall(policy: McpClientPolicy, toolName: string, arg
   if (!policy.scopes.has(required) && !policy.scopes.has('admin')) {
     throw new McpAccessError(`client ${policy.clientId} lacks ${required} permission for ${toolName}`);
   }
+  if (toolName === 'dev_loop' && !policy.scopes.has('run') && !policy.scopes.has('admin'))
+    throw new McpAccessError('dev_loop requires run and write permissions');
+  if (
+    ['dev_loop', 'open_runtime_bridge'].includes(toolName) &&
+    args.scenePath &&
+    (typeof args.scenePath !== 'string' ||
+      !args.scenePath.startsWith('res://') ||
+      args.scenePath.slice(6).split(/[\\/]/).includes('..'))
+  )
+    throw new McpAccessError('dev_loop scenePath must be a contained res:// path');
   for (const [key, value] of Object.entries(args)) {
+    if (['dev_loop', 'open_runtime_bridge'].includes(toolName) && key === 'scenePath') continue;
     if (typeof value !== 'string' || value.length === 0) continue;
     if (projectPathKeys.has(key)) assertContained(value, policy.projectRoots, key);
     if (evidencePathKeys.has(key)) assertContained(value, policy.evidenceRoots, key);
