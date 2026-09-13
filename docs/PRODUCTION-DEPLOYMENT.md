@@ -1,6 +1,6 @@
 ﻿# Production Deployment Review (Windows-only)
 
-This document is the deployment review for the first public production candidate.
+This document is a practical deployment guide for the first Windows-only public release. It is written for a personal project and does not require enterprise certification, approval signatures, or an on-call organization.
 It describes the controls that must be in place when Streamable HTTP is exposed
 outside the local machine. The repository provides the MCP server, policy checks,
 rate/concurrency limits, request cancellation, graceful shutdown, and structured
@@ -175,50 +175,33 @@ the actual workload rather than relying on defaults:
 
 ## Alerting and operational ownership
 
-The deployment owner must map these conditions to a monitor, an alert owner,
+If this project is exposed beyond localhost, map these conditions to a monitor and a notification method,
 and a response target. Suggested initial alerts:
 
-| Condition | Suggested trigger | First response |
-| --- | --- | --- |
-| Authentication failures | 401/403 spike or repeated failures by one source | Check client, token rotation, and source allowlist |
-| Host/Origin rejection | Any unexpected production occurrence | Inspect proxy headers and possible rebinding/probing |
-| Rate/concurrency limits | Sustained 429/limit events | Identify overload or abuse; do not blindly raise limits |
-| Tool timeout/cancel | Error ratio or latency above SLO | Inspect Godot health and scenario complexity |
-| Godot crash/orphan | Any unplanned process exit/orphan | Preserve evidence, reclaim process, investigate project |
-| Evidence write failure | Any manifest/screenshot failure | Check ACLs, path roots, disk, and quota |
-| Token reload failure | Any reload error | Keep last-known-good set; repair secret delivery |
-| Audit write failure | Any sink/append failure | Restore logging before remote exposure continues |
-| Shutdown timeout | Any forced close | Inspect hung requests and process cleanup |
-| Disk pressure | <20% warning, <10% critical | Rotate/archive evidence and logs |
-| TLS expiry | 30/14/7-day warnings | Renew and verify client trust |
-| Unexpected remote bind | Any non-loopback bind without change record | Disable exposure and review configuration |
+| Condition               | Suggested trigger                                | First response                                          |
+| ----------------------- | ------------------------------------------------ | ------------------------------------------------------- |
+| Authentication failures | 401/403 spike or repeated failures by one source | Check client, token rotation, and source allowlist      |
+| Host/Origin rejection   | Any unexpected production occurrence             | Inspect proxy headers and possible rebinding/probing    |
+| Rate/concurrency limits | Sustained 429/limit events                       | Identify overload or abuse; do not blindly raise limits |
+| Tool timeout/cancel     | Error ratio or latency above SLO                 | Inspect Godot health and scenario complexity            |
+| Godot crash/orphan      | Any unplanned process exit/orphan                | Preserve evidence, reclaim process, investigate project |
+| Evidence write failure  | Any manifest/screenshot failure                  | Check ACLs, path roots, disk, and quota                 |
+| Token reload failure    | Any reload error                                 | Keep last-known-good set; repair secret delivery        |
+| Audit write failure     | Any sink/append failure                          | Restore logging before remote exposure continues        |
+| Shutdown timeout        | Any forced close                                 | Inspect hung requests and process cleanup               |
+| Disk pressure           | <20% warning, <10% critical                      | Rotate/archive evidence and logs                        |
+| TLS expiry              | 30/14/7-day warnings                             | Renew and verify client trust                           |
+| Unexpected remote bind  | Any non-loopback bind without change record      | Disable exposure and review configuration               |
 
-Required before sign-off:
+For a personal deployment, these alerting items are recommendations rather than
+release blockers. Configure only the monitoring and notifications that are useful
+for your own environment.
 
-- [ ] Name an on-call owner and backup.
-- [ ] Define severity, acknowledgement target, and remediation target for each
-      alert.
-- [ ] Test notification delivery and escalation.
-- [ ] Perform one tabletop exercise covering token compromise, TLS expiry, and
-      evidence leakage.
-- [ ] Record the deployment hostname, proxy, secret store, SIEM, retention,
-      alert owner, and sign-off date outside the source repository.
+## Practical release decision
 
-## Sign-off
-
-A completed checklist is an external deployment review; it is not proven by
-`npm run release:check` alone. The release operator should attach the completed
-checklist and the Windows matrix evidence to the release record.
-
-- Deployment owner: ____________________
-- Security reviewer: ____________________
-- Operations/on-call owner: ____________________
-- Public hostname (if any): ____________________
-- Secret manager: ____________________
-- SIEM/log destination: ____________________
-- Review date (UTC): ____________________
-- Decision: `APPROVED` / `APPROVED WITH CONDITIONS` / `NOT APPROVED`
-
-Until these fields are completed by the external deployment owner, the project
-may be described as a **Windows-only stable production candidate**, not as an
-unconditionally production-ready hosted service.
+For personal/local Windows use, no external sign-off is required. The project is
+ready when the local build, tests, real Godot matrix, and `release:check` pass.
+If HTTP is exposed to another machine, configure TLS, protect the bearer token,
+and retain enough audit information to diagnose failures. Enterprise identity,
+SIEM, formal on-call ownership, and managed secret services are optional future
+enhancements rather than release blockers.
