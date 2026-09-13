@@ -1,4 +1,5 @@
-﻿import { developmentLoopSchema, executeDevelopmentLoop } from '../../development-loop.js';
+import { ClientRepairCoordinator, beginClientRepairSchema, submitRepairCandidateSchema } from '../../client-repair.js';
+import { developmentLoopSchema, executeDevelopmentLoop } from '../../development-loop.js';
 import { z } from 'zod';
 import { executeScenario } from '../../scenario-executor.js';
 import { scenarioSchema } from '../../scenario-schema.js';
@@ -7,6 +8,20 @@ import type { ToolRegistrationContext } from '../tool-context.js';
 export function registerScenarioTools(context: ToolRegistrationContext): void {
   const { server, invoke, schemas } = context;
   const { godotPath, bridgePath, evidenceDir, timeoutMs, responseMode } = schemas;
+  const clientRepairs = new ClientRepairCoordinator();
+  server.tool(
+    'begin_client_repair',
+    'Run strict validation and return failure evidence plus explicitly allowed source files for the client model. Does not apply edits.',
+    beginClientRepairSchema.shape,
+    async (args, extra) => invoke((c) => clientRepairs.begin(args, c), args.timeoutMs, extra.signal),
+  );
+  server.tool(
+    'submit_repair_candidate',
+    'Verify an explicitly approved client-generated patch against the original fixed conditions. Same session required; failed candidates roll back.',
+    submitRepairCandidateSchema.shape,
+    async (args, extra) => invoke((c) => clientRepairs.submit(args, c), 600000, extra.signal),
+  );
+
   server.tool(
     'dev_loop',
     'Edit existing files, run fresh Godot validation, inspect diagnostics and rendered screenshots, apply approved exact repair patches and revalidate. Not an autonomous patch generator.',
