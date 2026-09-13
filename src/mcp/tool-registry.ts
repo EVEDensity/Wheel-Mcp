@@ -758,3 +758,207 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
     'get_runtime_errors',
     'Read runtime diagnostics from evidence.',
     { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
+    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readGodotDiagnostics(evidenceDir, projectPath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'compare_screenshots',
+    'Compare two screenshots for byte identity.',
+    {
+      firstPath: z.string(),
+      secondPath: z.string(),
+      threshold: z.number().int().min(0).max(255).optional(),
+      ignoreAlpha: z.boolean().optional(),
+      writeDiff: z.boolean().optional(),
+      diffPath: z.string().optional(),
+      responseMode,
+      timeoutMs,
+    },
+    async ({ firstPath, secondPath, threshold, ignoreAlpha, writeDiff, diffPath, responseMode, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return compareScreenshots(firstPath, secondPath, { threshold, ignoreAlpha, writeDiff, diffPath });
+        },
+        timeoutMs,
+        extra.signal,
+        responseMode,
+      ),
+  );
+  server.tool(
+    'get_recent_evidence',
+    'List recent evidence artifacts.',
+    { evidenceDir: z.string(), timeoutMs },
+    async ({ evidenceDir, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return getRecentEvidence(evidenceDir);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'read_scene_file',
+    'Read a Godot .tscn scene file.',
+    { projectPath, scenePath: z.string(), timeoutMs },
+    async ({ projectPath, scenePath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readSceneFile(projectPath, scenePath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'write_scene_file',
+    'Save a Godot .tscn scene file after explicit content edits.',
+    { projectPath, scenePath: z.string(), content: z.string(), timeoutMs },
+    async ({ projectPath, scenePath, content, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return writeSceneFile(projectPath, scenePath, content);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'get_godot_diagnostics',
+    'Parse Godot parser and runtime errors from an evidence directory.',
+    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
+    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readGodotDiagnostics(evidenceDir, projectPath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'get_context_pack',
+    'Build a read-only context pack.',
+    { godotPath, projectPath, evidenceDir, scenePath: z.string().optional(), timeoutMs },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          buildContextPack({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'git_checkpoint',
+    'Capture Git checkpoint evidence.',
+    { projectPath, evidenceDir, timeoutMs },
+    async ({ projectPath, evidenceDir, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          context.throwIfCancelled();
+          return gitCheckpoint(projectPath, evidenceDir, context);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'git_recovery',
+    'Reverse an explicit patch.',
+    { projectPath, patchPath: z.string(), timeoutMs },
+    async ({ projectPath, patchPath, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          context.throwIfCancelled();
+          return gitRecovery(projectPath, patchPath, context);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'run_test_scene',
+    'Run a Godot test scene through the scenario executor.',
+    {
+      scenario: scenarioSchema,
+      scenarioPath: z.string().optional(),
+      godotPath,
+      bridgePath,
+      evidenceDir,
+      retries: z.number().int().nonnegative().optional(),
+      timeoutMs,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) => executeScenario({ ...args, globalTimeoutMs: args.timeoutMs, signal: extra.signal }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'execute_scenario',
+    'Execute a declarative Godot scenario with shared timeout and evidence semantics.',
+    {
+      scenario: scenarioSchema,
+      scenarioPath: z.string().optional(),
+      godotPath,
+      bridgePath,
+      evidenceDir,
+      defaultStepTimeoutMs: z.number().int().positive().optional(),
+      globalTimeoutMs: z.number().int().positive().optional(),
+      retries: z.number().int().nonnegative().optional(),
+      onFailure: z.enum(['stop', 'continue']).optional(),
+      timeoutMs,
+    },
+    async (
+      {
+        scenario,
+        scenarioPath,
+        godotPath,
+        bridgePath,
+        evidenceDir,
+        defaultStepTimeoutMs,
+        globalTimeoutMs,
+        retries,
+        onFailure,
+        timeoutMs,
+      },
+      extra,
+    ) =>
+      invoke(
+        (context) =>
+          executeScenario({
+            scenario,
+            scenarioPath,
+            godotPath: godotPath || process.env.GODOT_PATH,
+            bridgePath,
+            evidenceDir,
+            defaultStepTimeoutMs,
+            globalTimeoutMs,
+            retries,
+            onFailure,
+            signal: context.signal,
+          }),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+}
