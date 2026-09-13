@@ -23,7 +23,8 @@
     "audit:dependencies": "npm audit --audit-level=high",
     "security:check": "npm run audit:dependencies && npm run sbom",
     "matrix:generate": "node scripts/generate-matrix.mjs",
-    "mcp:http": "node build/src/mcp-http-server.js"
+    "mcp:http": "node build/src/mcp-http-server.js",
+    "benchmark": "npm run build && node scripts/benchmark.mjs"
   },
   "engines": {
     "node": ">=20.19.0"
