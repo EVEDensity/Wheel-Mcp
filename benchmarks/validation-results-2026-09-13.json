@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-13T12:27:21.170Z",
+  "platform": "win32",
+  "node": "v24.19.0",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseCommit": "abfc3fbd69bcd5a44e08701ae467f67d4ac3785f",
+  "worktreeChanges": true,
+  "invocation": "Installed CLI entry points through the bundled Node executable; not npm ci or a fresh npm audit.",
+  "gates": {
+    "build": "PASS",
+    "prettier": "PASS",
+    "eslint": "PASS",
+    "tests": {
+      "total": 82,
+      "passed": 82,
+      "failed": 0,
+      "skipped": 0,
+      "command": "node --test build/tests/*.test.js",
+      "rawPath": ".harness/full-tests-default-final.txt",
+      "sha256": "e031b9fd1dc25c964aa6007938a791f8007a18ec590b820cb4afa336e95e4501"
+    },
+    "matrix": {
+      "status": "PASS",
+      "total": 19,
+      "passed": 19,
+      "rawPath": "runs/matrix/release-matrix-summary.json",
+      "sha256": "1dd74ab95829ff0c87c751f252f5fc90b08d8e362e0820a1bb72e2438967246c",
+      "cases": [
+        {
+          "name": "launch",
+          "channel": "cli",
+          "status": "PASS"
+        },
+        {
+          "name": "logs",
+          "channel": "cli",
+          "status": "PASS"
+        },
+        {
+          "name": "stop",
+          "channel": "cli",
+          "status": "PASS"
+        },
+        {
+          "name": "cancel-repeat",
+          "channel": "cli",
+          "status": "PASS"
+        },
+        {
+          "name": "launch_project",
+          "channel": "mcp",
+          "status": "PASS"
+        },
+        {
+          "name": "get_debug_output",
+          "channel": "mcp",
+          "status": "PASS"
+        },
+        {
+          "name": "stop_project",
+          "channel": "mcp",
+          "status": "PASS"
+        },
+        {
+          "name": "cancel_project-repeat",
+          "channel": "mcp",
+          "status": "PASS"
+        },
+        {
+          "name": "doctor",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "list-projects",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "project-info",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "scene-tree",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "runtime-scene-tree",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "runtime-property",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "set-runtime-property",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "inject-input",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "screenshot",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "context-pack",
+          "channel": "A/B",
+          "status": "PASS"
+        },
+        {
+          "name": "scenario",
+          "channel": "A/B",
+          "status": "PASS"
+        }
+      ]
+    },
+    "releaseCheck": {
+      "status": "PASS",
+      "version": "0.1.0-preview.1",
+      "node": "v24.19.0",
+      "checks": [
+        "version",
+        "sdk-entrypoint",
+        "node-engine",
+        "toolchain",
+        "security-scripts",
+        "deployment-review-docs",
+        "windows-scope",
+        "matrix-integrity"
+      ]
+    }
+  },
+  "historicalRegression": {
+    "rawPath": "runs/historical-repair/2026-09-13T12-22-38.799Z/report.json",
+    "sha256": "fe47b0bbf73d273250d89aab699bedfb84479ef8306eb03ecf25b1f0c010a442",
+    "manifestSha256": "ad411bab40b841018fd413e1145a83ce4156ff52f8ca232b7929c3c29031ffab",
+    "aggregate": {
+      "planned": 3,
+      "recorded": 3,
+      "completed": 3,
+      "preparationErrors": 0,
+      "runtimeErrors": 0,
+      "reproduced": 3,
+      "verifiedRepairs": 3,
+      "negativeControlsRejected": 3,
+      "notReproduced": 0
+    },
+    "cases": [
+      {
+        "id": "tween-parser",
+        "reproduced": true,
+        "verifiedRepair": true,
+        "negativeControlRejected": true
+      },
+      {
+        "id": "fsm-empty-start",
+        "reproduced": true,
+        "verifiedRepair": true,
+        "negativeControlRejected": true
+      },
+      {
+        "id": "custom-drawing-multifile",
+        "reproduced": true,
+        "verifiedRepair": true,
+        "negativeControlRejected": true
+      }
+    ]
+  },
+  "sourceSha256": {
+    "src/client-repair.ts": "24a7a1647de3af6e814eaf66880bad0d8fbcb10a1d4137479dcae4941a8b65ba",
+    "src/clients/repair-workflow.ts": "2f89d6dfa96dd3473a90f3e0c411d9996f4e532a67e8e6163c9a71a0bafb0431",
+    "src/development-loop.ts": "ef9f5251319eea85a73802c807c49790eee53c6ddd4732a3249acb4cfbbc908e",
+    "src/persistent-runtime-bridge.ts": "39ef590673f9f60ece776b6b027b571ddb4cae8a2156c455e27a1d2b12337ed3",
+    "godot-plugin/runtime_bridge.gd": "137f8da815448b0260d58931f67a80e711612a817937af5f326d438e4f50808a",
+    "scripts/historical-repair-benchmark.mjs": "70ceeb09bb32bb7d1e2d59ef39b93755d3462e211ee58f85c877ff49506a2f3b",
+    "tests/client-repair.test.ts": "d81305428c009cb2c35c58cfa85f8189a4ef967b47591a434f07ea7465e10606",
+    "tests/shutdown.test.ts": "413902cb2b61ccc83c8e550ddb13e41482783ed6dd70e3d475fa21479cab67aa"
+  },
+  "limitations": [
+    "Historical candidates are recorded upstream patches, not live-model generations.",
+    "The source-reviewed corpus was frozen before runtime, not blind to its developer.",
+    "Ignored raw evidence is local; this portable summary is not a replacement for reproducible runs.",
+    "No fresh dependency scan, clean-machine install or stable-version promotion in this validation."
+  ]
+}
