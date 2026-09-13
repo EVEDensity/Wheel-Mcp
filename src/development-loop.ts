@@ -66,7 +66,7 @@ export const developmentLoopSchema = z
   })
   .superRefine((value, ctx) => {
     const ids = value.checks.map((c) => c.id);
-    if (ids.some((id) => ['execution', 'cleanup', 'diagnostics', 'screenshot'].includes(id)))
+    if (ids.some((id) => ['execution', 'cleanup', 'diagnostics', 'screenshot', 'shutdown'].includes(id)))
       ctx.addIssue({ code: 'custom', message: 'reserved check ID' });
     for (const check of value.checks)
       if (check.op !== 'exists' && check.expected === undefined)
@@ -193,6 +193,18 @@ export function evaluateCheck(value: unknown, check: { path: string; op: string;
       return false;
   }
 }
+export type DevelopmentAttempt = {
+  index: number;
+  status: 'PASS' | 'FAIL';
+  checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }>;
+  diagnosticsScope: 'runtime' | 'including-shutdown';
+  allDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>>;
+  runtimeDiagnostics?: Awaited<ReturnType<typeof readGodotDiagnostics>>;
+  shutdownDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>>['diagnostics'];
+  shutdown?: Awaited<ReturnType<PersistentRuntimeBridge['stop']>>;
+  evidenceDir: string;
+  appliedRepair?: string;
+};
 const activeProjects = new Set<string>();
 /** Serialize edits for a canonical project across MCP sessions in this server process. */
 export async function executeDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutContext) {
@@ -214,7 +226,7 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
   const evidenceDir = path.resolve(options.evidenceDir, 'dev-loop-' + randomUUID());
   await mkdir(evidenceDir, { recursive: true });
   const editor = new ProjectEdits(options.projectPath, evidenceDir);
-  const attempts: Array<Record<string, unknown>> = [];
+  const attempts: DevelopmentAttempt[] = [];
   const changedFiles = new Set<string>();
   const used = new Set<string>();
   let status = 'FAIL';
@@ -234,6 +246,7 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
       await mkdir(attemptDir, { recursive: true });
       const checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }> = [];
       let bridge: PersistentRuntimeBridge | undefined;
+      let shutdown: Awaited<ReturnType<PersistentRuntimeBridge['stop']>> | undefined;
       let attemptError: string | undefined;
       let runtimeDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>> | undefined;
       try {
@@ -292,7 +305,11 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
           // Cleanup has its own budget: a cancelled/expired validation must still stop its process.
           const stopTimeout = createTimeoutContext(10000);
           try {
-            await bridge.stop(stopTimeout);
+            shutdown = await bridge.stop(stopTimeout);
+            if (shutdown.forced || shutdown.exitCode !== 0) {
+              cleanup = false;
+              checks.push({ id: 'cleanup', passed: false, actual: shutdown });
+            }
           } catch (e) {
             cleanup = false;
             checks.push({ id: 'cleanup', passed: false, error: String(e) });
@@ -303,6 +320,16 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
         }
       }
       const allDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
+      const shutdownDiagnostics = allDiagnostics.diagnostics.flatMap((d) => {
+        const prior = runtimeDiagnostics?.diagnostics.find((r) => r.fingerprint === d.fingerprint);
+        const occurrences = d.occurrences - (prior?.occurrences ?? 0);
+        return occurrences > 0 ? [{ ...d, occurrences }] : [];
+      });
+      const shutdownLeaks = shutdownDiagnostics.filter((d) =>
+        /(?:instances? (?:was|were) leaked|resources? still in use|RID.*leaked)/i.test(d.message),
+      );
+      if (options.diagnosticsScope === 'including-shutdown')
+        checks.push({ id: 'shutdown', passed: shutdownLeaks.length === 0, actual: { shutdown, leaks: shutdownLeaks } });
       const diagnostics =
         options.diagnosticsScope === 'runtime' && runtimeDiagnostics ? runtimeDiagnostics : allDiagnostics;
       errorCount = diagnostics.diagnostics.filter((d) => d.severity === 'error').length;
@@ -314,6 +341,9 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
         checks,
         diagnosticsScope: options.diagnosticsScope,
         allDiagnostics,
+        runtimeDiagnostics,
+        shutdownDiagnostics,
+        shutdown,
         evidenceDir: attemptDir,
       });
       await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
