@@ -494,3 +494,74 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       ),
   );
 
+  server.tool(
+    'capture_runtime_screenshot',
+    'Capture a runtime PNG.',
+    { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          captureRuntimeScreenshot({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'open_runtime_bridge',
+    'Open a persistent Godot runtime bridge session.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      sessionId: z.string().min(1).optional(),
+      scenePath: z.string().optional(),
+      headless: z.boolean().optional(),
+      timeoutMs,
+    },
+    async ({ godotPath, projectPath, bridgePath, evidenceDir, sessionId, scenePath, headless, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          openRuntimeBridge({
+            godotPath: godotPath || process.env.GODOT_PATH,
+            projectPath,
+            bridgePath,
+            evidenceDir,
+            runId: sessionId,
+            scenePath,
+            headless,
+            timeout: context,
+          }),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'call_runtime_bridge',
+    'Send a JSON-RPC request to a persistent Godot runtime bridge session.',
+    {
+      sessionId: z.string().min(1),
+      method: runtimeMethod,
+      params: z.record(z.string(), z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, method, params, timeoutMs }, extra) =>
+      invoke((context) => callRuntimeBridge(sessionId, method, params || {}, context), timeoutMs, extra.signal),
+  );
+
+  server.tool(
+    'stop_runtime_bridge',
+    'Stop a persistent Godot runtime bridge session.',
+    { sessionId: z.string().min(1), timeoutMs },
+    async ({ sessionId, timeoutMs }, extra) =>
+      invoke((context) => stopRuntimeBridge(sessionId, context), timeoutMs, extra.signal),
+  );
+
