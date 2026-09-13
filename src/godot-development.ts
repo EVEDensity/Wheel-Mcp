@@ -21,30 +21,45 @@ function decodePng(data: Buffer) {
     type = 0,
     interlace = 0,
     raw = Buffer.alloc(0);
+  let ended = false;
+  let seenHeader = false;
   while (p < data.length) {
+    if (p + 12 > data.length) throw new Error('truncated PNG chunk');
     const n = readU32(data, p);
+    if (n > data.length - p - 12) throw new Error('truncated PNG data');
+    if (crc32(data.subarray(p + 4, p + 8 + n)) !== readU32(data, p + 8 + n)) throw new Error('invalid PNG CRC');
     const t = data.toString('ascii', p + 4, p + 8);
     const c = data.subarray(p + 8, p + 8 + n);
     p += 12 + n;
+    if (!seenHeader && t !== 'IHDR') throw new Error('missing PNG header');
     if (t === 'IHDR') {
+      if (seenHeader || n !== 13) throw new Error('invalid PNG header');
+      seenHeader = true;
       w = readU32(c, 0);
       h = readU32(c, 4);
       depth = c[8];
       type = c[9];
       interlace = c[12];
     } else if (t === 'IDAT') raw = Buffer.concat([raw, c]);
-    else if (t === 'IEND') break;
+    else if (t === 'IEND') {
+      ended = true;
+      break;
+    }
   }
+  if (!ended || p !== data.length || w < 1 || h < 1 || w * h > 16777216)
+    throw new Error('invalid PNG dimensions or end');
   if (depth !== 8 || interlace !== 0 || ![2, 6].includes(type))
     throw new Error('PNG requires 8-bit non-interlaced RGB/RGBA');
   const bpp = type === 6 ? 4 : 3,
     stride = w * bpp,
-    inflated = inflateSync(raw),
+    inflated = inflateSync(raw, { maxOutputLength: h * (stride + 1) }),
     out = Buffer.alloc(h * stride);
+  if (inflated.length !== h * (stride + 1)) throw new Error('invalid PNG scanline length');
   let q = 0;
   for (let y = 0; y < h; y++) {
     const f = inflated[q++],
       row = y * stride;
+    if (f > 4) throw new Error('invalid PNG filter');
     for (let x = 0; x < stride; x++) {
       const a = x >= bpp ? out[row + x - bpp] : 0,
         b = y ? out[row - stride + x] : 0,
@@ -246,37 +261,64 @@ function virtual(root: string, f: string) {
   };
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
-  const root = projectPath ? path.resolve(projectPath) : undefined,
-    files = ['stderr.log', 'debug-output.log', 'stdout.log'],
-    diagnostics: any[] = [];
-  for (const name of files) {
-    const text = await readFile(path.join(path.resolve(evidenceDir), name), 'utf8').catch(() => '');
-    for (const line of text.split(/\r?\n/)) {
-      if (!/(error|parser|invalid|failed|warning)/i.test(line)) continue;
-      const m = line.match(
-        /(?<file>(?:res:\/\/|[A-Za-z]:[\\/]|[^\s])[^:]*\.(?:gd|tscn)):(?<line>\d+)(?::(?<column>\d+))?/i,
-      );
-      const file = m?.groups?.file;
-      const loc = file && root ? virtual(root, file) : undefined;
-      const kind = /parser/i.test(line) ? 'parser' : /warning/i.test(line) ? 'warning' : 'runtime';
+  const root = projectPath ? path.resolve(projectPath) : undefined;
+  const diagnostics: Array<{
+    severity: 'warning' | 'error';
+    kind: string;
+    message: string;
+    file?: string;
+    line?: number;
+    column?: number;
+    stack: Array<{ file: string; line: number; column?: number }>;
+    fingerprint: string;
+    occurrences: number;
+    source: string;
+  }> = [];
+  for (const name of ['stderr.log', 'debug-output.log', 'stdout.log']) {
+    const lines = (await readFile(path.join(path.resolve(evidenceDir), name), 'utf8').catch(() => ''))
+      // Godot console output may include ANSI escape sequences.
+      // eslint-disable-next-line no-control-regex
+      .replace(/\x1b\[[0-9;]*m/g, '')
+      .split(/\r?\n/);
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index];
+      // Recognize engine diagnostic headers, not user text such as "error count: 0".
+      if (!/^\s*(?:SCRIPT ERROR:|ERROR:|WARNING:|Parse Error:|Parser Error:)/.test(line)) continue;
+      const kind = /Parse[r]? Error/i.test(line) ? 'parser' : /^\s*WARNING:/.test(line) ? 'warning' : 'runtime';
       const message = line.trim();
+      const stack: Array<{ file: string; line: number; column?: number }> = [];
+      const addLocation = (text: string) => {
+        const m = text.match(/((?:res:\/\/|[A-Za-z]:[\\/])[^\r\n]*?\.(?:gd|tscn|cs)):(\d+)(?::(\d+))?/);
+        if (!m) return;
+        const frame = {
+          file: root ? virtual(root, m[1]).virtualPath : m[1],
+          line: Number(m[2]),
+          ...(m[3] ? { column: Number(m[3]) } : {}),
+        };
+        if (!stack.some((f) => f.file === frame.file && f.line === frame.line && f.column === frame.column))
+          stack.push(frame);
+      };
+      addLocation(line);
+      for (let next = index + 1; next < lines.length; next++) {
+        if (!/^\s+(?:at:|\[\d+\]|GDScript backtrace|C\+\+ backtrace)/.test(lines[next])) break;
+        addLocation(lines[next]);
+      }
+      // Keep numeric values in the message: error 10 and error 20 can represent different defects.
       const fingerprint = createHash('sha256')
-        .update(`${kind}|${message.replace(/\d+/g, '#')}|${loc?.virtualPath ?? file ?? ''}|${m?.groups?.line ?? ''}`)
+        .update(JSON.stringify([kind, message, stack]))
         .digest('hex')
         .slice(0, 16);
-      const prev = diagnostics.find((d) => d.fingerprint === fingerprint);
-      if (prev) {
-        prev.occurrences++;
+      const previous = diagnostics.find((d) => d.fingerprint === fingerprint);
+      if (previous) {
+        previous.occurrences++;
         continue;
       }
       diagnostics.push({
         severity: kind === 'warning' ? 'warning' : 'error',
         kind,
         message,
-        file: loc?.virtualPath ?? file,
-        line: m?.groups?.line ? Number(m.groups.line) : undefined,
-        column: m?.groups?.column ? Number(m.groups.column) : undefined,
-        stack: [],
+        ...stack[0],
+        stack,
         fingerprint,
         occurrences: 1,
         source: name,
@@ -291,6 +333,7 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
     diagnostics,
   };
 }
+
 export async function readProjectFile(projectPath: string, filePath: string) {
   const root = path.resolve(projectPath),
     file = inside(root, path.isAbsolute(filePath) ? filePath : path.join(root, filePath)),
