@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-13T12:47:48.740Z",
+  "platform": "win32",
+  "node": "v24.19.0",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "purpose": "GitHub onboarding follow-up; preserve the original 82-test implementation snapshot separately.",
+  "invocation": "Bundled Node and installed CLI entrypoints, not npm ci or a fresh dependency audit.",
+  "gates": {
+    "build": "PASS",
+    "prettier": "PASS",
+    "eslint": "PASS",
+    "tests": {
+      "total": 83,
+      "passed": 83,
+      "failed": 0,
+      "skipped": 0,
+      "command": "node --test build/tests/*.test.js",
+      "rawPath": ".harness/readme-full-tests.txt",
+      "sha256": "224011f0ee2b93fdb4cf0247ca974d591d35b4ce3fb8a029d2651da79775b4fd"
+    },
+    "matrix": {
+      "status": "PASS",
+      "total": 19,
+      "passed": 19,
+      "rawPath": "runs/matrix/release-matrix-summary.json",
+      "sha256": "1dd74ab95829ff0c87c751f252f5fc90b08d8e362e0820a1bb72e2438967246c"
+    },
+    "releaseCheck": "PASS"
+  },
+  "documentation": {
+    "internalLinksChecked": 133,
+    "jsonExamplesParsed": 5,
+    "devLoopSchemas": "PASS",
+    "bilingualFirstRun": "MATCH",
+    "toolCount": 57,
+    "domainCounts": {
+      "project": 14,
+      "runtime": 32,
+      "diagnostics": 2,
+      "scenario": 7,
+      "evidence": 2
+    },
+    "toolInventorySource": "Official TypeScript SDK Client.listTools, with source ownership checked against domain modules"
+  },
+  "firstRun": {
+    "client": "official TypeScript SDK",
+    "transport": "stdio",
+    "status": "PASS",
+    "errorCount": 0,
+    "cleanup": true,
+    "screenshotSize": [320, 180],
+    "screenshotSha256": "3d4c4e4e6824f56f3b172c1e553df93a03dc76eabfaa04e480de0e61eaf4d36e",
+    "screenshotPath": "runs/readme-smoke/dev-loop-187e92ed-74b8-4e7b-9cba-30a1b1bd6066/attempt-0/screenshot.png",
+    "evidenceDir": "runs/readme-smoke/dev-loop-187e92ed-74b8-4e7b-9cba-30a1b1bd6066"
+  },
+  "regression": {
+    "cause": "NavigationPolygon polygons contained Dictionary entries instead of PackedInt32Array entries.",
+    "file": "tests/fixtures/runtime-behavior/main.tscn",
+    "before": "FAIL with one runtime diagnostic even though camera and screenshot assertions passed",
+    "beforeEvidenceDir": "runs/readme-smoke/dev-loop-61e1f111-5346-43f6-8817-587adedcc2e8",
+    "beforeTestLog": ".harness/readme-regression-before.txt",
+    "beforeTestLogSha256": "f0ae845cb04bfc69def9e4fa8001b887f29dfda9773a78edea1eaf3ff0ea11df",
+    "after": "PASS under including-shutdown diagnostics with zero errors; no budget relaxation",
+    "test": "tests/readme-smoke.test.ts"
+  },
+  "sourceSha256": {
+    "README.md": "958364ef4dd2fe08136a1f287c0aca17d005245ca83bd88cdc688851472a7271",
+    "README.zh-CN.md": "6676bb26fcf03ba7e6b3dcb6e6d080fa7006339502d45eafc370b769f800b17f",
+    "CONTRIBUTING.md": "e9ad83388c66be12bf0ad25b16992cfed4aa8ec90595d6a8392ae73f0b0bb960",
+    "docs/TOOL-CATALOG.md": "c410f384ffb8b968bf9f0d9c9ec470e7059c9718b88facebefacef675245c74e",
+    "tests/readme-smoke.test.ts": "22329c155dddea59eba056729347bf220bc3cd19af7894941f4a4a0b779de9fd",
+    "tests/fixtures/runtime-behavior/main.tscn": "18785e2c94f063241dcef397d506b6d848bcd83b6ad1ae7487156be21beda8d1"
+  },
+  "limitations": [
+    "One bundled fixture is a smoke check, not a commercial game or universal gameplay benchmark.",
+    "Earlier 82-test/historical/seeded results were not overwritten or pooled with this follow-up.",
+    "Raw evidence remains local and ignored; publish a sanitized bundle separately for exact-run review.",
+    "The first custom smoke harness invocation omitted GODOT_PATH in the server environment and failed setup; it is not included as a gameplay outcome.",
+    "No live-provider evaluation, dependency scan, clean-machine install or stable-release promotion is claimed."
+  ]
+}
