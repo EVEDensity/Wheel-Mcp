@@ -10,6 +10,7 @@ var persistent_level_started_sent: bool = false
 var last_collision: Dictionary = {}
 var collision_cache: Dictionary = {}
 var collision_history_limit: int = 32
+var shutting_down: bool = false
 
 func _initialize() -> void:
 	persistent_run_id = OS.get_environment("GODOT_HARNESS_RUN_ID")
@@ -96,6 +97,9 @@ func _process(_delta: float) -> bool:
 	if persistent_peer.get_status() != StreamPeerTCP.STATUS_CONNECTED:
 		persistent_peer = null
 		persistent_buffer = ""
+		if not shutting_down:
+			shutting_down = true
+			_shutdown.call_deferred(null)
 		return false
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {"run_id": persistent_run_id, "scene": persistent_main_scene}})
@@ -130,8 +134,12 @@ func _handle_persistent_request(request: Dictionary) -> void:
 	var method := str(request.get("method", ""))
 	var params: Dictionary = request.get("params", {}) as Dictionary
 	if method == "stop":
-		_respond(request_id, {"stopped": true, "run_id": persistent_run_id})
-		call_deferred("quit")
+		if not shutting_down:
+			shutting_down = true
+			_shutdown.call_deferred(request_id)
+		return
+	if shutting_down:
+		_respond_error(request_id, -32000, "runtime is stopping")
 		return
 	if method == "get_specialized_state":
 		_respond(request_id, _specialized_state(params))
@@ -521,3 +529,35 @@ func _specialized_state(params: Dictionary) -> Dictionary:
 	if node is AudioStreamPlayer: state.audio = {"playing": node.playing, "stream": node.stream, "position": node.get_playback_position()}
 	for action in InputMap.get_actions(): state.input[str(action)] = Input.is_action_pressed(str(action))
 	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_SPECIALIZED_STATE", "nodePath":str(params.get("nodePath", ".")), "state":state}
+
+# Stop audio while nodes are still in the tree, then drain deferred deletion and
+# audio-server releases before SceneTree quits. Never suppress exit diagnostics.
+func _quiesce(node: Node) -> void:
+	for child in node.get_children():
+		_quiesce(child)
+	if node is AudioStreamPlayer or node is AudioStreamPlayer2D or node is AudioStreamPlayer3D:
+		node.stop()
+	if node is AnimationPlayer:
+		node.stop()
+	if node is Timer:
+		node.stop()
+
+func _shutdown(request_id) -> void:
+	_emit_notification("runtime_stopping", {"scene": persistent_main_scene})
+	paused = false
+	for child in root.get_children():
+		_quiesce(child)
+		child.process_mode = Node.PROCESS_MODE_DISABLED
+	# The audio driver consumes stop/release commands asynchronously.
+	await create_timer(0.08, true, false, true).timeout
+	current_scene = null
+	persistent_instance = null
+	collision_cache.clear()
+	last_collision.clear()
+	for child in root.get_children():
+		child.queue_free()
+	await process_frame
+	await process_frame
+	await create_timer(0.08, true, false, true).timeout
+	_respond(request_id, {"stopped": true, "run_id": persistent_run_id, "cleanup": "scene-freed-audio-drained"})
+	quit.call_deferred()
