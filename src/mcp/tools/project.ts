@@ -67,3 +67,39 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
   );
 
   server.tool(
+    'write_project_file',
+    'Write a text file inside a Godot project.',
+    { projectPath, filePath: z.string(), content: z.string(), timeoutMs },
+    async ({ projectPath, filePath, content, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return writeProjectFile(projectPath, filePath, content);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'search_project',
+    'Search project text files and return compact matching lines.',
+    {
+      projectPath,
+      query: z.string().min(1),
+      glob: z.string().optional(),
+      maxResults: z.number().int().positive().max(1000).optional(),
+      timeoutMs,
+    },
+    async ({ projectPath, query, glob, maxResults, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return searchProject(projectPath, query, { glob, maxResults });
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
