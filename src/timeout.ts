@@ -43,6 +43,7 @@ export function createTimeoutContext(timeoutMs: number, parent?: AbortSignal): T
     }
   };
   parent?.addEventListener('abort', onParentAbort, { once: true });
+  if (parent?.aborted) onParentAbort();
   return {
     signal: controller.signal,
     deadline,
