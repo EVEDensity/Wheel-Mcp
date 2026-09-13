@@ -19,6 +19,9 @@
     "lint": "eslint src tests",
     "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js",
     "release:check": "node scripts/release-check.mjs",
+    "sbom": "npm sbom --sbom-format=cyclonedx",
+    "audit:dependencies": "npm audit --audit-level=high",
+    "security:check": "npm run audit:dependencies && npm run sbom",
     "matrix:generate": "node scripts/generate-matrix.mjs",
     "mcp:http": "node build/src/mcp-http-server.js"
   },
@@ -28,13 +31,13 @@
   "devDependencies": {
     "@eslint/js": "9.17.0",
     "@types/node": "^22.10.1",
-    "eslint": "9.17.0",
+    "eslint": "9.39.5",
     "prettier": "3.5.3",
     "typescript": "^5.6.3",
     "typescript-eslint": "8.18.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.20.2",
-    "yaml": "2.6.1"
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "yaml": "2.9.1"
   }
 }
