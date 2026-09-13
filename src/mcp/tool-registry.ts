@@ -4,6 +4,12 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { z } from 'zod';
+import { registerProjectTools } from './tools/project.js';
+import { registerRuntimeTools } from './tools/runtime.js';
+import { registerDiagnosticsTools } from './tools/diagnostics.js';
+import { registerScenarioTools } from './tools/scenario.js';
+import { registerEvidenceTools } from './tools/evidence.js';
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   captureRuntimeScreenshot,
@@ -43,7 +49,12 @@ import { serverCapabilities, serverInfo } from '../server-info.js';
 import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from '../timeouts.js';
 import { executeScenario, loadScenario } from '../scenario-executor.js';
 import { scenarioSchema } from '../scenario-schema.js';
-import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from '../persistent-runtime-bridge.js';
+import {
+  openRuntimeBridge,
+  callRuntimeBridge,
+  stopRuntimeBridge,
+  getRuntimeBridge,
+} from '../persistent-runtime-bridge.js';
 import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from '../input-schemas.js';
 import {
   readSceneFile,
@@ -58,9 +69,13 @@ import {
   getRecentEvidence,
 } from '../godot-development.js';
 
-export type ToolRegistrationContext = { server: McpServer };
+export type ToolRegistrationContext = { server: McpServer; invoke?: any; schemas?: any; functions?: any };
 
-export function registerAllTools({ server }: ToolRegistrationContext): void {
+export function registerAllTools(context: ToolRegistrationContext): void {
+  registerLegacyTools(context);
+}
+
+function registerLegacyTools({ server }: ToolRegistrationContext): void {
   const projectPath = z.string();
   const godotPath = z.string().optional();
   const bridgePath = z.string();
@@ -153,66 +168,6 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
     { projectPath, timeoutMs },
     async ({ projectPath, timeoutMs }, extra) =>
       invoke((context) => getProjectInfo(projectPath, context), timeoutMs, extra.signal),
-  );
-  server.tool(
-    'analyze_collisions',
-    'Analyze static collision and physics nodes in a Godot scene.',
-    { projectPath, scenePath: z.string(), responseMode, timeoutMs },
-    async ({ projectPath, scenePath, responseMode, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return analyzeCollisions(projectPath, scenePath);
-        },
-        timeoutMs,
-        extra.signal,
-        responseMode,
-      ),
-  );
-  server.tool(
-    'get_node_semantics',
-    'Classify scene nodes and their likely gameplay semantics.',
-    { projectPath, scenePath: z.string(), responseMode, timeoutMs },
-    async ({ projectPath, scenePath, responseMode, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return getNodeSemantics(projectPath, scenePath);
-        },
-        timeoutMs,
-        extra.signal,
-        responseMode,
-      ),
-  );
-  server.tool(
-    'get_game_state',
-    'Read selected runtime state through the persistent bridge.',
-    {
-      sessionId: z.string(),
-      nodePath: z.string().optional(),
-      properties: z.array(z.string()).optional(),
-      responseMode,
-      timeoutMs,
-    },
-    async ({ sessionId, nodePath, properties, responseMode, timeoutMs }, extra) =>
-      invoke(
-        (context) => callRuntimeBridge(sessionId, 'get_game_state', { nodePath, properties }),
-        timeoutMs,
-        extra.signal,
-        responseMode,
-      ),
-  );
-  server.tool(
-    'query_runtime_collisions',
-    'Query runtime collision state for a node.',
-    { sessionId: z.string(), nodePath: z.string(), responseMode, timeoutMs },
-    async ({ sessionId, nodePath, responseMode, timeoutMs }, extra) =>
-      invoke(
-        (context) => callRuntimeBridge(sessionId, 'query_collisions', { nodePath }),
-        timeoutMs,
-        extra.signal,
-        responseMode,
-      ),
   );
   server.tool(
     'get_scene_tree',
@@ -729,31 +684,7 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
     async ({ sessionId, timeoutMs }, extra) =>
       invoke((context) => stopRuntimeBridge(sessionId, context), timeoutMs, extra.signal),
   );
-  server.tool(
-    'wait_for_event',
-    'Wait for one event from a persistent runtime bridge.',
-    { sessionId: z.string().min(1), event: z.string().min(1), timeoutMs },
-    async ({ sessionId, event, timeoutMs }, extra) =>
-      invoke(
-        async (context) => {
-          const bridge = await import('./persistent-runtime-bridge.js').then((m) => m.getRuntimeBridge(sessionId));
-          return { event: await bridge.waitForEvent(event, context) };
-        },
-        timeoutMs,
-        extra.signal,
-      ),
-  );
-  server.tool(
-    'reload_scene',
-    'Reload the active scene in a persistent runtime bridge.',
-    { sessionId: z.string().min(1), scenePath: z.string().optional(), timeoutMs },
-    async ({ sessionId, scenePath, timeoutMs }, extra) =>
-      invoke(
-        (context) => callRuntimeBridge(sessionId, 'reload_scene', { scenePath }, context),
-        timeoutMs,
-        extra.signal,
-      ),
-  );
+
   server.tool(
     'read_project_file',
     'Read a text file inside a Godot project.',
@@ -802,72 +733,7 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
         extra.signal,
       ),
   );
-  server.tool(
-    'get_script_errors',
-    'Read parser/script diagnostics from evidence.',
-    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
-    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return readGodotDiagnostics(evidenceDir, projectPath);
-        },
-        timeoutMs,
-        extra.signal,
-      ),
-  );
-  server.tool(
-    'get_runtime_errors',
-    'Read runtime diagnostics from evidence.',
-    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
-    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return readGodotDiagnostics(evidenceDir, projectPath);
-        },
-        timeoutMs,
-        extra.signal,
-      ),
-  );
-  server.tool(
-    'compare_screenshots',
-    'Compare two screenshots for byte identity.',
-    {
-      firstPath: z.string(),
-      secondPath: z.string(),
-      threshold: z.number().int().min(0).max(255).optional(),
-      ignoreAlpha: z.boolean().optional(),
-      writeDiff: z.boolean().optional(),
-      diffPath: z.string().optional(),
-      responseMode,
-      timeoutMs,
-    },
-    async ({ firstPath, secondPath, threshold, ignoreAlpha, writeDiff, diffPath, responseMode, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return compareScreenshots(firstPath, secondPath, { threshold, ignoreAlpha, writeDiff, diffPath });
-        },
-        timeoutMs,
-        extra.signal,
-        responseMode,
-      ),
-  );
-  server.tool(
-    'get_recent_evidence',
-    'List recent evidence artifacts.',
-    { evidenceDir: z.string(), timeoutMs },
-    async ({ evidenceDir, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return getRecentEvidence(evidenceDir);
-        },
-        timeoutMs,
-        extra.signal,
-      ),
-  );
+
   server.tool(
     'read_scene_file',
     'Read a Godot .tscn scene file.',
@@ -891,20 +757,6 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
         (context) => {
           context.throwIfCancelled();
           return writeSceneFile(projectPath, scenePath, content);
-        },
-        timeoutMs,
-        extra.signal,
-      ),
-  );
-  server.tool(
-    'get_godot_diagnostics',
-    'Parse Godot parser and runtime errors from an evidence directory.',
-    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
-    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
-      invoke(
-        (context) => {
-          context.throwIfCancelled();
-          return readGodotDiagnostics(evidenceDir, projectPath);
         },
         timeoutMs,
         extra.signal,
@@ -976,42 +828,6 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
       ),
   );
   server.tool(
-    'dev_loop',
-    'Write files and execute a Godot validation scenario in one call.',
-    {
-      projectPath,
-      writes: z.array(z.object({ path: z.string(), content: z.string() })).optional(),
-      scenario: scenarioSchema,
-      scenarioPath: z.string().optional(),
-      godotPath,
-      bridgePath,
-      evidenceDir,
-      retries: z.number().int().nonnegative().optional(),
-      responseMode,
-      timeoutMs,
-    },
-    async (args, extra) =>
-      invoke(
-        async (context) => {
-          const changedFiles: string[] = [];
-          for (const file of args.writes ?? []) {
-            await writeProjectFile(args.projectPath, file.path, file.content);
-            changedFiles.push(file.path);
-          }
-          const run = await executeScenario({ ...args, globalTimeoutMs: args.timeoutMs, signal: context.signal });
-          return {
-            ...run,
-            changedFiles,
-            status: run.status ?? (run.failed ? 'FAIL' : 'PASS'),
-            summary: run.status === 'PASS' ? 'development loop passed' : 'development loop completed',
-          };
-        },
-        args.timeoutMs,
-        extra.signal,
-        args.responseMode,
-      ),
-  );
-  server.tool(
     'execute_scenario',
     'Execute a declarative Godot scenario with shared timeout and evidence semantics.',
     {
@@ -1059,4 +875,23 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
         extra.signal,
       ),
   );
+  const domainContext: ToolRegistrationContext = {
+    server,
+    invoke,
+    schemas: { projectPath, responseMode, timeoutMs },
+    functions: {
+      analyzeCollisions,
+      getNodeSemantics,
+      callRuntimeBridge,
+      getRuntimeBridge,
+      readGodotDiagnostics,
+      compareScreenshots,
+      getRecentEvidence,
+    },
+  };
+  registerProjectTools(domainContext);
+  registerRuntimeTools(domainContext);
+  registerDiagnosticsTools(domainContext);
+  registerScenarioTools(domainContext);
+  registerEvidenceTools(domainContext);
 }
