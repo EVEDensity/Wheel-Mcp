@@ -1,4 +1,4 @@
-﻿# dev_loop: bounded development verification and repair
+# dev_loop: bounded development verification and repair
 
 `dev_loop` is a high-level MCP tool, not an alias for `execute_scenario`.
 It applies exact edits, starts a private persistent Godot runtime, waits for an
@@ -112,3 +112,20 @@ requirements, diagnosis strategy, assertions and patch candidates.
 For measured results and project locations, see
 `docs/REPAIR-BENCHMARK-2026-09-13.md` and
 `benchmarks/repair-results-2026-09-13.json`.
+
+## Client model integration and strict exit diagnostics
+
+For model-generated proposals use [the client repair protocol](CLIENT-REPAIR.md),
+not an unbounded list of server-generated edits. Each approved candidate is
+verified with the original plan and no internal retries.
+
+Each attempt now records runtimeDiagnostics before stopping, allDiagnostics
+after process close, shutdownDiagnostics as an occurrence-count delta, and
+shutdown metadata (forced, exitCode, signal). The reserved shutdown check rejects
+ObjectDB/resource/RID leak warnings in strict mode. Forced/nonzero exits make
+cleanup fail; they are not presented as graceful success. Startup failure and
+final output drainage are bounded and logs remain available.
+
+The bridge stops audio, animation and timers before freeing scene-owned nodes.
+It does not blanket-free arbitrary detached project objects or suppress exit
+errors. See [paired results and the RPG ownership fix](HISTORICAL-DEFECTS.md).
