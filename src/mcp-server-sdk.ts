@@ -4,56 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { pathToFileURL } from 'node:url';
 import { authorizeToolCall, recordToolOwnership, type McpClientPolicy } from './mcp/access-policy.js';
 import { z } from 'zod';
-import {
-  captureRuntimeScreenshot,
-  getGodotVersion,
-  getProcessStatus,
-  getProjectInfo,
-  getSceneTree,
-  injectRuntimeInput,
-  launchProject,
-  listProjects,
-  mutateRuntimeProperty,
-  queryRuntimeProperty,
-  queryRuntimeSceneTree,
-  readEvidence,
-  resolveGodotPath,
-  stopProcess,
-  cancelProcess,
-  readRuntimeEventsSince,
-  subscribeRuntimeEvents,
-  streamRuntimeEvents,
-  streamEventSubscription,
-  createEventSubscription,
-  pollEventSubscription,
-  cancelEventSubscription,
-  acknowledgeEventSubscription,
-  pauseEventSubscription,
-  closeEventSubscription,
-  listEventSubscriptions,
-} from './godot-runtime.js';
-import { runRegistry } from './run-registry.js';
-import { buildContextPack } from './context-pack.js';
-import { gitCheckpoint, gitRecovery } from './git-recovery.js';
-import { classifyError } from './error-schema.js';
-import { createTimeoutContext, TimeoutContext } from './timeout.js';
-import type { McpFailureResult, McpToolResult } from './tool-types.js';
 import { serverCapabilities, serverInfo } from './server-info.js';
-import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
-import { executeScenario, loadScenario } from './scenario-executor.js';
-import { scenarioSchema } from './scenario-schema.js';
-import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from './persistent-runtime-bridge.js';
-import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from './input-schemas.js';
-import {
-  readSceneFile,
-  writeSceneFile,
-  readGodotDiagnostics,
-  readProjectFile,
-  writeProjectFile,
-  searchProject,
-  compareScreenshots,
-  getRecentEvidence,
-} from './godot-development.js';
 import { registerAllTools } from './mcp/tool-registry.js';
 import { createMergedAbortSignal, getHttpRequestLifecycle, getHttpRequestSignal } from './transports/http-lifecycle.js';
 
