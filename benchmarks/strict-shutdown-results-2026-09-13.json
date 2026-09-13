@@ -1,0 +1,773 @@
+{
+  "generatedAt": "2026-09-13T11:36:17.116Z",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "sourceBenchmark": "benchmarks/repair-results-2026-09-13.json",
+  "beforeRevision": "abfc3fb",
+  "output": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z",
+  "methodology": "Same seven already-repaired projects and original gameplay assertions, non-headless screenshots, strict diagnostics and zero error budget. Only bridge teardown differs between paired runs. Not independent unseen-defect data.",
+  "bridgeHashes": {
+    "before": "7cd130973cd97d7d3cc2b3124974e0ae24b050bcc294b18196b0dc293f726b90",
+    "after": "137f8da815448b0260d58931f67a80e711612a817937af5f326d438e4f50808a"
+  },
+  "results": [
+    {
+      "name": "platformer",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
+      "before": {
+        "status": "FAIL",
+        "errorCount": 1,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08",
+        "shutdownDiagnostics": [
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 7 ObjectDB instances were leaked at exit (run with `--verbose` for details).",
+            "stack": [],
+            "fingerprint": "57f7fd9ca68be5c6",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 3 resources still in use at exit (run with --verbose for details).",
+            "stack": [],
+            "fingerprint": "446ed2d16f65fb48",
+            "occurrences": 1,
+            "source": "stderr.log"
+          }
+        ],
+        "shutdown": {
+          "stopped": true,
+          "pid": 41100,
+          "session_id": "bridge-1789299345767-elu732",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [
+          "shutdown",
+          "diagnostics"
+        ],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 3296,
+          "session_id": "bridge-1789299348194-nrjqrx",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "rpg",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
+      "before": {
+        "status": "FAIL",
+        "errorCount": 22,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a",
+        "shutdownDiagnostics": [
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 1 RID of type \"Canvas\" was leaked.",
+            "stack": [],
+            "fingerprint": "56af352c303b9e95",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 168 RIDs of type \"CanvasItem\" were leaked.",
+            "stack": [],
+            "fingerprint": "ace071b244103874",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 shaders of type CanvasShaderGLES3 were never freed",
+            "stack": [],
+            "fingerprint": "e38404d9e72f99af",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 20: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "ae48fa822a18ad1e",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 21: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "5cf849fc504d8f40",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 22: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "abc0983186df0d87",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 23: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "448b48a15e9b3088",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 24: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "a5cfd6bcd6a527f1",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 25: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "30ca2f570b88d86c",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 26: leaked 3686289 bytes.",
+            "stack": [],
+            "fingerprint": "27e5b382f3c80356",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 27: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "7133e89ecf34abaa",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 28: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "bb2dc7a2b7003a3e",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 29: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "c0dc6c214aeea09a",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 30: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "f784bf72fc14b44b",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 31: leaked 1398100 bytes.",
+            "stack": [],
+            "fingerprint": "0d81eb0054bfeb0f",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 32: leaked 4915052 bytes.",
+            "stack": [],
+            "fingerprint": "d9900116be05cae5",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 33: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "7395b87fc238cd19",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 34: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "97a6b77150fcd67b",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 228 ObjectDB instances were leaked at exit (run with `--verbose` for details).",
+            "stack": [],
+            "fingerprint": "a82e2bb16682451c",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 38 resources still in use at exit (run with --verbose for details).",
+            "stack": [],
+            "fingerprint": "2a3bc750aa6529ca",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 RID allocations of type 'N5GLES38MaterialE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "d4d40cdc36c87a81",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 RID allocations of type 'N5GLES36ShaderE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "1a53601d4a022241",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 15 RID allocations of type 'N5GLES37TextureE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "7ecbb4e268c10eb7",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 9 RID allocations of type 'PN18TextServerAdvanced22ShapedTextDataAdvancedE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "995ee3cc673e3df3",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 4 RID allocations of type 'PN18TextServerAdvanced12FontAdvancedE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "f193be13763bf70b",
+            "occurrences": 1,
+            "source": "stdout.log"
+          }
+        ],
+        "shutdown": {
+          "stopped": true,
+          "pid": 42240,
+          "session_id": "bridge-1789299350612-zjwiie",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [
+          "shutdown",
+          "diagnostics"
+        ],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "FAIL",
+        "errorCount": 22,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84",
+        "shutdownDiagnostics": [
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 1 RID of type \"Canvas\" was leaked.",
+            "stack": [],
+            "fingerprint": "56af352c303b9e95",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 168 RIDs of type \"CanvasItem\" were leaked.",
+            "stack": [],
+            "fingerprint": "ace071b244103874",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 shaders of type CanvasShaderGLES3 were never freed",
+            "stack": [],
+            "fingerprint": "e38404d9e72f99af",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 20: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "ae48fa822a18ad1e",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 21: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "5cf849fc504d8f40",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 22: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "abc0983186df0d87",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 23: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "448b48a15e9b3088",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 24: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "a5cfd6bcd6a527f1",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 25: leaked 103732 bytes.",
+            "stack": [],
+            "fingerprint": "30ca2f570b88d86c",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 26: leaked 3686289 bytes.",
+            "stack": [],
+            "fingerprint": "27e5b382f3c80356",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 27: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "7133e89ecf34abaa",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 28: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "bb2dc7a2b7003a3e",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 29: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "c0dc6c214aeea09a",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 30: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "f784bf72fc14b44b",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 31: leaked 1398100 bytes.",
+            "stack": [],
+            "fingerprint": "0d81eb0054bfeb0f",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 32: leaked 4915052 bytes.",
+            "stack": [],
+            "fingerprint": "d9900116be05cae5",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 33: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "7395b87fc238cd19",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: Texture with GL ID of 34: leaked 21844 bytes.",
+            "stack": [],
+            "fingerprint": "97a6b77150fcd67b",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 228 ObjectDB instances were leaked at exit (run with `--verbose` for details).",
+            "stack": [],
+            "fingerprint": "a82e2bb16682451c",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 38 resources still in use at exit (run with --verbose for details).",
+            "stack": [],
+            "fingerprint": "2a3bc750aa6529ca",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 RID allocations of type 'N5GLES38MaterialE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "d4d40cdc36c87a81",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 1 RID allocations of type 'N5GLES36ShaderE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "1a53601d4a022241",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 15 RID allocations of type 'N5GLES37TextureE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "7ecbb4e268c10eb7",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 9 RID allocations of type 'PN18TextServerAdvanced22ShapedTextDataAdvancedE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "995ee3cc673e3df3",
+            "occurrences": 1,
+            "source": "stdout.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 4 RID allocations of type 'PN18TextServerAdvanced12FontAdvancedE' were leaked at exit.",
+            "stack": [],
+            "fingerprint": "f193be13763bf70b",
+            "occurrences": 1,
+            "source": "stdout.log"
+          }
+        ],
+        "shutdown": {
+          "stopped": true,
+          "pid": 24388,
+          "session_id": "bridge-1789299353139-qccd09",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [
+          "shutdown",
+          "diagnostics"
+        ],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "action",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
+      "before": {
+        "status": "FAIL",
+        "errorCount": 1,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a",
+        "shutdownDiagnostics": [
+          {
+            "severity": "warning",
+            "kind": "warning",
+            "message": "WARNING: 4 ObjectDB instances were leaked at exit (run with `--verbose` for details).",
+            "stack": [],
+            "fingerprint": "8118377e37357fbc",
+            "occurrences": 1,
+            "source": "stderr.log"
+          },
+          {
+            "severity": "error",
+            "kind": "runtime",
+            "message": "ERROR: 2 resources still in use at exit (run with --verbose for details).",
+            "stack": [],
+            "fingerprint": "dfabc6034f7f1de9",
+            "occurrences": 1,
+            "source": "stderr.log"
+          }
+        ],
+        "shutdown": {
+          "stopped": true,
+          "pid": 33020,
+          "session_id": "bridge-1789299356005-bz20i1",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [
+          "shutdown",
+          "diagnostics"
+        ],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 18236,
+          "session_id": "bridge-1789299358177-pniled",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "ui",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
+      "before": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 3032,
+          "session_id": "bridge-1789299360544-alb3p8",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 1944,
+          "session_id": "bridge-1789299362288-obt727",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "navigation",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
+      "before": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 39236,
+          "session_id": "bridge-1789299364212-3zzr2p",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 52592,
+          "session_id": "bridge-1789299366268-gs8fky",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "audio",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
+      "before": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 34312,
+          "session_id": "bridge-1789299368616-lnsh14",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 29712,
+          "session_id": "bridge-1789299370359-nm9pbk",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c\\attempt-0\\screenshot.png"
+      }
+    },
+    {
+      "name": "multi-scene",
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
+      "before": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 42872,
+          "session_id": "bridge-1789299372617-ajoj30",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25\\attempt-0\\screenshot.png"
+      },
+      "after": {
+        "status": "PASS",
+        "errorCount": 0,
+        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74",
+        "shutdownDiagnostics": [],
+        "shutdown": {
+          "stopped": true,
+          "pid": 660,
+          "session_id": "bridge-1789299374716-k18sqo",
+          "forced": false,
+          "exitCode": 0,
+          "signal": null
+        },
+        "failedChecks": [],
+        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74\\attempt-0\\screenshot.png"
+      }
+    }
+  ],
+  "aggregate": {
+    "samples": 7,
+    "beforePass": 4,
+    "afterPass": 6
+  }
+}
