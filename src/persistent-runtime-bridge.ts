@@ -172,6 +172,37 @@ export class PersistentRuntimeBridge {
     return [...this.events];
   }
 
+  async waitForEvent(eventName: string, timeout?: TimeoutContext): Promise<JsonRpcNotification> {
+    const found = this.events.find((item) => item.method === 'runtime/event' && item.params?.event === eventName);
+    if (found) return found;
+    return await new Promise<JsonRpcNotification>((resolve, reject) => {
+      const listener = (event: JsonRpcNotification) => {
+        if (event.method === 'runtime/event' && event.params?.event === eventName) {
+          cleanup();
+          resolve(event);
+        }
+      };
+      const timer = setTimeout(
+        () => {
+          cleanup();
+          reject(new TimeoutError(`event timed out: ${eventName}`));
+        },
+        Math.max(1, timeout?.remaining() ?? DEFAULT_STOP_TIMEOUT_MS),
+      );
+      const cleanup = () => {
+        this.readyListeners.delete(listener);
+        clearTimeout(timer);
+        timeout?.signal.removeEventListener('abort', onAbort);
+      };
+      const onAbort = () => {
+        cleanup();
+        reject(timeout?.cancelled ? new CancelledError() : new TimeoutError());
+      };
+      this.readyListeners.add(listener);
+      timeout?.signal.addEventListener('abort', onAbort, { once: true });
+    });
+  }
+
   async stop(timeout?: TimeoutContext): Promise<{ stopped: boolean; pid: number; session_id: string }> {
     if (this.closed) return { stopped: true, pid: this.pid, session_id: this.sessionId };
     if (!this.closePromise) {
