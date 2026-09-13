@@ -304,6 +304,12 @@ export async function openRuntimeBridge(options: PersistentBridgeOptions) {
   };
 }
 
+export function getRuntimeBridge(sessionId: string) {
+  const bridge = sessions.get(sessionId);
+  if (!bridge) throw new Error(`persistent bridge session not found: ${sessionId}`);
+  return bridge;
+}
+
 export async function callRuntimeBridge(
   sessionId: string,
   method: string,
