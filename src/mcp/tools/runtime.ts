@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ToolRegistrationContext } from '../tool-registry.js';
-export function registerRuntimeTools({ server, functions, schemas }: ToolRegistrationContext): void {
+export function registerRuntimeTools({ server, functions, schemas, invoke }: ToolRegistrationContext): void {
   const responseMode = schemas.responseMode;
   const timeoutMs = schemas.timeoutMs;
   const sessionId = z.string().min(1);
