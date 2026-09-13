@@ -137,6 +137,14 @@ func _handle_persistent_request(request: Dictionary) -> void:
 			_emit_notification("scene_reloaded", {"scene": str(params.get("scenePath", persistent_main_scene))})
 			_respond(request_id, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_RELOAD", "runtime": true, "reloaded": true})
 		return
+	if method == "query_collisions":
+		var collision_result := _query_collisions(params)
+		_respond(request_id, collision_result)
+		return
+	if method == "get_game_state":
+		var state_result := _game_state_result(params)
+		_respond(request_id, state_result)
+		return
 	if method == "get_scene_tree":
 		var nodes: Array[Dictionary] = []
 		_collect(persistent_instance, ".", nodes)
@@ -384,3 +392,23 @@ func _emit_event(events_path: String, event_name: String, payload: Dictionary) -
 			run_id = "godot-run"
 		file.store_string(JSON.stringify({"schema_version": "0.1", "source": "REAL", "run_id": run_id, "sequence": event_sequence, "timestamp": Time.get_datetime_string_from_system(true, true), "event": event_name, "payload": payload}) + "\n")
 		file.close()
+
+
+func _query_collisions(params: Dictionary) -> Dictionary:
+	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
+	if node == null: return {"error": "node not found"}
+	var result: Array = []
+	if node is Area2D:
+		for body in node.get_overlapping_bodies(): result.append({"name": body.name, "path": str(node.get_path_to(body)), "type": body.get_class()})
+		for area in node.get_overlapping_areas(): result.append({"name": area.name, "path": str(node.get_path_to(area)), "type": area.get_class()})
+	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":str(params.get("nodePath", ".")), "overlaps":result}
+
+func _game_state_result(params: Dictionary) -> Dictionary:
+	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
+	if node == null: return {"error": "node not found"}
+	var values: Dictionary = {}
+	var requested: Array = params.get("properties", []) as Array
+	for property_name in requested:
+		var key := str(property_name)
+		if node.get_property_list().any(func(item): return str(item.get("name", "")) == key): values[key] = node.get(key)
+	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_GAME_STATE", "nodePath":str(params.get("nodePath", ".")), "properties":values}
