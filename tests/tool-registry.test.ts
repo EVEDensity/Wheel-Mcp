@@ -83,3 +83,19 @@ test('official client discovers every unique domain tool; composition root conta
     await server.close();
   }
 });
+test('FAIL remains MCP isError in compact responses, diagnostic bodies are not duplicated', async () => {
+  const r = await invokeTool(
+    async () => ({ status: 'FAIL', errorCount: 2, attempts: [{ large: 'payload' }], evidenceDir: 'e' }),
+    1000,
+    undefined,
+    'compact',
+  );
+  assert.equal(r.isError, true);
+  assert.equal(JSON.parse(r.content[0].text).errorCount, 2);
+  assert.equal(JSON.parse(r.content[0].text).attempts, undefined);
+  assert.deepEqual(formatToolResponse({ status: 'PASS', changedFiles: ['a'], summary: 'ok' }, 'compact'), {
+    status: 'PASS',
+    changedFiles: ['a'],
+    summary: 'ok',
+  });
+});
