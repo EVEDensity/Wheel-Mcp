@@ -447,3 +447,50 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       invoke((context) => callRuntimeBridge(sessionId, 'delete_node', { nodePath }, context), timeoutMs, extra.signal),
   );
 
+  server.tool(
+    'call_runtime_method',
+    'Call a script or engine method on a running Godot node.',
+    {
+      sessionId: z.string().min(1),
+      nodePath: z.string().optional(),
+      method: z.string().min(1),
+      args: z.array(z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, nodePath, method, args, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          callRuntimeBridge(sessionId, 'call_method', { nodePath: nodePath ?? '.', method, args: args ?? [] }, context),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'inject_runtime_input',
+    'Inject a runtime key event.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      keycode: keycodeSchema,
+      pressed: pressedSchema,
+      timeoutMs,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          injectRuntimeInput({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            keycode: args.keycode,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+
