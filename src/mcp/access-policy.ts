@@ -54,6 +54,8 @@ const toolPermissions: Record<string, McpPermission> = {
   inject_runtime_input: 'write',
   execute_scenario: 'write',
   dev_loop: 'write',
+  begin_client_repair: 'write',
+  submit_repair_candidate: 'write',
   run_test_scene: 'write',
   git_checkpoint: 'write',
   git_recovery: 'admin',
@@ -84,10 +86,14 @@ export function authorizeToolCall(policy: McpClientPolicy, toolName: string, arg
   if (!policy.scopes.has(required) && !policy.scopes.has('admin')) {
     throw new McpAccessError(`client ${policy.clientId} lacks ${required} permission for ${toolName}`);
   }
-  if (toolName === 'dev_loop' && !policy.scopes.has('run') && !policy.scopes.has('admin'))
+  if (
+    ['dev_loop', 'begin_client_repair', 'submit_repair_candidate'].includes(toolName) &&
+    !policy.scopes.has('run') &&
+    !policy.scopes.has('admin')
+  )
     throw new McpAccessError('dev_loop requires run and write permissions');
   if (
-    ['dev_loop', 'open_runtime_bridge'].includes(toolName) &&
+    ['dev_loop', 'begin_client_repair', 'open_runtime_bridge'].includes(toolName) &&
     args.scenePath &&
     (typeof args.scenePath !== 'string' ||
       !args.scenePath.startsWith('res://') ||
@@ -95,7 +101,7 @@ export function authorizeToolCall(policy: McpClientPolicy, toolName: string, arg
   )
     throw new McpAccessError('dev_loop scenePath must be a contained res:// path');
   for (const [key, value] of Object.entries(args)) {
-    if (['dev_loop', 'open_runtime_bridge'].includes(toolName) && key === 'scenePath') continue;
+    if (['dev_loop', 'begin_client_repair', 'open_runtime_bridge'].includes(toolName) && key === 'scenePath') continue;
     if (typeof value !== 'string' || value.length === 0) continue;
     if (projectPathKeys.has(key)) assertContained(value, policy.projectRoots, key);
     if (evidencePathKeys.has(key)) assertContained(value, policy.evidenceRoots, key);
