@@ -1,4 +1,4 @@
-﻿import { appendFile, mkdir, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
@@ -14,6 +14,7 @@ export type PersistentBridgeOptions = {
   evidenceDir?: string;
   runId?: string;
   headless?: boolean;
+  verbose?: boolean;
   scenePath?: string;
   timeout?: TimeoutContext;
 };
@@ -45,6 +46,7 @@ export class PersistentRuntimeBridge {
   readonly projectPath: string;
   private readonly child: ChildProcess;
   private readonly socket: net.Socket;
+  private readonly processClosed: Promise<void>;
   private readonly pending = new Map<number, Pending>();
   private readonly events: JsonRpcNotification[] = [];
   private buffer = '';
@@ -66,6 +68,7 @@ export class PersistentRuntimeBridge {
     socket: net.Socket,
     evidenceDir: string,
     projectPath: string,
+    processClosed: Promise<void>,
   ) {
     if (!child.pid) throw new Error('persistent bridge process has no pid');
     this.sessionId = sessionId;
@@ -78,20 +81,34 @@ export class PersistentRuntimeBridge {
     socket.on('data', (chunk) => this.onData(String(chunk)));
     socket.on('error', (error) => this.failPending(error));
     socket.on('close', () => this.failPending(new Error('persistent bridge connection closed')));
-    child.once('close', () => this.failPending(new Error('persistent bridge process exited')));
+    this.processClosed = processClosed;
+    void processClosed.then(() => this.failPending(new Error('persistent bridge process exited')));
   }
 
   static async start(options: PersistentBridgeOptions): Promise<PersistentRuntimeBridge> {
+    options.timeout?.throwIfCancelled();
+    options.timeout?.throwIfExpired();
+    const executable = resolveGodotPath(options.godotPath);
     const root = path.resolve(options.projectPath);
     const evidenceDir = path.resolve(options.evidenceDir || path.join(root, '.harness', 'persistent-bridge'));
     await mkdir(evidenceDir, { recursive: true });
     await ensureEvidenceManifest(evidenceDir, 'BRIDGE_EVIDENCE');
     const sessionId = options.runId || `bridge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const server = net.createServer();
+    let acceptedSocket: net.Socket | undefined;
     const connection = new Promise<net.Socket>((resolve, reject) => {
-      server.once('connection', (socket) => resolve(socket));
+      server.on('connection', (socket) => {
+        if (acceptedSocket) {
+          socket.destroy();
+          return;
+        }
+        acceptedSocket = socket;
+        resolve(socket);
+      });
       server.once('error', reject);
     });
+    // A listen error also rejects connection; mark handled before awaiting listen.
+    void connection.catch(() => undefined);
     await new Promise<void>((resolve, reject) => {
       server.listen(0, '127.0.0.1', () => resolve());
       server.once('error', reject);
@@ -99,9 +116,10 @@ export class PersistentRuntimeBridge {
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('unable to allocate bridge port');
     const child = spawn(
-      resolveGodotPath(options.godotPath),
+      executable,
       [
         ...(options.headless === true ? ['--headless'] : []),
+        ...(options.verbose ? ['--verbose'] : []),
         '--path',
         root,
         '--script',
@@ -122,6 +140,8 @@ export class PersistentRuntimeBridge {
         },
       },
     );
+    // Cancellation can beat waitForConnection installing its error listener.
+    child.on('error', () => undefined);
     const logs = { stdout: '', stderr: '' };
     child.stdout?.on('data', (chunk) => {
       logs.stdout += String(chunk);
@@ -129,25 +149,30 @@ export class PersistentRuntimeBridge {
     child.stderr?.on('data', (chunk) => {
       logs.stderr += String(chunk);
     });
-    child.once('close', () => {
-      void Promise.all([
-        writeFile(path.join(evidenceDir, 'stdout.log'), logs.stdout),
-        writeFile(path.join(evidenceDir, 'stderr.log'), logs.stderr),
-      ]).catch(() => undefined);
-    });
+    const processClosed = new Promise<void>((resolve) => child.once('close', () => resolve()));
     const context = options.timeout || createTimeoutContext(DEFAULT_GODOT_PROCESS_TIMEOUT_MS);
     const ownsContext = !options.timeout;
+    let socket: net.Socket | undefined;
     try {
-      const socket = await waitForConnection(connection, child, context);
+      socket = await waitForConnection(connection, child, context);
       server.close();
-      const bridge = new PersistentRuntimeBridge(sessionId, child, socket, evidenceDir, root);
+      const bridge = new PersistentRuntimeBridge(sessionId, child, socket, evidenceDir, root, processClosed);
       bridge.logs = logs;
       await bridge.waitForReady(context);
       await bridge.writeManifest({ persistent: true, pid: child.pid, session_id: sessionId });
       return bridge;
     } catch (error) {
       server.close();
+      acceptedSocket?.destroy();
       if (child.pid) await terminateProcessTree(child.pid).catch(() => undefined);
+      try {
+        await waitForDrain(processClosed);
+      } finally {
+        await Promise.all([
+          writeFile(path.join(evidenceDir, 'stdout.log'), logs.stdout),
+          writeFile(path.join(evidenceDir, 'stderr.log'), logs.stderr),
+        ]);
+      }
       throw error;
     } finally {
       if (ownsContext) context.dispose();
@@ -187,6 +212,7 @@ export class PersistentRuntimeBridge {
         };
         pending.abortCleanup = () => timeout.signal.removeEventListener('abort', onAbort);
         timeout.signal.addEventListener('abort', onAbort, { once: true });
+        if (timeout.signal.aborted) onAbort();
       }
     });
     await appendFile(
@@ -201,6 +227,8 @@ export class PersistentRuntimeBridge {
   }
 
   async waitForEvent(eventName: string, timeout?: TimeoutContext): Promise<JsonRpcNotification> {
+    timeout?.throwIfCancelled();
+    timeout?.throwIfExpired();
     const found = this.events.find((item) => item.method === 'runtime/event' && item.params?.event === eventName);
     if (found) return found;
     return await new Promise<JsonRpcNotification>((resolve, reject) => {
@@ -228,28 +256,61 @@ export class PersistentRuntimeBridge {
       };
       this.readyListeners.add(listener);
       timeout?.signal.addEventListener('abort', onAbort, { once: true });
+      if (timeout?.signal.aborted) onAbort();
     });
   }
 
-  async stop(timeout?: TimeoutContext): Promise<{ stopped: boolean; pid: number; session_id: string }> {
-    if (this.closed) return { stopped: true, pid: this.pid, session_id: this.sessionId };
+  private forcedStop = false;
+  async stop(timeout?: TimeoutContext): Promise<{
+    stopped: boolean;
+    pid: number;
+    session_id: string;
+    forced: boolean;
+    exitCode: number | null;
+    signal: string | null;
+  }> {
     if (!this.closePromise) {
       this.closePromise = (async () => {
         try {
-          await this.request('stop', {}, timeout);
+          if (this.child.exitCode === null && this.child.signalCode === null) {
+            await this.request('stop', {}, timeout);
+            await waitForClose(this.child, timeout);
+          }
         } catch {
-          if (this.child.pid) await terminateProcessTree(this.child.pid).catch(() => undefined);
+          this.forcedStop = true;
+          if (this.child.pid) await terminateProcessTree(this.child.pid);
+          const cleanup = createTimeoutContext(DEFAULT_STOP_TIMEOUT_MS);
+          try {
+            await waitForClose(this.child, cleanup);
+          } finally {
+            cleanup.dispose();
+          }
+        } finally {
+          try {
+            // close, not merely exit: retain final stderr but never hang forever.
+            await waitForDrain(this.processClosed);
+          } finally {
+            this.closed = true;
+            this.socket.destroy();
+            await this.flushLogs();
+          }
         }
-        await waitForClose(this.child, timeout);
-        this.closed = true;
-        this.socket.destroy();
       })();
     }
     await this.closePromise;
-    return { stopped: true, pid: this.pid, session_id: this.sessionId };
+    return {
+      stopped: true,
+      pid: this.pid,
+      session_id: this.sessionId,
+      forced: this.forcedStop,
+      exitCode: this.child.exitCode,
+      signal: this.child.signalCode,
+    };
   }
 
   private async waitForReady(timeout: TimeoutContext): Promise<void> {
+    timeout.throwIfCancelled();
+    timeout.throwIfExpired();
     if (this.events.some((event) => event.method === 'runtime/ready')) return;
     await new Promise<void>((resolve, reject) => {
       const onReady = (event: JsonRpcNotification) => {
@@ -261,6 +322,7 @@ export class PersistentRuntimeBridge {
       const cleanup = () => {
         this.readyListeners.delete(onReady);
         clearTimeout(timer);
+        timeout.signal.removeEventListener('abort', onAbort);
       };
       this.readyListeners.add(onReady);
       const timer = setTimeout(
@@ -270,14 +332,12 @@ export class PersistentRuntimeBridge {
         },
         Math.max(1, timeout.remaining()),
       );
-      timeout.signal.addEventListener(
-        'abort',
-        () => {
-          cleanup();
-          reject(timeout.cancelled ? new CancelledError() : new TimeoutError());
-        },
-        { once: true },
-      );
+      const onAbort = () => {
+        cleanup();
+        reject(timeout.cancelled ? new CancelledError() : new TimeoutError());
+      };
+      timeout.signal.addEventListener('abort', onAbort, { once: true });
+      if (timeout.signal.aborted) onAbort();
     });
   }
 
@@ -300,7 +360,6 @@ export class PersistentRuntimeBridge {
       if ('id' in message && typeof message.id === 'number') {
         const pending = this.pending.get(message.id);
         if (!pending) continue;
-        this.pending.delete(message.id);
         this.removePending(message.id);
         if ('error' in message && message.error) pending.reject(new Error(message.error.message));
         else pending.resolve(message.result);
@@ -378,6 +437,7 @@ export async function callRuntimeBridge(
   const bridge = sessions.get(sessionId);
   if (!bridge) throw new Error(`persistent bridge session not found: ${sessionId}`);
   const response = await bridge.request(method, params, timeout);
+  await bridge.flushLogs();
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -409,43 +469,81 @@ async function waitForConnection(
   child: ChildProcess,
   timeout: TimeoutContext,
 ): Promise<net.Socket> {
-  return await Promise.race([
-    connection,
-    new Promise<net.Socket>((_, reject) => {
-      const timer = setTimeout(
-        () => reject(new TimeoutError('persistent bridge connection timed out')),
-        Math.max(1, timeout.remaining()),
-      );
-      child.once('error', (error) => {
-        clearTimeout(timer);
-        reject(error);
-      });
-      child.once('close', (code) => {
-        clearTimeout(timer);
-        reject(new Error(`persistent bridge exited before connection: ${code}`));
-      });
-    }),
-  ]);
+  timeout.throwIfCancelled();
+  timeout.throwIfExpired();
+  return new Promise<net.Socket>((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timer);
+      child.removeListener('error', onError);
+      child.removeListener('close', onClose);
+      timeout.signal.removeEventListener('abort', onAbort);
+    };
+    const onError = (error: Error) => {
+      cleanup();
+      reject(error);
+    };
+    const onClose = (code: number | null) => onError(new Error('persistent bridge exited before connection: ' + code));
+    const onAbort = () => onError(timeout.cancelled ? new CancelledError() : new TimeoutError());
+    const timer = setTimeout(
+      () => onError(new TimeoutError('persistent bridge connection timed out')),
+      Math.max(1, timeout.remaining()),
+    );
+    child.once('error', onError);
+    child.once('close', onClose);
+    timeout.signal.addEventListener('abort', onAbort, { once: true });
+    connection.then((socket) => {
+      cleanup();
+      resolve(socket);
+    }, onError);
+    if (timeout.signal.aborted) onAbort();
+  });
 }
 
 async function waitForClose(child: ChildProcess, timeout?: TimeoutContext): Promise<void> {
-  if (child.exitCode !== null) return;
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  timeout?.throwIfCancelled();
+  timeout?.throwIfExpired();
   await new Promise<void>((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timer);
+      child.removeListener('close', onClose);
+      timeout?.signal.removeEventListener('abort', onAbort);
+    };
+    const onClose = () => {
+      cleanup();
+      resolve();
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(timeout?.cancelled ? new CancelledError() : new TimeoutError());
+    };
     const timer = setTimeout(
-      () => reject(new TimeoutError('persistent bridge did not stop')),
+      () => {
+        cleanup();
+        reject(new TimeoutError('persistent bridge did not stop'));
+      },
       Math.max(1, timeout?.remaining() ?? DEFAULT_STOP_TIMEOUT_MS),
     );
-    child.once('close', () => {
-      clearTimeout(timer);
-      resolve();
-    });
-    timeout?.signal.addEventListener(
-      'abort',
-      () => {
-        clearTimeout(timer);
-        reject(timeout.cancelled ? new CancelledError() : new TimeoutError());
-      },
-      { once: true },
-    );
+    child.once('close', onClose);
+    timeout?.signal.addEventListener('abort', onAbort, { once: true });
+    if (timeout?.signal.aborted) onAbort();
   });
+}
+
+/** Bound final pipe drainage independently of an already cancelled request. */
+async function waitForDrain(closed: Promise<void>): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      closed,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new TimeoutError('persistent bridge output did not close')),
+          DEFAULT_STOP_TIMEOUT_MS,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
