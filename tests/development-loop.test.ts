@@ -54,3 +54,19 @@ test('assertions fail closed and dev_loop requires non-vacuous checks', () => {
     false,
   );
 });
+test('HTTP dev_loop needs both write and run and isolates baseline evidence', () => {
+  const root = path.resolve('runs');
+  const args = { projectPath: root, bridgePath: root, evidenceDir: root };
+  const policy = createClientPolicy({ clientId: 'x', scopes: ['write'], projectRoots: [root], evidenceRoots: [root] });
+  assert.throws(() => authorizeToolCall(policy, 'dev_loop', args), /run/);
+  const full = createClientPolicy({
+    clientId: 'x',
+    scopes: ['write', 'run'],
+    projectRoots: [root],
+    evidenceRoots: [root],
+  });
+  assert.throws(
+    () => authorizeToolCall(full, 'dev_loop', { ...args, baselinePath: path.resolve('package.json') }),
+    /authorized root/,
+  );
+});
