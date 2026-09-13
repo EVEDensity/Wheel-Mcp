@@ -23,6 +23,14 @@ jobs:
       - run: npm run lint
       - run: node --test build/tests/*.test.js
       - run: npm run release:check
+      - name: Dependency audit
+        run: npm run audit:dependencies
+      - name: Generate CycloneDX SBOM
+        run: npm run sbom > sbom-${{ matrix.os }}-node-${{ matrix.node }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.os }}-node-${{ matrix.node }}
+          path: sbom-${{ matrix.os }}-node-${{ matrix.node }}.json
       - name: Save platform result
         shell: bash
         run: mkdir -p artifacts && node --test build/tests/*.test.js > artifacts/test-${{ matrix.os }}-node-${{ matrix.node }}.txt
