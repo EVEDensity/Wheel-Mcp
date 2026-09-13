@@ -7,6 +7,9 @@ var persistent_instance: Node
 var persistent_main_scene: String
 var persistent_run_id: String
 var persistent_level_started_sent: bool = false
+var last_collision: Dictionary = {}
+var collision_cache: Dictionary = {}
+var collision_history_limit: int = 32
 
 func _initialize() -> void:
 	persistent_run_id = OS.get_environment("GODOT_HARNESS_RUN_ID")
@@ -136,6 +139,9 @@ func _handle_persistent_request(request: Dictionary) -> void:
 			root.add_child(persistent_instance)
 			_emit_notification("scene_reloaded", {"scene": str(params.get("scenePath", persistent_main_scene))})
 			_respond(request_id, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCENE_RELOAD", "runtime": true, "reloaded": true})
+		return
+	if method == "get_specialized_state":
+		_respond(request_id, _specialized_state(params))
 		return
 	if method == "query_collisions":
 		var collision_result := _query_collisions(params)
@@ -395,13 +401,46 @@ func _emit_event(events_path: String, event_name: String, payload: Dictionary) -
 
 
 func _query_collisions(params: Dictionary) -> Dictionary:
-	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
+	var requested_path := str(params.get("nodePath", "."))
+	var node := _resolve_node(persistent_instance, requested_path)
 	if node == null: return {"error": "node not found"}
+	var node_path := str(node.get_path())
+	var history_limit := clampi(int(params.get("historyLimit", collision_history_limit)), 1, 256)
+	var refresh := bool(params.get("refresh", true))
 	var result: Array = []
-	if node is Area2D:
-		for body in node.get_overlapping_bodies(): result.append({"name": body.name, "path": str(node.get_path_to(body)), "type": body.get_class()})
-		for area in node.get_overlapping_areas(): result.append({"name": area.name, "path": str(node.get_path_to(area)), "type": area.get_class()})
-	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":str(params.get("nodePath", ".")), "overlaps":result}
+	if refresh:
+		if node is Area2D:
+			for body in node.get_overlapping_bodies(): result.append({"name": body.name, "path": str(node.get_path_to(body)), "type": body.get_class()})
+			for area in node.get_overlapping_areas(): result.append({"name": area.name, "path": str(node.get_path_to(area)), "type": area.get_class()})
+		if node is RayCast2D and node.is_colliding(): result.append({"name": node.get_collider().name, "point": node.get_collision_point(), "normal": node.get_collision_normal(), "type": "raycast"})
+		if node is CollisionObject2D:
+			var shape := CircleShape2D.new(); shape.radius = 1.0
+			var query := PhysicsShapeQueryParameters2D.new(); query.shape = shape; query.transform = node.global_transform; query.collision_mask = node.collision_mask
+			for hit in node.get_world_2d().direct_space_state.intersect_shape(query):
+				var collider = hit.get("collider")
+				result.append({"collider": collider.name if collider != null else "", "point": hit.get("position", Vector2.ZERO), "normal": hit.get("normal", Vector2.ZERO), "type": "intersect_shape"})
+		_update_collision_cache(node_path, result, history_limit)
+	var cached: Dictionary = collision_cache.get(node_path, {"nodePath": node_path, "updatedAt": 0, "lastCollision": {}, "history": [], "historyLimit": history_limit})
+	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":requested_path, "overlaps":result, "lastCollision":cached.get("lastCollision", last_collision), "updatedAt":cached.get("updatedAt", 0), "history":cached.get("history", []), "historyLimit":cached.get("historyLimit", history_limit)}
+
+func _update_collision_cache(node_path: String, collisions: Array, history_limit: int) -> void:
+	var cached: Dictionary = collision_cache.get(node_path, {"nodePath": node_path, "updatedAt": 0, "lastCollision": {}, "history": []})
+	cached["historyLimit"] = history_limit
+	if collisions.is_empty():
+		collision_cache[node_path] = cached
+		return
+	var timestamp := Time.get_ticks_msec()
+	var collision: Dictionary = collisions[0].duplicate(true)
+	collision["nodePath"] = node_path
+	collision["timestamp"] = timestamp
+	cached["updatedAt"] = timestamp
+	cached["lastCollision"] = collision
+	var history: Array = cached.get("history", [])
+	history.push_front(collision)
+	while history.size() > history_limit: history.pop_back()
+	cached["history"] = history
+	collision_cache[node_path] = cached
+	last_collision = collision
 
 func _game_state_result(params: Dictionary) -> Dictionary:
 	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
@@ -412,3 +451,16 @@ func _game_state_result(params: Dictionary) -> Dictionary:
 		var key := str(property_name)
 		if node.get_property_list().any(func(item): return str(item.get("name", "")) == key): values[key] = node.get(key)
 	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_GAME_STATE", "nodePath":str(params.get("nodePath", ".")), "properties":values}
+
+
+
+func _specialized_state(params: Dictionary) -> Dictionary:
+	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
+	var state: Dictionary = {"animation": {}, "camera": {}, "input": {}, "navigation": {}, "audio": {}, "lastCollision": last_collision}
+	if node == null: return {"error":"node not found"}
+	if node is AnimationPlayer: state.animation = {"current": node.current_animation, "position": node.current_animation_position, "playing": node.is_playing()}
+	if node is Camera2D: state.camera = {"position": node.global_position, "enabled": node.enabled, "zoom": node.zoom}
+	if node is NavigationAgent2D: state.navigation = {"target_position": node.target_position, "velocity": node.velocity, "distance": node.distance_to_target()}
+	if node is AudioStreamPlayer: state.audio = {"playing": node.playing, "stream": str(node.stream), "position": node.get_playback_position()}
+	for action in InputMap.get_actions(): state.input[str(action)] = Input.is_action_pressed(str(action))
+	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_SPECIALIZED_STATE", "nodePath":str(params.get("nodePath", ".")), "state":state}
