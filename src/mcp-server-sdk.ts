@@ -44,6 +44,7 @@ import { executeScenario, loadScenario } from './scenario-executor.js';
 import { scenarioSchema } from './scenario-schema.js';
 import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from './persistent-runtime-bridge.js';
 import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from './input-schemas.js';
+import { createMergedAbortSignal, getHttpRequestLifecycle, getHttpRequestSignal } from './transports/http-lifecycle.js';
 
 export function createMcpServer(policy?: McpClientPolicy): McpServer {
   const server = new McpServer(serverInfo, { capabilities: serverCapabilities });
@@ -58,9 +59,17 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
       originalTool(name, description, schema, async (args, extra) => {
         try {
           if (policy) authorizeToolCall(policy, name, args as Record<string, unknown>);
-          const response = await callback(args, extra);
-          if (policy) recordToolOwnership(policy, name, response);
-          return response;
+          const lifecycle = getHttpRequestLifecycle();
+          lifecycle?.retain();
+          const merged = createMergedAbortSignal(extra.signal, getHttpRequestSignal());
+          try {
+            const response = await callback(args, merged ? { ...extra, signal: merged.signal } : extra);
+            if (policy) recordToolOwnership(policy, name, response);
+            return response;
+          } finally {
+            merged?.dispose();
+            lifecycle?.release();
+          }
         } catch (error) {
           if (
             error &&
@@ -199,27 +208,19 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
         extra.signal,
       ),
   );
-  server.tool(
-    'stop_project',
-    'Stop a process.',
-    { pid: pidSchema, timeoutMs },
-    async ({ pid, timeoutMs }, extra) =>
-      invoke(
-        (context) => stopProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
-        timeoutMs,
-        extra.signal,
-      ),
+  server.tool('stop_project', 'Stop a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
+    invoke(
+      (context) => stopProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
+      timeoutMs,
+      extra.signal,
+    ),
   );
-  server.tool(
-    'cancel_project',
-    'Cancel a process.',
-    { pid: pidSchema, timeoutMs },
-    async ({ pid, timeoutMs }, extra) =>
-      invoke(
-        (context) => cancelProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
-        timeoutMs,
-        extra.signal,
-      ),
+  server.tool('cancel_project', 'Cancel a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
+    invoke(
+      (context) => cancelProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
+      timeoutMs,
+      extra.signal,
+    ),
   );
   server.tool(
     'get_process_status',
@@ -272,7 +273,19 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
       timeoutMs: z.number().int().positive().optional(),
     },
     async (
-      { evidenceDir, subscriptionId, cursor, event, runId, payload, continuous, maxEvents, pollIntervalMs, limit, timeoutMs },
+      {
+        evidenceDir,
+        subscriptionId,
+        cursor,
+        event,
+        runId,
+        payload,
+        continuous,
+        maxEvents,
+        pollIntervalMs,
+        limit,
+        timeoutMs,
+      },
       extra,
     ) =>
       invoke(
@@ -422,7 +435,8 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
     'stop_run',
     'Stop an isolated run by its run id.',
     { runId: z.string().min(1), timeoutMs },
-    async ({ runId, timeoutMs }, extra) => invoke((context) => runRegistry.stop(runId, context), timeoutMs, extra.signal),
+    async ({ runId, timeoutMs }, extra) =>
+      invoke((context) => runRegistry.stop(runId, context), timeoutMs, extra.signal),
   );
   server.tool(
     'cancel_run',
@@ -468,7 +482,15 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
   server.tool(
     'get_runtime_property',
     'Read a runtime property.',
-    { godotPath, projectPath, bridgePath, evidenceDir, nodePath: z.string().optional(), property: z.string(), timeoutMs },
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      nodePath: z.string().optional(),
+      property: z.string(),
+      timeoutMs,
+    },
     async (args, extra) =>
       invoke(
         (context) =>
@@ -667,7 +689,18 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
       timeoutMs,
     },
     async (
-      { scenario, scenarioPath, godotPath, bridgePath, evidenceDir, defaultStepTimeoutMs, globalTimeoutMs, retries, onFailure, timeoutMs },
+      {
+        scenario,
+        scenarioPath,
+        godotPath,
+        bridgePath,
+        evidenceDir,
+        defaultStepTimeoutMs,
+        globalTimeoutMs,
+        retries,
+        onFailure,
+        timeoutMs,
+      },
       extra,
     ) =>
       invoke(
