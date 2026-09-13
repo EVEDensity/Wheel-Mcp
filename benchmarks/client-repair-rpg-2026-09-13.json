@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "provenance": "Assistant reviewed detached screen ownership using actual shutdown logs; no live provider call; outside frozen historical corpus.",
+  "output": "runs/client-repair-rpg/2026-09-13T11-57-13.618Z",
+  "projectPath": "runs/client-repair-rpg/2026-09-13T11-57-13.618Z/project",
+  "sourceSha256": "62b09c35c261445ceee34009c683cef542d2d3391276a5bebb7b6b5423d50d3d",
+  "beforeErrors": 22,
+  "afterErrors": 0,
+  "candidate": "PASS",
+  "reverified": "PASS",
+  "screenshotSize": [
+    1280,
+    720
+  ],
+  "screenshotPath": "runs/client-repair-rpg/2026-09-13T11-57-13.618Z/independent-reverify/dev-loop-ed2e8d6b-dd3c-4ffb-b2b2-02efb2b7f6dd/attempt-0/screenshot.png",
+  "report": "runs/client-repair-rpg/2026-09-13T11-57-13.618Z/report.json",
+  "reportSha256": "516b0138720b97433f52e963d053f306ddce0098b3287c5fd5582e86655993eb",
+  "transcriptSha256": "c444603fa1445ab8c3bd30b1917fd21c1e0291c939e84e83127417525a71e55d",
+  "limitation": "One disclosed follow-up ownership repair; not added to bridge-only 4/7 to 6/7 result or frozen historical set."
+}
