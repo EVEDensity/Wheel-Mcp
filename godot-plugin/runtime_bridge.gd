@@ -149,6 +149,27 @@ func _handle_persistent_request(request: Dictionary) -> void:
 		else:
 			_respond(request_id, property_result)
 		return
+	if method == "create_node":
+		var create_result := _create_node_result(params)
+		if create_result.has("error"):
+			_respond_error(request_id, -32602, str(create_result.get("error")))
+		else:
+			_respond(request_id, create_result)
+		return
+	if method == "delete_node":
+		var delete_result := _delete_node_result(params)
+		if delete_result.has("error"):
+			_respond_error(request_id, -32602, str(delete_result.get("error")))
+		else:
+			_respond(request_id, delete_result)
+		return
+	if method == "call_method":
+		var call_result := _call_method_result(params)
+		if call_result.has("error"):
+			_respond_error(request_id, -32602, str(call_result.get("error")))
+		else:
+			_respond(request_id, call_result)
+		return
 	if method == "inject_input":
 		var input_result := _input_result(params)
 		if input_result.has("error"):
@@ -212,6 +233,47 @@ func _property_result(instance: Node, request: Dictionary, write: bool) -> Dicti
 		node.set(property_name, request.get("value"))
 		return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_WRITE", "runtime": true, "nodePath": node_path, "property": property_name, "before": before, "after": node.get(property_name)}
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_PROPERTY_READ", "runtime": true, "nodePath": node_path, "property": property_name, "value": before}
+
+func _resolve_node(instance: Node, node_path: String) -> Node:
+	return instance if node_path.is_empty() or node_path == "." else instance.get_node_or_null(NodePath(node_path))
+
+func _create_node_result(request: Dictionary) -> Dictionary:
+	var parent := _resolve_node(persistent_instance, str(request.get("parentPath", ".")))
+	var type_name := str(request.get("type", ""))
+	if parent == null or type_name.is_empty() or not ClassDB.can_instantiate(type_name):
+		return {"error": "parent or instantiable type is invalid"}
+	var node := ClassDB.instantiate(type_name) as Node
+	if node == null:
+		return {"error": "unable to instantiate type: " + type_name}
+	var requested_name := str(request.get("name", ""))
+	if not requested_name.is_empty(): node.name = requested_name
+	parent.add_child(node)
+	var properties: Dictionary = request.get("properties", {}) as Dictionary
+	for key in properties.keys():
+		if node.get_property_list().any(func(item): return str(item.get("name", "")) == str(key)):
+			node.set(str(key), properties[key])
+	_emit_notification("node_created", {"path": str(persistent_instance.get_path_to(node)), "type": type_name})
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_NODE_CREATE", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "type": type_name}
+
+func _delete_node_result(request: Dictionary) -> Dictionary:
+	var node := _resolve_node(persistent_instance, str(request.get("nodePath", "")))
+	if node == null or node == persistent_instance:
+		return {"error": "node does not exist or cannot be deleted"}
+	var node_path := str(persistent_instance.get_path_to(node))
+	node.get_parent().remove_child(node)
+	node.queue_free()
+	_emit_notification("node_deleted", {"path": node_path})
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_NODE_DELETE", "runtime": true, "nodePath": node_path, "deleted": true}
+
+func _call_method_result(request: Dictionary) -> Dictionary:
+	var node := _resolve_node(persistent_instance, str(request.get("nodePath", ".")))
+	var method_name := str(request.get("method", ""))
+	if node == null or method_name.is_empty() or not node.has_method(method_name):
+		return {"error": "node or method does not exist"}
+	var args: Array = request.get("args", []) as Array
+	var value = node.callv(method_name, args)
+	_emit_notification("method_called", {"nodePath": str(persistent_instance.get_path_to(node)), "method": method_name})
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_METHOD_CALL", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "method": method_name, "value": value}
 
 func _input_result(request: Dictionary) -> Dictionary:
 	var keycode := int(request.get("keycode", 0))
