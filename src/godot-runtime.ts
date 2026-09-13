@@ -650,7 +650,12 @@ export async function stopLaunchedProcess(
 export async function readEvidence(evidenceDir: string) {
   const root = path.resolve(evidenceDir);
   const [metadata, stdout, stderr] = await Promise.all([
-    readFile(path.join(root, 'process.json'), 'utf8').then(JSON.parse),
+    readFile(path.join(root, 'process.json'), 'utf8')
+      .catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error;
+        return readFile(path.join(root, 'persistent.json'), 'utf8');
+      })
+      .then(JSON.parse),
     readFile(path.join(root, 'stdout.log'), 'utf8').catch(() => ''),
     readFile(path.join(root, 'stderr.log'), 'utf8').catch(() => ''),
   ]);
