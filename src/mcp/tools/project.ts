@@ -103,3 +103,66 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
   );
 
   server.tool(
+    'read_scene_file',
+    'Read a Godot .tscn scene file.',
+    { projectPath, scenePath: z.string(), timeoutMs },
+    async ({ projectPath, scenePath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readSceneFile(projectPath, scenePath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'write_scene_file',
+    'Save a Godot .tscn scene file after explicit content edits.',
+    { projectPath, scenePath: z.string(), content: z.string(), timeoutMs },
+    async ({ projectPath, scenePath, content, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return writeSceneFile(projectPath, scenePath, content);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'get_context_pack',
+    'Build a read-only context pack.',
+    { godotPath, projectPath, evidenceDir, scenePath: z.string().optional(), timeoutMs },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          buildContextPack({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'git_checkpoint',
+    'Capture Git checkpoint evidence.',
+    { projectPath, evidenceDir, timeoutMs },
+    async ({ projectPath, evidenceDir, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          context.throwIfCancelled();
+          return gitCheckpoint(projectPath, evidenceDir, context);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
