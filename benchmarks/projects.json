@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "0.2",
+  "source": "godotengine/godot-demo-projects",
+  "revision": "a3b5c113112f77291d5f3d1360f33a882fdc52f7",
+  "projects": [
+    {
+      "name": "platformer",
+      "category": "ƽ̨��Ծ",
+      "path": ".harness/benchmark-sources/godot-demo-projects/2d/platformer",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/platformer"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/platformer"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "CharacterBody2D",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/platformer"
+          }
+        }
+      ]
+    },
+    {
+      "name": "topdown-rpg",
+      "category": "Top-down RPG",
+      "path": ".harness/benchmark-sources/godot-demo-projects/2d/role_playing_game",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/role_playing_game"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/role_playing_game"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "TileMap",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/role_playing_game"
+          }
+        }
+      ]
+    },
+    {
+      "name": "action-2d",
+      "category": "2D ������Ϸ",
+      "path": ".harness/benchmark-sources/godot-demo-projects/2d/dodge_the_creeps",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/dodge_the_creeps"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/dodge_the_creeps"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "Area2D",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/dodge_the_creeps"
+          }
+        }
+      ]
+    },
+    {
+      "name": "ui-heavy",
+      "category": "UI �ܼ�����Ŀ",
+      "path": ".harness/benchmark-sources/godot-demo-projects/gui/control_gallery",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/gui/control_gallery"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/gui/control_gallery"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "Control",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/gui/control_gallery"
+          }
+        }
+      ]
+    },
+    {
+      "name": "navigation-audio",
+      "category": "��������Ƶ",
+      "path": ".harness/benchmark-sources/godot-demo-projects/2d/navigation",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/navigation"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/navigation"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "Navigation",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/2d/navigation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "multi-scene",
+      "category": "�ೡ����Ŀ",
+      "path": ".harness/benchmark-sources/godot-demo-projects/loading/scene_changer",
+      "checks": [
+        {
+          "tool": "get_project_info",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/loading/scene_changer"
+          }
+        },
+        {
+          "tool": "get_scene_tree",
+          "args": {
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/loading/scene_changer"
+          }
+        },
+        {
+          "tool": "search_project",
+          "args": {
+            "query": "change_scene",
+            "projectPath": ".harness/benchmark-sources/godot-demo-projects/loading/scene_changer"
+          }
+        }
+      ]
+    }
+  ]
+}
