@@ -1,0 +1,203 @@
+{
+  "generatedAt": "2026-09-13T10:33:20.740Z",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "source": {
+    "repository": "https://github.com/godotengine/godot-demo-projects",
+    "revision": "a3b5c113112f77291d5f3d1360f33a882fdc52f7",
+    "license": "MIT"
+  },
+  "method": "Caller-supplied exact repair candidates; one deliberately seeded defect per category; upstream games, not newly authored games. No claim of arbitrary patch synthesis.",
+  "output": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z",
+  "aggregate": {
+    "completed": 7,
+    "totalPlanned": 7,
+    "eligible": 7,
+    "verifiedRepairs": 7,
+    "repairRate": 1,
+    "healthyFalseAlarms": 0,
+    "healthySamples": 7,
+    "falsePositiveRate": 0,
+    "missedDefects": 0,
+    "wrongRepairsAccepted": 0,
+    "averageRepairDurationMs": 4059.285714285714,
+    "totalRepairRetries": 7,
+    "responseModeEstimatedSavingsPercent": 75.12993149066855,
+    "pairedGranularSamples": 7,
+    "requestReductionPercent": 95.39473684210526,
+    "pairedEstimatedPayloadReductionPercent": 94.61410524080824,
+    "tokenSavingsPercent": null,
+    "universalRepairSuccessRate": null
+  },
+  "metricLimits": [
+    "n=1 seeded defect per category; no population inference",
+    "False positives are healthy-oracle failures, not precision of a general bug detector",
+    "Token estimates are serialized JSON characters / 4, not billable usage",
+    "No human/LLM debugging-time baseline; duration is automated wall time",
+    "Granular comparison is a scripted equivalent with known fixes, not human/LLM debugging. Counts include requests and response payloads but exclude tool discovery, prompts, reasoning and billing.",
+    "Oracle gates runtime diagnostics; exit-phase diagnostics are retained separately and do not determine repair success"
+  ],
+  "results": [
+    {
+      "name": "platformer",
+      "category": "Platformer",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 4083,
+      "granularDurationMs": 3882,
+      "granularRequests": 22,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 9603,
+      "devLoopEstimatedTokens": 647,
+      "screenshotSize": [
+        1600,
+        960
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\evidence\\repaired\\dev-loop-313917ba-8da7-4629-ae24-24cebb35045d\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "rpg",
+      "category": "Top-down RPG",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 4902,
+      "granularDurationMs": 4719,
+      "granularRequests": 22,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 7682,
+      "devLoopEstimatedTokens": 662,
+      "screenshotSize": [
+        1280,
+        720
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\evidence\\repaired\\dev-loop-ea46748f-b522-4652-a3e9-d0cd6cc9b9c4\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "action",
+      "category": "2D action",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 4188,
+      "granularDurationMs": 3905,
+      "granularRequests": 24,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 10076,
+      "devLoopEstimatedTokens": 647,
+      "screenshotSize": [
+        480,
+        720
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\evidence\\repaired\\dev-loop-7cc5f88f-19cf-40fe-9eab-7bb042e2663f\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "ui",
+      "category": "UI intensive",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 3341,
+      "granularDurationMs": 3335,
+      "granularRequests": 18,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 25975,
+      "devLoopEstimatedTokens": 620,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\evidence\\repaired\\dev-loop-1fe05d5b-5f4e-45ef-86af-08b7ed29dd6b\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "navigation",
+      "category": "Navigation",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 4117,
+      "granularDurationMs": 3855,
+      "granularRequests": 24,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 12585,
+      "devLoopEstimatedTokens": 703,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\evidence\\repaired\\dev-loop-03510a7f-e0f8-4afe-ac2a-29c3871973a9\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "audio",
+      "category": "Audio",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 3728,
+      "granularDurationMs": 3066,
+      "granularRequests": 20,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 11229,
+      "devLoopEstimatedTokens": 637,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\evidence\\repaired\\dev-loop-068962a5-4287-4675-bea3-b5f63a364da3\\attempt-1\\screenshot.png"
+    },
+    {
+      "name": "multi-scene",
+      "category": "Multi-scene",
+      "healthy": "PASS",
+      "broken": "FAIL",
+      "repaired": "PASS",
+      "reverified": "PASS",
+      "wrongRepair": "FAIL",
+      "repairDurationMs": 4056,
+      "granularDurationMs": 3991,
+      "granularRequests": 22,
+      "devLoopRequests": 1,
+      "granularEstimatedTokens": 7627,
+      "devLoopEstimatedTokens": 650,
+      "screenshotSize": [
+        1152,
+        648
+      ],
+      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
+      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\evidence\\repaired\\dev-loop-01b20c21-b7ef-4aa5-9984-db5db3c19be9\\attempt-1\\screenshot.png"
+    }
+  ],
+  "codeHashes": {
+    "godot-plugin/runtime_bridge.gd": "5e43841a5c2a14cf0eb43235700e5e6f5aa4565eced5992ae14f69eb141a144f",
+    "src/development-loop.ts": "1214a578d7f9ff3d1a4ba2fa6a452f8107b0c4e6b317c1df0aa7d1b95c1f67a7",
+    "src/mcp/tool-registry.ts": "a9db92e72b75e7764e08cf8043fb020106211d851f25d10375366d78109e4b18",
+    "src/mcp/tool-context.ts": "efd995cb052aa4694ed3d73233a51ee59fbaec2f9ccacc185e1f76ba62b14fb8",
+    "src/godot-development.ts": "8939fa41dcccfd3f78b22e4a2eb75fc821202a7cd7b0f2341bdb069708a81768",
+    "scripts/repair-benchmark.mjs": "ddbb300d91ea5811ad99998e2e378115936fc86331201a9ade75e4b0f605110f",
+    "package-lock.json": "13e4f155d03217eb6699dddb97880f00ae4a50c1cba040848e3529822e837a9c"
+  },
+  "reportSha256": "36698654c9c121e54ec86088e41f34c1a31bfc297423ed5001451fe219b43f95",
+  "notes": [
+    "Final oracle calibrated on these same projects; not a held-out evaluation.",
+    "Runtime-only diagnostic scope; all shutdown diagnostics retained.",
+    "Games originate from upstream Godot demos; MCP repaired seeded mutations, not authored complete games."
+  ]
+}
