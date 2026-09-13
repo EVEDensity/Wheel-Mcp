@@ -598,3 +598,163 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
             keycode: args.keycode,
             godotPath: args.godotPath || process.env.GODOT_PATH,
           }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'capture_runtime_screenshot',
+    'Capture a runtime PNG.',
+    { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          captureRuntimeScreenshot({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'open_runtime_bridge',
+    'Open a persistent Godot runtime bridge session.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      sessionId: z.string().min(1).optional(),
+      headless: z.boolean().optional(),
+      timeoutMs,
+    },
+    async ({ godotPath, projectPath, bridgePath, evidenceDir, sessionId, headless, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          openRuntimeBridge({
+            godotPath: godotPath || process.env.GODOT_PATH,
+            projectPath,
+            bridgePath,
+            evidenceDir,
+            runId: sessionId,
+            headless,
+            timeout: context,
+          }),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'call_runtime_bridge',
+    'Send a JSON-RPC request to a persistent Godot runtime bridge session.',
+    {
+      sessionId: z.string().min(1),
+      method: runtimeMethod,
+      params: z.record(z.string(), z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, method, params, timeoutMs }, extra) =>
+      invoke((context) => callRuntimeBridge(sessionId, method, params || {}, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'stop_runtime_bridge',
+    'Stop a persistent Godot runtime bridge session.',
+    { sessionId: z.string().min(1), timeoutMs },
+    async ({ sessionId, timeoutMs }, extra) =>
+      invoke((context) => stopRuntimeBridge(sessionId, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'wait_for_event',
+    'Wait for one event from a persistent runtime bridge.',
+    { sessionId: z.string().min(1), event: z.string().min(1), timeoutMs },
+    async ({ sessionId, event, timeoutMs }, extra) =>
+      invoke(
+        async (context) => {
+          const bridge = await import('./persistent-runtime-bridge.js').then((m) => m.getRuntimeBridge(sessionId));
+          return { event: await bridge.waitForEvent(event, context) };
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'reload_scene',
+    'Reload the active scene in a persistent runtime bridge.',
+    { sessionId: z.string().min(1), scenePath: z.string().optional(), timeoutMs },
+    async ({ sessionId, scenePath, timeoutMs }, extra) =>
+      invoke(
+        (context) => callRuntimeBridge(sessionId, 'reload_scene', { scenePath }, context),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'read_project_file',
+    'Read a text file inside a Godot project.',
+    { projectPath, filePath: z.string(), timeoutMs },
+    async ({ projectPath, filePath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readProjectFile(projectPath, filePath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'write_project_file',
+    'Write a text file inside a Godot project.',
+    { projectPath, filePath: z.string(), content: z.string(), timeoutMs },
+    async ({ projectPath, filePath, content, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return writeProjectFile(projectPath, filePath, content);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'search_project',
+    'Search project text files and return compact matching lines.',
+    {
+      projectPath,
+      query: z.string().min(1),
+      glob: z.string().optional(),
+      maxResults: z.number().int().positive().max(1000).optional(),
+      timeoutMs,
+    },
+    async ({ projectPath, query, glob, maxResults, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return searchProject(projectPath, query, { glob, maxResults });
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'get_script_errors',
+    'Read parser/script diagnostics from evidence.',
+    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
+    async ({ evidenceDir, projectPath, timeoutMs }, extra) =>
+      invoke(
+        (context) => {
+          context.throwIfCancelled();
+          return readGodotDiagnostics(evidenceDir, projectPath);
+        },
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'get_runtime_errors',
+    'Read runtime diagnostics from evidence.',
+    { evidenceDir: z.string(), projectPath: z.string().optional(), timeoutMs },
