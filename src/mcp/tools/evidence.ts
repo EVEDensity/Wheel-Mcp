@@ -21,3 +21,15 @@ export function registerEvidenceTools(context: ToolRegistrationContext): void {
       invoke(() => compareScreenshots(a.firstPath, a.secondPath, a), a.timeoutMs, e.signal, a.responseMode),
   );
 
+  server.tool(
+    'get_recent_evidence',
+    'Read recent evidence artifacts.',
+    {
+      evidenceDir: z.string(),
+      limit: z.number().int().positive().max(100).optional(),
+      responseMode: responseMode,
+      timeoutMs: timeoutMs,
+    },
+    async (a: any, e: any) => invoke(() => getRecentEvidence(a.evidenceDir), a.timeoutMs, e.signal, a.responseMode),
+  );
+}
