@@ -1,59 +1,84 @@
-import { z } from 'zod';
-import type { ToolRegistrationContext } from '../tool-registry.js';
-export function registerRuntimeTools({ server, functions, schemas, invoke }: ToolRegistrationContext): void {
-  const responseMode = schemas.responseMode;
-  const timeoutMs = schemas.timeoutMs;
+﻿import { z } from 'zod';
+import {
+  captureRuntimeScreenshot,
+  getProcessStatus,
+  injectRuntimeInput,
+  launchProject,
+  mutateRuntimeProperty,
+  queryRuntimeProperty,
+  queryRuntimeSceneTree,
+  stopProcess,
+  cancelProcess,
+  readRuntimeEventsSince,
+  subscribeRuntimeEvents,
+  streamEventSubscription,
+  createEventSubscription,
+  pollEventSubscription,
+  cancelEventSubscription,
+  acknowledgeEventSubscription,
+  pauseEventSubscription,
+  closeEventSubscription,
+  listEventSubscriptions,
+} from '../../godot-runtime.js';
+import { runRegistry } from '../../run-registry.js';
+import { DEFAULT_STOP_TIMEOUT_MS } from '../../timeouts.js';
+import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from '../../persistent-runtime-bridge.js';
+import { keycodeSchema, pidSchema, pressedSchema } from '../../input-schemas.js';
+import type { ToolRegistrationContext } from '../tool-context.js';
+export function registerRuntimeTools(context: ToolRegistrationContext): void {
+  const { server, invoke, schemas } = context;
   const sessionId = z.string().min(1);
+  const {
+    projectPath,
+    godotPath,
+    bridgePath,
+    evidenceDir,
+    timeoutMs,
+    responseMode,
+    cursor,
+    eventNames,
+    eventPayload,
+    runtimeMethod,
+  } = schemas;
   server.tool(
-    'get_game_state',
-    'Read selected runtime properties.',
-    { sessionId, nodePath: z.string().optional(), properties: z.array(z.string()).optional(), responseMode, timeoutMs },
-    async (a: any, e: any) =>
-      invoke(
-        (c: any) =>
-          functions.callRuntimeBridge(a.sessionId, 'get_game_state', {
-            nodePath: a.nodePath,
-            properties: a.properties,
-          }),
-        a.timeoutMs,
-        e.signal,
-        a.responseMode,
-      ),
-  );
-  server.tool(
-    'get_specialized_state',
-    'Read specialized runtime state.',
-    { sessionId, nodePath: z.string().optional(), responseMode, timeoutMs },
-    async (a: any, e: any) =>
-      invoke(
-        (c: any) => functions.callRuntimeBridge(a.sessionId, 'get_specialized_state', { nodePath: a.nodePath }),
-        a.timeoutMs,
-        e.signal,
-        a.responseMode,
-      ),
-  );
-  server.tool(
-    'query_runtime_collisions',
-    'Query runtime collisions and history.',
+    'launch_project',
+    'Launch a Godot project.',
     {
-      sessionId,
-      nodePath: z.string(),
-      historyLimit: z.number().int().min(1).max(256).optional(),
-      refresh: z.boolean().optional(),
-      responseMode,
+      godotPath,
+      projectPath,
+      evidenceDir,
+      headless: z.boolean().optional(),
+      extraArgs: z.array(z.string()).optional(),
       timeoutMs,
     },
-    async (a: any, e: any) =>
+    async (args, extra) =>
       invoke(
-        (c: any) =>
-          functions.callRuntimeBridge(a.sessionId, 'query_collisions', {
-            nodePath: a.nodePath,
-            historyLimit: a.historyLimit,
-            refresh: a.refresh,
-          }),
-        a.timeoutMs,
-        e.signal,
-        a.responseMode,
+        async (context) =>
+          (
+            await launchProject({
+              ...args,
+              timeout: context,
+              projectPath: args.projectPath,
+              godotPath: args.godotPath || process.env.GODOT_PATH,
+            })
+          ).metadata,
+        args.timeoutMs,
+        extra.signal,
       ),
   );
-}
+
+  server.tool('stop_project', 'Stop a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
+    invoke(
+      (context) => stopProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
+      timeoutMs,
+      extra.signal,
+    ),
+  );
+
+  server.tool('cancel_project', 'Cancel a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
+    invoke(
+      (context) => cancelProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
+      timeoutMs,
+      extra.signal,
+    ),
+  );
