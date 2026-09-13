@@ -36,3 +36,52 @@ export function registerScenarioTools(context: ToolRegistrationContext): void {
   );
 
   server.tool(
+    'execute_scenario',
+    'Execute a declarative Godot scenario with shared timeout and evidence semantics.',
+    {
+      scenario: scenarioSchema,
+      scenarioPath: z.string().optional(),
+      godotPath,
+      bridgePath,
+      evidenceDir,
+      defaultStepTimeoutMs: z.number().int().positive().optional(),
+      globalTimeoutMs: z.number().int().positive().optional(),
+      retries: z.number().int().nonnegative().optional(),
+      onFailure: z.enum(['stop', 'continue']).optional(),
+      timeoutMs,
+    },
+    async (
+      {
+        scenario,
+        scenarioPath,
+        godotPath,
+        bridgePath,
+        evidenceDir,
+        defaultStepTimeoutMs,
+        globalTimeoutMs,
+        retries,
+        onFailure,
+        timeoutMs,
+      },
+      extra,
+    ) =>
+      invoke(
+        (context) =>
+          executeScenario({
+            scenario,
+            scenarioPath,
+            godotPath: godotPath || process.env.GODOT_PATH,
+            bridgePath,
+            evidenceDir,
+            defaultStepTimeoutMs,
+            globalTimeoutMs,
+            retries,
+            onFailure,
+            signal: context.signal,
+          }),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
