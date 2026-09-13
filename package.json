@@ -24,7 +24,8 @@
     "security:check": "npm run audit:dependencies && npm run sbom",
     "matrix:generate": "node scripts/generate-matrix.mjs",
     "mcp:http": "node build/src/mcp-http-server.js",
-    "benchmark": "npm run build && node scripts/benchmark.mjs"
+    "benchmark": "npm run build && node scripts/benchmark.mjs",
+    "benchmark:repair": "npm run build && node scripts/repair-benchmark.mjs"
   },
   "engines": {
     "node": ">=20.19.0"
