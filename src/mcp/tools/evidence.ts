@@ -1,6 +1,9 @@
-import { z } from 'zod';
-import type { ToolRegistrationContext } from '../tool-registry.js';
-export function registerEvidenceTools({ server, invoke, schemas, functions }: ToolRegistrationContext): void {
+﻿import { z } from 'zod';
+import { compareScreenshots, getRecentEvidence } from '../../godot-development.js';
+import type { ToolRegistrationContext } from '../tool-context.js';
+export function registerEvidenceTools(context: ToolRegistrationContext): void {
+  const { server, invoke, schemas } = context;
+  const { evidenceDir, timeoutMs, responseMode } = schemas;
   server.tool(
     'compare_screenshots',
     'Compare two PNG screenshots with RGBA pixel diff.',
@@ -11,22 +14,10 @@ export function registerEvidenceTools({ server, invoke, schemas, functions }: To
       ignoreAlpha: z.boolean().optional(),
       writeDiff: z.boolean().optional(),
       diffPath: z.string().optional(),
-      responseMode: schemas.responseMode,
-      timeoutMs: schemas.timeoutMs,
+      responseMode: responseMode,
+      timeoutMs: timeoutMs,
     },
     async (a: any, e: any) =>
-      invoke(() => functions.compareScreenshots(a.firstPath, a.secondPath, a), a.timeoutMs, e.signal, a.responseMode),
+      invoke(() => compareScreenshots(a.firstPath, a.secondPath, a), a.timeoutMs, e.signal, a.responseMode),
   );
-  server.tool(
-    'get_recent_evidence',
-    'Read recent evidence artifacts.',
-    {
-      evidenceDir: z.string(),
-      limit: z.number().int().positive().max(100).optional(),
-      responseMode: schemas.responseMode,
-      timeoutMs: schemas.timeoutMs,
-    },
-    async (a: any, e: any) =>
-      invoke(() => functions.getRecentEvidence(a.evidenceDir, a.limit), a.timeoutMs, e.signal, a.responseMode),
-  );
-}
+
