@@ -45,6 +45,7 @@ import { gitCheckpoint, gitRecovery } from '../git-recovery.js';
 import { classifyError } from '../error-schema.js';
 import { createTimeoutContext, TimeoutContext } from '../timeout.js';
 import type { McpFailureResult, McpToolResult } from '../tool-types.js';
+import { createUnifiedResponse } from '../response-types.js';
 import { serverCapabilities, serverInfo } from '../server-info.js';
 import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from '../timeouts.js';
 import { executeScenario, loadScenario } from '../scenario-executor.js';
@@ -55,6 +56,7 @@ import {
   stopRuntimeBridge,
   getRuntimeBridge,
 } from '../persistent-runtime-bridge.js';
+import { analyzeScriptFile } from '../script-analysis.js';
 import { keycodeSchema, pidSchema, pressedSchema, timeoutMsSchema } from '../input-schemas.js';
 import {
   readSceneFile,
@@ -80,7 +82,19 @@ function registerLegacyTools({ server }: ToolRegistrationContext): void {
   const godotPath = z.string().optional();
   const bridgePath = z.string();
   const evidenceDir = z.string().optional();
-  const result = (value: unknown): McpToolResult => ({ content: [{ type: 'text', text: JSON.stringify(value) }] });
+  const result = (value: unknown): McpToolResult => {
+    const normalized =
+      value && typeof value === 'object' && !Array.isArray(value)
+        ? createUnifiedResponse(value as Record<string, unknown>)
+        : value;
+    return {
+      content: [{ type: 'text', text: JSON.stringify(normalized) }],
+      structuredContent:
+        typeof normalized === 'object' && normalized !== null && !Array.isArray(normalized)
+          ? (normalized as Record<string, unknown>)
+          : undefined,
+    };
+  };
   const failure = (error: unknown): McpFailureResult => ({
     isError: true,
     content: [{ type: 'text' as const, text: JSON.stringify(classifyError(error)) }],
@@ -809,6 +823,35 @@ function registerLegacyTools({ server }: ToolRegistrationContext): void {
   );
 
   server.tool(
+    'dev_loop',
+    'Run a high-level development validation loop.',
+    {
+      scenario: scenarioSchema,
+      scenarioPath: z.string().optional(),
+      godotPath,
+      bridgePath,
+      evidenceDir,
+      retries: z.number().int().nonnegative().optional(),
+      defaultStepTimeoutMs: z.number().int().positive().optional(),
+      globalTimeoutMs: z.number().int().positive().optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          executeScenario({
+            ...args,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+            globalTimeoutMs: args.globalTimeoutMs || args.timeoutMs,
+            signal: context.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
     'run_test_scene',
     'Run a Godot test scene through the scenario executor.',
     {
@@ -887,6 +930,7 @@ function registerLegacyTools({ server }: ToolRegistrationContext): void {
       readGodotDiagnostics,
       compareScreenshots,
       getRecentEvidence,
+      analyzeScriptFile,
     },
   };
   registerProjectTools(domainContext);
