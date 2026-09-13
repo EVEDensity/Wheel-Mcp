@@ -418,3 +418,183 @@ export function registerAllTools({ server }: ToolRegistrationContext): void {
         context.throwIfCancelled();
         return { source: 'REAL', runs: runRegistry.active() };
       },
+      timeoutMs,
+      extra.signal,
+    ),
+  );
+  server.tool(
+    'stop_run',
+    'Stop an isolated run by its run id.',
+    { runId: z.string().min(1), timeoutMs },
+    async ({ runId, timeoutMs }, extra) =>
+      invoke((context) => runRegistry.stop(runId, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'cancel_run',
+    'Cancel an isolated run by its run id.',
+    { runId: z.string().min(1), timeoutMs },
+    async ({ runId, timeoutMs }, extra) =>
+      invoke((context) => runRegistry.cancel(runId, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'reclaim_orphan_runs',
+    'Reclaim orphaned processes recorded by the run registry.',
+    { timeoutMs },
+    async ({ timeoutMs }, extra) => invoke((context) => runRegistry.reclaimOrphans(context), timeoutMs, extra.signal),
+  );
+  server.tool('list_runs', 'List isolated runs and detect orphans.', { timeoutMs }, async ({ timeoutMs }, extra) =>
+    invoke(
+      async (context) => {
+        context.throwIfCancelled();
+        return { source: 'REAL', runs: runRegistry.list() };
+      },
+      timeoutMs,
+      extra.signal,
+    ),
+  );
+  server.tool(
+    'get_runtime_scene_tree',
+    'Query runtime scene tree.',
+    { godotPath, projectPath, bridgePath, evidenceDir, timeoutMs },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          queryRuntimeSceneTree({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'get_runtime_property',
+    'Read a runtime property.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      nodePath: z.string().optional(),
+      property: z.string(),
+      timeoutMs,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          queryRuntimeProperty({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            property: args.property,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'set_runtime_property',
+    'Write and read back a runtime property.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      nodePath: z.string().optional(),
+      property: z.string(),
+      value: z.unknown(),
+      timeoutMs,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          mutateRuntimeProperty({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            property: args.property,
+            value: args.value,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
+        args.timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'create_runtime_node',
+    'Create a node in the running Godot scene.',
+    {
+      sessionId: z.string().min(1),
+      parentPath: z.string().optional(),
+      type: z.string().min(1),
+      name: z.string().optional(),
+      properties: z.record(z.string(), z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, parentPath, type, name, properties, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          callRuntimeBridge(
+            sessionId,
+            'create_node',
+            { parentPath: parentPath ?? '.', type, name, properties: properties ?? {} },
+            context,
+          ),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'delete_runtime_node',
+    'Delete a node from the running Godot scene.',
+    { sessionId: z.string().min(1), nodePath: z.string().min(1), timeoutMs },
+    async ({ sessionId, nodePath, timeoutMs }, extra) =>
+      invoke((context) => callRuntimeBridge(sessionId, 'delete_node', { nodePath }, context), timeoutMs, extra.signal),
+  );
+  server.tool(
+    'call_runtime_method',
+    'Call a script or engine method on a running Godot node.',
+    {
+      sessionId: z.string().min(1),
+      nodePath: z.string().optional(),
+      method: z.string().min(1),
+      args: z.array(z.unknown()).optional(),
+      timeoutMs,
+    },
+    async ({ sessionId, nodePath, method, args, timeoutMs }, extra) =>
+      invoke(
+        (context) =>
+          callRuntimeBridge(sessionId, 'call_method', { nodePath: nodePath ?? '.', method, args: args ?? [] }, context),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+  server.tool(
+    'inject_runtime_input',
+    'Inject a runtime key event.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      keycode: keycodeSchema,
+      pressed: pressedSchema,
+      timeoutMs,
+    },
+    async (args, extra) =>
+      invoke(
+        (context) =>
+          injectRuntimeInput({
+            ...args,
+            timeout: context,
+            projectPath: args.projectPath,
+            bridgePath: args.bridgePath,
+            keycode: args.keycode,
+            godotPath: args.godotPath || process.env.GODOT_PATH,
+          }),
