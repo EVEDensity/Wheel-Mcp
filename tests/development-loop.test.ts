@@ -194,3 +194,64 @@ test(
   },
 );
 
+test(
+  'in-flight cancellation and timeout stop Godot, roll back edits and release the project lease',
+  { skip: !process.env.GODOT_PATH, timeout: 45000 },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'loop-inflight-'));
+    await writeFile(
+      path.join(root, 'project.godot'),
+      '[application]\nconfig/name="Cancel test"\nrun/main_scene="res://main.tscn"\n',
+    );
+    await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
+    await writeFile(path.join(root, 'code.gd'), 'before');
+    const input = {
+      projectPath: root,
+      godotPath: process.env.GODOT_PATH,
+      bridgePath: path.resolve('godot-plugin/runtime_bridge.gd'),
+      evidenceDir: path.join(root, 'evidence'),
+      waitEvent: 'never-emitted',
+      checks: [{ id: 'tree', method: 'get_scene_tree' as const, op: 'exists' as const }],
+      edits: [{ path: 'code.gd', find: 'before', replace: 'after' }],
+      timeoutMs: 15000,
+    };
+    const context = createTimeoutContext(20000);
+    try {
+      const pending = executeDevelopmentLoop(input, context);
+      let pid: number | undefined;
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline) {
+        const dirs = await readdir(input.evidenceDir).catch(() => []);
+        for (const dir of dirs) {
+          try {
+            pid = JSON.parse(
+              await readFile(path.join(input.evidenceDir, dir, 'attempt-0', 'persistent.json'), 'utf8'),
+            ).pid;
+          } catch {
+            /* The manifest is written asynchronously after connection. */
+          }
+        }
+        if (pid) break;
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      assert.ok(pid, 'Godot must actually start before cancellation');
+      await assert.rejects(executeDevelopmentLoop(input), /already owns/);
+      context.cancel();
+      const cancelled = await pending;
+      assert.equal(cancelled.status, 'FAIL');
+      assert.equal(cancelled.cleanup, true);
+      assert.equal(cancelled.rolledBack, true);
+      assert.equal(cancelled.metrics.retryCount, 0);
+      assert.equal(await readFile(path.join(root, 'code.gd'), 'utf8'), 'before');
+      assert.throws(() => process.kill(pid!, 0));
+      const timed = await executeDevelopmentLoop({ ...input, timeoutMs: 1500 });
+      assert.equal(timed.status, 'FAIL');
+      assert.equal(timed.cleanup, true);
+      assert.equal(timed.rolledBack, true);
+      assert.equal(await readFile(path.join(root, 'code.gd'), 'utf8'), 'before');
+    } finally {
+      context.cancel();
+      context.dispose();
+    }
+  },
+);
