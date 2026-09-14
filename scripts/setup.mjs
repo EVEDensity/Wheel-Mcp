@@ -4,16 +4,18 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { discoverGodotPath, parseEnvFile, verifyGodotExecutable } from './lib/godot-discovery.mjs';
+import { listMcpHosts, SERVER_NAME } from './lib/mcp-hosts.mjs';
 import { resolveProjectRoot } from './lib/project-root.mjs';
 
 const args = new Set(process.argv.slice(2));
 const postinstall = args.has('--postinstall');
 const buildOnly = args.has('--build-only');
 const force = args.has('--force');
+const includeGlobal = args.has('--global');
+const pretty = args.has('--pretty');
 const projectRoot = await resolveProjectRoot(import.meta.url);
 const envPath = path.join(projectRoot, '.env');
-const cursorConfigPath = path.join(projectRoot, '.cursor', 'mcp.json');
-const vscodeConfigPath = path.join(projectRoot, '.vscode', 'mcp.json');
+const LEGACY_SERVER_NAMES = ['godot-harness', 'godot-harness-mcp', 'godot-game-harness-mcp'];
 
 function toPosix(value) {
   return value.split(path.sep).join('/');
@@ -61,44 +63,31 @@ function runBuild() {
   return true;
 }
 
-function buildMcpServerEntry(mode) {
-  const launcher = '${workspaceFolder}/scripts/run-mcp.mjs';
-  const entry =
-    mode === 'vscode'
-      ? {
-          type: 'stdio',
-          command: 'node',
-          args: [launcher],
-        }
-      : {
-          command: 'node',
-          args: [launcher],
-        };
-  return entry;
-}
-
-const LEGACY_SERVER_NAMES = ['godot-harness', 'godot-harness-mcp', 'godot-game-harness-mcp'];
-
-async function mergeHostConfig(filePath, rootKey, serverName, entry, options = {}) {
-  const { createIfMissing = true } = options;
-  if (!(await fileExists(filePath)) && !createIfMissing) return 'skipped';
+async function mergeHostConfig(host) {
+  const { filePath, rootKey, entry } = host;
+  if (host.scope === 'global' && !includeGlobal) {
+    return { id: host.id, status: 'skipped', reason: 'pass --global to configure this host' };
+  }
   let config = {};
   if (await fileExists(filePath)) {
     try {
       config = await readJson(filePath);
     } catch {
       warn(`wheel-mcp: unable to parse ${filePath}; leaving file unchanged.`);
-      return 'invalid';
+      return { id: host.id, status: 'invalid', filePath: toPosix(filePath) };
     }
   }
   if (!config[rootKey]) config[rootKey] = {};
-  if (config[rootKey][serverName] && !force) return 'existing';
-  for (const legacyName of LEGACY_SERVER_NAMES) {
-    if (legacyName !== serverName) delete config[rootKey][legacyName];
+  const shouldForce = force || (postinstall && host.scope === 'project');
+  if (config[rootKey][SERVER_NAME] && !shouldForce) {
+    return { id: host.id, status: 'existing', filePath: toPosix(filePath) };
   }
-  config[rootKey][serverName] = entry;
+  for (const legacyName of LEGACY_SERVER_NAMES) {
+    if (legacyName !== SERVER_NAME) delete config[rootKey][legacyName];
+  }
+  config[rootKey][SERVER_NAME] = entry;
   await writeJson(filePath, config);
-  return 'written';
+  return { id: host.id, status: 'written', filePath: toPosix(filePath), label: host.label, note: host.note };
 }
 
 async function ensureEnvFile(godotPath) {
@@ -133,6 +122,30 @@ async function resolveGodotForSetup() {
   return undefined;
 }
 
+function platformLabel() {
+  if (process.platform === 'win32') return 'Windows';
+  if (process.platform === 'darwin') return 'macOS';
+  return 'Linux';
+}
+
+function restartHint(hostId) {
+  switch (hostId) {
+    case 'cursor':
+    case 'cursor-global':
+      return 'Restart Cursor or run “MCP: List Servers” and reload wheel-mcp.';
+    case 'vscode':
+      return 'Restart VS Code or reload the MCP server list in Copilot chat.';
+    case 'claude-code':
+      return 'Restart Claude Code in this project folder.';
+    case 'claude-desktop':
+      return 'Fully quit and reopen Claude Desktop.';
+    case 'windsurf':
+      return 'Restart Windsurf.';
+    default:
+      return 'Restart your MCP client.';
+  }
+}
+
 if (buildOnly || !args.has('--skip-build')) {
   log('Building wheel-mcp...');
   if (!runBuild()) process.exit(1);
@@ -142,58 +155,73 @@ if (buildOnly) process.exit(0);
 
 const godotPath = await resolveGodotForSetup();
 const envStatus = await ensureEnvFile(godotPath);
-const cursorStatus = await mergeHostConfig(
-  cursorConfigPath,
-  'mcpServers',
-  'wheel-mcp',
-  buildMcpServerEntry('cursor'),
-);
-const vscodeStatus = await mergeHostConfig(
-  vscodeConfigPath,
-  'servers',
-  'wheel-mcp',
-  buildMcpServerEntry('vscode'),
-  { createIfMissing: (await fileExists(path.join(projectRoot, '.vscode'))) || force },
-);
+const hosts = listMcpHosts(projectRoot, { includeGlobal });
+const hostResults = [];
+for (const host of hosts) {
+  if (!host.autoConfigure) continue;
+  hostResults.push(await mergeHostConfig(host));
+}
 
 if (postinstall) {
-  if (godotPath) {
-    log(`wheel-mcp: detected Godot at ${godotPath}`);
-  } else {
-    warn('wheel-mcp: GODOT_PATH not found. Run `npm run setup` after installing Godot 4.7.2.');
+  if (godotPath) log(`wheel-mcp: detected Godot at ${godotPath}`);
+  else warn('wheel-mcp: GODOT_PATH not found. Run `npm run go` after installing Godot 4.7.2.');
+  for (const result of hostResults.filter((entry) => entry.status === 'written')) {
+    log(`wheel-mcp: wrote ${result.filePath}`);
   }
-  if (cursorStatus === 'written') log('wheel-mcp: wrote .cursor/mcp.json');
   process.exit(0);
 }
 
-console.log(
-  JSON.stringify(
-    {
-      schema_version: '0.1',
-      projectRoot: toPosix(projectRoot),
-      build: 'ok',
-      godotPath: godotPath ? toPosix(godotPath) : null,
-      env: envStatus,
-      cursorMcp: cursorStatus,
-      vscodeMcp: vscodeStatus,
-      nextSteps: [
-        'Restart Cursor (or reload MCP servers) so it picks up .cursor/mcp.json.',
-        'In Cursor Settings → MCP, confirm `wheel-mcp` is enabled.',
-        'Call MCP tool `get_godot_version` to verify the connection.',
-      ],
-    },
-    null,
-    2,
-  ),
-);
+const configured = hostResults.filter((entry) => entry.status === 'written' || entry.status === 'existing');
+const skippedGlobal = hostResults.filter((entry) => entry.status === 'skipped');
 
-if (!godotPath) {
-  warn(
-    [
-      '',
-      'Godot was not auto-detected.',
-      'Create .env with GODOT_PATH=... then rerun `npm run setup -- --force`.',
-    ].join('\n'),
+if (pretty) {
+  console.log(`平台: ${platformLabel()}`);
+  console.log(`项目: ${toPosix(projectRoot)}`);
+  console.log('');
+  for (const result of hostResults) {
+    if (result.status === 'skipped') continue;
+    const mark = result.status === 'written' ? '✓' : '•';
+    console.log(`${mark} ${result.label ?? result.id}`);
+    console.log(`  ${result.filePath}`);
+  }
+  console.log('');
+  if (godotPath) {
+    console.log(`✓ Godot: ${toPosix(godotPath)}`);
+  } else {
+    console.log('! 未检测到 Godot（MCP 仍可连接，运行游戏类工具前请先配置 .env）');
+    console.log('  示例: GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe');
+  }
+  console.log('');
+  console.log('下一步:');
+  console.log('  1. 用 Cursor / VS Code 打开此文件夹');
+  console.log('  2. 在 MCP 面板启用 wheel-mcp 并重载');
+  console.log('  3. 调用 get_godot_version 验证');
+  if (skippedGlobal.length > 0) {
+    console.log('  4. Claude Desktop / Windsurf 用户请运行: npm run go:global');
+  }
+} else {
+  console.log(
+    JSON.stringify(
+      {
+        schema_version: '0.1',
+        name: SERVER_NAME,
+        platform: platformLabel(),
+        projectRoot: toPosix(projectRoot),
+        build: 'ok',
+        godotPath: godotPath ? toPosix(godotPath) : null,
+        env: envStatus,
+        hosts: hostResults,
+        nextSteps: [
+          'Open this repository folder in your IDE.',
+          ...configured.map((entry) => `${entry.label ?? entry.id}: ${restartHint(entry.id)}`),
+          'Call MCP tool `get_godot_version` to verify the connection.',
+          ...(skippedGlobal.length > 0 ? ['Run `npm run go:global` to also configure Claude Desktop / Windsurf / global Cursor.'] : []),
+        ],
+      },
+      null,
+      2,
+    ),
   );
-  process.exit(1);
 }
+
+if (!godotPath) process.exit(0);
