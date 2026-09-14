@@ -12,7 +12,7 @@
 它把项目文件、真实运行时状态、断言、截图、诊断及修复验证组合成开发工作流。
 它不是一键生成完整游戏的模型，也不是 Godot 官方产品或模型供应商。
 
-> 当前版本：`0.1.0-preview.1`，仍为 preview。
+> 当前版本：`0.1.0-preview.2`，仍为 preview。
 > 首个公开运行范围限定为 **Windows、Godot 4.7.2**。
 > 本机验证使用 Node `24.19.0`；包声明为 `>=20.19.0`，还需满足已安装开发工具的引擎要求。
 > Linux/macOS 的真实 Godot 运行结果未验证。
@@ -402,12 +402,11 @@ npm run format:check
 npm run lint
 $env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
 $env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
-npm test
-npm run test:godot-ci
-npm run matrix:generate
-npm run release:check
-npm run audit:dependencies
-npm run sbom > sbom.json
+npm run release:gate
+```
+
+也可分步执行：`npm test` → `npm run test:godot-ci` → `npm run matrix:generate`
+→ `npm run release:check` → `npm run audit:dependencies` → `npm run sbom > sbom.json`
 ```
 
 GitHub Actions 在 `godot-smoke.yml` 跑 Godot 子集（Windows / macOS / Linux），在 `release-gate.yml` 跑完整 Windows 干净机器门禁。

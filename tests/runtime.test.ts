@@ -8,7 +8,9 @@ test('resolveGodotPath requires an explicit executable', () => {
 
 test('resolveGodotPath normalizes an executable path', () => {
   assert.equal(
-    resolveGodotPath('D:/tools/Godot_v4.7.2-stable_win64_console.exe').endsWith('Godot_v4.7.2-stable_win64_console.exe'),
+    resolveGodotPath('D:/tools/Godot_v4.7.2-stable_win64_console.exe').endsWith(
+      'Godot_v4.7.2-stable_win64_console.exe',
+    ),
     true,
   );
 });

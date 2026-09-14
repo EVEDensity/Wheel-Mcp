@@ -1,6 +1,6 @@
 {
   "name": "wheel-mcp",
-  "version": "0.1.0-preview.1",
+  "version": "0.1.0-preview.2",
   "private": false,
   "type": "module",
   "description": "Wheel-mcp: Godot runtime MCP server and CLI for AI-assisted game development.",
@@ -27,6 +27,7 @@
     "lint": "eslint src tests",
     "check": "npm run build && npm run format:check && npm run lint && node --test build/tests/*.test.js",
     "release:check": "node scripts/release-check.mjs",
+    "release:gate": "node scripts/release-gate-local.mjs",
     "sbom": "npm sbom --sbom-format=cyclonedx",
     "audit:dependencies": "npm audit --audit-level=high",
     "security:check": "npm run audit:dependencies && npm run sbom",

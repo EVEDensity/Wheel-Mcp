@@ -2,7 +2,7 @@
 
 ## Current decision: September 14, 2026
 
-Package version remains **`0.1.0-preview.1`**. The historical release-gate label
+Package version is **`0.1.0-preview.2`**. The historical release-gate label
 **Windows-only stable production candidate** means suitable for supervised,
 trusted-project local development; it does **not** promote the package to a
 stable numbered release or certify arbitrary autonomous repair.
@@ -18,23 +18,24 @@ endpoint has been deployed or tested.
 
 ## Version bump criteria
 
-### Stay on `0.1.0-preview.1` until
+### Preview.2 local gate (September 14, 2026)
 
-- [ ] `release-gate` workflow passes on a clean `windows-latest` runner (see
-      [.github/workflows/release-gate.yml](../.github/workflows/release-gate.yml)).
-- [ ] `godot-smoke` workflow passes on Windows, macOS and Linux with **0 skipped**
-      Godot smoke tests.
-- [ ] Full local `npm test` reports **0 skipped** with `GODOT_PATH` set.
+- [x] Full local `npm test`: **90/90 pass, 0 skipped** with `GODOT_PATH` set.
+- [x] `npm run test:godot-ci`: **6/6 pass, 0 skipped**.
+- [x] `npm run matrix:generate`: **19/19 PASS** on bundled fixture.
+- [x] `npm run release:check`: PASS.
+- [x] `npm run audit:dependencies`: 0 high vulnerabilities.
+- [x] CHANGELOG / README / CONTRIBUTING aligned with Wheel-mcp rename and install flow.
+- [ ] GitHub Actions `release-gate` / `godot-smoke` green on hosted runners (blocked
+      when the repository account has no Actions billing/minutes).
 
-### Bump to `0.1.0-preview.2` when
+Run the same gate locally with:
 
-All of the above are green **and**:
-
-- [ ] CHANGELOG entries for Wheel-mcp rename and one-click install are released.
-- [ ] CONTRIBUTING / README install commands match verified PowerShell paths
-      (`npm.cmd run go`, not bare `npm run go` on Windows).
-- [ ] Install smoke tests and Godot CI workflows are merged and stable for at
-      least one main-branch `release-gate` run.
+```powershell
+$env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+$env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
+npm run release:gate
+```
 
 Preview.2 is a documentation + onboarding milestone, not a stable promotion.
 
@@ -174,8 +175,8 @@ See [historical methodology and local paths](HISTORICAL-DEFECTS.md),
 
 ## Practical remaining work
 
-1. Confirm `release-gate` and `godot-smoke` workflows pass on GitHub Actions
-   before tagging `0.1.0-preview.2`.
+1. Re-run `npm run release:gate` after material changes; restore GitHub Actions
+   minutes before relying on hosted `release-gate` / `godot-smoke` workflows.
 2. Connect a real client-side model adapter plus explicit review UI. Measure it
    on a newly curated, undisclosed patch set, not recorded upstream candidates.
 3. Add longer multi-scene ownership, combat, UI, navigation completion and

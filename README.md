@@ -15,7 +15,7 @@ or a model provider. Its main advantage is stateful runtime access combined
 with explicit assertions and reproducible evidence, rather than a long list
 of file-editing tools.
 
-**Release:** `0.1.0-preview.1`, still a preview. **First public runtime scope:
+**Release:** `0.1.0-preview.2`, still a preview. **First public runtime scope:
 Windows-only, Godot 4.7.2.** Package engine: Node `>=20.19.0`; also satisfy the
 installed toolchain's engine requirements. The local evaluation used Node
 `24.19.0`. Linux/macOS real Godot support is not validated.
@@ -420,10 +420,11 @@ $env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
 npm test
 npm run test:godot-ci
 # Default: the checked-in tests/fixtures/runtime-behavior project.
-npm run matrix:generate
-npm run release:check
-npm run audit:dependencies
-npm run sbom > sbom.json
+npm run release:gate
+```
+
+Or step by step: `npm test` → `npm run test:godot-ci` → `npm run matrix:generate`
+→ `npm run release:check` → `npm run audit:dependencies` → `npm run sbom > sbom.json`
 ```
 
 GitHub Actions runs the Godot subset on `godot-smoke.yml` (Windows, macOS and

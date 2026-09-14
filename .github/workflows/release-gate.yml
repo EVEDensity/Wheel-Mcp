@@ -23,8 +23,6 @@ jobs:
       - run: npm run build
       - name: Install smoke test
         run: node scripts/install.mjs --skip-npm
-      - name: Normalize line endings (Windows runner safety)
-        run: npx prettier --write src tests godot-plugin *.json
       - run: npm run format:check
       - run: npm run lint
       - name: Install Godot 4.7.2

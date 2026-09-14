@@ -67,9 +67,10 @@ npm test
 npm run test:godot-ci
 ```
 
-Godot smoke tests must report **0 skipped** when `GODOT_PATH` is set. CI runs
-them on Windows, macOS and Linux via `.github/workflows/godot-smoke.yml`; the
-full Windows release gate is in `.github/workflows/release-gate.yml`.
+Godot smoke tests must report **0 skipped** when `GODOT_PATH` is set. Run the
+full local gate with `npm run release:gate`. Hosted workflows live in
+`.github/workflows/godot-smoke.yml` and `.github/workflows/release-gate.yml`
+when Actions minutes are available.
 
 Without Godot, tests that require it can be skipped. Report skipped counts;
 a passing Node-only suite is not a real runtime result. Screenshot tests need
