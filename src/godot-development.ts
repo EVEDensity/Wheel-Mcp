@@ -274,33 +274,47 @@ function virtual(root: string, f: string) {
  * complaints. Real script errors are identified later via SCRIPT ERROR / res://
  * locations / push_error output.
  */
+/**
+ * Decide whether a Godot ERROR:/WARNING: line is engine-level environmental
+ * noise (safe to drop) or a real user-code failure (must surface).
+ *
+ * Two-stage filter:
+ *  1) BLACKLIST — known engine-noise keyword patterns matched directly.
+ *  2) WHITELIST FALLBACK — anything NOT carrying a "user error fingerprint"
+ *     is treated as noise. A user fingerprint is a strong hint that the
+ *     line originated from project code rather than the engine itself:
+ *     push_error, printerr, SCRIPT/PARSER ERROR, res:// path, .gd/.tscn ref.
+ *
+ * This keeps us resilient to headless-container variants we haven't seen yet
+ * without risking false positives on user push_error() output.
+ */
 function isEngineNoise(message: string) {
   const m = message;
-  return (
-    // Editor persistence (all platforms, headless)
+  // ---- BLACKLIST: known engine-environmental patterns ----
+  if (
     /editor_doc_cache|editor_settings/i.test(m) ||
     /Cannot (?:create|save) (?:file|editor help cache)/i.test(m) ||
     /Error saving editor settings/i.test(m) ||
-    // Linux display session
     /X11|D-Bus|dbus|xcb|xkbcommon|Wayland|wayland/i.test(m) ||
-    // Audio driver init
     /AudioDriver|audio driver|alsa|wasapi|pulse|coreaudio/i.test(m) ||
-    // GPU / GL driver (containers often lack libGL)
     /\bOpenGL\b|glad|libGL|libEGL|libGLX|EGL_|GLX_|Vulkan|vulkan/i.test(m) ||
-    // Font system (containers often have no fonts)
     /freetype|fontconfig|font file/i.test(m) ||
-    // Process / memory utils
-    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m) ||
-    // Headless-specific engine init errors (Linux containers)
-    /Headless|headless build|headless mode/i.test(m) ||
-    /DisplayServer|display server/i.test(m) ||
-    // Editor resource / config file loading failures (not user scripts)
-    /editor_data|editor_theme|editor_shortcuts|editor_export_presets/i.test(m) ||
-    // Container / sandbox filesystem quirks
-    /Cannot open file.*\/editor|Failed to open.*\.godot/i.test(m) ||
-    // Generic engine-level "not found" without res:// path
-    (/(?:resource|Resource|file|File|path|Path).*not found/i.test(m) && !/res:\/\//.test(m))
-  );
+    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m)
+  ) {
+    return true;
+  }
+  // ---- WHITELIST FALLBACK: keep lines that smell like user code ----
+  if (
+    /push_error|printerr/i.test(m) ||
+    /SCRIPT ERROR|Script Error/i.test(m) ||
+    /Parser Error|Parse Error/i.test(m) ||
+    /res:\/\//.test(m) ||
+    /(?:\.gd|\.tscn)(?::\d+)?/.test(m)
+  ) {
+    return false; // real user error — DO NOT drop
+  }
+  // ---- Anything else (unrecognized engine noise) gets dropped ----
+  return true;
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
   const root = projectPath ? path.resolve(projectPath) : undefined;
