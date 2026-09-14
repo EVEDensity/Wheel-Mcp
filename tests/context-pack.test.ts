@@ -7,9 +7,7 @@ import { buildContextPack } from '../src/context-pack.js';
 import { discoverGodotPath } from '../src/godot-path.js';
 
 test('context pack contains project, godot, scene and git sections', async (t) => {
-  const godotPath =
-    process.env.GODOT_PATH ??
-    (await discoverGodotPath({ envFile: path.join(process.cwd(), '.env') }));
+  const godotPath = process.env.GODOT_PATH ?? (await discoverGodotPath({ envFile: path.join(process.cwd(), '.env') }));
   if (!godotPath) t.skip('GODOT_PATH is not available');
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-context-'));
   await writeFile(

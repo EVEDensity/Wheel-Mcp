@@ -23,7 +23,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libfontconfig1 libxcb1 libx11-6 libxcomposite1 libxcursor1 libxi6 libxrandr2 libasound2
+          sudo apt-get install -y \
+            libfontconfig1 libxcb1 libx11-6 libxcomposite1 libxcursor1 libxi6 libxrandr2 \
+            libx11-xcb1 libgl1 libegl1 libasound2-plugins \
+            || sudo apt-get install -y \
+              libfontconfig1 libxcb1 libx11-6 libxcomposite1 libxcursor1 libxi6 libxrandr2 \
+              libx11-xcb1 libgl1 libegl1 libasound2
       - run: npm ci
       - run: npm run build
       - name: Install Godot 4.7.2
