@@ -1,0 +1,934 @@
+{
+  "schemaVersion": 1,
+  "roadmap": "docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md",
+  "createdAt": "2026-09-14T16:05:02.6315047+08:00",
+  "execution": {
+    "mode": "strict-sequential",
+    "nextTask": "T00",
+    "allowedStatuses": [
+      "todo",
+      "in_progress",
+      "blocked",
+      "done"
+    ],
+    "maxInProgress": 1,
+    "autoCommit": false,
+    "autoPublish": false
+  },
+  "baseline": {
+    "version": "0.1.0-preview.2",
+    "historicalAuditDate": "2026-09-14",
+    "historicalGodot": "4.7.2.stable.official.ed1daf0bf",
+    "historicalResult": "90 PASS, 0 FAIL, 0 SKIP",
+    "freshVerification": false,
+    "note": "Historical audit only; rerun in T00. Not production qualification."
+  },
+  "tasks": [
+    {
+      "id": "T00",
+      "title": "建立可重复基线、任务校验和证据格式",
+      "phase": "P0",
+      "dependencies": [],
+      "estimatedDays": {
+        "min": 1,
+        "max": 2
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T01",
+      "title": "将审计缺陷转为可重放的反向用例",
+      "phase": "P0",
+      "dependencies": [
+        "T00"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 3
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T02",
+      "title": "统一错误、结果与桥接协议",
+      "phase": "P1",
+      "dependencies": [
+        "T01"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 3
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T03",
+      "title": "建立统一 Godot Variant 编解码及属性读回",
+      "phase": "P1",
+      "dependencies": [
+        "T02"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T04",
+      "title": "统一事件、游标与长会话日志",
+      "phase": "P1",
+      "dependencies": [
+        "T02",
+        "T03"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 3
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T05",
+      "title": "修复 compact，并建立可预算响应",
+      "phase": "P1",
+      "dependencies": [
+        "T02",
+        "T04"
+      ],
+      "estimatedDays": {
+        "min": 1,
+        "max": 2
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T06",
+      "title": "新鲜快照验证与引擎能力协商",
+      "phase": "P1",
+      "dependencies": [
+        "T02",
+        "T03"
+      ],
+      "estimatedDays": {
+        "min": 1,
+        "max": 2
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T07",
+      "title": "统一会话寿命、取消和进程回收",
+      "phase": "P1",
+      "dependencies": [
+        "T02",
+        "T04",
+        "T06"
+      ],
+      "estimatedDays": {
+        "min": 1,
+        "max": 2
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T08",
+      "title": "收紧工具、RPC 与会话权限",
+      "phase": "P1",
+      "dependencies": [
+        "T02",
+        "T07"
+      ],
+      "estimatedDays": {
+        "min": 1,
+        "max": 2
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T09",
+      "title": "统一项目路径、资源定位和受保护区域",
+      "phase": "P2",
+      "dependencies": [
+        "T08"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 3
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T10",
+      "title": "项目事务、审批与崩溃恢复 journal",
+      "phase": "P2",
+      "dependencies": [
+        "T09"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T11",
+      "title": "建立受控 EditorPlugin 桥接",
+      "phase": "P2",
+      "dependencies": [
+        "T03",
+        "T06",
+        "T08",
+        "T09",
+        "T10"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T12",
+      "title": "编辑器场景树操作、owner 与 Undo/Redo",
+      "phase": "P2",
+      "dependencies": [
+        "T10",
+        "T11"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T13",
+      "title": "资源句柄、材质与物理 Shape 持久化",
+      "phase": "P2",
+      "dependencies": [
+        "T03",
+        "T09",
+        "T10",
+        "T11",
+        "T12"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T14",
+      "title": "将文件写入接入引擎校验与安全保存",
+      "phase": "P2",
+      "dependencies": [
+        "T09",
+        "T10",
+        "T12",
+        "T13"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T15",
+      "title": "编辑—撤销—保存—重开完整验收",
+      "phase": "P2",
+      "dependencies": [
+        "T11",
+        "T12",
+        "T13",
+        "T14"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 3
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T16",
+      "title": "正确处理场景实例、继承与依赖图",
+      "phase": "P3",
+      "dependencies": [
+        "T15"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T17",
+      "title": "UI 布局、主题与信号批量搭建",
+      "phase": "P3",
+      "dependencies": [
+        "T12",
+        "T13",
+        "T15",
+        "T16"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T18",
+      "title": "3D Transform、碰撞与导航可观测性",
+      "phase": "P3",
+      "dependencies": [
+        "T03",
+        "T13",
+        "T15",
+        "T16"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T19",
+      "title": "AnimationPlayer 与 AnimationTree 受控编辑",
+      "phase": "P3",
+      "dependencies": [
+        "T13",
+        "T15",
+        "T16"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T20",
+      "title": "ShaderMaterial 与 VisualShader 有界图支持",
+      "phase": "P3",
+      "dependencies": [
+        "T13",
+        "T15",
+        "T16"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T21",
+      "title": "资源导入与真实项目内容切片验收",
+      "phase": "P3",
+      "dependencies": [
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T22",
+      "title": "GDScript 语义服务与安全重构",
+      "phase": "P4",
+      "dependencies": [
+        "T06",
+        "T09",
+        "T10",
+        "T11",
+        "T16",
+        "T21"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T23",
+      "title": "增量文件、符号、节点与资源依赖索引",
+      "phase": "P4",
+      "dependencies": [
+        "T09",
+        "T16",
+        "T22"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T24",
+      "title": "任务定向 Context Pack 与硬预算",
+      "phase": "P4",
+      "dependencies": [
+        "T05",
+        "T22",
+        "T23"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T25",
+      "title": "MCP Resources、Prompts 与按任务发现",
+      "phase": "P4",
+      "dependencies": [
+        "T02",
+        "T08",
+        "T23",
+        "T24"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T26",
+      "title": "大型项目性能与检索质量基线",
+      "phase": "P4",
+      "dependencies": [
+        "T04",
+        "T05",
+        "T23",
+        "T24",
+        "T25"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T27",
+      "title": "Godot 操作序列回放与执行证据",
+      "phase": "P5",
+      "dependencies": [
+        "T06",
+        "T07",
+        "T18",
+        "T24",
+        "T26"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T28",
+      "title": "外部候选补丁的安全应用与验证接口",
+      "phase": "P5",
+      "dependencies": [
+        "T10",
+        "T14",
+        "T22",
+        "T24",
+        "T27"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T29",
+      "title": "Godot 能力契约与短操作链验收集",
+      "phase": "P5",
+      "dependencies": [
+        "T17",
+        "T19",
+        "T20",
+        "T21",
+        "T27",
+        "T28"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T30",
+      "title": "真实 MCP 客户端兼容性与工具契约评估",
+      "phase": "P5",
+      "dependencies": [
+        "T25",
+        "T28",
+        "T29"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T31",
+      "title": "长时间运行、并发、故障注入与安全复测",
+      "phase": "P6",
+      "dependencies": [
+        "T08",
+        "T10",
+        "T15",
+        "T26",
+        "T27",
+        "T30"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T32",
+      "title": "干净安装、插件升级、协议迁移与卸载",
+      "phase": "P6",
+      "dependencies": [
+        "T11",
+        "T14",
+        "T25",
+        "T31"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T33",
+      "title": "平台、引擎与渲染器支持矩阵",
+      "phase": "P6",
+      "dependencies": [
+        "T31",
+        "T32"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T34",
+      "title": "完善迁移文档、故障恢复与用户操作手册",
+      "phase": "P6",
+      "dependencies": [
+        "T16",
+        "T25",
+        "T28",
+        "T32",
+        "T33"
+      ],
+      "estimatedDays": {
+        "min": 2,
+        "max": 4
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    },
+    {
+      "id": "T35",
+      "title": "生产候选资格审计与限定范围发布",
+      "phase": "P6",
+      "dependencies": [
+        "T00",
+        "T01",
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08",
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15",
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20",
+        "T21",
+        "T22",
+        "T23",
+        "T24",
+        "T25",
+        "T26",
+        "T27",
+        "T28",
+        "T29",
+        "T30",
+        "T31",
+        "T32",
+        "T33",
+        "T34"
+      ],
+      "estimatedDays": {
+        "min": 3,
+        "max": 5
+      },
+      "status": "todo",
+      "evidence": [],
+      "verification": [],
+      "blocker": null,
+      "notes": "",
+      "completedAt": null
+    }
+  ],
+  "gates": [
+    {
+      "id": "G0",
+      "tasks": [
+        "T00",
+        "T01"
+      ],
+      "predecessorGates": [],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G1",
+      "tasks": [
+        "T02",
+        "T03",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T08"
+      ],
+      "predecessorGates": [
+        "G0"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G2",
+      "tasks": [
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T13",
+        "T14",
+        "T15"
+      ],
+      "predecessorGates": [
+        "G0",
+        "G1"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G3",
+      "tasks": [
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T20",
+        "T21"
+      ],
+      "predecessorGates": [
+        "G0",
+        "G1",
+        "G2"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G4",
+      "tasks": [
+        "T22",
+        "T23",
+        "T24",
+        "T25",
+        "T26"
+      ],
+      "predecessorGates": [
+        "G0",
+        "G1",
+        "G2",
+        "G3"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G5",
+      "tasks": [
+        "T27",
+        "T28",
+        "T29",
+        "T30"
+      ],
+      "predecessorGates": [
+        "G0",
+        "G1",
+        "G2",
+        "G3",
+        "G4"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    },
+    {
+      "id": "G6",
+      "tasks": [
+        "T31",
+        "T32",
+        "T33",
+        "T34",
+        "T35"
+      ],
+      "predecessorGates": [
+        "G0",
+        "G1",
+        "G2",
+        "G3",
+        "G4",
+        "G5"
+      ],
+      "status": "NOT_RUN",
+      "evidence": [],
+      "sourceHash": null
+    }
+  ],
+  "qualification": {
+    "status": "NOT_QUALIFIED",
+    "candidateSourceHash": null
+  },
+  "publicRelease": {
+    "status": "NOT_REQUESTED",
+    "approval": null
+  },
+  "productScope": {
+    "audience": [
+      "Codex",
+      "Cursor",
+      "other MCP clients"
+    ],
+    "role": "Godot MCP capability server and verified execution adapter",
+    "ownsTaskPlanning": false,
+    "ownsCodeGeneration": false,
+    "ownsModelEvaluation": false
+  }
+}
