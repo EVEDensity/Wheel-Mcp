@@ -405,19 +405,26 @@ is tool-specific; normal/verbose still have limited differentiation in some tool
 
 ## Testing and reproduction
 
+Windows PowerShell onboarding and release gate:
+
 ```powershell
-npm ci
-npm run build
+npm.cmd run go
 npm run format:check
 npm run lint
 $env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+$env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
 npm test
+npm run test:godot-ci
 # Default: the checked-in tests/fixtures/runtime-behavior project.
 npm run matrix:generate
 npm run release:check
 npm run audit:dependencies
 npm run sbom > sbom.json
 ```
+
+GitHub Actions runs the Godot subset on `windows-godot.yml` and the full
+clean-machine gate on `release-gate.yml`. Generic `ci.yml` is Node-only and
+may skip Godot tests when `GODOT_PATH` is unset.
 
 The release checker checks metadata and existing matrix evidence; it **does not
 run build, lint, tests or matrix generation**. A fresh checkout cannot use another

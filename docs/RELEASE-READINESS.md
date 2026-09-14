@@ -1,6 +1,6 @@
 # Release readiness (Windows)
 
-## Current decision: September 13, 2026
+## Current decision: September 14, 2026
 
 Package version remains **`0.1.0-preview.1`**. The historical release-gate label
 **Windows-only stable production candidate** means suitable for supervised,
@@ -13,6 +13,76 @@ certification, signature or external sign-off is required for this personal
 project. Remote TLS/secrets/audit setup depends on your actual deployment;
 [the practical guide](PRODUCTION-DEPLOYMENT.md) is not evidence that a public
 endpoint has been deployed or tested.
+
+## Version bump criteria
+
+### Stay on `0.1.0-preview.1` until
+
+- [ ] `release-gate` workflow passes on a clean `windows-latest` runner (see
+      [.github/workflows/release-gate.yml](../.github/workflows/release-gate.yml)).
+- [ ] `windows-godot` workflow passes with **0 skipped** Godot smoke tests.
+- [ ] Full local `npm test` reports **0 skipped** with `GODOT_PATH` set.
+
+### Bump to `0.1.0-preview.2` when
+
+All of the above are green **and**:
+
+- [ ] CHANGELOG entries for Wheel-mcp rename and one-click install are released.
+- [ ] CONTRIBUTING / README install commands match verified PowerShell paths
+      (`npm.cmd run go`, not bare `npm run go` on Windows).
+- [ ] Install smoke tests and Godot CI workflows are merged and stable for at
+      least one main-branch `release-gate` run.
+
+Preview.2 is a documentation + onboarding milestone, not a stable promotion.
+
+### Promote toward stable (`0.2.0` or first non-preview semver) only when
+
+- [ ] Clean-machine onboarding verified end-to-end: clone → `npm.cmd run go` →
+      MCP configs written → README smoke passes locally.
+- [ ] `release-gate` artifacts show **19/19** matrix PASS and `release:check`
+      PASS generated in CI (not copied from a developer machine).
+- [ ] Full test suite **0 skipped** on Windows with Godot 4.7.2 and the bundled
+      `tests/fixtures/runtime-behavior` project.
+- [ ] Dependency audit and SBOM generated in the same release-gate run.
+- [ ] A real client-side model adapter plus explicit review UI is connected and
+      measured on a newly curated patch set (not recorded upstream candidates).
+- [ ] Longer gameplay scenarios (multi-scene ownership, combat, UI, navigation,
+      save/load) have dev-loop/scenario assertions beyond startup smoke.
+
+Until these stable criteria are met, keep the preview version line and treat CI
+green on Node-only matrix jobs as necessary but **insufficient** evidence.
+
+## CI coverage
+
+| Workflow | Runner | Godot | Purpose |
+| -------- | ------ | ----- | ------- |
+| `ci.yml` | Node 20/22 × Windows/Linux/macOS | No | build, install smoke, lint, Node tests (Godot tests skip) |
+| `windows-godot.yml` | Windows | Yes (4.7.2 console) | README smoke + E2E subset; **fails on any skip** |
+| `release-gate.yml` | Windows | Yes | clean-machine full gate (see below) |
+
+Generic matrix CI is intentionally Node-only. Real Godot coverage lives in the
+two Windows workflows above so a green `ci.yml` alone cannot masquerade as a
+full runtime gate.
+
+## Clean-machine release gate (CI)
+
+[`.github/workflows/release-gate.yml`](../.github/workflows/release-gate.yml)
+runs on `main`/`master` push and `workflow_dispatch`:
+
+1. `npm ci`
+2. `npm run build`
+3. `node scripts/install.mjs --skip-npm`
+4. `npm run format:check`
+5. `npm run lint`
+6. Download Godot 4.7.2 console → set `GODOT_PATH`
+7. `npm test`
+8. `npm run matrix:generate`
+9. `npm run release:check`
+10. `npm run audit:dependencies`
+11. `npm run sbom`
+
+Matrix and SBOM artifacts are uploaded from the runner. `runs/` remains
+gitignored; do not commit generated matrix JSON.
 
 ## Documentation follow-up
 
@@ -48,22 +118,29 @@ The final `release:check` entry point returned **PASS**. See the
 [validation summary](../benchmarks/validation-results-2026-09-13.json) for the
 recorded gate results and hashes; these are local observations, not certification.
 
-## Reproduce the gate
+## Reproduce the gate locally
 
 On your Windows desktop with a working renderer:
 
 ```powershell
-npm ci
-npm run build
+npm.cmd run go
 npm run format:check
 npm run lint
 $env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+$env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
 npm test
+npm run test:godot-ci
 npm run matrix:generate
 npm run release:check
 npm run audit:dependencies
 npm run sbom > sbom.json
 ```
+
+`npm.cmd run go` and `node scripts/install.mjs` are the verified onboarding
+entry points on Windows PowerShell. Use `npm.cmd` instead of `npm` when
+PowerShell blocks `npm.ps1`. After dependencies are installed, CI and
+contributors may rerun `node scripts/install.mjs --skip-npm` to refresh MCP
+configs only.
 
 The default matrix fixture is included in Git and captures a real **320 x 180**
 framebuffer. `REAL_GODOT_PROJECT` optionally selects another imported project
@@ -76,13 +153,6 @@ does not run tests, lint, audit or matrix generation. The commands must run in
 the stated order; a successful checker is not a substitute for the other gates.
 If a prerequisite is missing, preserve the failure rather than substituting
 recorded PASS JSON.
-
-Generic CI covers Node 20/22 build/test jobs on Windows/Linux/macOS, with real
-Godot tests skipped when unavailable. The unconditional real release checker
-was removed from generic CI: a clean checkout has no ignored runs/matrix, so
-claiming a real-runtime gate there was misleading and would fail fresh clones.
-Run the real gate locally as above or add a controlled Windows renderer runner
-that generates and archives its own matrix before checking it.
 
 ## Evidence and upload policy
 
@@ -100,8 +170,8 @@ See [historical methodology and local paths](HISTORICAL-DEFECTS.md),
 
 ## Practical remaining work
 
-1. Repeat installation, renderer tests, packaging, audit and SBOM on a clean
-   Windows environment before publishing a stable version.
+1. Confirm `release-gate` and `windows-godot` workflows pass on GitHub Actions
+   before tagging `0.1.0-preview.2`.
 2. Connect a real client-side model adapter plus explicit review UI. Measure it
    on a newly curated, undisclosed patch set, not recorded upstream candidates.
 3. Add longer multi-scene ownership, combat, UI, navigation completion and

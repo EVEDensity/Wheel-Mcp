@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased - Wheel-mcp rename and one-click install
+
+- Rename the package from `godot-game-harness-mcp` to **`wheel-mcp`**; update MCP
+  host keys, CLI bins (`wheel-mcp`, `wheel-mcp-cli`, `wheel-mcp-http`) and schema
+  `$id` domains to `wheel-mcp.invalid`.
+- Add one-click onboarding: `npm.cmd run go` (Windows PowerShell) and
+  `node scripts/install.mjs` install dependencies, build TypeScript, discover
+  Godot when possible, and write `.cursor/mcp.json`, `.vscode/mcp.json`, and
+  `.mcp.json`.
+- Fix Windows `install.mjs` npm spawn by invoking `cmd.exe /c npm install`.
+- Add install smoke tests (`tests/install.test.ts`) and a Godot CI subset runner
+  (`npm run test:godot-ci`).
+- Add GitHub Actions workflows: `windows-godot.yml` (README smoke + E2E subset)
+  and `release-gate.yml` (clean-machine build → test → matrix → release:check →
+  audit/sbom).
+
 ## Unreleased - GitHub onboarding documentation
 
 - Fix the bundled NavigationPolygon index-array serialization exposed by the

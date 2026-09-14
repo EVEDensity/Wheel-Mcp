@@ -14,14 +14,59 @@ used Node `24.19.0` and Godot `4.7.2` on Windows. For your own checkout, inspect
 `package.json` and the lockfile rather than assuming all Node 20 patch versions
 are supported.
 
+### First-time onboarding (install MCP configs)
+
+From a fresh clone, run **one** verified install command. This installs
+dependencies, builds TypeScript, discovers Godot when possible, and writes
+`.cursor/mcp.json`, `.vscode/mcp.json`, and `.mcp.json`.
+
+Windows PowerShell (`npm run go` is usually blocked by execution policy):
+
 ```powershell
-npm ci
+npm.cmd run go
+```
+
+or:
+
+```powershell
+node scripts/install.mjs
+```
+
+macOS / Linux:
+
+```bash
+npm run go
+```
+
+or:
+
+```bash
+node scripts/install.mjs
+```
+
+After dependencies are already present, contributors can rerun configuration only:
+
+```bash
+node scripts/install.mjs --skip-npm
+```
+
+Install behavior is covered by `tests/install.test.ts`.
+
+### Verification gates
+
+```powershell
 npm run build
 npm run format:check
 npm run lint
 $env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+$env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
 npm test
+npm run test:godot-ci
 ```
+
+Godot smoke tests must report **0 skipped** when `GODOT_PATH` is set. CI runs
+them on Windows via `.github/workflows/windows-godot.yml`; the full release gate
+is in `.github/workflows/release-gate.yml`.
 
 Without Godot, tests that require it can be skipped. Report skipped counts;
 a passing Node-only suite is not a real runtime result. Screenshot tests need

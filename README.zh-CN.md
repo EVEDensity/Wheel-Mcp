@@ -390,20 +390,24 @@ MCP 客户端（可接外部模型和批准 UI）
 
 ## 复现与检查
 
-Windows 桌面环境中，顺序执行：
+Windows PowerShell 一键安装与发布门禁：
 
 ```powershell
-npm ci
-npm run build
+npm.cmd run go
 npm run format:check
 npm run lint
 $env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+$env:REAL_GODOT_PROJECT = 'tests/fixtures/runtime-behavior'
 npm test
+npm run test:godot-ci
 npm run matrix:generate
 npm run release:check
 npm run audit:dependencies
 npm run sbom > sbom.json
 ```
+
+GitHub Actions 在 `windows-godot.yml` 跑 Godot 子集，在 `release-gate.yml` 跑完整干净机器门禁。
+通用 `ci.yml` 仅覆盖 Node 层，未设置 `GODOT_PATH` 时会跳过 Godot 测试。
 
 `release:check` 只检查元数据、文档和**已生成**的矩阵证据，不会替你运行编译、测试、矩阵或漏洞扫描。
 不能在没有真实引擎的情况下写入假 PASS。缺少运行环境应保留 BLOCKED/NOT_RUN。
