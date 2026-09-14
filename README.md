@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="Wheel-mcp logo" width="128">
+  <img src="assets/logo.png" alt="Wheel-mcp logo" width="400">
 </p>
 
 # Wheel-mcp
