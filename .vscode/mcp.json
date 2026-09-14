@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "wheel-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/scripts/run-mcp.mjs"
+      ]
+    }
+  }
+}
