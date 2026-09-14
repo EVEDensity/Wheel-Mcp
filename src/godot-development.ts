@@ -274,24 +274,34 @@ function virtual(root: string, f: string) {
  * complaints. Real script errors are identified later via SCRIPT ERROR / res://
  * locations / push_error output.
  */
-function isEngineNoise(message: string) {
+function isEngineNoise(message: string, subsequentLines?: string[]) {
   const m = message;
-  return (
-    // Editor persistence (all platforms, headless)
+  // Primary blacklist: known engine-level patterns across all platforms.
+  if (
     /editor_doc_cache|editor_settings/.test(m) ||
     /Cannot (?:create|save) (?:file|editor help cache)/i.test(m) ||
     /Error saving editor settings/i.test(m) ||
-    // Linux display session
     /X11|D-Bus|dbus|xcb|xkbcommon|Wayland|wayland/i.test(m) ||
-    // Audio driver init
     /AudioDriver|audio driver|alsa|wasapi|pulse|coreaudio/i.test(m) ||
-    // GPU / GL driver (containers often lack libGL)
     /\bOpenGL\b|glad|libGL|libEGL|libGLX|EGL_|GLX_|Vulkan|vulkan/i.test(m) ||
-    // Font system (containers often have no fonts)
     /freetype|fontconfig|font file/i.test(m) ||
-    // Process / memory utils
-    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m)
-  );
+    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m) ||
+    /No XKB display|xkbcommon|No input driver|Input.*unavailable/i.test(m) ||
+    /Could not initialize|Failed to.*driver|driver.*(?:init|failed|unavailable)/i.test(m) ||
+    /DisplayServer.*(?:failed|unavailable|init)|HeadlessDisplayServer/i.test(m)
+  )
+    return true;
+  // Safe fallback: an ERROR line that matches nothing above AND has NO user-code
+  // anchor anywhere in itself or its immediate stack-follow is engine noise.
+  // User-code anchors: res://.gd paths, SCRIPT ERROR, push_error marker, or
+  // stack frames pointing at .gd / .tscn / .cs files.
+  const combined = m + '\n' + (subsequentLines ?? []).join('\n');
+  const hasUserCode =
+    /(?:res:\/\/|\/)[^\s]+\.(?:gd|tscn|cs)\b/.test(combined) ||
+    /SCRIPT ERROR|Parser Error|Parse Error/i.test(combined) ||
+    /push_error/.test(combined);
+  if (/ERROR:/.test(m) && !hasUserCode) return true;
+  return false;
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
   const root = projectPath ? path.resolve(projectPath) : undefined;
@@ -322,7 +332,15 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
       // but keep everything else — including push_error() calls (which have no file
       // path on the header line and must NOT be dropped).
       const trimmed = line.trim();
-      if (isEngineNoise(trimmed)) continue;
+      // Collect stack-follow lines BEFORE deciding engine noise — push_error()
+      // has no file path on the ERROR header line but WILL have res:// paths
+      // in the stack frames below it.
+      const stackFollow: string[] = [];
+      for (let next = index + 1; next < lines.length; next++) {
+        if (!/^\s+(?:at:|\[\d+\]|GDScript backtrace|C\+\+ backtrace)/.test(lines[next])) break;
+        stackFollow.push(lines[next]);
+      }
+      if (isEngineNoise(trimmed, stackFollow)) continue;
       const kind = /Parse[r]? Error/i.test(line) ? 'parser' : /^\s*WARNING:/.test(line) ? 'warning' : 'runtime';
       const message = trimmed;
       const stack: Array<{ file: string; line: number; column?: number }> = [];
