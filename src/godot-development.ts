@@ -299,7 +299,7 @@ function isEngineNoise(message: string) {
     // Container / sandbox filesystem quirks
     /Cannot open file.*\/editor|Failed to open.*\.godot/i.test(m) ||
     // Generic engine-level "not found" without res:// path
-    /(?:resource|Resource|file|File|path|Path).*not found/i.test(m) && !/res:\/\//.test(m)
+    (/(?:resource|Resource|file|File|path|Path).*not found/i.test(m) && !/res:\/\//.test(m))
   );
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
