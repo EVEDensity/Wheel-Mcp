@@ -8,14 +8,11 @@ jobs:
   node:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
-      - name: Force LF line endings
-        run: |
-          git config core.autocrlf false
-          git checkout -- .
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -24,6 +21,8 @@ jobs:
       - run: npm run build
       - name: Install smoke test
         run: node scripts/install.mjs --skip-npm
+      - name: Normalize line endings (Windows runner safety)
+        run: npx prettier --write src tests godot-plugin *.json
       - run: npm run format:check
       - run: npm run lint
       - run: node --test build/tests/*.test.js

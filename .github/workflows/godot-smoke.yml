@@ -15,10 +15,6 @@ jobs:
       REAL_GODOT_PROJECT: tests/fixtures/runtime-behavior
     steps:
       - uses: actions/checkout@v4
-      - name: Force LF line endings
-        run: |
-          git config core.autocrlf false
-          git checkout -- .
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -50,6 +46,5 @@ jobs:
         if: always()
         with:
           name: godot-smoke-evidence-${{ matrix.os }}
-          path: |
-            .harness
+          path: .harness
           if-no-files-found: ignore
