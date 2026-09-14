@@ -260,6 +260,39 @@ function virtual(root: string, f: string) {
     absolutePath: path.isAbsolute(f) ? f : undefined,
   };
 }
+/**
+ * Returns true if this Godot engine diagnostic line is known to be harmless noise
+ * produced only by headless / no-session / CI environments — NOT a user-code failure.
+ *
+ * Godot on any headless run emits ERROR:/WARNING: lines for:
+ *   - Editor cache & settings files it can't write (AppData, ~/.local/share/godot)
+ *   - Missing Linux display session (X11, D-Bus, Wayland, xcb, xkbcommon)
+ *   - Audio driver init failures (alsa, pulse, wasapi, coreaudio)
+ *   - GPU/GL driver issues in containers (OpenGL, EGL, GLX, Vulkan, libGL)
+ *   - FreeType / fontconfig misses (no fonts in container)
+ * None of these mean the game script broke — they're engine-side environmental
+ * complaints. Real script errors are identified later via SCRIPT ERROR / res://
+ * locations / push_error output.
+ */
+function isEngineNoise(message: string) {
+  const m = message;
+  return (
+    // Editor persistence (all platforms, headless)
+    /editor_doc_cache|editor_settings/.test(m) ||
+    /Cannot (?:create|save) (?:file|editor help cache)/i.test(m) ||
+    /Error saving editor settings/i.test(m) ||
+    // Linux display session
+    /X11|D-Bus|dbus|xcb|xkbcommon|Wayland|wayland/i.test(m) ||
+    // Audio driver init
+    /AudioDriver|audio driver|alsa|wasapi|pulse|coreaudio/i.test(m) ||
+    // GPU / GL driver (containers often lack libGL)
+    /\bOpenGL\b|glad|libGL|libEGL|libGLX|EGL_|GLX_|Vulkan|vulkan/i.test(m) ||
+    // Font system (containers often have no fonts)
+    /freetype|fontconfig|font file/i.test(m) ||
+    // Process / memory utils
+    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m)
+  );
+}
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
   const root = projectPath ? path.resolve(projectPath) : undefined;
   const diagnostics: Array<{
@@ -284,19 +317,12 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
       const line = lines[index];
       // Recognize engine diagnostic headers, not user text such as "error count: 0".
       if (!/^\s*(?:SCRIPT ERROR:|ERROR:|WARNING:|Parse Error:|Parser Error:)/.test(line)) continue;
-      // Noise filter: known engine-level errors that are harmless in CI headless.
-      // These are not script/playback failures — they're the editor failing to write
-      // its own cache/settings (AppData, ~/.local/share, etc.), missing D-Bus/X11
-      // session, or audio driver init failures. None of them mean the game code broke.
+      // Noise filter: in headless CI, Godot emits engine-level ERROR:/WARNING: lines
+      // that are NOT user-code failures. We filter out known headless-noise patterns
+      // but keep everything else — including push_error() calls (which have no file
+      // path on the header line and must NOT be dropped).
       const trimmed = line.trim();
-      if (
-        /^\s*ERROR: Cannot (?:create|save) (?:file|editor help cache)/i.test(line) ||
-        /^\s*ERROR: Error saving editor settings/i.test(line) ||
-        /editor_doc_cache|editor_settings/.test(trimmed) ||
-        /X11|D-Bus|dbus|xcb|xkbcommon/i.test(trimmed) ||
-        /AudioDriver|audio driver|alsa|wasapi|pulse/i.test(trimmed)
-      )
-        continue;
+      if (isEngineNoise(trimmed)) continue;
       const kind = /Parse[r]? Error/i.test(line) ? 'parser' : /^\s*WARNING:/.test(line) ? 'warning' : 'runtime';
       const message = trimmed;
       const stack: Array<{ file: string; line: number; column?: number }> = [];
