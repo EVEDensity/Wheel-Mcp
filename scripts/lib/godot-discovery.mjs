@@ -1,8 +1,7 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-
-const GODOT_EXECUTABLE_PATTERN = /^godot(?:[_-].*)?\.exe$/i;
+import { defaultSearchRoots, fixedGodotCandidates, isGodotExecutableName } from './platform-paths.mjs';
 
 export function parseEnvFile(content) {
   const env = {};
@@ -57,7 +56,7 @@ async function collectExecutableCandidates(directory, limit = 8) {
     return [];
   }
   const matches = entries
-    .filter((entry) => GODOT_EXECUTABLE_PATTERN.test(entry))
+    .filter((entry) => isGodotExecutableName(entry))
     .map((entry) => path.join(directory, entry))
     .sort((left, right) => scoreGodotExecutable(right) - scoreGodotExecutable(left));
   const verified = [];
@@ -79,26 +78,6 @@ function discoverFromPath() {
   } catch {
     return [];
   }
-}
-
-function defaultSearchRoots() {
-  const home = process.env.USERPROFILE || process.env.HOME || '';
-  const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
-  const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
-  const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
-  return [
-    path.join(localAppData, 'Programs', 'Godot'),
-    path.join(localAppData, 'Programs', 'Godot Engine'),
-    path.join(programFiles, 'Godot'),
-    path.join(programFiles, 'Godot Engine'),
-    path.join(programFilesX86, 'Godot'),
-    path.join(home, 'scoop', 'apps', 'godot', 'current'),
-    path.join(home, 'Downloads'),
-    path.join(home, 'Desktop'),
-    'D:\\tools',
-    'E:\\AI',
-    'C:\\tools',
-  ].filter(Boolean);
 }
 
 export async function discoverGodotPath(options = {}) {
@@ -127,6 +106,7 @@ export async function discoverGodotPath(options = {}) {
   }
 
   for (const candidate of discoverFromPath()) push(candidate);
+  for (const candidate of fixedGodotCandidates()) push(candidate);
 
   for (const root of options.searchRoots ?? defaultSearchRoots()) {
     for (const candidate of await collectExecutableCandidates(root)) push(candidate);

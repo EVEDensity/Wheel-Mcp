@@ -3,7 +3,27 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const GODOT_EXECUTABLE_PATTERN = /^godot(?:[_-].*)?\.exe$/i;
+function isGodotExecutableName(name: string): boolean {
+  if (/^godot(?:[_-].*)?\.exe$/i.test(name)) return true;
+  if (/^Godot(?:[_-][\w.-]+)?$/i.test(name) && !name.endsWith('.app')) return true;
+  return false;
+}
+
+function fixedGodotCandidates(): string[] {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (process.platform === 'darwin') {
+    return [
+      '/Applications/Godot.app/Contents/MacOS/Godot',
+      path.join(home, 'Applications/Godot.app/Contents/MacOS/Godot'),
+      '/opt/homebrew/bin/godot',
+      '/usr/local/bin/godot',
+    ];
+  }
+  if (process.platform === 'linux') {
+    return ['/usr/bin/godot', '/usr/local/bin/godot', path.join(home, '.local/bin/godot')];
+  }
+  return [];
+}
 
 export function parseEnvFile(content: string): Record<string, string> {
   const env: Record<string, string> = {};
@@ -58,7 +78,7 @@ async function collectExecutableCandidates(directory: string, limit = 8): Promis
     return [];
   }
   const matches = entries
-    .filter((entry) => GODOT_EXECUTABLE_PATTERN.test(entry))
+    .filter((entry) => isGodotExecutableName(entry))
     .map((entry) => path.join(directory, entry))
     .sort((left, right) => scoreGodotExecutable(right) - scoreGodotExecutable(left));
   const verified: string[] = [];
@@ -84,22 +104,27 @@ function discoverFromPath(): string[] {
 
 function defaultSearchRoots(): string[] {
   const home = process.env.USERPROFILE || process.env.HOME || '';
-  const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
-  const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
-  const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
-  return [
-    path.join(localAppData, 'Programs', 'Godot'),
-    path.join(localAppData, 'Programs', 'Godot Engine'),
-    path.join(programFiles, 'Godot'),
-    path.join(programFiles, 'Godot Engine'),
-    path.join(programFilesX86, 'Godot'),
-    path.join(home, 'scoop', 'apps', 'godot', 'current'),
-    path.join(home, 'Downloads'),
-    path.join(home, 'Desktop'),
-    'D:\\tools',
-    'E:\\AI',
-    'C:\\tools',
-  ].filter(Boolean);
+  const roots = [path.join(home, 'Downloads'), path.join(home, 'Desktop')];
+  if (process.platform === 'win32') {
+    const localAppData = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+    const programFiles = process.env['ProgramFiles'] || 'C:\\Program Files';
+    const programFilesX86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
+    roots.unshift(
+      path.join(localAppData, 'Programs', 'Godot'),
+      path.join(localAppData, 'Programs', 'Godot Engine'),
+      path.join(programFiles, 'Godot'),
+      path.join(programFiles, 'Godot Engine'),
+      path.join(programFilesX86, 'Godot'),
+      path.join(home, 'scoop', 'apps', 'godot', 'current'),
+      'C:\\tools',
+      'D:\\tools',
+    );
+  } else if (process.platform === 'darwin') {
+    roots.unshift('/Applications', path.join(home, 'Applications'));
+  } else {
+    roots.unshift('/opt/godot', '/usr/local/godot', path.join(home, '.local/share/godot'));
+  }
+  return roots.filter(Boolean);
 }
 
 export type DiscoverGodotOptions = {
@@ -133,6 +158,7 @@ export async function discoverGodotPath(options: DiscoverGodotOptions = {}): Pro
   }
 
   for (const candidate of discoverFromPath()) push(candidate);
+  for (const candidate of fixedGodotCandidates()) push(candidate);
 
   for (const root of options.searchRoots ?? defaultSearchRoots()) {
     for (const candidate of await collectExecutableCandidates(root)) push(candidate);
