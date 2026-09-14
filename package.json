@@ -12,8 +12,12 @@
   },
   "scripts": {
     "build": "tsc",
+    "go": "node scripts/install.mjs",
+    "go:global": "node scripts/install.mjs --global",
     "setup": "node scripts/setup.mjs",
-    "postinstall": "node scripts/setup.mjs --postinstall",
+    "setup:global": "node scripts/setup.mjs --global --force",
+    "install:mcp": "node scripts/setup.mjs --force",
+    "postinstall": "node scripts/setup.mjs --postinstall --build-only",
     "mcp": "node scripts/run-mcp.mjs",
     "start": "node build/src/cli.js doctor",
     "test": "npm run build && node --test build/tests/*.test.js",
