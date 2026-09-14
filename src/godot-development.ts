@@ -278,7 +278,7 @@ function isEngineNoise(message: string) {
   const m = message;
   return (
     // Editor persistence (all platforms, headless)
-    /editor_doc_cache|editor_settings/.test(m) ||
+    /editor_doc_cache|editor_settings/i.test(m) ||
     /Cannot (?:create|save) (?:file|editor help cache)/i.test(m) ||
     /Error saving editor settings/i.test(m) ||
     // Linux display session
@@ -290,7 +290,16 @@ function isEngineNoise(message: string) {
     // Font system (containers often have no fonts)
     /freetype|fontconfig|font file/i.test(m) ||
     // Process / memory utils
-    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m)
+    /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m) ||
+    // Headless-specific engine init errors (Linux containers)
+    /Headless|headless build|headless mode/i.test(m) ||
+    /DisplayServer|display server/i.test(m) ||
+    // Editor resource / config file loading failures (not user scripts)
+    /editor_data|editor_theme|editor_shortcuts|editor_export_presets/i.test(m) ||
+    // Container / sandbox filesystem quirks
+    /Cannot open file.*\/editor|Failed to open.*\.godot/i.test(m) ||
+    // Generic engine-level "not found" without res:// path
+    /(?:resource|Resource|file|File|path|Path).*not found/i.test(m) && !/res:\/\//.test(m)
   );
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
