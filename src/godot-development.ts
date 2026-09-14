@@ -276,8 +276,7 @@ function virtual(root: string, f: string) {
  */
 function isEngineNoise(message: string) {
   const m = message;
-  // ---- KNOWN ENGINE-ENVIRONMENTAL NOISE (blacklist) ----
-  if (
+  return (
     // Editor persistence (all platforms, headless)
     /editor_doc_cache|editor_settings/i.test(m) ||
     /Cannot (?:create|save) (?:file|editor help cache)/i.test(m) ||
@@ -292,23 +291,16 @@ function isEngineNoise(message: string) {
     /freetype|fontconfig|font file/i.test(m) ||
     // Process / memory utils
     /cgroup|process_swap|get_total_memory|get_free_memory/i.test(m) ||
-    // Headless-specific engine init errors
+    // Headless-specific engine init errors (Linux containers)
     /Headless|headless build|headless mode/i.test(m) ||
     /DisplayServer|display server/i.test(m) ||
-    // Editor resource / config loading failures (not user scripts)
+    // Editor resource / config file loading failures (not user scripts)
     /editor_data|editor_theme|editor_shortcuts|editor_export_presets/i.test(m) ||
-    // Container filesystem quirks
-    /Cannot open file.*\/editor|Failed to open.*\.godot/i.test(m)
-  ) {
-    return true;
-  }
-  // ---- SAFE FALLBACK: filter any ERROR that has NO user-code anchor ----
-  // If an ERROR line carries zero hint of user origin (no res://, no .gd ref,
-  // no push_error traceback), it's 99% engine noise we haven't blacklisted yet.
-  if (!/res:\/\//.test(m) && !/push_error|printerr/i.test(m) && !/\.(?:gd|tscn|cs)(?::\d+)?/.test(m)) {
-    return true;
-  }
-  return false;
+    // Container / sandbox filesystem quirks
+    /Cannot open file.*\/editor|Failed to open.*\.godot/i.test(m) ||
+    // Generic engine-level "not found" without res:// path
+    (/(?:resource|Resource|file|File|path|Path).*not found/i.test(m) && !/res:\/\//.test(m))
+  );
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
   const root = projectPath ? path.resolve(projectPath) : undefined;
