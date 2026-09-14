@@ -1,7 +1,8 @@
-# Normalize all text files to LF on checkout/commit.
+# Force ALL files (except explicitly-binary ones below) to LF line endings.
 # Prevents Windows runners from checking out files as CRLF, which breaks
 # `npm run format:check` (Prettier enforces LF via .prettierrc.json).
-* text=auto eol=lf
+# Using `text` (not `text=auto`) avoids Git's heuristic text-detection.
+* text eol=lf
 
 # Binary files — never touch
 *.png binary
