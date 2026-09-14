@@ -1,0 +1,32 @@
+name: godot-smoke
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  godot-smoke:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    env:
+      REAL_GODOT_PROJECT: tests/fixtures/runtime-behavior
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install Linux Godot runtime dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfontconfig1 libxcb1 libx11-6 libxcomposite1 libxcursor1 libxi6 libxrandr2 libasound2
+      - run: npm ci
+      - run: npm run build
+      - name: Install Godot 4.7.2
+        run: node scripts/ci-install-godot.mjs
+      - name: Godot README smoke and E2E subset
+        run: npm run test:godot-ci

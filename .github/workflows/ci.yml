@@ -24,7 +24,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: node --test build/tests/*.test.js
-      # Real Godot coverage: .github/workflows/windows-godot.yml (README smoke + E2E subset).
+      # Real Godot coverage: .github/workflows/godot-smoke.yml (Windows/macOS/Linux README smoke + E2E subset).
       # Clean-machine release gate: .github/workflows/release-gate.yml (build → test → matrix → release:check → audit/sbom).
       - name: Dependency audit
         run: npm run audit:dependencies
