@@ -2,9 +2,7 @@
   "mcpServers": {
     "wheel-mcp": {
       "command": "node",
-      "args": [
-        "${workspaceFolder}/scripts/run-mcp.mjs"
-      ]
+      "args": ["${workspaceFolder}/scripts/run-mcp.mjs"]
     }
   }
 }

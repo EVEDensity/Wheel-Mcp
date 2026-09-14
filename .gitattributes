@@ -1,0 +1,14 @@
+# Normalize all text files to LF on checkout/commit.
+# Prevents Windows runners from checking out files as CRLF, which breaks
+# `npm run format:check` (Prettier enforces LF via .prettierrc.json).
+* text=auto eol=lf
+
+# Binary files — never touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff2 binary
+*.mp4 binary
+*.mp3 binary

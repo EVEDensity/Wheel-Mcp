@@ -86,36 +86,45 @@ async function install() {
   console.log(`Downloading ${downloadUrl}`);
   await downloadFile(downloadUrl, archivePath);
 
-  console.log(`Reading zip with adm-zip`);
-  const zip = new AdmZip(archivePath);
-  const zipEntries = zip.getEntries();
-
-  const picked = pickBinary(platform, zipEntries);
-  if (!picked) {
-    const names = zipEntries.filter((e) => !e.isDirectory).map((e) => e.name);
-    throw new Error(`Could not find a Godot binary in ${cfg.archive}. Entries: ${names.join(', ')}`);
-  }
-  console.log(`Picked: ${picked.name} (${picked.header.size} bytes)`);
-
   const extractDir = path.join(ROOT, 'extract');
   await mkdir(extractDir, { recursive: true });
 
-  // Write the single picked file to extract/<picked.name>
-  // For macOS we need to preserve the subdirectory so the path is valid.
-  const targetPath = path.join(extractDir, picked.name);
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  writeFileSync(targetPath, picked.getData());
+  console.log(`Extracting with adm-zip`);
+  const zip = new AdmZip(archivePath);
+  const zipEntries = zip.getEntries();
 
-  if (platform === 'linux' || platform === 'darwin') await chmod(targetPath, 0o755);
+  let godotPath;
 
-  console.log(`Verifying: ${targetPath} --version`);
-  execFileSync(targetPath, ['--version'], { stdio: 'inherit' });
-
-  const godotPath = targetPath.replaceAll('\\', '/');
-  if (process.env.GITHUB_ENV) {
-    await appendFile(process.env.GITHUB_ENV, `GODOT_PATH=${godotPath}\n`);
+  if (platform === 'darwin') {
+    // macOS: MUST extract the entire Godot.app bundle — the Mach-O executable
+    // depends on Info.plist, Frameworks, dylibs inside the .app. Running the
+    // binary alone crashes immediately.
+    zip.extractAllTo(extractDir, true);
+    godotPath = path.join(extractDir, 'Godot.app', 'Contents', 'MacOS', 'Godot');
+    await chmod(godotPath, 0o755);
+  } else {
+    // Windows / Linux: extract just the single real binary file.
+    const picked = pickBinary(platform, zipEntries);
+    if (!picked) {
+      const names = zipEntries.filter((e) => !e.isDirectory).map((e) => e.name);
+      throw new Error(`Could not find a Godot binary in ${cfg.archive}. Entries: ${names.join(', ')}`);
+    }
+    console.log(`Picked: ${picked.name} (${picked.header.size} bytes)`);
+    const targetPath = path.join(extractDir, picked.name);
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    writeFileSync(targetPath, picked.getData());
+    if (platform === 'linux') await chmod(targetPath, 0o755);
+    godotPath = targetPath;
   }
-  console.log(`GODOT_PATH=${godotPath}`);
+
+  console.log(`Verifying: ${godotPath} --version`);
+  execFileSync(godotPath, ['--version'], { stdio: 'inherit' });
+
+  const envPath = godotPath.replaceAll('\\', '/');
+  if (process.env.GITHUB_ENV) {
+    await appendFile(process.env.GITHUB_ENV, `GODOT_PATH=${envPath}\n`);
+  }
+  console.log(`GODOT_PATH=${envPath}`);
 }
 
 await install();

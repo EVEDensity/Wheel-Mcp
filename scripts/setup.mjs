@@ -215,7 +215,9 @@ if (pretty) {
           'Open this repository folder in your IDE.',
           ...configured.map((entry) => `${entry.label ?? entry.id}: ${restartHint(entry.id)}`),
           'Call MCP tool `get_godot_version` to verify the connection.',
-          ...(skippedGlobal.length > 0 ? ['Run `npm run go:global` to also configure Claude Desktop / Windsurf / global Cursor.'] : []),
+          ...(skippedGlobal.length > 0
+            ? ['Run `npm run go:global` to also configure Claude Desktop / Windsurf / global Cursor.']
+            : []),
         ],
       },
       null,
