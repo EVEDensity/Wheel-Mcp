@@ -300,7 +300,7 @@ function isEngineNoise(message: string, subsequentLines?: string[]) {
     /(?:res:\/\/|\/)[^\s]+\.(?:gd|tscn|cs)\b/.test(combined) ||
     /SCRIPT ERROR|Parser Error|Parse Error/i.test(combined) ||
     /push_error/.test(combined);
-  if (/ERROR:/.test(m) && !hasUserCode) return true;
+  if (/ERROR:|WARNING:/.test(m) && !hasUserCode) return true;
   return false;
 }
 export async function readGodotDiagnostics(evidenceDir: string, projectPath?: string) {
