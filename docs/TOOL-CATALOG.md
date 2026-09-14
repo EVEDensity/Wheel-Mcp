@@ -2,7 +2,7 @@
 
 [English README](../README.md) | [中文说明](../README.zh-CN.md)
 
-Snapshot: **September 13, 2026**, `0.1.0-preview.1`, **57 tools**. Names and descriptions below were read using the official SDK client against this checkout; ownership was checked against the five registration modules.
+Snapshot: **September 14, 2026**, `0.1.0-preview.2`, **57 tools**. Names and descriptions below were read using the official SDK client against this checkout; ownership was checked against the five registration modules.
 
 Use MCP `tools/list` on your running server for current schemas, defaults and required fields. This page is navigation, not a substitute for schema discovery. Tool count is not a gameplay-correctness score.
 
