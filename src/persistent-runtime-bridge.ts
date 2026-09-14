@@ -111,6 +111,8 @@ export class PersistentRuntimeBridge {
     });
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('unable to allocate bridge port');
+    const godotLogFile = path.join(root, '.harness', 'godot.log');
+    await mkdir(path.dirname(godotLogFile), { recursive: true });
     const child = spawn(
       executable,
       [
@@ -118,6 +120,8 @@ export class PersistentRuntimeBridge {
         ...(options.verbose ? ['--verbose'] : []),
         '--path',
         root,
+        '--log-file',
+        godotLogFile,
         '--script',
         path.resolve(options.bridgePath),
         '--',

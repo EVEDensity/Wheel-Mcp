@@ -9,13 +9,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node: [20, 22]
         os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run build
@@ -29,15 +28,8 @@ jobs:
       - name: Dependency audit
         run: npm run audit:dependencies
       - name: Generate CycloneDX SBOM
-        run: npm run sbom > sbom-${{ matrix.os }}-node-${{ matrix.node }}.json
+        run: npm run sbom > sbom-${{ matrix.os }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ matrix.os }}-node-${{ matrix.node }}
-          path: sbom-${{ matrix.os }}-node-${{ matrix.node }}.json
-      - name: Save platform result
-        shell: bash
-        run: mkdir -p artifacts && node --test build/tests/*.test.js > artifacts/test-${{ matrix.os }}-node-${{ matrix.node }}.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: test-${{ matrix.os }}-node-${{ matrix.node }}
-          path: artifacts
+          name: sbom-${{ matrix.os }}
+          path: sbom-${{ matrix.os }}.json

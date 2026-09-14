@@ -25,17 +25,8 @@ jobs:
         run: node scripts/install.mjs --skip-npm
       - run: npm run format:check
       - run: npm run lint
-      - name: Install Godot 4.7.2 console
-        shell: pwsh
-        run: |
-          $godotDir = Join-Path $env:RUNNER_TEMP 'godot'
-          New-Item -ItemType Directory -Force -Path $godotDir | Out-Null
-          $exe = Join-Path $godotDir 'Godot_v4.7.2-stable_win64_console.exe'
-          Invoke-WebRequest `
-            -Uri 'https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64_console.exe' `
-            -OutFile $exe
-          & $exe --version
-          "GODOT_PATH=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install Godot 4.7.2
+        run: node scripts/ci-install-godot.mjs
       - name: Full test suite
         run: npm test
       - name: Generate release matrix

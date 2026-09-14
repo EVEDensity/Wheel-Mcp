@@ -199,9 +199,13 @@ export async function launchProject({
   const stdoutPath = path.join(evidence, 'stdout.log');
   const stderrPath = path.join(evidence, 'stderr.log');
   const metadataPath = path.join(evidence, 'process.json');
+  const godotLogFile = path.join(root, '.harness', 'godot.log');
+  await mkdir(path.dirname(godotLogFile), { recursive: true });
   const args: string[] = [];
   if (headless) args.push('--headless');
-  args.push('--path', root, ...extraArgs);
+  args.push('--path', root);
+  args.push('--log-file', godotLogFile);
+  args.push(...extraArgs);
   const child = spawn(resolveGodotPath(godotPath), args, {
     cwd: root,
     windowsHide: true,
@@ -672,6 +676,11 @@ function runProcess(
   extraEnv: Record<string, string> = {},
   timeout?: TimeoutContext,
 ): Promise<ProcessResult> {
+  // Inject --log-file so Godot writes its engine log inside the project
+  // tree instead of user://logs which CI runners often cannot write to.
+  const godotLogFile = path.join(cwd, '.harness', 'godot.log');
+  args = [...args, '--log-file', godotLogFile];
+  void mkdir(path.dirname(godotLogFile), { recursive: true }).catch(() => undefined);
   return new Promise((resolve) => {
     const context = timeout ?? createTimeoutContext(timeoutSeconds * 1000);
     const ownsContext = !timeout;
