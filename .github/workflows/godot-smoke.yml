@@ -1,4 +1,4 @@
-name: godot-smoke
+﻿name: godot-smoke
 
 on:
   push:
@@ -14,9 +14,12 @@ jobs:
     env:
       REAL_GODOT_PROJECT: tests/fixtures/runtime-behavior
     steps:
-      - name: Disable Git autocrlf (let .gitattributes handle line endings)
-        run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
+      - name: Force LF line endings (override actions/checkout autocrlf=true)
+        run: |
+          git config core.autocrlf false
+          git rm -rf . >/dev/null
+          git checkout . >/dev/null
       - uses: actions/setup-node@v4
         with:
           node-version: 22
