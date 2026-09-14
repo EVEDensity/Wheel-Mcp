@@ -39,8 +39,17 @@ jobs:
         if: failure()
         shell: bash
         run: |
+          echo "=== .harness files ==="
+          ls -la .harness/ 2>/dev/null || echo "No .harness dir"
           for f in .harness/stderr.log .harness/godot.log .harness/stdout.log; do
-            if [ -f "$f" ]; then echo "=== $f ==="; cat "$f"; echo; fi
+            if [ -f "$f" ]; then
+              echo ""
+              echo "=== $f ($(wc -l < "$f") lines) ==="
+              echo "--- tail 60 ---"
+              tail -60 "$f"
+              echo "--- ERROR/WARNING lines ---"
+              grep -nE '(ERROR|WARNING|error|warning|SCRIPT)' "$f" | head -30 || true
+            fi
           done
       - uses: actions/upload-artifact@v4
         if: always()
