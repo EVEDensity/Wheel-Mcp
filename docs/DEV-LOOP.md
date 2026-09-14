@@ -15,7 +15,7 @@ first so its imported resources are available. The bridge is the repository's
 ```json
 {
   "projectPath": "D:/games/example",
-  "godotPath": "E:/AI/Godot_v4.7.2-stable_win64_console.exe",
+  "godotPath": "D:/tools/Godot_v4.7.2-stable_win64_console.exe",
   "bridgePath": "D:/tools/mcp/godot-plugin/runtime_bridge.gd",
   "evidenceDir": "D:/evidence/example",
   "scenePath": "res://main.tscn",

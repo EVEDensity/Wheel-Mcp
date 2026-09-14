@@ -9,7 +9,7 @@ function runInstall(extraArgs: string[] = []) {
   return spawnSync(process.execPath, ['scripts/install.mjs', ...extraArgs], {
     cwd: process.cwd(),
     encoding: 'utf8',
-    env: { ...process.env, GODOT_PATH: process.env.GODOT_PATH ?? 'E:/AI/Godot_v4.7.2-stable_win64_console.exe' },
+    env: { ...process.env },
   });
 }
 
@@ -32,10 +32,7 @@ test('install smoke: node scripts/install.mjs writes project MCP configs', async
 });
 
 test('install smoke: npm run go delegates to install.mjs', () => {
-  const env = {
-    ...process.env,
-    GODOT_PATH: process.env.GODOT_PATH ?? 'E:/AI/Godot_v4.7.2-stable_win64_console.exe',
-  };
+  const env = { ...process.env };
   const result =
     process.platform === 'win32'
       ? spawnSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm.cmd run go -- --skip-npm'], {

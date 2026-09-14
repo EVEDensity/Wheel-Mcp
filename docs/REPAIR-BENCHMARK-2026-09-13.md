@@ -18,10 +18,10 @@ set of unknown historical bugs. Results must not be extrapolated to all games.
 - Godot: `4.7.2.stable.official.ed1daf0bf`, Windows.
 - Upstream: `https://github.com/godotengine/godot-demo-projects`, MIT.
 - Revision: `a3b5c113112f77291d5f3d1360f33a882fdc52f7`.
-- Raw report: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z/report.json`.
-- Actual MCP requests/responses: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z/mcp-transcript.json`.
-- Implementation hashes: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z/code-hashes.json`.
-- Source license: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z/UPSTREAM-LICENSE.md`.
+- Raw report: `runs\repair-benchmark\2026-09-13T10-30-29.327Z/report.json`.
+- Actual MCP requests/responses: `runs\repair-benchmark\2026-09-13T10-30-29.327Z/mcp-transcript.json`.
+- Implementation hashes: `runs\repair-benchmark\2026-09-13T10-30-29.327Z/code-hashes.json`.
+- Source license: `runs\repair-benchmark\2026-09-13T10-30-29.327Z/UPSTREAM-LICENSE.md`.
 - Trackable summary: `benchmarks/repair-results-2026-09-13.json`.
 
 ## Results
@@ -80,7 +80,7 @@ errors at shutdown; these have NOT been repaired by this benchmark.
 The tool default remains `including-shutdown`, which is stricter.
 
 The earlier failed/calibration run is preserved at:
-`D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T09-50-45.328Z\report.json`.
+`runs\repair-benchmark\2026-09-13T09-50-45.328Z\report.json`.
 That run exposed shutdown diagnostics, static-render screenshot hangs and a
 navigation target outside the usable polygon. The final run fixes forced-frame
 capture and the target, and explicitly narrows the diagnostic gate as above.
@@ -96,45 +96,45 @@ These large local artifacts are ignored by Git; clone users must regenerate.
 
 ### Platformer
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\platformer\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\platformer\repaired\project.godot`
 - Scene: `res://game_singleplayer.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\platformer\evidence\repaired\dev-loop-313917ba-8da7-4629-ae24-24cebb35045d\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\platformer\evidence\repaired\dev-loop-313917ba-8da7-4629-ae24-24cebb35045d\attempt-1\screenshot.png`
 
 ### Top-down RPG
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\rpg\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\rpg\repaired\project.godot`
 - Scene: `res://game.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\rpg\evidence\repaired\dev-loop-ea46748f-b522-4652-a3e9-d0cd6cc9b9c4\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\rpg\evidence\repaired\dev-loop-ea46748f-b522-4652-a3e9-d0cd6cc9b9c4\attempt-1\screenshot.png`
 
 ### 2D action
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\action\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\action\repaired\project.godot`
 - Scene: `res://main.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\action\evidence\repaired\dev-loop-7cc5f88f-19cf-40fe-9eab-7bb042e2663f\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\action\evidence\repaired\dev-loop-7cc5f88f-19cf-40fe-9eab-7bb042e2663f\attempt-1\screenshot.png`
 
 ### UI intensive
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\ui\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\ui\repaired\project.godot`
 - Scene: `res://control_gallery.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\ui\evidence\repaired\dev-loop-1fe05d5b-5f4e-45ef-86af-08b7ed29dd6b\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\ui\evidence\repaired\dev-loop-1fe05d5b-5f4e-45ef-86af-08b7ed29dd6b\attempt-1\screenshot.png`
 
 ### Navigation
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\navigation\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\navigation\repaired\project.godot`
 - Scene: `res://navigation.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\navigation\evidence\repaired\dev-loop-03510a7f-e0f8-4afe-ac2a-29c3871973a9\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\navigation\evidence\repaired\dev-loop-03510a7f-e0f8-4afe-ac2a-29c3871973a9\attempt-1\screenshot.png`
 
 ### Audio
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\audio\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\audio\repaired\project.godot`
 - Scene: `res://generator.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\audio\evidence\repaired\dev-loop-068962a5-4287-4675-bea3-b5f63a364da3\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\audio\evidence\repaired\dev-loop-068962a5-4287-4675-bea3-b5f63a364da3\attempt-1\screenshot.png`
 
 ### Multi-scene
 
-- Project: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\multi-scene\repaired\project.godot`
+- Project: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\multi-scene\repaired\project.godot`
 - Scene: `res://scene_a.tscn`
-- Screenshot: `D:\Users\xyn\Desktop\AI Game Harness\mcp\runs\repair-benchmark\2026-09-13T10-30-29.327Z\multi-scene\evidence\repaired\dev-loop-01b20c21-b7ef-4aa5-9984-db5db3c19be9\attempt-1\screenshot.png`
+- Screenshot: `runs\repair-benchmark\2026-09-13T10-30-29.327Z\multi-scene\evidence\repaired\dev-loop-01b20c21-b7ef-4aa5-9984-db5db3c19be9\attempt-1\screenshot.png`
 
 ## Repeat the experiment
 

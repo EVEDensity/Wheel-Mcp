@@ -17,7 +17,7 @@ test('scenario loader accepts YAML and failed event assertions are recorded', as
     scenario,
     scenarioPath,
     evidenceDir: path.join(root, 'evidence'),
-    godotPath: 'E:/AI/Godot_v4.7.2-stable_win64_console.exe',
+    godotPath: 'D:/tools/Godot_v4.7.2-stable_win64_console.exe',
     bridgePath: path.join(root, 'bridge.gd'),
     globalTimeoutMs: 1000,
   });

@@ -6,7 +6,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const projectPath = path.resolve('tests/fixtures/runtime-behavior');
-const godotPath = process.env.GODOT_PATH ?? 'E:\\AI\\Godot_v4.7.2-stable_win64_console.exe';
+const godotPath = process.env.GODOT_PATH ?? '';
 const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
 
 test('official MCP client to persistent bridge to real Godot behavior scene', async (t) => {

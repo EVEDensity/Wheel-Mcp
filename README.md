@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="Wheel-mcp logo" width="128">
+</p>
+
 # Wheel-mcp
 
 **English** | [简体中文](README.zh-CN.md)

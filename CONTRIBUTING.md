@@ -50,6 +50,9 @@ After dependencies are already present, contributors can rerun configuration onl
 node scripts/install.mjs --skip-npm
 ```
 
+Generated MCP configs (`.cursor/mcp.json`, `.vscode/mcp.json`, `.mcp.json`) are
+gitignored. Reference copies live under [`examples/mcp/`](examples/mcp/).
+
 Install behavior is covered by `tests/install.test.ts`.
 
 ### Verification gates

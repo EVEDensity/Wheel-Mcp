@@ -3,7 +3,7 @@
   "godotVersion": "4.7.2.stable.official.ed1daf0bf",
   "sourceBenchmark": "benchmarks/repair-results-2026-09-13.json",
   "beforeRevision": "abfc3fb",
-  "output": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z",
+  "output": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z",
   "methodology": "Same seven already-repaired projects and original gameplay assertions, non-headless screenshots, strict diagnostics and zero error budget. Only bridge teardown differs between paired runs. Not independent unseen-defect data.",
   "bridgeHashes": {
     "before": "7cd130973cd97d7d3cc2b3124974e0ae24b050bcc294b18196b0dc293f726b90",
@@ -12,11 +12,11 @@
   "results": [
     {
       "name": "platformer",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
       "before": {
         "status": "FAIL",
         "errorCount": 1,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08",
         "shutdownDiagnostics": [
           {
             "severity": "warning",
@@ -49,12 +49,12 @@
           "shutdown",
           "diagnostics"
         ],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\before\\dev-loop-c7ac3182-c6e3-450f-bb66-530368960c08\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -65,16 +65,16 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\platformer\\after\\dev-loop-993fb291-97cc-43d6-8905-0af39a122b18\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "rpg",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
       "before": {
         "status": "FAIL",
         "errorCount": 22,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a",
         "shutdownDiagnostics": [
           {
             "severity": "warning",
@@ -314,12 +314,12 @@
           "shutdown",
           "diagnostics"
         ],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\before\\dev-loop-8686a159-9f70-4dce-ab6e-30253e7d1c8a\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "FAIL",
         "errorCount": 22,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84",
         "shutdownDiagnostics": [
           {
             "severity": "warning",
@@ -559,16 +559,16 @@
           "shutdown",
           "diagnostics"
         ],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\rpg\\after\\dev-loop-d54a595c-bc19-4734-a704-982842281e84\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "action",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
       "before": {
         "status": "FAIL",
         "errorCount": 1,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a",
         "shutdownDiagnostics": [
           {
             "severity": "warning",
@@ -601,12 +601,12 @@
           "shutdown",
           "diagnostics"
         ],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\before\\dev-loop-e3f0688f-c3cb-4b66-896b-e10e03a9e69a\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -617,16 +617,16 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\action\\after\\dev-loop-e9d6e332-3458-490a-a7b2-669f36a9f647\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "ui",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
       "before": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -637,12 +637,12 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\before\\dev-loop-feb0232b-6851-4ca4-8ec8-3b252bb7acb2\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -653,16 +653,16 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\ui\\after\\dev-loop-7b6d3bd9-4e9f-49bd-b5f9-16037905cc27\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "navigation",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
       "before": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -673,12 +673,12 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\before\\dev-loop-d38548de-0fa1-41d7-a9a1-17f695f63429\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -689,16 +689,16 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\navigation\\after\\dev-loop-d734b4ff-4437-4446-a8e4-fcc4ef7d43aa\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "audio",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
       "before": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -709,12 +709,12 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\before\\dev-loop-9fed3e95-686a-4b3e-b49f-36c2e47729ab\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -725,16 +725,16 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\audio\\after\\dev-loop-ebeeec31-d6bc-4307-9510-396b7465f53c\\attempt-0\\screenshot.png"
       }
     },
     {
       "name": "multi-scene",
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
       "before": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -745,12 +745,12 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\before\\dev-loop-7d153631-9c3d-413f-9cb1-80464680fa25\\attempt-0\\screenshot.png"
       },
       "after": {
         "status": "PASS",
         "errorCount": 0,
-        "evidenceDir": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74",
+        "evidenceDir": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74",
         "shutdownDiagnostics": [],
         "shutdown": {
           "stopped": true,
@@ -761,7 +761,7 @@
           "signal": null
         },
         "failedChecks": [],
-        "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74\\attempt-0\\screenshot.png"
+        "screenshotPath": "runs\\strict-shutdown\\2026-09-13T11-35-45.230Z\\multi-scene\\after\\dev-loop-76743bd2-5330-409f-9f82-8bc4c7bc1e74\\attempt-0\\screenshot.png"
       }
     }
   ],

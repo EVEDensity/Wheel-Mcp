@@ -21,7 +21,7 @@ test('resolveGodotPathSync requires an explicit executable', () => {
 
 test('resolveGodotPathSync normalizes an executable path', () => {
   assert.equal(
-    resolveGodotPathSync('E:/AI/Godot_v4.7.2-stable_win64_console.exe').endsWith(
+    resolveGodotPathSync('D:/tools/Godot_v4.7.2-stable_win64_console.exe').endsWith(
       'Godot_v4.7.2-stable_win64_console.exe',
     ),
     true,

@@ -7,7 +7,7 @@
     "license": "MIT"
   },
   "method": "Caller-supplied exact repair candidates; one deliberately seeded defect per category; upstream games, not newly authored games. No claim of arbitrary patch synthesis.",
-  "output": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z",
+  "output": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z",
   "aggregate": {
     "completed": 7,
     "totalPlanned": 7,
@@ -55,8 +55,8 @@
         1600,
         960
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\evidence\\repaired\\dev-loop-313917ba-8da7-4629-ae24-24cebb35045d\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\platformer\\evidence\\repaired\\dev-loop-313917ba-8da7-4629-ae24-24cebb35045d\\attempt-1\\screenshot.png"
     },
     {
       "name": "rpg",
@@ -76,8 +76,8 @@
         1280,
         720
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\evidence\\repaired\\dev-loop-ea46748f-b522-4652-a3e9-d0cd6cc9b9c4\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\rpg\\evidence\\repaired\\dev-loop-ea46748f-b522-4652-a3e9-d0cd6cc9b9c4\\attempt-1\\screenshot.png"
     },
     {
       "name": "action",
@@ -97,8 +97,8 @@
         480,
         720
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\evidence\\repaired\\dev-loop-7cc5f88f-19cf-40fe-9eab-7bb042e2663f\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\action\\evidence\\repaired\\dev-loop-7cc5f88f-19cf-40fe-9eab-7bb042e2663f\\attempt-1\\screenshot.png"
     },
     {
       "name": "ui",
@@ -118,8 +118,8 @@
         1152,
         648
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\evidence\\repaired\\dev-loop-1fe05d5b-5f4e-45ef-86af-08b7ed29dd6b\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\ui\\evidence\\repaired\\dev-loop-1fe05d5b-5f4e-45ef-86af-08b7ed29dd6b\\attempt-1\\screenshot.png"
     },
     {
       "name": "navigation",
@@ -139,8 +139,8 @@
         1152,
         648
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\evidence\\repaired\\dev-loop-03510a7f-e0f8-4afe-ac2a-29c3871973a9\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\navigation\\evidence\\repaired\\dev-loop-03510a7f-e0f8-4afe-ac2a-29c3871973a9\\attempt-1\\screenshot.png"
     },
     {
       "name": "audio",
@@ -160,8 +160,8 @@
         1152,
         648
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\evidence\\repaired\\dev-loop-068962a5-4287-4675-bea3-b5f63a364da3\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\audio\\evidence\\repaired\\dev-loop-068962a5-4287-4675-bea3-b5f63a364da3\\attempt-1\\screenshot.png"
     },
     {
       "name": "multi-scene",
@@ -181,8 +181,8 @@
         1152,
         648
       ],
-      "projectPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
-      "screenshotPath": "D:\\Users\\xyn\\Desktop\\AI Game Harness\\mcp\\runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\evidence\\repaired\\dev-loop-01b20c21-b7ef-4aa5-9984-db5db3c19be9\\attempt-1\\screenshot.png"
+      "projectPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\repaired",
+      "screenshotPath": "runs\\repair-benchmark\\2026-09-13T10-30-29.327Z\\multi-scene\\evidence\\repaired\\dev-loop-01b20c21-b7ef-4aa5-9984-db5db3c19be9\\attempt-1\\screenshot.png"
     }
   ],
   "codeHashes": {

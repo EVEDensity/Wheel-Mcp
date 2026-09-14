@@ -9,7 +9,7 @@ test('setup script configures project-level MCP hosts', async () => {
   const result = spawnSync(process.execPath, ['scripts/setup.mjs', '--skip-build', '--force'], {
     cwd: process.cwd(),
     encoding: 'utf8',
-    env: { ...process.env, GODOT_PATH: process.env.GODOT_PATH ?? 'E:/AI/Godot_v4.7.2-stable_win64_console.exe' },
+    env: { ...process.env },
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   for (const relativePath of ['.cursor/mcp.json', '.vscode/mcp.json', '.mcp.json']) {

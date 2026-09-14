@@ -5,9 +5,8 @@ import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-const projectPath =
-  process.env.REAL_GODOT_PROJECT ?? 'D:\\Users\\xyn\\Desktop\\AI Game Harness\\v1\\benchmark\\final-game';
-const godotPath = process.env.GODOT_PATH ?? 'E:\\AI\\Godot_v4.7.2-stable_win64_console.exe';
+const projectPath = process.env.REAL_GODOT_PROJECT ?? path.resolve('tests/fixtures/runtime-behavior');
+const godotPath = process.env.GODOT_PATH ?? '';
 const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
 const root = path.resolve('runs/full-cli-mcp-matrix');
 const env = { ...process.env, GODOT_PATH: godotPath, GODOT_HARNESS_MAX_CONCURRENT_RUNS: '32' };

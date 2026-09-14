@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased - open-source hygiene
+
+- Add project logo at `assets/logo.png` and show it in both README entry points.
+- Gitignore generated MCP configs, Godot `.uid` files, SBOM/log artifacts and other
+  local-only outputs; add portable MCP examples under `examples/mcp/`.
+- Remove author-machine default paths from tests and benchmark summaries.
+
 ## Unreleased - Wheel-mcp rename and one-click install
 
 - Rename the package from `godot-game-harness-mcp` to **`wheel-mcp`**; update MCP
