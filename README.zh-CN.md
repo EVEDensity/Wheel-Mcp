@@ -406,7 +406,7 @@ npm run audit:dependencies
 npm run sbom > sbom.json
 ```
 
-GitHub Actions 在 `windows-godot.yml` 跑 Godot 子集，在 `release-gate.yml` 跑完整干净机器门禁。
+GitHub Actions 在 `godot-smoke.yml` 跑 Godot 子集（Windows / macOS / Linux），在 `release-gate.yml` 跑完整 Windows 干净机器门禁。
 通用 `ci.yml` 仅覆盖 Node 层，未设置 `GODOT_PATH` 时会跳过 Godot 测试。
 
 `release:check` 只检查元数据、文档和**已生成**的矩阵证据，不会替你运行编译、测试、矩阵或漏洞扫描。

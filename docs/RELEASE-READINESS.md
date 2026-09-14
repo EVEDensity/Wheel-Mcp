@@ -8,7 +8,9 @@ trusted-project local development; it does **not** promote the package to a
 stable numbered release or certify arbitrary autonomous repair.
 
 The validated runtime is **Godot 4.7.2 on Windows**. The local run used Node
-`24.19.0`. Linux/macOS real Godot results remain NOT_RUN. No enterprise
+`24.19.0`. Linux/macOS full release-gate results remain NOT_RUN; the
+`godot-smoke` workflow exercises README smoke + E2E subset on Windows, macOS
+and Linux when green. No enterprise
 certification, signature or external sign-off is required for this personal
 project. Remote TLS/secrets/audit setup depends on your actual deployment;
 [the practical guide](PRODUCTION-DEPLOYMENT.md) is not evidence that a public
@@ -20,7 +22,8 @@ endpoint has been deployed or tested.
 
 - [ ] `release-gate` workflow passes on a clean `windows-latest` runner (see
       [.github/workflows/release-gate.yml](../.github/workflows/release-gate.yml)).
-- [ ] `windows-godot` workflow passes with **0 skipped** Godot smoke tests.
+- [ ] `godot-smoke` workflow passes on Windows, macOS and Linux with **0 skipped**
+      Godot smoke tests.
 - [ ] Full local `npm test` reports **0 skipped** with `GODOT_PATH` set.
 
 ### Bump to `0.1.0-preview.2` when
@@ -57,12 +60,13 @@ green on Node-only matrix jobs as necessary but **insufficient** evidence.
 | Workflow | Runner | Godot | Purpose |
 | -------- | ------ | ----- | ------- |
 | `ci.yml` | Node 20/22 × Windows/Linux/macOS | No | build, install smoke, lint, Node tests (Godot tests skip) |
-| `windows-godot.yml` | Windows | Yes (4.7.2 console) | README smoke + E2E subset; **fails on any skip** |
+| `godot-smoke.yml` | Windows, macOS, Linux | Yes (4.7.2) | README smoke + E2E subset; **fails on any skip** |
 | `release-gate.yml` | Windows | Yes | clean-machine full gate (see below) |
 
-Generic matrix CI is intentionally Node-only. Real Godot coverage lives in the
-two Windows workflows above so a green `ci.yml` alone cannot masquerade as a
-full runtime gate.
+Generic matrix CI is intentionally Node-only. Real Godot smoke coverage lives in
+`godot-smoke.yml` across three OS runners; the Windows-only `release-gate.yml`
+still owns matrix generation and `release:check`. A green `ci.yml` alone cannot
+masquerade as a full runtime gate.
 
 ## Clean-machine release gate (CI)
 
@@ -170,7 +174,7 @@ See [historical methodology and local paths](HISTORICAL-DEFECTS.md),
 
 ## Practical remaining work
 
-1. Confirm `release-gate` and `windows-godot` workflows pass on GitHub Actions
+1. Confirm `release-gate` and `godot-smoke` workflows pass on GitHub Actions
    before tagging `0.1.0-preview.2`.
 2. Connect a real client-side model adapter plus explicit review UI. Measure it
    on a newly curated, undisclosed patch set, not recorded upstream candidates.

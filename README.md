@@ -422,9 +422,9 @@ npm run audit:dependencies
 npm run sbom > sbom.json
 ```
 
-GitHub Actions runs the Godot subset on `windows-godot.yml` and the full
-clean-machine gate on `release-gate.yml`. Generic `ci.yml` is Node-only and
-may skip Godot tests when `GODOT_PATH` is unset.
+GitHub Actions runs the Godot subset on `godot-smoke.yml` (Windows, macOS and
+Linux) and the full clean-machine gate on `release-gate.yml`. Generic `ci.yml`
+is Node-only and may skip Godot tests when `GODOT_PATH` is unset.
 
 The release checker checks metadata and existing matrix evidence; it **does not
 run build, lint, tests or matrix generation**. A fresh checkout cannot use another

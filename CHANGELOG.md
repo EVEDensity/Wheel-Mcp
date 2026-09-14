@@ -12,9 +12,9 @@
 - Fix Windows `install.mjs` npm spawn by invoking `cmd.exe /c npm install`.
 - Add install smoke tests (`tests/install.test.ts`) and a Godot CI subset runner
   (`npm run test:godot-ci`).
-- Add GitHub Actions workflows: `windows-godot.yml` (README smoke + E2E subset)
-  and `release-gate.yml` (clean-machine build → test → matrix → release:check →
-  audit/sbom).
+- Add GitHub Actions workflows: `godot-smoke.yml` (README smoke + E2E subset on
+  Windows, macOS and Linux) and `release-gate.yml` (clean-machine build → test →
+  matrix → release:check → audit/sbom on Windows).
 
 ## Unreleased - GitHub onboarding documentation
 
