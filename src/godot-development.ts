@@ -284,8 +284,21 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
       const line = lines[index];
       // Recognize engine diagnostic headers, not user text such as "error count: 0".
       if (!/^\s*(?:SCRIPT ERROR:|ERROR:|WARNING:|Parse Error:|Parser Error:)/.test(line)) continue;
+      // Noise filter: known engine-level errors that are harmless in CI headless.
+      // These are not script/playback failures — they're the editor failing to write
+      // its own cache/settings (AppData, ~/.local/share, etc.), missing D-Bus/X11
+      // session, or audio driver init failures. None of them mean the game code broke.
+      const trimmed = line.trim();
+      if (
+        /^\s*ERROR: Cannot (?:create|save) (?:file|editor help cache)/i.test(line) ||
+        /^\s*ERROR: Error saving editor settings/i.test(line) ||
+        /editor_doc_cache|editor_settings/.test(trimmed) ||
+        /X11|D-Bus|dbus|xcb|xkbcommon/i.test(trimmed) ||
+        /AudioDriver|audio driver|alsa|wasapi|pulse/i.test(trimmed)
+      )
+        continue;
       const kind = /Parse[r]? Error/i.test(line) ? 'parser' : /^\s*WARNING:/.test(line) ? 'warning' : 'runtime';
-      const message = line.trim();
+      const message = trimmed;
       const stack: Array<{ file: string; line: number; column?: number }> = [];
       const addLocation = (text: string) => {
         const m = text.match(/((?:res:\/\/|[A-Za-z]:[\\/])[^\r\n]*?\.(?:gd|tscn|cs)):(\d+)(?::(\d+))?/);
