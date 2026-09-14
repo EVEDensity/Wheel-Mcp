@@ -6,6 +6,7 @@ import { createTimeoutContext, TimeoutContext, TimeoutError, CancelledError } fr
 import { terminateProcessTree } from './process-tree.js';
 import { ensureEvidenceManifest } from './evidence.js';
 import { DEFAULT_GODOT_PROCESS_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
+import { resolveGodotPathSync } from './godot-path.js';
 
 export type PersistentBridgeOptions = {
   godotPath?: string;
@@ -33,11 +34,6 @@ type Pending = {
   timer: NodeJS.Timeout;
   abortCleanup?: () => void;
 };
-
-function resolveGodotPath(value = process.env.GODOT_PATH): string {
-  if (!value) throw new Error('GODOT_PATH is required');
-  return path.resolve(value);
-}
 
 export class PersistentRuntimeBridge {
   readonly sessionId: string;
@@ -88,7 +84,7 @@ export class PersistentRuntimeBridge {
   static async start(options: PersistentBridgeOptions): Promise<PersistentRuntimeBridge> {
     options.timeout?.throwIfCancelled();
     options.timeout?.throwIfExpired();
-    const executable = resolveGodotPath(options.godotPath);
+    const executable = resolveGodotPathSync(options.godotPath);
     const root = path.resolve(options.projectPath);
     const evidenceDir = path.resolve(options.evidenceDir || path.join(root, '.harness', 'persistent-bridge'));
     await mkdir(evidenceDir, { recursive: true });

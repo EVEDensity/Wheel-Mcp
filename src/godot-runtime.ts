@@ -9,6 +9,7 @@ import { DEFAULT_GODOT_PROCESS_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './tim
 import { ensureEvidenceManifest, finalizeBridgeEvidence } from './evidence.js';
 import { terminateProcessTree, type ProcessTreeResult } from './process-tree.js';
 import { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
+import { resolveGodotPathSync } from './godot-path.js';
 export {
   readRuntimeEvents,
   readRuntimeEventsSince,
@@ -71,9 +72,10 @@ type ProcessResult = {
 };
 
 export function resolveGodotPath(value = process.env.GODOT_PATH) {
-  if (!value) throw new Error('GODOT_PATH is required');
-  return path.resolve(value);
+  return resolveGodotPathSync(value);
 }
+
+export { discoverGodotPath, parseEnvFile, resolveGodotPathSync } from './godot-path.js';
 
 function checkTimeout(timeout?: TimeoutContext): void {
   timeout?.throwIfCancelled();
