@@ -1,17 +1,20 @@
 {
-  "name": "godot-game-harness-mcp",
+  "name": "wheel-mcp",
   "version": "0.1.0-preview.1",
   "private": false,
   "type": "module",
-  "description": "CLI-first Godot runtime adapter for AI Game Harness.",
+  "description": "Wheel-mcp: Godot runtime MCP server and CLI for AI-assisted game development.",
   "license": "MIT",
   "bin": {
-    "godot-harness": "build/src/cli.js",
-    "godot-harness-mcp": "build/src/mcp-server-sdk.js",
-    "godot-harness-mcp-http": "build/src/mcp-http-server.js"
+    "wheel-mcp-cli": "build/src/cli.js",
+    "wheel-mcp": "build/src/mcp-server-sdk.js",
+    "wheel-mcp-http": "build/src/mcp-http-server.js"
   },
   "scripts": {
     "build": "tsc",
+    "setup": "node scripts/setup.mjs",
+    "postinstall": "node scripts/setup.mjs --postinstall",
+    "mcp": "node scripts/run-mcp.mjs",
     "start": "node build/src/cli.js doctor",
     "test": "npm run build && node --test build/tests/*.test.js",
     "format": "prettier --write src tests godot-plugin *.json",

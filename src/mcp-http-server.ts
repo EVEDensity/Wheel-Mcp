@@ -6,7 +6,7 @@ const config = readStreamableHttpConfig();
 const instance = await startStreamableHttpServer(config, createMcpServer);
 const address = instance.httpServer.address();
 console.error(
-  `Godot Harness MCP Streamable HTTP listening on ${typeof address === 'string' ? address : `${address?.address}:${address?.port}`}${config.path}`,
+  `Wheel-mcp Streamable HTTP listening on ${typeof address === 'string' ? address : `${address?.address}:${address?.port}`}${config.path}`,
 );
 
 let closing = false;

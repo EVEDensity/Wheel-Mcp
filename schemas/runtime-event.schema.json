@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-game-harness.invalid/schemas/runtime-event.schema.json",
-  "title": "Godot Harness Runtime Event",
+  "$id": "https://wheel-mcp.invalid/schemas/runtime-event.schema.json",
+  "title": "Wheel-mcp Runtime Event",
   "type": "object",
   "required": ["schema_version", "source", "run_id", "sequence", "timestamp", "event", "payload"],
   "properties": {

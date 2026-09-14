@@ -36,7 +36,7 @@ test('stdio MCP handshake and tool discovery', async () => {
       }) + '\n',
     );
     const init = (await next()) as Record<string, any>;
-    assert.equal(init.result.serverInfo.name, 'godot-game-harness-mcp');
+    assert.equal(init.result.serverInfo.name, 'wheel-mcp');
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
     child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }) + '\n');
     const listed = (await next()) as Record<string, any>;

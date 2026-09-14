@@ -55,7 +55,7 @@ test('Streamable HTTP authenticates, validates origin, and isolates sessions', a
     assert.equal(initialized.status, 200, initialized.body);
     const sessionId = initialized.headers['mcp-session-id'];
     assert.ok(sessionId);
-    assert.equal(JSON.parse(initialized.body).result.serverInfo.name, 'godot-game-harness-mcp');
+    assert.equal(JSON.parse(initialized.body).result.serverInfo.name, 'wheel-mcp');
 
     const listed = await post(base, {
       headers: { ...common, 'Mcp-Session-Id': sessionId, 'Mcp-Protocol-Version': '2025-03-26' },

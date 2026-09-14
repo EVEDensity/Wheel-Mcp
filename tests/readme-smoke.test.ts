@@ -21,7 +21,7 @@ async function firstRunArguments(file: string) {
     ) {
       // Exercise the documented arguments, not a separately maintained copy.
       return developmentLoopSchema.parse(
-        JSON.parse(match[1].replaceAll('D:/tools/godot-game-harness-mcp', process.cwd().replaceAll('\\', '/'))),
+        JSON.parse(match[1].replaceAll('D:/games/Wheel-mcp', process.cwd().replaceAll('\\', '/'))),
       );
     }
   }

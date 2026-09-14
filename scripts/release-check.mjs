@@ -6,7 +6,7 @@ const packageJson = JSON.parse(await readFile(new URL('../package.json', import.
 const version = packageJson.version;
 if (!/^0\.1\.0-preview\.\d+$/.test(version) && !/^0\.2\.0$/.test(version))
   throw new Error(`unsupported release version: ${version}`);
-if (packageJson.bin['godot-harness-mcp'] !== 'build/src/mcp-server-sdk.js')
+if (packageJson.bin['wheel-mcp'] !== 'build/src/mcp-server-sdk.js')
   throw new Error('MCP bin must use official SDK entrypoint');
 if (packageJson.engines?.node !== '>=20.19.0') throw new Error('Node >=20.19.0 is required');
 if (!packageJson.scripts?.sbom || !packageJson.scripts?.['audit:dependencies'])

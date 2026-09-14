@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://ai-game-harness.invalid/schemas/error.schema.json",
+  "$id": "https://wheel-mcp.invalid/schemas/error.schema.json",
   "type": "object",
   "required": ["schema_version", "source", "status", "code", "message", "retryable", "timed_out"],
   "properties": {
