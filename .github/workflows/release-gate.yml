@@ -1,4 +1,4 @@
-﻿name: release-gate
+name: release-gate
 
 on:
   workflow_dispatch:
@@ -14,11 +14,10 @@ jobs:
       REAL_GODOT_PROJECT: tests/fixtures/runtime-behavior
     steps:
       - uses: actions/checkout@v4
-      - name: Force LF line endings (override actions/checkout autocrlf=true)
+      - name: Force LF line endings
         run: |
           git config core.autocrlf false
-          git rm -rf . >/dev/null
-          git checkout . >/dev/null
+          git checkout -- .
       - uses: actions/setup-node@v4
         with:
           node-version: 22

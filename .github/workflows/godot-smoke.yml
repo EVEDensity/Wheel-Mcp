@@ -1,4 +1,4 @@
-﻿name: godot-smoke
+name: godot-smoke
 
 on:
   push:
@@ -15,11 +15,10 @@ jobs:
       REAL_GODOT_PROJECT: tests/fixtures/runtime-behavior
     steps:
       - uses: actions/checkout@v4
-      - name: Force LF line endings (override actions/checkout autocrlf=true)
+      - name: Force LF line endings
         run: |
           git config core.autocrlf false
-          git rm -rf . >/dev/null
-          git checkout . >/dev/null
+          git checkout -- .
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -40,24 +39,17 @@ jobs:
         run: node scripts/ci-install-godot.mjs
       - name: Godot README smoke and E2E subset
         run: npm run test:godot-ci
-      - name: Dump Godot engine log on failure
+      - name: Dump Godot stderr on failure
         if: failure()
         shell: bash
         run: |
-          if [ -d .harness ]; then
-            echo "=== .harness contents ==="
-            find .harness -type f -ls
-            for f in .harness/stderr.log .harness/godot.log .harness/stdout.log .harness/debug-output.log; do
-              if [ -f "$f" ]; then echo "=== $f ==="; cat "$f"; echo; fi
-            done
-          else
-            echo "No .harness dir found"
-          fi
+          for f in .harness/stderr.log .harness/godot.log .harness/stdout.log; do
+            if [ -f "$f" ]; then echo "=== $f ==="; cat "$f"; echo; fi
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: godot-smoke-evidence-${{ matrix.os }}
           path: |
             .harness
-            tests/fixtures/runtime-behavior/.godot
           if-no-files-found: ignore
