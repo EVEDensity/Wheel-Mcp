@@ -1,5 +1,7 @@
 # Contributing
 
+> **Product boundary:** Wheel-mcp provides Godot MCP capabilities for Codex, Cursor and other MCP clients. Planning and candidate generation stay in the client; the server performs bounded, authorized operations and returns diagnostics/evidence. No model-provider or autonomous task orchestration is added. See the [scope and implementation plan](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md).
+
 [Project overview](README.md) | [中文说明](README.zh-CN.md) | [Tool catalog](docs/TOOL-CATALOG.md)
 
 This is a practical personal project. No corporate certification or sign-off is

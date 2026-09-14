@@ -1,5 +1,7 @@
 # Client-generated repair candidates
 
+> **Product boundary:** Wheel-mcp provides Godot MCP capabilities for Codex, Cursor and other MCP clients. Planning and candidate generation stay in the client; the server performs bounded, authorized operations and returns diagnostics/evidence. No model-provider or autonomous task orchestration is added. See the [scope and implementation plan](PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md).
+
 This workflow keeps **patch generation in the MCP client**. The server diagnoses
 and verifies; it never discovers model credentials, calls an ambient provider,
 or approves its own candidate. It works with the same connected SDK client over

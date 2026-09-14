@@ -6,7 +6,9 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-**A real, repeatable Godot development loop for AI clients: inspect, edit, run,
+**Positioning:** A Godot MCP capability server and verified execution adapter for Codex, Cursor and other MCP clients. Clients own planning, game design and code generation; this server owns bounded Godot operations, diagnostics and evidence. It is not an autonomous game-building agent or an official Codex/Cursor product. Client compatibility must be verified per version.
+
+**A production-oriented Godot MCP capability server for Codex, Cursor and other AI clients: inspect, edit, run,
 interact, verify, and keep the evidence.**
 
 This independent MCP server and CLI connects an assistant to project files
@@ -21,6 +23,8 @@ installed toolchain's engine requirements. The local evaluation used Node
 `24.19.0`. Linux/macOS real Godot support is not validated.
 
 ## Start here
+
+- **Production implementation plan (Chinese):** [36-task roadmap and AI execution manual](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) · [task state](docs/production-roadmap/tasks.json) · [worklog](docs/production-roadmap/WORKLOG.md). This is a future implementation plan, not a production-readiness claim.
 
 - **Game developers:** [quick start](#quick-start) -> [bundled first run](#first-verification-with-the-bundled-project) -> [your own development loop](#a-useful-development-loop).
 - **AI/client integrators:** [tool catalog](docs/TOOL-CATALOG.md) -> [client repair protocol](docs/CLIENT-REPAIR.md) -> [AI operating recipe](#operating-recipe-for-ai-clients).
@@ -425,6 +429,7 @@ npm run release:gate
 
 Or step by step: `npm test` → `npm run test:godot-ci` → `npm run matrix:generate`
 → `npm run release:check` → `npm run audit:dependencies` → `npm run sbom > sbom.json`
+
 ```
 
 GitHub Actions runs the Godot subset on `godot-smoke.yml` (Windows, macOS and
@@ -536,3 +541,4 @@ change does not promote the package to a stable release.
 
 Upstream demos/assets retain their original licenses. Neither Godot nor MCP
 maintainers endorse these benchmark conclusions.
+```

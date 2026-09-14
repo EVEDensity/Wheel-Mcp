@@ -6,6 +6,8 @@
 
 [English](README.md) | **简体中文**
 
+**项目定位：**面向 Codex、Cursor 等 AI 客户端的 Godot MCP 能力服务器与可验证执行适配器。客户端负责任务规划、游戏设计和代码生成；本服务负责受控 Godot 操作、诊断与证据，不是自主游戏开发 Agent，也不代表官方产品或认证。客户端兼容性按实测版本声明。
+
 **让 AI 不只修改 Godot 文件，还能运行游戏、执行交互、检查结果，并留下可复查的证据。**
 
 这是一个独立开发的 **Godot MCP Server + CLI + 持久化 Runtime Bridge**。
@@ -18,6 +20,8 @@
 > Linux/macOS 的真实 Godot 运行结果未验证。
 
 ## 阅读导航
+
+- **生产级改造实施入口**：[36 项任务路线图与 AI 执行手册](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) · [任务状态](docs/production-roadmap/tasks.json) · [执行日志](docs/production-roadmap/WORKLOG.md)。这是待实施计划，不是生产就绪声明。
 
 - **游戏开发者**：[用途与优势](#用途与优势) → [快速开始](#快速开始) → [第一次真实验证](#第一次真实验证) → [接入自己的游戏](#接入自己的游戏)。
 - **AI / MCP 客户端开发者**：[工具与状态生命周期](#工具与状态生命周期) → [客户端修复候选](#客户端修复候选) → [AI 使用约定](#ai-使用约定)。
@@ -407,6 +411,7 @@ npm run release:gate
 
 也可分步执行：`npm test` → `npm run test:godot-ci` → `npm run matrix:generate`
 → `npm run release:check` → `npm run audit:dependencies` → `npm run sbom > sbom.json`
+
 ```
 
 GitHub Actions 在 `godot-smoke.yml` 跑 Godot 子集（Windows / macOS / Linux），在 `release-gate.yml` 跑完整 Windows 干净机器门禁。
@@ -475,3 +480,4 @@ GitHub Actions 在 `godot-smoke.yml` 跑 Godot 子集（Windows / macOS / Linux�
 [Godot demo 项目](https://github.com/godotengine/godot-demo-projects)。
 
 上游 demo 和素材保留各自许可证。Godot 或 MCP 维护者没有为这些评测结论背书。
+```
