@@ -4,8 +4,13 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { buildContextPack } from '../src/context-pack.js';
+import { discoverGodotPath } from '../src/godot-path.js';
 
-test('context pack contains project, godot, scene and git sections', async () => {
+test('context pack contains project, godot, scene and git sections', async (t) => {
+  const godotPath =
+    process.env.GODOT_PATH ??
+    (await discoverGodotPath({ envFile: path.join(process.cwd(), '.env') }));
+  if (!godotPath) t.skip('GODOT_PATH is not available');
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-context-'));
   await writeFile(
     path.join(root, 'project.godot'),
@@ -14,7 +19,7 @@ test('context pack contains project, godot, scene and git sections', async () =>
   await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
   const result = await buildContextPack({
     projectPath: root,
-    godotPath: 'E:/AI/Godot_v4.7.2-stable_win64_console.exe',
+    godotPath,
     evidenceDir: root,
   });
   assert.equal(result.source, 'REAL');

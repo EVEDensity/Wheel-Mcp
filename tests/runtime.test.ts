@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { getProcessStatus, resolveGodotPath } from '../src/godot-runtime.js';
 
 test('resolveGodotPath requires an explicit executable', () => {
-  assert.throws(() => resolveGodotPath(''), /GODOT_PATH is required/);
+  assert.throws(() => resolveGodotPath(''), /GODOT_PATH is required|npm run setup/);
 });
 
 test('resolveGodotPath normalizes an executable path', () => {
