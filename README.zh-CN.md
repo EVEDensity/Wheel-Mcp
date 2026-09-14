@@ -52,55 +52,72 @@
 不适合：把不可信项目当作沙箱运行、无审核地改写重要工程、无人值守修复任意游戏。
 运行游戏或调用脚本方法会执行本机代码，路径限制不等于操作系统沙箱。
 
-## 快速开始
+## 快速开始（一键安装）
 
-在仓库根目录中执行（需要 Node `>=20.19.0` 和本机 Godot 4.7.2）：
+**前置条件：** 已安装 [Node.js 20+](https://nodejs.org/) 和 Godot 4.7.2（Godot 可后配，不影响 MCP 连接）。
 
-```powershell
-npm ci
-npm run setup
-```
+在项目根目录执行**一条**安装命令。安装会自动完成：依赖安装 → 编译 → 发现 Godot → 写入 Cursor / VS Code / Claude Code 的 MCP 配置。
 
-`npm ci` 会安装依赖、自动编译、尝试发现 Godot、生成 `.env` 和
-`.cursor/mcp.json`。重启 Cursor（或重载 MCP 服务），启用 `wheel-mcp`，
-然后调用 `get_godot_version` 验证连接。
+### Windows（PowerShell，已验证）
 
-若自动检测到的 Godot 路径不对，可手动覆盖：
+在 PowerShell 中，`npm run go` 通常会因系统禁止运行 `npm.ps1` 而失败。请使用下面**已验证可用**的命令（任选其一）：
 
 ```powershell
-npm run setup -- --force
-# 或直接编辑 .env：
-# GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe
+npm.cmd run go
 ```
 
-验证 CLI：
+或：
 
 ```powershell
-node .\build\src\cli.js doctor
+node scripts/install.mjs
 ```
 
-目前以源码 checkout 的安装流程为准，不假设某个 npm 安装包或下载产物已经发布。
+### macOS / Linux
+
+```bash
+npm run go
+```
+
+或：
+
+```bash
+./install.sh
+node scripts/install.mjs
+```
+
+### Claude Desktop / Windsurf（可选）
+
+**Windows PowerShell：**
+
+```powershell
+npm.cmd run go:global
+```
+
+**macOS / Linux：**
+
+```bash
+npm run go:global
+```
+
+然后重启对应客户端。
+
+### 安装后只需 2 步
+
+1. **用 Cursor（或 VS Code）打开 Wheel-mcp 文件夹**
+2. MCP 面板启用 `wheel-mcp` 并重载，然后调用 **`get_godot_version`** 验证
+
+### Godot 没识别到？
+
+编辑 `.env` 填入路径，再运行一次安装命令（Windows PowerShell 用 `npm.cmd run go` 或 `node scripts/install.mjs`）：
+
+```env
+GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe   # Windows
+GODOT_PATH=/Applications/Godot.app/Contents/MacOS/Godot     # macOS
+GODOT_PATH=/usr/bin/godot                                   # Linux
+```
+
+目前以源码 checkout 的安装流程为准，不假设某个 npm 发布包已经存在。
 本仓库不附带 Godot 引擎，也不会安装模型或获取模型密钥。
-
-### 本地 stdio 客户端
-
-仓库已内置 Cursor 项目配置 `.cursor/mcp.json`：
-
-```json
-{
-  "mcpServers": {
-    "wheel-mcp": {
-      "command": "node",
-      "args": ["${workspaceFolder}/scripts/run-mcp.mjs"]
-    }
-  }
-}
-```
-
-启动器会自动读取 `.env`、按需编译、发现 `GODOT_PATH`，再启动 MCP 服务。
-其他客户端只需把 `command`/`args` 指向本仓库的 `scripts/run-mcp.mjs`。
-先通过 MCP `tools/list` 发现工具，再调用 `get_godot_version` 检查实际引擎。
-这是配置格式示例，不等于所有桌面客户端均已完成兼容性测试。
 
 ### 可选 Streamable HTTP
 

@@ -60,58 +60,69 @@ A useful assertion says **which target a ray hit**, not merely that a query
 returned JSON. Real behavior tests cover named collisions, multi-frame history,
 per-node isolation, animation, camera, navigation and real audio streams.
 
-## Quick start
+## Quick start (one-click install)
 
-From a checkout, with Node `>=20.19.0` and Godot 4.7.2 installed locally:
+**Prerequisites:** [Node.js 20+](https://nodejs.org/) and Godot 4.7.2. Godot can
+be configured after MCP setup; Windows is the most validated platform.
 
-```powershell
-npm ci
-npm run setup
-```
+Run **one** install command from the repository root. This installs dependencies,
+builds, discovers Godot when possible, and writes MCP configs for Cursor, VS Code,
+and Claude Code.
 
-`npm ci` installs dependencies, builds TypeScript, auto-detects Godot when
-possible, writes `.env`, and creates `.cursor/mcp.json`. Restart Cursor (or
-reload MCP servers), enable `wheel-mcp`, then call `get_godot_version`.
+### Windows (PowerShell, verified)
 
-Manual override when auto-detection picks the wrong executable:
-
-```powershell
-npm run setup -- --force
-# or edit .env:
-# GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe
-```
-
-Verify the CLI:
+`npm run go` usually fails in PowerShell because the system blocks `npm.ps1`.
+Use one of these **verified** commands instead:
 
 ```powershell
-node .\build\src\cli.js doctor
-# Import your game first, or open it in the Godot editor:
-& $env:GODOT_PATH --headless --path 'D:\games\my-game' --editor --import
+npm.cmd run go
 ```
+
+or:
+
+```powershell
+node scripts/install.mjs
+```
+
+### macOS / Linux
+
+```bash
+npm run go
+```
+
+or:
+
+```bash
+./install.sh
+node scripts/install.mjs
+```
+
+### Claude Desktop / Windsurf (optional)
+
+Windows PowerShell:
+
+```powershell
+npm.cmd run go:global
+```
+
+macOS / Linux:
+
+```bash
+npm run go:global
+```
+
+Restart the client afterward.
+
+### After install
+
+1. Open this repository folder in Cursor or VS Code
+2. Enable `wheel-mcp` in the MCP panel, reload, then call **`get_godot_version`**
+
+If Godot was not detected, edit `.env` and rerun the install command (on Windows
+PowerShell use `npm.cmd run go` or `node scripts/install.mjs`).
 
 A broken project's import can report genuine script errors. Keep those logs;
 process exit alone is not proof that the game is healthy.
-
-### Local MCP client
-
-This repository ships a project-local Cursor config at `.cursor/mcp.json`:
-
-```json
-{
-  "mcpServers": {
-    "wheel-mcp": {
-      "command": "node",
-      "args": ["${workspaceFolder}/scripts/run-mcp.mjs"]
-    }
-  }
-}
-```
-
-The launcher loads `.env`, auto-builds when needed, discovers `GODOT_PATH`,
-then starts the MCP server. For other clients, point `command`/`args` at
-`scripts/run-mcp.mjs` in this checkout. Discover tools and call
-`get_godot_version` first. Use absolute project, bridge and evidence paths; do
-not depend on a client's working directory.
 
 ### Optional Streamable HTTP
 
