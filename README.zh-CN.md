@@ -1,4 +1,4 @@
-# Godot Game Harness MCP
+# Wheel-mcp
 
 [English](README.md) | **简体中文**
 
@@ -54,12 +54,28 @@
 
 ## 快速开始
 
-在仓库根目录中执行，先安装 Node 和 Godot，再替换示例中的路径：
+在仓库根目录中执行（需要 Node `>=20.19.0` 和本机 Godot 4.7.2）：
 
 ```powershell
 npm ci
-npm run build
-$env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+npm run setup
+```
+
+`npm ci` 会安装依赖、自动编译、尝试发现 Godot、生成 `.env` 和
+`.cursor/mcp.json`。重启 Cursor（或重载 MCP 服务），启用 `wheel-mcp`，
+然后调用 `get_godot_version` 验证连接。
+
+若自动检测到的 Godot 路径不对，可手动覆盖：
+
+```powershell
+npm run setup -- --force
+# 或直接编辑 .env：
+# GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe
+```
+
+验证 CLI：
+
+```powershell
 node .\build\src\cli.js doctor
 ```
 
@@ -68,23 +84,21 @@ node .\build\src\cli.js doctor
 
 ### 本地 stdio 客户端
 
-对于支持常见 `mcpServers` 配置形状的客户端：
+仓库已内置 Cursor 项目配置 `.cursor/mcp.json`：
 
 ```json
 {
   "mcpServers": {
-    "godot-harness": {
+    "wheel-mcp": {
       "command": "node",
-      "args": ["D:/tools/godot-game-harness-mcp/build/src/mcp-server-sdk.js"],
-      "env": {
-        "GODOT_PATH": "D:/tools/Godot_v4.7.2-stable_win64_console.exe"
-      }
+      "args": ["${workspaceFolder}/scripts/run-mcp.mjs"]
     }
   }
 }
 ```
 
-替换为实际绝对路径。如果桌面客户端找不到 Node，`command` 也使用绝对路径。
+启动器会自动读取 `.env`、按需编译、发现 `GODOT_PATH`，再启动 MCP 服务。
+其他客户端只需把 `command`/`args` 指向本仓库的 `scripts/run-mcp.mjs`。
 先通过 MCP `tools/list` 发现工具，再调用 `get_godot_version` 检查实际引擎。
 这是配置格式示例，不等于所有桌面客户端均已完成兼容性测试。
 
@@ -122,9 +136,9 @@ $repo = (Get-Location).Path
 
 ```json
 {
-  "projectPath": "D:/tools/godot-game-harness-mcp/tests/fixtures/runtime-behavior",
-  "bridgePath": "D:/tools/godot-game-harness-mcp/godot-plugin/runtime_bridge.gd",
-  "evidenceDir": "D:/tools/godot-game-harness-mcp/runs/readme-smoke",
+  "projectPath": "D:/games/Wheel-mcp/tests/fixtures/runtime-behavior",
+  "bridgePath": "D:/games/Wheel-mcp/godot-plugin/runtime_bridge.gd",
+  "evidenceDir": "D:/games/Wheel-mcp/runs/readme-smoke",
   "scenePath": "res://main.tscn",
   "actions": [{ "method": "wait_physics_frames", "params": { "frames": 12 } }],
   "checks": [

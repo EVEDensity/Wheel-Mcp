@@ -1,4 +1,4 @@
-# Godot Game Harness MCP
+# Wheel-mcp
 
 **English** | [简体中文](README.zh-CN.md)
 
@@ -62,12 +62,28 @@ per-node isolation, animation, camera, navigation and real audio streams.
 
 ## Quick start
 
-From a checkout, with a supported Node version and local Godot executable:
+From a checkout, with Node `>=20.19.0` and Godot 4.7.2 installed locally:
 
 ```powershell
 npm ci
-npm run build
-$env:GODOT_PATH = 'D:\tools\Godot_v4.7.2-stable_win64_console.exe'
+npm run setup
+```
+
+`npm ci` installs dependencies, builds TypeScript, auto-detects Godot when
+possible, writes `.env`, and creates `.cursor/mcp.json`. Restart Cursor (or
+reload MCP servers), enable `wheel-mcp`, then call `get_godot_version`.
+
+Manual override when auto-detection picks the wrong executable:
+
+```powershell
+npm run setup -- --force
+# or edit .env:
+# GODOT_PATH=D:/tools/Godot_v4.7.2-stable_win64_console.exe
+```
+
+Verify the CLI:
+
+```powershell
 node .\build\src\cli.js doctor
 # Import your game first, or open it in the Godot editor:
 & $env:GODOT_PATH --headless --path 'D:\games\my-game' --editor --import
@@ -78,26 +94,24 @@ process exit alone is not proof that the game is healthy.
 
 ### Local MCP client
 
-For clients accepting the common `mcpServers` configuration shape:
+This repository ships a project-local Cursor config at `.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "godot-harness": {
+    "wheel-mcp": {
       "command": "node",
-      "args": ["D:/tools/godot-game-harness-mcp/build/src/mcp-server-sdk.js"],
-      "env": {
-        "GODOT_PATH": "D:/tools/Godot_v4.7.2-stable_win64_console.exe"
-      }
+      "args": ["${workspaceFolder}/scripts/run-mcp.mjs"]
     }
   }
 }
 ```
 
-Replace the paths. Use an absolute Node executable if it is not on the client's
-PATH. Discover tools and call `get_godot_version` first. Use absolute project,
-bridge and evidence paths; do not depend on a client's working directory.
-This is a configuration example, not a compatibility claim for every client.
+The launcher loads `.env`, auto-builds when needed, discovers `GODOT_PATH`,
+then starts the MCP server. For other clients, point `command`/`args` at
+`scripts/run-mcp.mjs` in this checkout. Discover tools and call
+`get_godot_version` first. Use absolute project, bridge and evidence paths; do
+not depend on a client's working directory.
 
 ### Optional Streamable HTTP
 
@@ -138,9 +152,9 @@ the checked-in fixture; this example does not require adding a health script.
 
 ```json
 {
-  "projectPath": "D:/tools/godot-game-harness-mcp/tests/fixtures/runtime-behavior",
-  "bridgePath": "D:/tools/godot-game-harness-mcp/godot-plugin/runtime_bridge.gd",
-  "evidenceDir": "D:/tools/godot-game-harness-mcp/runs/readme-smoke",
+  "projectPath": "D:/games/Wheel-mcp/tests/fixtures/runtime-behavior",
+  "bridgePath": "D:/games/Wheel-mcp/godot-plugin/runtime_bridge.gd",
+  "evidenceDir": "D:/games/Wheel-mcp/runs/readme-smoke",
   "scenePath": "res://main.tscn",
   "actions": [{ "method": "wait_physics_frames", "params": { "frames": 12 } }],
   "checks": [
@@ -175,7 +189,7 @@ Call `dev_loop` with actual requirements. This assumes the root script of
 ```json
 {
   "projectPath": "D:/games/my-game",
-  "bridgePath": "D:/tools/godot-game-harness-mcp/godot-plugin/runtime_bridge.gd",
+  "bridgePath": "D:/games/Wheel-mcp/godot-plugin/runtime_bridge.gd",
   "evidenceDir": "D:/evidence/my-game",
   "scenePath": "res://main.tscn",
   "actions": [{ "method": "wait_physics_frames", "params": { "frames": 12 } }],
