@@ -51,14 +51,9 @@ Install Node.js **>=20.19.0** and Godot, then clone:
 ```bash
 git clone https://github.com/EVEDensity/Wheel-mcp.git
 cd Wheel-mcp
+npm run go:global
 ```
 
-Choose your client (same commands on Windows, macOS, and Linux):
-
-| Client                                                    | Install command     |
-| --------------------------------------------------------- | ------------------- |
-| Codex, global Cursor, Claude Desktop, Windsurf            | `npm run go:global` |
-| Cursor, VS Code / Copilot, Claude Code in this repository | `npm run go`        |
 
 Global setup also includes project configuration. The installer installs dependencies, builds, and looks for Godot. Existing Codex configuration is backed up automatically—**no manual backup needed**.
 
