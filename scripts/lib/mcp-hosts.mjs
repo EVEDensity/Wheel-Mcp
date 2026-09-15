@@ -1,5 +1,10 @@
 import path from 'node:path';
-import { claudeDesktopConfigPath, cursorGlobalConfigPath, windsurfConfigPath } from './platform-paths.mjs';
+import {
+  claudeDesktopConfigPath,
+  codexConfigPath,
+  cursorGlobalConfigPath,
+  windsurfConfigPath,
+} from './platform-paths.mjs';
 
 export const SERVER_NAME = 'wheel-mcp';
 
@@ -62,6 +67,16 @@ export function listMcpHosts(projectRoot, options = {}) {
   const absoluteEntry = absoluteLaunchEntry(projectRoot);
   return [
     ...projectHosts,
+    {
+      id: 'codex',
+      label: 'Codex',
+      scope: 'global',
+      filePath: codexConfigPath(),
+      format: 'toml',
+      entry: absoluteEntry,
+      autoConfigure: true,
+      note: 'Restart Codex after setup.',
+    },
     {
       id: 'cursor-global',
       label: 'Cursor (global)',

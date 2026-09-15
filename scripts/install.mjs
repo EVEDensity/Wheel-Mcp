@@ -76,5 +76,5 @@ run(process.execPath, setupArgs, {
 });
 
 line('');
-line('安装完成。用 Cursor 打开此文件夹即可使用 wheel-mcp。');
+line('Setup complete. Restart your client. Codex: use npm run go:global to configure.');
 line('');

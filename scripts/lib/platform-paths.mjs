@@ -70,3 +70,10 @@ export function windsurfConfigPath() {
 export function cursorGlobalConfigPath() {
   return path.join(os.homedir(), '.cursor', 'mcp.json');
 }
+
+export function codexConfigPath() {
+  return (
+    process.env.WHEEL_MCP_CODEX_CONFIG_PATH ||
+    path.join(process.env.CODEX_HOME || path.join(os.homedir(), '.codex'), 'config.toml')
+  );
+}

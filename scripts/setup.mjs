@@ -5,6 +5,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { discoverGodotPath, parseEnvFile, verifyGodotExecutable } from './lib/godot-discovery.mjs';
 import { listMcpHosts, SERVER_NAME } from './lib/mcp-hosts.mjs';
+import { mergeCodexConfig } from './lib/codex-config.mjs';
 import { resolveProjectRoot } from './lib/project-root.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -65,6 +66,18 @@ function runBuild() {
 
 async function mergeHostConfig(host) {
   const { filePath, rootKey, entry } = host;
+  if (host.format === 'toml') {
+    if (host.scope === 'global' && !includeGlobal)
+      return { id: host.id, status: 'skipped', reason: 'pass --global to configure this host' };
+    const changed = await mergeCodexConfig(filePath, projectRoot, process.env.GODOT_PATH, force);
+    return {
+      id: host.id,
+      status: changed ? 'written' : 'existing',
+      filePath: toPosix(filePath),
+      label: host.label,
+      note: host.note,
+    };
+  }
   if (host.scope === 'global' && !includeGlobal) {
     return { id: host.id, status: 'skipped', reason: 'pass --global to configure this host' };
   }
@@ -139,6 +152,8 @@ function restartHint(hostId) {
       return 'Restart Claude Code in this project folder.';
     case 'claude-desktop':
       return 'Fully quit and reopen Claude Desktop.';
+    case 'codex':
+      return 'Restart Codex to load wheel-mcp.';
     case 'windsurf':
       return 'Restart Windsurf.';
     default:
@@ -172,7 +187,7 @@ if (postinstall) {
 }
 
 const configured = hostResults.filter((entry) => entry.status === 'written' || entry.status === 'existing');
-const skippedGlobal = hostResults.filter((entry) => entry.status === 'skipped');
+const skippedGlobal = includeGlobal ? [] : [{ id: 'global' }];
 
 if (pretty) {
   console.log(`平台: ${platformLabel()}`);
@@ -193,11 +208,11 @@ if (pretty) {
   }
   console.log('');
   console.log('下一步:');
-  console.log('  1. 用 Cursor / VS Code 打开此文件夹');
-  console.log('  2. 在 MCP 面板启用 wheel-mcp 并重载');
+  console.log('  1. Open this folder in Codex / Cursor / VS Code');
+  console.log('  2. Restart Codex; enable/reload wheel-mcp in other MCP clients');
   console.log('  3. 调用 get_godot_version 验证');
   if (skippedGlobal.length > 0) {
-    console.log('  4. Claude Desktop / Windsurf 用户请运行: npm run go:global');
+    console.log('  4. Codex、Claude Desktop、Windsurf 和全局 Cursor 用户请运行: npm run go:global');
   }
 } else {
   console.log(
@@ -216,7 +231,7 @@ if (pretty) {
           ...configured.map((entry) => `${entry.label ?? entry.id}: ${restartHint(entry.id)}`),
           'Call MCP tool `get_godot_version` to verify the connection.',
           ...(skippedGlobal.length > 0
-            ? ['Run `npm run go:global` to also configure Claude Desktop / Windsurf / global Cursor.']
+            ? ['Run `npm run go:global` to also configure Codex / Claude Desktop / Windsurf / global Cursor.']
             : []),
         ],
       },
