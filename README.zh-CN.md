@@ -16,6 +16,23 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 如果它对你的 Godot 工作流有帮助，欢迎点一个 **Star**，也欢迎提交问题、测试报告和 PR。
 
+## Token 与交互效率
+
+**更少的工具往返，更精简的上下文。** 通过 7 个案例的测试实验，`dev_loop` 相比细粒度调用流程，载荷 Token 估算减少 **94.61%**，MCP 请求减少 **95.39%**。
+
+![Wheel-mcp 测试对比：载荷 Token 估算与 MCP 请求次数](assets/benchmark-efficiency.svg)
+
+使用 `responseMode: "compact"` 获取精简结果，用 `dev_loop` 将动作、断言和截图组织为一次验证调用。
+
+<details>
+<summary>测试说明与复现</summary>
+
+数据来自 2026-09-13 的 7 个受控案例，对比本项目的细粒度流程与 compact dev_loop：152 → 7 次请求，84,777 → 4,566 载荷 Token 估算值。估算采用序列化 JSON 字符数 ÷ 4，并非实际计费 Token；不含工具发现、Prompt、历史对话和推理，且客户端可能只使用文本或 structuredContent 中的一种表示。案例使用调用方提供的固定修复，并用于校准，不能外推为自主修复成功率。仅运行期诊断参与判定；平均自动运行耗时为 3.82 → 4.06 秒，未证明运行加速。本次引用历史记录，未重跑基准。
+
+[完整报告](docs/REPAIR-BENCHMARK-2026-09-13.md) · [原始汇总](benchmarks/repair-results-2026-09-13.json) · [复现步骤](benchmarks/README.md)
+
+</details>
+
 ## 为什么值得试
 
 - 搜索场景、脚本和资源，减少在大型项目中翻文件的时间。
@@ -29,7 +46,40 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 快速开始
 
-### 1. 安装并构建
+### 推荐：一键安装
+
+先安装 Node.js **>=20.19.0** 和 Godot。克隆仓库后执行：
+
+```powershell
+git clone https://github.com/EVEDensity/Wheel-mcp.git
+cd Wheel-mcp
+npm run go
+```
+
+**Windows 也可以下载并解压仓库后，双击根目录的 [install.cmd](install.cmd)。** PowerShell 中可运行 `.\install.cmd`；若 npm 被执行策略拦截，可使用 `npm.cmd run go`。
+
+脚本会安装依赖、编译、尝试发现 Godot，并写入当前仓库的 Cursor / VS Code MCP 配置。完成后用客户端打开此文件夹，启用并重载 wheel-mcp，调用 `get_godot_version` 验证。
+
+- **已有配置请先备份：** 一键安装使用强制更新模式，会更新对应 MCP 配置项；检测到 Godot 时也会重写本仓库的 `.env`。
+- 未发现 Godot 时，在仓库 `.env` 中设置 `GODOT_PATH=D:/tools/Godot_console.exe` 后重新运行一键安装；脚本不会安装 Godot 本身。
+- 自动配置针对本仓库；用于其他游戏工作区或 Codex 时，请按下方示例合并配置。
+
+<details>
+<summary>其他启动入口</summary>
+
+| 指令                       | 用途                                                  |
+| -------------------------- | ----------------------------------------------------- |
+| `npm run go:global`        | 一键安装并写入受支持客户端的全局配置（先备份）        |
+| `node scripts/install.mjs` | 直接运行同一个一键安装脚本                            |
+| `npm run mcp`              | 安装后启动 stdio MCP 服务，供客户端连接；不是启动游戏 |
+
+</details>
+
+### 手动安装与客户端配置
+
+以下是不用一键脚本时的替代步骤。
+
+#### 1. 安装并构建
 
 ```powershell
 git clone https://github.com/EVEDensity/Wheel-mcp.git
@@ -38,7 +88,7 @@ npm.cmd ci
 npm.cmd run build
 ```
 
-### 2. 配置 Godot
+#### 2. 配置 Godot
 
 设置 Godot 命令行路径：
 
@@ -46,7 +96,7 @@ npm.cmd run build
 $env:GODOT_PATH = 'D:/tools/Godot_console.exe'
 ```
 
-### 3. 接入 MCP 客户端
+#### 3. 接入 MCP 客户端
 
 <details><summary>Cursor</summary>
 
