@@ -20,18 +20,13 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 **更少的工具往返，更精简的上下文。** 通过 7 个案例的测试实验，`dev_loop` 相比细粒度调用流程，载荷 Token 估算减少 **94.61%**，MCP 请求减少 **95.39%**。
 
-![Wheel-mcp 测试对比：载荷 Token 估算与 MCP 请求次数](assets/benchmark-efficiency.svg)
+![Wheel-mcp 测试对比：载荷 Token 估算与 MCP 请求次数](assets/benchmark-efficiency.zh-CN.svg)
 
 使用 `responseMode: "compact"` 获取精简结果，用 `dev_loop` 将动作、断言和截图组织为一次验证调用。
 
-<details>
-<summary>测试说明与复现</summary>
+统计口径：2026-09-13 的 7 个受控案例，以 JSON 字符数 ÷ 4 估算载荷 Token，不代表实际账单或运行加速。
 
-数据来自 2026-09-13 的 7 个受控案例，对比本项目的细粒度流程与 compact dev_loop：152 → 7 次请求，84,777 → 4,566 载荷 Token 估算值。估算采用序列化 JSON 字符数 ÷ 4，并非实际计费 Token；不含工具发现、Prompt、历史对话和推理，且客户端可能只使用文本或 structuredContent 中的一种表示。案例使用调用方提供的固定修复，并用于校准，不能外推为自主修复成功率。仅运行期诊断参与判定；平均自动运行耗时为 3.82 → 4.06 秒，未证明运行加速。本次引用历史记录，未重跑基准。
-
-[完整报告](docs/REPAIR-BENCHMARK-2026-09-13.md) · [原始汇总](benchmarks/repair-results-2026-09-13.json) · [复现步骤](benchmarks/README.md)
-
-</details>
+[测试报告](docs/REPAIR-BENCHMARK-2026-09-13.md) · [复现步骤](benchmarks/README.md)
 
 ## 为什么值得试
 
@@ -42,38 +37,33 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 当前状态
 
-版本：`0.1.0-preview.2`。当前公开验证范围为 **Windows + Godot 4.7.2**；Linux/macOS 尚未完成真实引擎验证。需要 Node.js `>=20.19.0`，同时满足所安装开发工具链的版本要求。当前仍是预览版，不代表已达到生产级可用度。运行时修改不等于编辑器中的持久化 `.tscn` 保存；编辑器原生编辑、撤销和事务能力仍在路线图中。
+版本：`0.1.0-preview.2`，仍处于预览阶段。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。编辑器持久化、撤销与事务能力仍在路线图中。
 
 ## 快速开始
 
-### 推荐：一键安装
+### 一键安装
 
-先安装 Node.js **>=20.19.0** 和 Godot。克隆仓库后执行：
+先安装 Node.js **>=20.19.0** 和 Godot，再克隆仓库：
 
-```powershell
+```bash
 git clone https://github.com/EVEDensity/Wheel-mcp.git
 cd Wheel-mcp
-npm run go
 ```
 
-**Windows 也可以下载并解压仓库后，双击根目录的 [install.cmd](install.cmd)。** PowerShell 中可运行 `.\install.cmd`；若 npm 被执行策略拦截，可使用 `npm.cmd run go`。
+按客户端选择命令（Windows、macOS、Linux 使用相同命令）：
 
-脚本会安装依赖、编译、尝试发现 Godot，并写入当前仓库的 Cursor / VS Code MCP 配置。完成后用客户端打开此文件夹，启用并重载 wheel-mcp，调用 `get_godot_version` 验证。
+| 客户端                                            | 安装命令            |
+| ------------------------------------------------- | ------------------- |
+| Codex、全局 Cursor、Claude Desktop、Windsurf      | `npm run go:global` |
+| 当前仓库的 Cursor、VS Code / Copilot、Claude Code | `npm run go`        |
 
-- **已有配置请先备份：** 一键安装使用强制更新模式，会更新对应 MCP 配置项；检测到 Godot 时也会重写本仓库的 `.env`。
-- 未发现 Godot 时，在仓库 `.env` 中设置 `GODOT_PATH=D:/tools/Godot_console.exe` 后重新运行一键安装；脚本不会安装 Godot 本身。
-- 自动配置针对本仓库；用于其他游戏工作区或 Codex 时，请按下方示例合并配置。
+全局安装也包含项目级配置。脚本自动安装依赖、编译并查找 Godot；修改已有 Codex 配置前自动备份，**无需手动备份**。
 
-<details>
-<summary>其他启动入口</summary>
+安装后重启客户端，调用 `get_godot_version` 验证连接。
 
-| 指令                       | 用途                                                            |
-| -------------------------- | --------------------------------------------------------------- |
-| `npm run go:global`        | 配置 Codex、全局 Cursor、Claude Desktop 和 Windsurf（请先备份） |
-| `node scripts/install.mjs` | 直接运行同一个一键安装脚本                                      |
-| `npm run mcp`              | 安装后启动 stdio MCP 服务，供客户端连接；不是启动游戏           |
-
-</details>
+- **Windows 快捷入口：** 双击 [install.cmd](install.cmd) 安装项目级配置；Codex 使用上表的全局命令。PowerShell 若拦截 npm，改用 `npm.cmd`。
+- **未找到 Godot：** 在仓库 `.env` 中设置 `GODOT_PATH=你的Godot可执行文件绝对路径` 后重试。检测到 Godot 时安装器会更新该文件。
+- **仅启动服务：** 安装后运行 `npm run mcp`，启动的是 MCP 服务，不是游戏。
 
 ### 手动安装与客户端配置
 

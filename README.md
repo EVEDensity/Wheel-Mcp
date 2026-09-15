@@ -22,14 +22,9 @@ If this helps your Godot workflow, **give it a Star**. Bug reports, reproducible
 
 Use `responseMode: "compact"` for concise results and `dev_loop` to combine actions, assertions, and screenshots into one verification call.
 
-<details>
-<summary>Test methodology and reproduction</summary>
+Seven controlled cases on 2026-09-13; payload tokens estimated as JSON characters / 4, not billable tokens or runtime speedups.
 
-Results are from seven controlled cases on September 13, 2026, comparing this project's fine-grained flow with compact dev_loop: 152 → 7 requests and 84,777 → 4,566 estimated payload tokens. Estimates use serialized JSON characters / 4, not billable tokens; they exclude discovery, prompts, history, and reasoning. Clients may use only one of the text and structuredContent representations counted here. Fixed repairs were supplied by the caller and the cases were used for calibration, so these are not autonomous repair success rates. Only runtime diagnostics gate the evaluation. Mean automated wall time was 3.82 → 4.06 seconds; no runtime speedup was demonstrated. This update cites historical records, without rerunning the benchmark.
-
-[Full report](docs/REPAIR-BENCHMARK-2026-09-13.md) · [Recorded summary](benchmarks/repair-results-2026-09-13.json) · [Reproduction](benchmarks/README.md)
-
-</details>
+[Test report](docs/REPAIR-BENCHMARK-2026-09-13.md) · [Reproduce](benchmarks/README.md)
 
 ## Why Wheel-mcp?
 
@@ -49,34 +44,29 @@ Release: `0.1.0-preview.2`. This is a preview, not a production-readiness claim.
 
 ## Quick start
 
-### Recommended: one-command setup
+### One-command setup
 
-Install Node.js **>=20.19.0** and Godot first, then clone and run:
+Install Node.js **>=20.19.0** and Godot, then clone:
 
-```powershell
+```bash
 git clone https://github.com/EVEDensity/Wheel-mcp.git
 cd Wheel-mcp
-npm run go
 ```
 
-**On Windows, you can also download and extract the repository, then double-click [install.cmd](install.cmd).** In PowerShell, run `.\install.cmd`; use `npm.cmd run go` if execution policy blocks npm.
+Choose your client (same commands on Windows, macOS, and Linux):
 
-The installer installs dependencies, builds the server, attempts Godot discovery, and writes Cursor / VS Code MCP configuration in this repository. Open this folder in your client, enable/reload wheel-mcp, and call `get_godot_version` to verify.
+| Client                                                    | Install command     |
+| --------------------------------------------------------- | ------------------- |
+| Codex, global Cursor, Claude Desktop, Windsurf            | `npm run go:global` |
+| Cursor, VS Code / Copilot, Claude Code in this repository | `npm run go`        |
 
-- **Back up existing configuration first:** setup force-updates the relevant MCP entries and rewrites this repository's `.env` when Godot is detected.
-- If Godot is not found, set `GODOT_PATH=D:/tools/Godot_console.exe` in the repository's `.env` and rerun setup. The script does not install Godot itself.
-- Automatic workspace configuration targets this repository. For another game workspace or Codex, merge the configuration examples below.
+Global setup also includes project configuration. The installer installs dependencies, builds, and looks for Godot. Existing Codex configuration is backed up automatically—**no manual backup needed**.
 
-<details>
-<summary>Other entry points</summary>
+Restart your client and call `get_godot_version` to verify the connection.
 
-| Command                    | Purpose                                                                                   |
-| -------------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run go:global`        | Configure Codex, global Cursor, Claude Desktop, and Windsurf (back up first)              |
-| `node scripts/install.mjs` | Run the same one-command installer directly                                               |
-| `npm run mcp`              | After installation, start the stdio MCP service for a client; this does not launch a game |
-
-</details>
+- **Windows shortcut:** double-click [install.cmd](install.cmd) for project setup; use the global command for Codex. If PowerShell blocks npm, use `npm.cmd`.
+- **Godot not found:** set `GODOT_PATH=/absolute/path/to/godot` in the repository's `.env` and retry. Setup updates this file when Godot is detected.
+- **Start the service only:** after installation, `npm run mcp` starts the MCP service, not a game.
 
 ### Manual installation and client configuration
 
@@ -134,7 +124,7 @@ GODOT_PATH = "D:/tools/Godot_console.exe"
 
 #### 3. Check the connection
 
-Reload your client and ask it to call `get_godot_version`. If Node is not on the client's PATH, use its absolute executable path. These are configuration templates, not a claim of validation for every client release. Back up existing configuration before using setup scripts that overwrite entries.
+Reload your client and ask it to call `get_godot_version`. If Node is not on the client's PATH, use its absolute executable path.
 
 ## Examples
 
