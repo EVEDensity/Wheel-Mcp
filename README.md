@@ -72,7 +72,7 @@ The installer installs dependencies, builds the server, attempts Godot discovery
 
 | Command                    | Purpose                                                                                   |
 | -------------------------- | ----------------------------------------------------------------------------------------- |
-| `npm run go:global`        | Install and configure supported global clients (back up first)                            |
+| `npm run go:global`        | Configure Codex, global Cursor, Claude Desktop, and Windsurf (back up first)              |
 | `node scripts/install.mjs` | Run the same one-command installer directly                                               |
 | `npm run mcp`              | After installation, start the stdio MCP service for a client; this does not launch a game |
 

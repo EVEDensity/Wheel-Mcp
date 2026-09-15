@@ -67,11 +67,11 @@ npm run go
 <details>
 <summary>其他启动入口</summary>
 
-| 指令                       | 用途                                                  |
-| -------------------------- | ----------------------------------------------------- |
-| `npm run go:global`        | 一键安装并写入受支持客户端的全局配置（先备份）        |
-| `node scripts/install.mjs` | 直接运行同一个一键安装脚本                            |
-| `npm run mcp`              | 安装后启动 stdio MCP 服务，供客户端连接；不是启动游戏 |
+| 指令                       | 用途                                                            |
+| -------------------------- | --------------------------------------------------------------- |
+| `npm run go:global`        | 配置 Codex、全局 Cursor、Claude Desktop 和 Windsurf（请先备份） |
+| `node scripts/install.mjs` | 直接运行同一个一键安装脚本                                      |
+| `npm run mcp`              | 安装后启动 stdio MCP 服务，供客户端连接；不是启动游戏           |
 
 </details>
 
