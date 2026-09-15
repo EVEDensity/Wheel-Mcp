@@ -48,14 +48,8 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 ```bash
 git clone https://github.com/EVEDensity/Wheel-mcp.git
 cd Wheel-mcp
+npm run go:global
 ```
-
-按客户端选择命令（Windows、macOS、Linux 使用相同命令）：
-
-| 客户端                                            | 安装命令            |
-| ------------------------------------------------- | ------------------- |
-| Codex、全局 Cursor、Claude Desktop、Windsurf      | `npm run go:global` |
-| 当前仓库的 Cursor、VS Code / Copilot、Claude Code | `npm run go`        |
 
 全局安装也包含项目级配置。脚本自动安装依赖、编译并查找 Godot；修改已有 Codex 配置前自动备份，**无需手动备份**。
 
