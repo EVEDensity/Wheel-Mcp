@@ -215,3 +215,10 @@ Engine-related changes also need real Godot tests with `GODOT_PATH` configured. 
 [MIT](LICENSE). Independent community project; not an official Godot, OpenAI, or Cursor product.
 
 **Star to follow progress. Fork and open a PR to help build it.**
+
+## Project website (local preview)
+
+The static website and browser playground live in `docs/`. Run
+`npm run site:serve` and open `http://127.0.0.1:4173/Wheel-mcp/`.
+Run `npm run site:test` for static-link and game-logic checks.
+See [website setup and game integration](docs/WEBSITE.md).

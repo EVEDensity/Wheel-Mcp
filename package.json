@@ -37,7 +37,9 @@
     "benchmark:repair": "npm run build && node scripts/repair-benchmark.mjs",
     "benchmark:historical": "npm run build && node scripts/historical-repair-benchmark.mjs",
     "benchmark:shutdown": "npm run build && node scripts/strict-shutdown-benchmark.mjs",
-    "benchmark:client-repair-rpg": "npm run build && node scripts/client-repair-rpg.mjs"
+    "benchmark:client-repair-rpg": "npm run build && node scripts/client-repair-rpg.mjs",
+    "site:serve": "node scripts/serve-site.mjs",
+    "site:test": "node --test scripts/site.test.mjs"
   },
   "engines": {
     "node": ">=20.19.0"

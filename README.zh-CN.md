@@ -212,3 +212,9 @@ npm.cmd run check
 采用 [MIT](LICENSE) 许可。独立社区项目，与 Godot、OpenAI 或 Cursor 无官方隶属关系。
 
 欢迎 Star、Fork 和 PR，一起把 Godot 的 AI 辅助开发做得更可靠。
+
+## 项目网站（本地预览）
+
+静态官网和浏览器游戏试玩厅位于 `docs/`。运行 `npm run site:serve`，
+访问 `http://127.0.0.1:4173/Wheel-mcp/`；运行 `npm run site:test` 检查站内链接与游戏逻辑。
+详见[网站部署与游戏接入说明](docs/WEBSITE.md)。
