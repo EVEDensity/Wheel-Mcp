@@ -1,0 +1,25 @@
+.reading-progress{position:fixed;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#6ddcdd,#92bbff);transform-origin:left;z-index:1000;pointer-events:none;box-shadow:0 0 12px #6ddcdd66}
+.language-toggle{position:fixed;top:32px;right:24px;z-index:101;min-width:48px;min-height:44px;padding:10px;border:1px solid #93c9f466;border-radius:14px;color:#d7f5ff;background:linear-gradient(135deg,#29475a,#0b1b2b);box-shadow:0 4px 20px #020d2040;cursor:pointer;font:600 14px/1.2 'Segoe UI',sans-serif;transition:background .2s,transform .2s}
+.language-toggle:hover{background:#28516a;transform:translateY(-2px)}
+html[lang=en] .film-copy h1{font-size:clamp(44px,6.5vw,108px);line-height:1.05;letter-spacing:-.045em;max-width:1100px}
+html[lang=en] .heading h2,html[lang=en] .start h2,html[lang=en] .efficiency h2{font-size:clamp(36px,5vw,80px);line-height:1.12;letter-spacing:-.035em}
+html[lang=en] .next-step{flex-wrap:wrap}
+@media(max-width:760px){.language-toggle{top:auto;bottom:18px;right:12px}html[lang=en] .film-copy h1{overflow-wrap:normal}html[lang=en] .instructions h3{overflow-wrap:anywhere}}
+.section{overflow:clip}
+.button,.text-link,.client{transition:transform .25s ease,box-shadow .25s ease,background .25s ease}
+.button:hover{transform:translateY(-3px);box-shadow:0 10px 28px #071c2526}
+.button:active{transform:translateY(0) scale(.98)}
+.button:disabled{cursor:wait;opacity:.7;transform:none;box-shadow:none}
+.client:hover{transform:translateX(5px)}
+.client span{transition:transform .3s ease}.client.active span{transform:rotate(45deg)}
+.next-step{display:inline-flex;align-items:center;gap:20px;margin-top:20px;padding:14px 0;border-bottom:1px solid currentColor;font-size:15px;text-decoration:none}
+.next-step[hidden]{display:none}
+.next-step:hover{gap:30px}
+.results li{transition:opacity .35s ease,background .35s ease,transform .35s ease}
+.results li.done{transform:translateX(4px)}
+#lab-status{transition:color .3s ease}.lab.is-complete #lab-status{color:#237460}
+.lab.is-complete .target{filter:drop-shadow(0 0 12px #46907c55)}
+.copy-feedback{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#102735;color:#e3f9ff;border:1px solid #81cddd55;padding:12px 22px;border-radius:12px;z-index:1100;box-shadow:0 8px 30px #0003;pointer-events:none}
+.copy-feedback:empty{display:none}
+:is(a,button):focus-visible{outline:2px solid #359cad;outline-offset:5px}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}.button:hover,.client:hover,.results li.done{transform:none}}
