@@ -11,12 +11,13 @@ export type EvidenceManifest = {
   created_at: string;
   finished_at?: string;
   lifecycle?: string;
-  request_file: string;
-  response_file: string;
+  // Only BRIDGE_EVIDENCE runs exchange a request/response and stream events.
+  request_file?: string;
+  response_file?: string;
   process_file: string;
   stdout_file: string;
   stderr_file: string;
-  events_file: string;
+  events_file?: string;
   process_tree?: Record<string, unknown>;
 };
 
@@ -67,12 +68,13 @@ export async function ensureEvidenceManifest(
     profile,
     evidence_dir: root,
     created_at: new Date().toISOString(),
-    request_file: path.join(root, 'request.json'),
-    response_file: path.join(root, 'response.json'),
+    ...(profile === 'BRIDGE_EVIDENCE'
+      ? { request_file: path.join(root, 'request.json'), response_file: path.join(root, 'response.json') }
+      : {}),
     process_file: path.join(root, 'process.json'),
     stdout_file: path.join(root, 'stdout.log'),
     stderr_file: path.join(root, 'stderr.log'),
-    events_file: path.join(root, 'events.jsonl'),
+    ...(profile === 'BRIDGE_EVIDENCE' ? { events_file: path.join(root, 'events.jsonl') } : {}),
     ...(metadata as Partial<EvidenceManifest>),
   };
   await writeFile(path.join(root, 'manifest.json'), JSON.stringify(manifest, null, 2));
@@ -89,8 +91,8 @@ export async function finalizeBridgeEvidence(
   const manifestPath = path.join(root, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as EvidenceManifest;
   const finishedAt = new Date().toISOString();
-  await writeFile(manifest.request_file, JSON.stringify(request, null, 2));
-  await writeFile(manifest.response_file, JSON.stringify(response, null, 2));
+  await writeFile(manifest.request_file ?? path.join(root, 'request.json'), JSON.stringify(request, null, 2));
+  await writeFile(manifest.response_file ?? path.join(root, 'response.json'), JSON.stringify(response, null, 2));
   await writeFile(manifest.stdout_file, process.stdout);
   await writeFile(manifest.stderr_file, process.stderr);
   await writeFile(

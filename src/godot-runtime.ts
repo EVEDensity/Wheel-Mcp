@@ -54,6 +54,7 @@ export type ProcessMetadata = {
   started_at: string;
   finished_at?: string;
   exit_code: number | null;
+  signal: NodeJS.Signals | null;
   timed_out: boolean;
   cancelled: boolean;
   lifecycle: LifecycleState;
@@ -61,6 +62,10 @@ export type ProcessMetadata = {
   stderr: string;
   process_tree?: ProcessTreeResult;
 };
+
+// Stop/cancel requests for children launched by this process, keyed by pid, so the
+// close handler can record STOPPED/CANCELLED instead of a bare signal-death FAILED.
+const terminationRequests = new Map<number, 'STOPPED' | 'CANCELLED' | null>();
 
 type ProcessResult = {
   stdout: string;
@@ -224,6 +229,7 @@ export async function launchProject({
     project_path: root,
     started_at: new Date().toISOString(),
     exit_code: null,
+    signal: null,
     timed_out: false,
     cancelled: false,
     lifecycle: 'STARTING',
@@ -231,6 +237,7 @@ export async function launchProject({
     stderr: stderrPath,
   };
   await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+  if (child.pid) terminationRequests.set(child.pid, null);
   const runIdValue = path.basename(evidence) + '-' + Date.now().toString() + '-' + (child.pid ?? 'unknown').toString();
   if (child.pid) {
     try {
@@ -285,19 +292,28 @@ export async function launchProject({
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
   });
   const close = new Promise((resolve) =>
-    child.once('close', async (code) => {
+    child.once('close', async (code, signal) => {
       if (terminationPromise) await terminationPromise;
+      const requested = child.pid ? terminationRequests.get(child.pid) : null;
+      if (child.pid) terminationRequests.delete(child.pid);
+      if (requested === 'CANCELLED') cancelled = true;
       metadata.exit_code = code;
+      metadata.signal = signal;
       metadata.finished_at = new Date().toISOString();
       timeout?.signal.removeEventListener('abort', terminate);
-      metadata.lifecycle = transitionLifecycle(
-        metadata.lifecycle,
-        timedOut ? 'TIMEOUT' : cancelled ? 'CANCELLED' : code === 0 ? 'EXITED' : 'FAILED',
-      );
+      const terminalState = timedOut
+        ? 'TIMEOUT'
+        : cancelled
+          ? 'CANCELLED'
+          : requested === 'STOPPED'
+            ? 'STOPPED'
+            : code === 0
+              ? 'EXITED'
+              : 'FAILED';
+      metadata.lifecycle = transitionLifecycle(metadata.lifecycle, terminalState);
       metadata.timed_out = timedOut;
       metadata.cancelled = cancelled;
       if (child.pid) {
-        const terminalState = timedOut ? 'TIMEOUT' : cancelled ? 'CANCELLED' : code === 0 ? 'EXITED' : 'FAILED';
         try {
           runRegistry.markTerminal(runIdValue, terminalState, code);
         } catch {
@@ -326,6 +342,19 @@ export async function stopProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_
   if (!Number.isInteger(Number(timeoutMs)) || Number(timeoutMs) < 0)
     throw new Error('timeoutMs must be a non-negative integer');
   const processHandle = Number(pid);
+  const ownsRequest = terminationRequests.get(processHandle) === null;
+  if (ownsRequest) terminationRequests.set(processHandle, 'STOPPED');
+  try {
+    const result = await stopProcessHandle(processHandle, timeoutMs, timeout);
+    if (!result.stopped && ownsRequest) terminationRequests.set(processHandle, null);
+    return result;
+  } catch (error) {
+    if (ownsRequest && terminationRequests.has(processHandle)) terminationRequests.set(processHandle, null);
+    throw error;
+  }
+}
+
+async function stopProcessHandle(processHandle: number, timeoutMs: number, timeout?: TimeoutContext) {
   try {
     process.kill(processHandle, 0);
   } catch (error: unknown) {
@@ -362,7 +391,13 @@ export async function stopProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_
 }
 
 export async function cancelProcess(pid: number, timeoutMs = DEFAULT_STOP_TIMEOUT_MS, timeout?: TimeoutContext) {
-  const result = await stopProcess(pid, timeoutMs, timeout);
+  const ownsRequest = terminationRequests.get(Number(pid)) === null;
+  if (ownsRequest) terminationRequests.set(Number(pid), 'CANCELLED');
+  const result = await stopProcess(pid, timeoutMs, timeout).catch((error: unknown) => {
+    if (ownsRequest && terminationRequests.has(Number(pid))) terminationRequests.set(Number(pid), null);
+    throw error;
+  });
+  if (!result.stopped && ownsRequest) terminationRequests.set(Number(pid), null);
   return { ...result, cancelled: true, lifecycle: result.stopped ? 'CANCELLED' : 'TIMEOUT' };
 }
 

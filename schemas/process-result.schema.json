@@ -8,6 +8,7 @@
     "source": { "const": "REAL" },
     "pid": { "type": ["integer", "null"] },
     "exit_code": { "type": ["integer", "null"] },
+    "signal": { "type": ["string", "null"] },
     "timed_out": { "type": "boolean" }
   },
   "additionalProperties": true
