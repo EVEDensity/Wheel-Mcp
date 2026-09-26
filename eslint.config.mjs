@@ -6,7 +6,7 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   { ignores: ['dist/**', 'node_modules/**', 'runs/**'] },
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts'],
+    files: ['src/**/*.ts', 'tests/**/*.ts', 'tests/**/*.mjs'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
