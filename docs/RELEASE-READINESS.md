@@ -1,5 +1,19 @@
 # Release readiness (Windows)
 
+## Current roadmap qualification: NOT_QUALIFIED
+
+The current integrated source is **not production-qualified**. T12–T15 passed
+their declared native-subset acceptance. T16–T35 and G3–G6 must finish before
+promotion; final G2 passed on September 26 with 267 full tests, 74 required native checks
+and 20 consecutive native authoring/save/reopen/render cycles. The exact source
+and mixed real-engine/mock-approval provenance are recorded in
+[G2 evidence](production-roadmap/evidence/G2-final-gate.json). Earlier G0/G1
+gate results are historical evidence, not acceptance of a changed source tree.
+`release:check` now verifies roadmap evidence,
+all tasks/gates, the candidate source fingerprint and matrix fingerprints. A
+successful baseline or old 19-case matrix alone cannot pass this release check.
+The September 14 records below remain historical; they do not override this decision.
+
 ## Current decision: September 14, 2026
 
 Package version is **`0.1.0-preview.2`**. The historical release-gate label
@@ -58,11 +72,11 @@ green on Node-only matrix jobs as necessary but **insufficient** evidence.
 
 ## CI coverage
 
-| Workflow | Runner | Godot | Purpose |
-| -------- | ------ | ----- | ------- |
-| `ci.yml` | Node 20/22 × Windows/Linux/macOS | No | build, install smoke, lint, Node tests (Godot tests skip) |
-| `godot-smoke.yml` | Windows, macOS, Linux | Yes (4.7.2) | README smoke + E2E subset; **fails on any skip** |
-| `release-gate.yml` | Windows | Yes | clean-machine full gate (see below) |
+| Workflow           | Runner                           | Godot       | Purpose                                                   |
+| ------------------ | -------------------------------- | ----------- | --------------------------------------------------------- |
+| `ci.yml`           | Node 20/22 × Windows/Linux/macOS | No          | build, install smoke, lint, Node tests (Godot tests skip) |
+| `godot-smoke.yml`  | Windows, macOS, Linux            | Yes (4.7.2) | README smoke + E2E subset; **fails on any skip**          |
+| `release-gate.yml` | Windows                          | Yes         | clean-machine full gate (see below)                       |
 
 Generic matrix CI is intentionally Node-only. Real Godot smoke coverage lives in
 `godot-smoke.yml` across three OS runners; the Windows-only `release-gate.yml`

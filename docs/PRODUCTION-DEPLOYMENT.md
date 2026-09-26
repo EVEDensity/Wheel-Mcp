@@ -1,15 +1,19 @@
 ﻿# Production Deployment Review (Windows-only)
 
-This document is a practical deployment guide for the first Windows-only public release. It is written for a personal project and does not require enterprise certification, approval signatures, or an on-call organization.
-It describes the controls that must be in place when Streamable HTTP is exposed
-outside the local machine. The repository provides the MCP server, policy checks,
+The current source is **NOT_QUALIFIED** for production or public remote deployment.
+Only trusted-project local stdio/loopback use is within the tested subset; completing
+T12–T15 does not certify an online service. This document retains historical and
+future Windows-only deployment review guidance for a personal project, without
+requiring enterprise certification, approval signatures, or an on-call organization.
+Remote topology/checklists below are future requirements, not permission to expose
+the current loopback service. The repository provides the MCP server, policy checks,
 rate/concurrency limits, request cancellation, graceful shutdown, and structured
 audit events; it does **not** provision a TLS gateway, secret manager, SIEM, or
 on-call service.
 
 ## Release scope
 
-The first public release is intentionally limited to:
+The planned public release scope (not current qualification) is limited to:
 
 - Windows 10/11 or Windows Server supported by the deployment owner.
 - A validated Godot 4.7.2 runtime (`Godot_v4.7.2-stable_win64_console.exe`).
@@ -24,26 +28,29 @@ is part of this release gate. They are therefore not supported release targets.
 
 The safe default is local-only HTTP:
 
+Project-file mutations additionally require a host-mediated MCP form confirmation bound to the exact transaction plan. A write scope or tool argument `approved:true` is insufficient. Clients without form elicitation support cannot perform these writes; see the [transaction contract](production-roadmap/TRANSACTION-CONTRACT.md). This safeguard does not make HTTP a remote-qualified deployment or sandbox project code.
+
 ```text
 MCP client -> 127.0.0.1:3000/mcp -> Node MCP server -> Godot process/runtime bridge
 ```
 
-For a remote client, use a separately managed TLS reverse proxy or load
-balancer:
+Remote client exposure is not currently qualified. A future deployment may
+require a separately managed TLS reverse proxy or load balancer:
 
 ```text
 MCP client == TLS ==> Caddy/nginx/Envoy/LB == private network ==> Node MCP server
 ```
 
 The Node server itself is an HTTP server and is not a TLS terminator. Do not
-publish its plain HTTP listener directly to the Internet. A remote bind must be
-an explicit operational decision and must set `MCP_HTTP_ALLOW_REMOTE=true`,
-with exact `MCP_HTTP_ALLOWED_HOSTS` and `MCP_HTTP_ALLOWED_ORIGINS` values.
+publish its plain HTTP listener directly to the Internet. The current build
+rejects non-loopback bind even with `MCP_HTTP_ALLOW_REMOTE=true`: project-file
+path checks cannot guarantee safety against concurrent parent-directory swaps.
+Do not expose a loopback listener via a public reverse proxy as a workaround.
 
 ### Network review checklist
 
-- [ ] Bind to `127.0.0.1` unless a documented remote deployment requires another
-      address.
+- [ ] Current source must bind to loopback only. Non-loopback binding is rejected;
+      neither a configuration flag nor a public reverse proxy is an approved exception.
 - [ ] Firewall the Node listener so only the trusted reverse proxy can reach it.
 - [ ] Do not use wildcard Host or Origin allowlists in production.
 - [ ] Configure the proxy to preserve the intended `Host` and `Origin` values.
