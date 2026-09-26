@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T03",
+  "createdAt": "2026-09-24T16:59:57Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "a8a84c56a274e278a1ee9eeb239d1de5d8b6b4a36859c9213f5c1d372f3c7cf2",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-24T16-58-39-174Z-19308",
+    "rawManifestSha256": "4f015b60259db58e5ae137a0bc0856ac9d0be5d5162d98abaff93fb39d785eea",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 110, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 10, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-24T16-59-26-184Z-41280",
+    "rawSummarySha256": "285787c8690e0a0d72647216b624d0735e11eade72842b70a0d318caef95ea35",
+    "D01": "PASS: tagged Vector2 set_property and create_node initial property read back exactly",
+    "D02": "PASS",
+    "remaining": "Eight combined defect cases remain EXPECTED_DEFECT"
+  },
+  "typesVerifiedInRealGodot": [
+    "null",
+    "bool",
+    "int",
+    "float",
+    "string",
+    "Vector2",
+    "Vector2i",
+    "Vector3",
+    "Vector3i",
+    "Color",
+    "NodePath",
+    "Quaternion",
+    "Basis",
+    "Transform2D",
+    "Transform3D",
+    "Array",
+    "Dictionary"
+  ],
+  "failureChecks": [
+    "Wrong property type and declared range leave prior value unchanged",
+    "Wrong method argument type/count cannot execute the method",
+    "Invalid initial property leaves no created node",
+    "PackedArray, unknown object, unreferenced Resource, non-finite float and unsafe integer fail UNSUPPORTED",
+    "Resource input fails UNSUPPORTED; ordinary vector-looking text remains a string",
+    "Legacy one-shot property writes share the decoder and typed output"
+  ],
+  "limitations": [
+    "G1 remains NOT_RUN until T04–T08 pass",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration",
+    "Resource input resolution is reserved for T13"
+  ]
+}

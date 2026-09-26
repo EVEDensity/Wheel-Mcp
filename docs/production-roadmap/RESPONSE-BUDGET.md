@@ -1,0 +1,13 @@
+# Response and query budgets (T05)
+
+Every MCP tool result uses the same budget path for stdio and Streamable HTTP. The default serialized JSON body limit is 32 KiB; the server absolute response limit is 128 KiB. A body above the default is returned as an explicit `PARTIAL` result with `truncated: true`, an initial UTF-8 JSON `chunk`, and an opaque `{ ref, cursor, totalBytes }` continuation. Call `get_response_page` with that `ref` and `cursor` until `continuation` becomes `null`, then concatenate chunks and parse the original JSON. Pages contain at most 8 KiB of source bytes. There is no silent tail loss.
+
+Snapshots are process-local, last 15 minutes, and are bound to the authenticated HTTP client ID (or the local stdio server). Each snapshot is limited to 16 MiB; all live snapshots together are limited to 32 MiB. Exceeding either absolute limit returns an explicit MCP error; it is not a partial success and cannot be resumed. Snapshots do not survive a server restart. A later phase may replace this with durable artifact-backed paging.
+
+`compact` is selected by result capability, not one global whitelist. Persistent bridge responses keep the inner `response` and drop redundant event history; `get_game_state` retains requested `properties`, and specialized/collision results keep their corresponding business state. Normal, compact, and verbose game-state reads are checked against real Godot. Nested failures are classified before compact formatting; `isError` remains true even when an error body itself needs paging.
+
+Static and runtime scene-tree queries accept `subtree`, `depth` (0–64), `fields`, `limit` (1–500; default 100), and numeric `cursor`. Traversal constructs at most one requested page plus one lookahead node and returns `truncated` and `next_cursor`; callers can resume with the same query and the returned cursor. Static tree fields default to `name,type,parent,owner`; runtime fields default to `name,type,path`.
+
+`get_runtime_events` and subscription pages allow at most 500 events per call (default 100), with run-bound sequence cursors. `get_debug_output` pages stdout and stderr separately by UTF-8 byte cursor, default 16 KiB and maximum 64 KiB per stream. It returns next cursors, total byte counts, and selectable archived segment names. A cursor on an invalid UTF-8 boundary is rejected. Other large text responses use the shared continuation mechanism.
+
+These are response limits, not permissions. Existing project/evidence path and client-scope checks still apply. T23–T24 will extend structured-query budgets and artifact retention; T08–T09 remain responsible for wider access-control hardening.

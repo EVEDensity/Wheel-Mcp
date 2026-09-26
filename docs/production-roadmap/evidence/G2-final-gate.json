@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "gateId": "G2",
+  "taskId": "T15",
+  "createdAt": "2026-09-26T08:17:49Z",
+  "source": "MIXED",
+  "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610",
+  "head": "735b9eac84088867de65f33c9631f52fce91cd85",
+  "status": "PASS",
+  "rawRun": "runs/production-roadmap/G2/2026-09-26T08-08-48-319Z-32564",
+  "rawManifestSha256": "85b042c23efa5d67bbb1735117167f6ee59955cf273df3fc41856dfd580dce32",
+  "rawResultsSha256": "7c8f5749c8c5940482a2efb532ed8e95c4220e9e610f983f463e12aac71a2be0",
+  "startedAt": "2026-09-26T08:08:48.317Z",
+  "finishedAt": "2026-09-26T08:16:26.638Z",
+  "durationMs": 458321,
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "real headless EditorPlugin + rendered runtime fixtures; human desktop editor UI NOT_RUN",
+    "project": "NOT_RUN"
+  },
+  "baseline": {
+    "status": "PASS",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "tests": 267,
+      "passed": 267,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "requiredGodotChecks": {
+      "tests": 74,
+      "passed": 74,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "toolsDiscovered": 66,
+    "cliContracts": 7,
+    "mappingIssues": []
+  },
+  "nativeCycles": {
+    "status": "PASS",
+    "count": 20,
+    "consecutive": true,
+    "sameSource": true,
+    "summary": "runs/production-roadmap/T15/2026-09-26T08-08-58-462Z/summary.json",
+    "summarySha256": "c3b71377ef07a5439da2e16e4e73e4bcc3ace9e8415d1bde089a6a4eee6aa292",
+    "assessment": "runs/production-roadmap/G2/2026-09-26T08-08-48-319Z-32564/T15-assessment.json",
+    "assessmentSha256": "19d015690d93cc5cfde13fb4abb5e0209c1fcd59608c2e4c0880583aac0238d3",
+    "issues": []
+  },
+  "defectReplay": {
+    "status": "PASS",
+    "summary": "runs/production-roadmap/G2/2026-09-26T08-08-48-319Z-32564/T01-summary.json",
+    "summarySha256": "04988f38f0e540d4ed5f70af5d9633023fa13d3af57a3312ed1b6fdeff1bb773",
+    "rawRun": "runs/production-roadmap/T01/2026-09-26T08-15-52-750Z-61208",
+    "passed": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D06",
+      "D07",
+      "D08",
+      "D10"
+    ],
+    "expectedDefect": [
+      {
+        "id": "D09",
+        "remaining": "D09-SEMANTICS remains EXPECTED_DEFECT for T22; D09-3D explicitly reports UNSUPPORTED and its boundary subcheck is PASS. General 3D physics remains outside this gate's qualification."
+      }
+    ]
+  },
+  "regression": {
+    "name": "Native save -> actual Undo -> former clean history point",
+    "fixed": true,
+    "verified": "Real editor reports dirty.nativeSaveConflicts, official MCP ordinary scene write rejects CONFLICT, disk bytes remain unchanged",
+    "tests": [
+      "tests/editor-scene-save.test.ts",
+      "tests/editor-bridge-e2e.test.ts",
+      "tests/validated-project-write.test.ts"
+    ],
+    "priorInterruptedGate": "runs/production-roadmap/G2/2026-09-26T07-26-29-151Z-47340/interrupted.json"
+  },
+  "scope": [
+    "Bounded scriptless native authoring with exact SDK-host approval and independent editor write opt-in",
+    "Scene owners, preserve-only local instances, controlled NodePath and visibility signals, native Undo/Redo",
+    "Declared native resource types, shared/make_unique, real ResourceSaver/UID persistence",
+    "Candidate import/parse/load/instantiate before CAS file transaction; approved raw remains NOT_RUN",
+    "Native product save, actual filesystem observation, same-project editor close/reopen and real UI PNG/signal pixel differences",
+    "Continuous bounded process logs, actual failure/exit/signal evidence, runtime/editor authorization and path regressions"
+  ],
+  "testDoubles": {
+    "explicitMock": [
+      "SDK-host form acceptance",
+      "I/O-failure callback",
+      "post-commit notification transport loss"
+    ],
+    "real": [
+      "Godot editor/runtime processes",
+      "native Undo/Redo and resource/save APIs",
+      "rendered PNG and persisted signal behavior",
+      "transport disconnect and actual process/transaction lifecycle tests"
+    ]
+  },
+  "limits": [
+    "Windows/Godot 4.7.2 trusted local projects only; not an OS sandbox or remote production qualification",
+    "Finite declared native node/resource types; arbitrary scripts, UI layout, inheritance overrides, shader authoring and general 3D physics are not qualified",
+    "Screenshot proves visible UI content and persisted visibility signal, not 3D scene/material appearance or collision behavior",
+    "Native save deliberately retains dirty marker/history; plugin reports document/disk conflicts without unsafe reload or fake UI clean",
+    "G0/G1 evidence remains historical; full release requires all G0-G6 qualified for the final candidate source",
+    "T16-T35 and G3-G6 remain pending; production NOT_QUALIFIED",
+    "Raw per-round artifacts include isolated temporary projects; migration requires retaining them or rerunning acceptance"
+  ],
+  "writes": {
+    "userAuditFolder": "UNCHANGED",
+    "userProjectPluginEnable": "NOT_PERFORMED",
+    "commit": "NOT_PERFORMED",
+    "push": "NOT_PERFORMED",
+    "publish": "NOT_PERFORMED"
+  },
+  "retainedBackup": "runs/integration/pre-main-5g8s50",
+  "retainedSafetyStash": "a1417796f5e15e901faad5afe8a2e80e6b1c2be2",
+  "releaseHardening": {
+    "tests": [
+      "tests/release-matrix.test.ts",
+      "tests/release-qualification.test.ts"
+    ],
+    "verified": [
+      "SDK isError and all stable error codes cannot count as success",
+      "RPC/nested errors, null/empty/malformed/simulated results and abnormal process/timeout fail closed",
+      "Normal explicit stopped cancellation is distinct from failed/cancelled execution",
+      "Negative result requires both real CLI nonzero and MCP isError with exact expected NOT_FOUND",
+      "Matrix summary and exit status follow real positive/negative results",
+      "Configured diagnostic subprocess fixture/evidence roots and engine/bridge whitelist do not modify product configuration",
+      "Property-write matrix requires actual supported boolean readback on both CLI and MCP",
+      "Roadmap JSON travels via stdin, including an additional 100000-character regression; no Windows argument-limit workaround by removing evidence"
+    ],
+    "retainedFailedGate": "runs/production-roadmap/G2/2026-09-26T08-00-26-626Z-42608",
+    "failure": "265/266, release-qualification test ENAMETOOLONG reproduced; retained as FAIL",
+    "priorPassedCheckpoint": "docs/production-roadmap/evidence/G2-native-authoring.json"
+  }
+}

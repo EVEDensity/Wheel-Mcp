@@ -1,0 +1,16 @@
+{
+ "schemaVersion":1,"taskId":"T14","createdAt":"2026-09-26T07:04:00Z","source":"MIXED",
+ "sourceHash":"3563960dd75b4fd5fa46a31963858036e46d54475a07ab2d90a4dabf94f60143",
+ "rawRun":"runs/production-roadmap/T00/2026-09-26T06-58-31-615Z-34916",
+ "rawManifestSha256":"09913c8ec0fc116d726d730711e27339c6ef34df9983c4cc04779f89af0e85f1",
+ "rawResultsSha256":"64d99be01f7f35bdd61ecea2909968968d0ca552b3a90be334cee4823deee393",
+ "baseline":{"status":"PASS","build":"PASS","format":"PASS","lint":"PASS","fullTests":{"passed":261,"failed":0,"skipped":0},"realGodotSmoke":{"passed":73,"failed":0,"skipped":0}},
+ "defects":"runs/production-roadmap/T01/2026-09-26T07-02-47-360Z-50512/summary.json",
+ "D07":{"status":"PASS","mcpCode":"VALIDATION_FAILED","nativeCandidate":"FAIL","originalNotCreated":true,"actualSha256":"b33d8a9741133d814363df4e600842661225d5ee73c4d0cbdd06d3b8970cfc83"},
+ "tests":["tests/validated-project-write.test.ts","tests/editor-scene-save.test.ts"],
+ "engine":"REAL Windows Godot 4.7.2 editor and isolated candidate validation",
+ "approval":"Explicit MOCK SDK form acceptance / library approval; not human UI proof",
+ "capabilities":["import/parse/load/instantiate before original file write","correct isolated res:// and multi-file candidate context","dirty-scene conflict","raw explicit risk NOT_RUN","native PackedScene/ResourceSaver save, UID, owner and reference checks","session/document/history/source-bound guard","observable filesystem synchronization","committed disk truth separate from notification","native Undo history retained"],
+ "intermediateFailures":["Validator own inferred GDScript variables caused false failure; explicit types fixed and negative tests strengthened to require target result FAIL","Full baseline 260/261: client repair candidate-2 actual execution TIMEOUT, retained run 2026-09-26T06-54-11-981Z-43072; isolated 5/5 passed. Runner bounds concurrency to 4; subsequent complete baseline 261/261 passed"],
+ "limitations":["Trusted local projects; not an OS sandbox","Bounded native scene/resource types, no arbitrary scripts in native authoring","Dirty marker deliberately RETAINED after disk save, no unsafe second save/reload","Validation is not gameplay/render proof","T15 20-cycle qualification still pending; G2 NOT_RUN, NOT_QUALIFIED"]
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T12",
+  "acceptance": "SUPPORTED_NATIVE_SCENE_SUBSET",
+  "createdAt": "2026-09-26T06:10:00Z",
+  "source": "MIXED",
+  "sourceHash": "2541caee673f40022afc7f9bfc4d498924509872440a792f0f6411da6e6cc504",
+  "head": "735b9eac84088867de65f33c9631f52fce91cd85",
+  "baseline": {
+    "status": "PASS",
+    "command": "npm run verify:production -- --baseline",
+    "rawRun": "runs/production-roadmap/T00/2026-09-26T06-03-11-657Z-16656",
+    "manifestSha256": "0f2f393983f40a56d9faf5d6b4a23d3a2b86dc7a92048772ccdb177dcd9d0af5",
+    "resultsSha256": "b5717b03d784c3455deb56d37db88b1adb36702f55218814caa8129b2fbb0653",
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "fullTests": { "passed": 252, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 64, "failed": 0, "skipped": 0 }
+  },
+  "editorTests": {
+    "files": ["tests/editor-scene-operations.test.ts", "tests/editor-scene-rpc.test.ts", "tests/editor-instance-rpc.test.ts"],
+    "passed": 23, "failed": 0, "skipped": 0,
+    "engine": "REAL Godot 4.7.2 Windows --headless --editor",
+    "transport": "REAL official SDK and authenticated native editor RPC",
+    "approval": "MOCK form replies in isolated fixtures; human UI NOT_RUN"
+  },
+  "integration": {
+    "backup": "runs/integration/pre-main-5g8s50/manifest.json",
+    "retainedStash": "a1417796f5e15e901faad5afe8a2e80e6b1c2be2",
+    "strategy": "fast-forward main, reapply and merge local changes; preserve signal and process identity"
+  },
+  "evidenceFixes": ["continuous bounded rotating logs with backpressure", "real nonzero exit, signal, spawn failure and absent artifacts", "atomic terminal metadata", "live-owner close evidence cannot be stolen by orphan reclamation", "persistent startup evidence", "Windows/POSIX diagnostic locations"],
+  "retainedFailure": "runs/production-roadmap/T00/2026-09-26T05-50-28-821Z-32996: 250/251; live-owner orphan reclamation race, fixed with deterministic negative regression",
+  "limitations": ["Only declared native classes/properties, restricted local instances and preserve policy", "Instance roots/children, scripts, inherited scenes and resource-bearing documents remain protected", "Single native Undo step, unsaved only", "UNKNOWN after sent commit; query original session; results do not survive editor restart", "No user project plugin enablement, no external publishing", "G2-G6 NOT_RUN; production NOT_QUALIFIED"],
+  "nextTask": "T13"
+}

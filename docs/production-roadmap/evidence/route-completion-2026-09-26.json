@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-26T08:23:25Z",
+  "source": "MIXED",
+  "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610",
+  "status": "REQUESTED_ROUTE_VERIFIED_THROUGH_T15",
+  "productionQualification": "NOT_QUALIFIED",
+  "completionBoundary": "This requested integration/security/logging/T12-T15/gating/comparison route, not the full T00-T35 production roadmap",
+  "integration": {
+    "status": "COMPLETE",
+    "head": "735b9eac84088867de65f33c9631f52fce91cd85",
+    "mode": "fast-forward remote main then preserve/reapply local changes with reviewed runtime merge",
+    "backup": "runs/integration/pre-main-5g8s50",
+    "safetyStash": "a1417796f5e15e901faad5afe8a2e80e6b1c2be2",
+    "userAuditFolder": "UNCHANGED"
+  },
+  "implementation": {
+    "authorization": "default-deny classified tools/RPCs; owner/project/session-bound objects; exact host approval; independent editor write opt-in; loopback only",
+    "failureEvidence": "actual start/exit/signal/timeout/cancel; declared existing artifact profiles; atomic metadata and retained failed runs",
+    "logsAndDiagnostics": "continuous bounded UTF-8 process logs with backpressure; project-constrained Windows/POSIX/res:// diagnostic locations",
+    "nativeAuthoring": "T12-T15 declared scriptless native subset, resources/Undo/Redo/validated candidate writes/product save/same-project reopen"
+  },
+  "g2": {
+    "status": "PASS",
+    "evidence": "docs/production-roadmap/evidence/G2-final-gate.json",
+    "sha256": "36019247bed37d28ebefbcfb8aada9e0565b2353ac7693293800ffb36599585f",
+    "fullTests": 267,
+    "requiredGodotChecks": 74,
+    "consecutiveNativeCycles": 20,
+    "failed": 0,
+    "skipped": 0,
+    "toolsDiscovered": 66,
+    "cliContracts": 7
+  },
+  "matrix": {
+    "status": "PASS",
+    "scope": "19 legacy CLI/MCP runtime cases plus 1 negative case; not all 66 tools or production qualification",
+    "positivePassed": 19,
+    "negativePassed": 1,
+    "artifacts": [
+      {
+        "path": "runs/matrix/tool-contract-matrix.json",
+        "sha256": "331b15b8c847b6bdb3ef8ddbacbbb1a362cf5349eccae0397716ce2bf713af6a",
+        "status": "PASS",
+        "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610"
+      },
+      {
+        "path": "runs/matrix/tool-runtime-results.json",
+        "sha256": "90884543dd05b5816433f6abd0f09b77079e9ba7ba4fd1287fbf1b953b993bba",
+        "status": "PASS",
+        "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610"
+      },
+      {
+        "path": "runs/matrix/tool-negative-results.json",
+        "sha256": "5316caf02ed55cb4edcfbd138ddf8da806dc2e22cb649d1bc074e3d35efa6b14",
+        "status": "PASS",
+        "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610"
+      },
+      {
+        "path": "runs/matrix/release-matrix-summary.json",
+        "sha256": "132d0c08118fae085f99536d973289fe63eb4becb4e7895ecfd62c3024ee92d2",
+        "status": "PASS",
+        "sourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610",
+        "total": 19,
+        "passed": 19,
+        "failed": []
+      }
+    ]
+  },
+  "efficiency": {
+    "status": "PASS",
+    "sourceUnchanged": true,
+    "report": "runs/efficiency-comparison/2026-09-26T08-18-28-146Z/comparison.json",
+    "sha256": "6d2bb8dbeedb330bdfd3341538561c86836ce18182288bfd80ba7894c31b15f4",
+    "scope": "Three alternating-order cold-start pairs of five identical static-property reads. Includes client/process startup and shutdown. Not a gameplay, repair, manual-workflow or model-token benchmark.",
+    "pairs": [
+      {
+        "order": [
+          "one-shot",
+          "persistent"
+        ],
+        "results": {
+          "one-shot": {
+            "durationMs": 2901.1777,
+            "verifiedQueries": 5,
+            "toolCalls": 5,
+            "processStarts": 5,
+            "serializedRequestResponseBytes": 8496
+          },
+          "persistent": {
+            "durationMs": 1197.2952999999998,
+            "verifiedQueries": 5,
+            "toolCalls": 7,
+            "processStarts": 1,
+            "serializedRequestResponseBytes": 16837
+          }
+        }
+      },
+      {
+        "order": [
+          "persistent",
+          "one-shot"
+        ],
+        "results": {
+          "persistent": {
+            "durationMs": 1165.9435000000003,
+            "verifiedQueries": 5,
+            "toolCalls": 7,
+            "processStarts": 1,
+            "serializedRequestResponseBytes": 16837
+          },
+          "one-shot": {
+            "durationMs": 2993.0359,
+            "verifiedQueries": 5,
+            "toolCalls": 5,
+            "processStarts": 5,
+            "serializedRequestResponseBytes": 8496
+          }
+        }
+      },
+      {
+        "order": [
+          "one-shot",
+          "persistent"
+        ],
+        "results": {
+          "one-shot": {
+            "durationMs": 2833.0447000000004,
+            "verifiedQueries": 5,
+            "toolCalls": 5,
+            "processStarts": 5,
+            "serializedRequestResponseBytes": 8496
+          },
+          "persistent": {
+            "durationMs": 1217.1173,
+            "verifiedQueries": 5,
+            "toolCalls": 7,
+            "processStarts": 1,
+            "serializedRequestResponseBytes": 16837
+          }
+        }
+      }
+    ],
+    "tokenCost": "NOT_MEASURED",
+    "manualTimeReduction": "NOT_MEASURED",
+    "bytesMeaning": "serialized request/response trace bytes, not network traffic or billable tokens"
+  },
+  "releaseGate": {
+    "actualStatus": "FAIL",
+    "exitCode": 1,
+    "expectedOutcome": "REJECT",
+    "report": "runs/production-roadmap/release-check-final-2026-09-26.json",
+    "sha256": "d67777043fb91271769cea59be894a8e889591608328c9964b7877716251b3b4",
+    "qualification": "NOT_QUALIFIED",
+    "reason": "T16-T35 incomplete, G3-G6 NOT_RUN, G0/G1 historical source only; current matrix and evidence integrity checks have no additional reported errors",
+    "pendingTasks": [
+      "T16",
+      "T17",
+      "T18",
+      "T19",
+      "T20",
+      "T21",
+      "T22",
+      "T23",
+      "T24",
+      "T25",
+      "T26",
+      "T27",
+      "T28",
+      "T29",
+      "T30",
+      "T31",
+      "T32",
+      "T33",
+      "T34",
+      "T35"
+    ],
+    "pendingGates": [
+      "G3",
+      "G4",
+      "G5",
+      "G6"
+    ],
+    "nextTask": "T16"
+  },
+  "dependencies": {
+    "audit": {
+      "status": "PASS",
+      "vulnerabilities": 0,
+      "command": "npm run audit:dependencies",
+      "source": "REAL"
+    },
+    "packageLockSha256": "ff93654f751d0156819a4f0901c768f59a685414aea232003b203c0154b879b9",
+    "sbom": {
+      "path": "runs/security/final-sbom-2026-09-26.json",
+      "sha256": "6b541035a0dcd803009d8345cd4f9ae43a86c62df022eb1709aa6708e431d25b",
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.5",
+      "components": 185,
+      "generatedAt": "2026-09-26T08:03:02.338Z"
+    },
+    "qualification": "Dependency audit/SBOM do not certify production or provide an external signature"
+  },
+  "retainedFailureRecords": [
+    "runs/production-roadmap/G2/2026-09-26T07-26-29-151Z-47340/interrupted.json",
+    "runs/production-roadmap/G2/2026-09-26T08-00-26-626Z-42608",
+    "runs/integration/matrix-denied-015106cca4d44dbab8f2c64e8f4db68d",
+    "runs/integration/matrix-readback-failed-81b035fbcbe94c0d920089c1403ac2ef"
+  ],
+  "testDoubles": "Godot and SDK executions are real; form acceptance and specifically documented I/O/notification fault injection are MOCK, not human client UI qualification",
+  "externalWrites": {
+    "commit": "NOT_PERFORMED",
+    "push": "NOT_PERFORMED",
+    "publicPublish": "NOT_PERFORMED",
+    "userProjectPluginEnable": "NOT_PERFORMED"
+  },
+  "artifactRetention": "runs/ and isolated temporary fixture artifacts are ignored by Git. Archive them with hashes or rerun when migrating; committed summaries alone are not executable evidence."
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T05",
+  "createdAt": "2026-09-25T14:10:37Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "e5478f95fd502389061335ec317eb17386b27ec8bbc2c6fcf32224ce0595abc8",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T14-09-11-289Z-42416",
+    "rawManifestSha256": "ab543987e6bdbb7a3383a2b0d46d205203101188f221780f74e6cf14ad9c1b12",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 120, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 12, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T14-09-53-067Z-5432",
+    "rawSummarySha256": "46df1dd8812f875be33326d362f7322e6f4ef41562a47819be7ed23ef365fa8b",
+    "D01": "PASS",
+    "D02": "PASS",
+    "D03": "PASS",
+    "D05": "PASS: compact and normal preserve the same requested real Godot properties",
+    "remaining": "Six combined defect cases remain EXPECTED_DEFECT"
+  },
+  "contractsVerified": [
+    "Normal, compact and verbose real Godot game-state modes retain identical requested properties",
+    "Known capability-specific compact results retain business fields, and unknown results retain non-redundant fields",
+    "Nested and oversized failures remain MCP isError",
+    "UTF-8 JSON responses above 32 KiB return a reconstructable 8 KiB page and opaque continuation",
+    "The official MCP HTTP client retrieves pages; another authenticated client cannot read that reference",
+    "Static and real runtime scene trees construct bounded subtree/depth/fields/limit/cursor pages",
+    "Event page limits and process-log UTF-8 byte pages have explicit cursors and bounded outputs"
+  ],
+  "observedFailures": [
+    "The first compact change targeted the inner capability, but D05 revealed an outer PERSISTENT_RUNTIME_BRIDGE envelope; corrected and replayed PASS",
+    "An HTTP continuation test initially used a tool that lacked read-scope mapping; read_project_file was granted its existing read role and the test passed",
+    "An intermediate full verification passed all tests but lint rejected a constant-condition test loop; corrected and reran all checks PASS"
+  ],
+  "limitations": [
+    "Snapshots are process-local, client-bound, expire after 15 minutes, and cannot resume after restart",
+    "Responses above the 16 MiB absolute snapshot limit return an explicit error, not a resumable page",
+    "Broader artifact/query budgets and durable retention are reserved for T23–T24",
+    "G1 remains NOT_RUN until T06–T08 pass",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

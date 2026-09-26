@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1, "taskId": "T13", "acceptance": "DECLARED_NATIVE_RESOURCE_SUBSET",
+  "createdAt": "2026-09-26T06:28:58.720Z", "source": "MIXED",
+  "sourceHash": "6d6545e1de70f59851dd37e85bc9bf2a724c6acae2edd2b4dd762f0f2263e3cd",
+  "rawRun": "runs/production-roadmap/T00/2026-09-26T06-25-21-082Z-45100",
+  "rawManifestSha256": "bbdc92eda5cbb5a38eb6f95100649e9c7efba2c7516aaf7acae97aa2ea4c2f62",
+  "rawResultsSha256": "30c87e1e0c70ea90a515bde835547b6aa1bdbda0104e1950672148ebc549af0c",
+  "baseline": {"status":"PASS","build":"PASS","format":"PASS","lint":"PASS","fullTests":{"passed":255,"failed":0,"skipped":0},"realGodotSmoke":{"passed":67,"failed":0,"skipped":0}},
+  "tests": ["tests/resource-roundtrip.test.ts", "tests/resource-sharing.test.ts"],
+  "engine": "REAL Windows Godot 4.7.2 --headless --editor",
+  "transport": "REAL official MCP SDK tools + independently authenticated editor RPC",
+  "approval": "Explicit MOCK form accept in isolated fixtures; not human UI",
+  "capabilities": ["scoped ResourceRef create/reference/read/duplicate/release", "strict type/project/session/owner/fingerprint validation", "shared and make_unique with native Undo/Redo", "native ResourceSaver .tres roundtrip and UID", "exact host-approved transaction + fresh external ref", "real editor close/restart and external/inline/shared readback"],
+  "types": ["StandardMaterial3D", "ShaderMaterial fixed built-in shader", "PhysicsMaterial", "BoxShape3D", "SphereShape3D", "CapsuleShape3D", "CylinderShape3D", "RectangleShape2D", "CircleShape2D", "CapsuleShape2D", "BoxMesh", "SphereMesh"],
+  "negativeCases": ["cross-owner", "forged type", "released/stale ref", "wrong node resource type", "external shared mutation", "forged arbitrary path adoption"],
+  "intermediateFailures": ["Missing target parent was correctly rejected; test uses existing parent, product does not silently mkdir", "Resource hint contains comma-separated native types; explicit native compatibility fixed", "Mixed 2D/3D test detected runtime-generated _root_canvas groups; documented non-internal groups sorted, readback differences retained"],
+  "limitations": ["Bounded declared native resources only; opaque dependencies/cycles/scripts/imported writes rejected", "ShaderMaterial basic parameters on fixed authored shader only; arbitrary shader source/render compilation T20", "Scene pack in this resource test is explicit TEST-ONLY controller; product scene save T14", "Headless editor result is not desktop screenshot or human approval proof", "G2-G6 NOT_RUN; NOT_QUALIFIED; no external release"],
+  "nextTask": "T14"
+}

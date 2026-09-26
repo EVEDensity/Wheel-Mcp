@@ -1,0 +1,196 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T11",
+  "createdAt": "2026-09-26T03:50:52.398Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "a39aaec2e35f677be7cb6dd592af5c0dce1d59ca6a84cab77b2f2f9a0f55b2d3",
+  "source": "MIXED",
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "editorMode": "REAL --headless --editor; desktop UI NOT_RUN",
+    "scope": "Isolated trusted temporary projects; no user plugin installation/enablement; remote HTTP disabled"
+  },
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T00/2026-09-26T03-46-23-696Z-29800",
+    "rawManifestSha256": "fb27231eb3b7ec553f841aceaca9ff67117d675e5ea7d3f1c2f4e0cec30a3071",
+    "rawResultsSha256": "1dd06b14cac7adc47cfcb637cccae4c07665ed6f9afdbe4448923bc05370948b",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "passed": 215,
+      "failed": 0,
+      "skipped": 0
+    },
+    "realGodotSmoke": {
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0
+    },
+    "toolsCount": 60,
+    "cliContractsCount": 7,
+    "mappingIssues": []
+  },
+  "editorTests": {
+    "file": "tests/editor-bridge-e2e.test.ts",
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "realEditorCases": 7,
+    "pureNegativeCases": 2,
+    "rawEvidence": "Same file ran in both full-tests and godot-smoke; structured events in baseline stdout.log",
+    "humanAuthorization": "NOT_RUN: fixtures explicitly configure opt-in authorization; not a human UI acceptance"
+  },
+  "ciEntry": {
+    "command": "npm.cmd run test:godot-ci",
+    "status": "PASS",
+    "exitCode": 0,
+    "files": 11,
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0,
+    "rawEvidence": "Independent tool transcript; equivalent 33-test required smoke report archived in baseline"
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T01/2026-09-26T03-48-28-751Z-37620",
+    "rawManifestSha256": "838507372f6b4303697a62fd1794f3315b82013443a5e742100ee56011b4a749",
+    "rawSummarySha256": "8e384625c388412e720f84cf61703adde1f69446bc21e96b0c4601e0a0659d7b",
+    "provenance": {
+      "engine": "REAL",
+      "transport": "REAL",
+      "projectWriteApproval": "MOCK: fixture form acceptance, not human confirmation"
+    },
+    "cases": [
+      {
+        "id": "D01",
+        "status": "PASS"
+      },
+      {
+        "id": "D02",
+        "status": "PASS"
+      },
+      {
+        "id": "D03",
+        "status": "PASS"
+      },
+      {
+        "id": "D04",
+        "status": "PASS"
+      },
+      {
+        "id": "D05",
+        "status": "PASS"
+      },
+      {
+        "id": "D06",
+        "status": "PASS"
+      },
+      {
+        "id": "D07",
+        "status": "EXPECTED_DEFECT"
+      },
+      {
+        "id": "D08",
+        "status": "PASS"
+      },
+      {
+        "id": "D09",
+        "status": "EXPECTED_DEFECT"
+      },
+      {
+        "id": "D10",
+        "status": "PASS"
+      }
+    ],
+    "controls": [
+      {
+        "id": "C01",
+        "status": "PASS"
+      },
+      {
+        "id": "C02",
+        "status": "PASS"
+      },
+      {
+        "id": "C03",
+        "status": "PASS",
+        "scope": "Actual Godot-rendered PNG"
+      }
+    ]
+  },
+  "contractsVerified": [
+    "Independent wheel-editor/1 plane; loopback-only; authenticates configured client token, project path/ID, protocol/plane and fresh editor session; no first-connector trust",
+    "Public EditorInterface queries read actual edited scene, owner/parent tree, dirty scenes, selection and filesystem on main thread; no private Inspector or runtime substitute",
+    "Missing/disabled editor returns ENGINE_UNAVAILABLE; authorization disabled/foreign client denied; version/identity/plane mismatch rejects",
+    "Main-thread bounded queue reports CONFLICT, invalid limits, TIMEOUT and same-peer cancellation acknowledgement; client abort reports REQUESTED_NOT_CONFIRMED and ignores late reads",
+    "Plugin disable closes queued reads/peers/listener and removes only its endpoint/lease; re-enable changes session; actual second editor cannot replace live endpoint",
+    "Malformed/oversized request frames and linked private metadata reject; response frame/schema/identity budgets enforced",
+    "Official SDK InMemory and actual stdio entry enforce transport-bound read/project authorization; args cannot override owner; MCP shutdown leaves editor alive",
+    "Five-domain registration retained; exact 60 tools, read-only/non-destructive annotations and MCP-only CLI decision verified; old tools invoked successfully after registration fix",
+    "Scene contents and project plugin configuration are not modified by product reads; only fixture controller deliberately changes test plugin enablement"
+  ],
+  "intermediateFailures": [
+    {
+      "scope": "Pre-implementation negative",
+      "status": "FAIL",
+      "reason": "No registered editor query; structured error code undefined rather than ENGINE_UNAVAILABLE",
+      "archive": "Tool transcript; not final acceptance"
+    },
+    {
+      "scope": "First real editor query",
+      "status": "FAIL",
+      "reason": "Godot wire version is 4.7.2-stable (official), not the CLI dotted string; version validation corrected",
+      "archive": "Tool transcript and temporary editor log"
+    },
+    {
+      "scope": "Lint",
+      "status": "FAIL",
+      "reason": "Unused conditional expression and missing caught-error cause; fixed before complete baseline",
+      "archive": "Tool transcript"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T03-36-59-280Z-47668",
+      "sourceHash": "022642a1509925d43a89379f28ef1f4bf352d98e25757d2c59912914a9b6f860",
+      "rawManifestSha256": "2600ca119f60787f49ee1499fdee6058f8e7a96a81095a1ef81cc8cfff6e5abd",
+      "rawResultsSha256": "87e4bd7bf051e238a1096f245b5a205850317c4e052bc03a5deacf9ead205cbc",
+      "status": "FAIL",
+      "fullPassed": 185,
+      "fullFailed": 29,
+      "smokePassed": 26,
+      "smokeFailed": 6,
+      "reason": "SDK overloaded tool() treated empty annotations as a schema/callback. Replaced wrapper internals with public registerTool config API; authorization/lifecycle wrapping retained; added legacy tool invocation assertion"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T03-43-31-688Z-19100",
+      "sourceHash": "9121aabd92fcdd97c305ad786e744a176eae697205a67055ed6e5e535168eb4d",
+      "rawManifestSha256": "cad32cfc1b21c396a011998fd84b9b175d14b25001636ea0e3da3505ca7f1001",
+      "rawResultsSha256": "da3e3e1ce7eaa0e6600daf0f0b048df604bf06b92237e77f5e47a77037eb7ccd",
+      "status": "FAIL",
+      "fullPassed": 213,
+      "fullFailed": 1,
+      "smokePassed": 31,
+      "smokeFailed": 1,
+      "reason": "Cleanup fixture occupied global queue from another peer; Node reads legitimately got CONFLICT, not queued work. Removed competing batch; wait for first real read before disable, then assert remaining pending reads become ENGINE_UNAVAILABLE"
+    }
+  ],
+  "limitations": [
+    "Only Windows/Godot 4.7.2 stable real editor validated; Linux/macOS and desktop renderer/UI NOT_RUN",
+    "Read-only scene snapshot, not resource dirty tracking, native scene mutation, Undo/Redo or save/reopen validation (T12-T15 pending)",
+    "Opt-in is manual/private configuration, fixtures are scripted; actual human client confirmation NOT_RUN",
+    "Not an OS sandbox; malicious local process/config/plugin changes and path TOCTOU outside protection",
+    "Unclean editor exit may leave endpoint/lease; refuse takeover until project owner verifies exit and removes only stale editor metadata; no PID-based automatic kill",
+    "Authorization changes require plugin disable/re-enable; already authenticated connections do not hot-reload config",
+    "Raw runs are local Git-ignored evidence; rerun after transfer if unavailable. No commit, push, publishing or deployment",
+    "G0/G1 historical PASS; G2-G6 NOT_RUN; overall NOT_QUALIFIED; roadmap is not fully complete"
+  ],
+  "nextTask": "T12"
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T09",
+  "createdAt": "2026-09-25T18:02:39Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "48a1d16cbe5c4487164237dcb94a2ce448a80e2efd8889d1ff6f1dcbefa94b8e",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "platformScope": "Windows x64 / GDScript / local stdio and loopback HTTP only; remote production disabled",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T18-00-39-190Z-52568",
+    "rawManifestSha256": "55b9638f2d7f7051a13a6053ca5333d0c6fa1ff82cce9a777aac76fe3501878c",
+    "rawResultsSha256": "bf77be81fbd27664cd61fee7e2c330e4393e0871104d439915a3355dae7dfd06",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 160, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 24, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T18-01-52-970Z-53228",
+    "rawSummarySha256": "5886babbb98db25c4f1ded44c69a85f6f99c7b2f580a45e0be8ea52e3b5746fc",
+    "D08": "PASS: project-relative and res:// scene paths return the same real scene",
+    "D11": "PASS: direct-file and MCP authorization tests reject traversal, Windows junction, symlink, hard link writes, protected paths and outside targets",
+    "remaining": "D07 and D09 remain EXPECTED_DEFECT for later tasks"
+  },
+  "contractsVerified": [
+    "Project-relative, res:// and approved contained absolute paths use one resolver in scene, project-file, script, static scene-tree, search, exact-edit and repair entrypoints",
+    "uid:// reads resolve only through actual Godot .gd.uid or text-resource header mapping, with unique match and bounded scan; UID writes fail closed",
+    "Existing files and each parent are checked for canonical location, Windows casing, symlink/junction and containment; new targets require an existing parent",
+    "Windows ADS, UNC, drive-relative spelling, traversal, empty segments and trailing dot/space are rejected; hard-linked project files cannot be overwritten",
+    "Generic read/write access to .git, .godot and .harness is denied; evidence output remains under a separate authorization policy",
+    "Remote HTTP bind is disabled in both environment parsing and direct server startup, including when MCP_HTTP_ALLOW_REMOTE=true",
+    "Real Windows junction rejection ran without skip; full and Godot smoke suites ran without skips"
+  ],
+  "limitations": [
+    "Path validation and subsequent readFile/writeFile calls are not atomic against a malicious local process changing parent directories. This is not an OS filesystem sandbox; local trusted-project scope only",
+    "UID mapping currently covers .gd.uid and .tscn/.tres text headers; missing or ambiguous IDs fail closed, binary imported-resource UIDs are not declared supported",
+    "One interim full-suite run failed because a roadmap test assumed G1 was still pending; the test now selects a pending Gate and the final same-source full suite passes",
+    "G2 requires T10-T15 and is not run; T09 completion does not qualify remote service or production release",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

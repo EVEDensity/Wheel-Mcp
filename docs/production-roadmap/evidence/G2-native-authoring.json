@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "gateId": "G2",
+  "taskId": "T15",
+  "createdAt": "2026-09-26T07:50:21Z",
+  "source": "MIXED",
+  "sourceHash": "7cbe3556e54518e02f3c3f0555fa20e7733e84bc55a84cf759776534bd633178",
+  "head": "735b9eac84088867de65f33c9631f52fce91cd85",
+  "status": "PASS",
+  "rawRun": "runs/production-roadmap/G2/2026-09-26T07-41-26-168Z-19680",
+  "rawManifestSha256": "5fd7d1b7f4623fe791023307669a22540609681ca775b50a19934b1b36022eab",
+  "rawResultsSha256": "14721fb66fd29b01e7c7de893a96582fea1ca4c2038e250fa382b39f55c243cd",
+  "startedAt": "2026-09-26T07:41:26.165Z",
+  "finishedAt": "2026-09-26T07:48:41.537Z",
+  "durationMs": 435372,
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "real headless EditorPlugin + rendered Vulkan runtime; human desktop editor UI NOT_RUN"
+  },
+  "baseline": {
+    "status": "PASS",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "passed": 263,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "requiredGodotChecks": {
+      "passed": 74,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "toolsDiscovered": 66,
+    "cliContracts": 7,
+    "mappingIssues": []
+  },
+  "nativeCycles": {
+    "status": "PASS",
+    "count": 20,
+    "consecutive": true,
+    "sameSource": true,
+    "summary": "runs/production-roadmap/T15/2026-09-26T07-41-35-565Z/summary.json",
+    "summarySha256": "b9eeae8f712be168718edf28e082be6d7ba0ebd7327b4d11585710ec8c26d556",
+    "assessment": "runs/production-roadmap/G2/2026-09-26T07-41-26-168Z-19680/T15-assessment.json",
+    "assessmentSha256": "6fd4f9cef137af9533cc7768a5496a28765195189fe15154c2bad02ac9188e5e",
+    "issues": []
+  },
+  "defectReplay": {
+    "status": "PASS",
+    "summary": "runs/production-roadmap/G2/2026-09-26T07-41-26-168Z-19680/T01-summary.json",
+    "summarySha256": "3cc897c4246c9e85726fce7ba9652d9ef3f4ac4bd4d3a150dfc2db74895aefde",
+    "rawRun": "runs/production-roadmap/T01/2026-09-26T07-48-08-000Z-43660",
+    "passed": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D06",
+      "D07",
+      "D08",
+      "D10"
+    ],
+    "expectedDefect": [
+      {
+        "id": "D09",
+        "remaining": "Semantic/advanced 3D workflow checks owned by later roadmap tasks; not counted as PASS"
+      }
+    ]
+  },
+  "regression": {
+    "name": "Native save -> actual Undo -> former clean history point",
+    "fixed": true,
+    "verified": "Real editor reports dirty.nativeSaveConflicts, official MCP ordinary scene write rejects CONFLICT, disk bytes remain unchanged",
+    "tests": [
+      "tests/editor-scene-save.test.ts",
+      "tests/editor-bridge-e2e.test.ts",
+      "tests/validated-project-write.test.ts"
+    ],
+    "priorInterruptedGate": "runs/production-roadmap/G2/2026-09-26T07-26-29-151Z-47340/interrupted.json"
+  },
+  "scope": [
+    "Bounded scriptless native authoring with exact SDK-host approval and independent editor write opt-in",
+    "Scene owners, preserve-only local instances, controlled NodePath and visibility signals, native Undo/Redo",
+    "Declared native resource types, shared/make_unique, real ResourceSaver/UID persistence",
+    "Candidate import/parse/load/instantiate before CAS file transaction; approved raw remains NOT_RUN",
+    "Native product save, actual filesystem observation, same-project editor close/reopen and real UI PNG/signal pixel differences",
+    "Continuous bounded process logs, actual failure/exit/signal evidence, runtime/editor authorization and path regressions"
+  ],
+  "testDoubles": {
+    "explicitMock": [
+      "SDK-host form acceptance",
+      "I/O-failure callback",
+      "post-commit notification transport loss"
+    ],
+    "real": [
+      "Godot editor/runtime processes",
+      "native Undo/Redo and resource/save APIs",
+      "rendered PNG and persisted signal behavior",
+      "transport disconnect and actual process/transaction lifecycle tests"
+    ]
+  },
+  "limits": [
+    "Windows/Godot 4.7.2 trusted local projects only; not an OS sandbox or remote production qualification",
+    "Finite declared native node/resource types; arbitrary scripts, UI layout, inheritance overrides, shader authoring and general 3D physics are not qualified",
+    "Screenshot proves visible UI content and persisted visibility signal, not 3D scene/material appearance or collision behavior",
+    "Native save deliberately retains dirty marker/history; plugin reports document/disk conflicts without unsafe reload or fake UI clean",
+    "G0/G1 evidence remains historical; full release requires all G0-G6 qualified for the final candidate source",
+    "T16-T35 and G3-G6 remain pending; production NOT_QUALIFIED",
+    "Raw per-round artifacts include isolated temporary projects; migration requires retaining them or rerunning acceptance"
+  ],
+  "writes": {
+    "userAuditFolder": "UNCHANGED",
+    "userProjectPluginEnable": "NOT_PERFORMED",
+    "commit": "NOT_PERFORMED",
+    "push": "NOT_PERFORMED",
+    "publish": "NOT_PERFORMED"
+  },
+  "retainedBackup": "runs/integration/pre-main-5g8s50",
+  "retainedSafetyStash": "a1417796f5e15e901faad5afe8a2e80e6b1c2be2"
+}

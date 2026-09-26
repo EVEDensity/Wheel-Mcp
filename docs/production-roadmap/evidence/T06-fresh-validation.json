@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T06",
+  "createdAt": "2026-09-25T14:36:05Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "e82617c7f01298872014db7a2a35ccd4b1cba19ba0d1ca5d3879b043588f1f6f",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T14-33-04-900Z-10700",
+    "rawManifestSha256": "169fc1ae6be38f25ed6af052d2de52243ac6352e8a31e3df3fb18d1824402495",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 126, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 18, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T14-35-01-125Z-6692",
+    "rawSummarySha256": "b213be913226ce40250dce30b479ea1872ae7befa4b4af18fe06acdb25836301",
+    "D04": "PASS: scene reload labels edited code NOT_VERIFIED; a fresh dev_loop process observes version 2 after version 1",
+    "D06": "EXPECTED_DEFECT: legacy one-shot calls still use separate processes; assigned to T07",
+    "remaining": "Five combined defect cases remain EXPECTED_DEFECT"
+  },
+  "contractsVerified": [
+    "Real Godot version, bridge protocol, run/project identity and announced method list are checked at handshake",
+    "Godot 4.7.2 is VERIFIED; unsupported major/minor versions fail and unknown versions are NOT_VERIFIED",
+    "Same-process scene reload does not claim code freshness; each dev_loop attempt starts a fresh Godot process",
+    "Fresh editor preflight imports assets and registers Autoload and global class scripts before runtime",
+    "Source inputs are hashed across preflight; full project inputs are hashed before and after runtime and a mismatch returns CONFLICT",
+    "Real Godot tests cover Autoload, class_name, SVG import, scene dependency, initialization error and concurrent external edit"
+  ],
+  "limitations": [
+    "No general-purpose GDScript hot reload is claimed",
+    "Only Godot 4.7.2 is verified by this evidence; other versions are NOT_VERIFIED or UNSUPPORTED",
+    "Generated .gd.uid and .import files are excluded only from the preflight source comparison, not the post-import runtime input snapshot",
+    "G1 remains NOT_RUN until T07 and T08 pass",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

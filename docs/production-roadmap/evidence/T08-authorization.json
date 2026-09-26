@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T08",
+  "createdAt": "2026-09-25T17:31:00Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "ac047a1e47bff7b42f910e2b03d454b263f4707fb2c76caff264c8a8a65ff370",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "platformScope": "Windows x64 / GDScript / local stdio and authenticated HTTP; remote production qualification remains later",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T17-28-37-369Z-8524",
+    "rawManifestSha256": "b7761bbd7e3824689ebadde176fee38325ae145beef01d5adf552aead6ad6ebf",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 154, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 24, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T17-30-02-564Z-21880",
+    "rawSummarySha256": "d6d39272ba260c40635fd937676143ac2337af9ccfefaa9c4c0208aa126e7bb3",
+    "D01-D06": "PASS",
+    "D10": "PASS: run-only HTTP client cannot mutate a persistent Godot session through a direct tool or bridge RPC",
+    "remaining": "D07-D09 remain EXPECTED_DEFECT for T09 and later tasks"
+  },
+  "contractsVerified": [
+    "All 59 registered tools have explicit permission classifications; unknown tools and bridge methods fail closed even for admin",
+    "Read-only and run-only clients cannot call arbitrary Godot methods or state-writing bridge RPCs; execution-capable calls require run and write",
+    "PID, run ID, bridge session and persistent subscription operations reject a second HTTP client; run and subscription lists hide foreign objects",
+    "A persistent subscription records its client owner and can be resumed by a new HTTP MCP session of that same client",
+    "Nested scenario project and screenshot step paths, repair edit paths, top-level screenshot/diff paths and bridge screenshot params are bounded",
+    "Canonical parent resolution rejects a directory link escaping an approved root, including with admin scope",
+    "HTTP Godot executables and bridge scripts require server-approved exact paths; client-selected extraArgs are disabled",
+    "Local stdio uses explicit scopes, roots and approved Godot/bridge entrypoints; it does not grant admin by default",
+    "Repair tickets remain private to one MCP server/session coordinator"
+  ],
+  "limitations": [
+    "This is not an OS sandbox: granting both run and write authorizes execution of project code as the service user",
+    "Overlapping evidenceRoots intentionally allow shared raw evidence reads; configure non-overlapping roots for confidentiality",
+    "Filesystem TOCTOU and complete project resource resolution remain T09/T10 work",
+    "One earlier parallel full-suite run had a transient protocol test FORBIDDEN result; isolated rerun and the final full baseline passed, but the concurrency cause is not established",
+    "G1 must run separately after T08 is marked done; this task evidence alone does not qualify production",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

@@ -1,0 +1,173 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T00",
+  "createdAt": "2026-09-24T15:20:23.38Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "659442cc958d2dcb0d85cd21244d6f160eadfd935754491e93c204ada9274f8e",
+  "lockHash": "ff93654f751d0156819a4f0901c768f59a685414aea232003b203c0154b879b9",
+  "diffHash": "89b29ae89f18eac568f62475391d1189fb669e782edd1022bf2ffb60c46932a6",
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "headless smoke; desktop renderer NOT_RUN",
+    "project": "tests/fixtures/runtime-behavior"
+  },
+  "commands": [
+    {
+      "name": "build",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 2119,
+      "tests": null
+    },
+    {
+      "name": "format:check",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 1349,
+      "tests": null
+    },
+    {
+      "name": "lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 1835,
+      "tests": null
+    },
+    {
+      "name": "full-tests",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 12999,
+      "tests": {
+        "tests": 101,
+        "passed": 101,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      }
+    },
+    {
+      "name": "godot-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "durationMs": 3214,
+      "tests": {
+        "tests": 6,
+        "passed": 6,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      }
+    }
+  ],
+  "toolNames": [
+    "get_godot_version",
+    "list_projects",
+    "get_project_info",
+    "get_scene_tree",
+    "read_project_file",
+    "write_project_file",
+    "search_project",
+    "read_scene_file",
+    "write_scene_file",
+    "get_context_pack",
+    "git_checkpoint",
+    "git_recovery",
+    "analyze_collisions",
+    "get_node_semantics",
+    "launch_project",
+    "stop_project",
+    "cancel_project",
+    "get_process_status",
+    "get_runtime_events",
+    "subscribe_runtime_events",
+    "create_event_subscription",
+    "poll_event_subscription",
+    "cancel_event_subscription",
+    "ack_event_subscription",
+    "pause_event_subscription",
+    "close_event_subscription",
+    "list_event_subscriptions",
+    "list_active_runs",
+    "stop_run",
+    "cancel_run",
+    "reclaim_orphan_runs",
+    "list_runs",
+    "get_runtime_scene_tree",
+    "get_runtime_property",
+    "set_runtime_property",
+    "create_runtime_node",
+    "delete_runtime_node",
+    "call_runtime_method",
+    "inject_runtime_input",
+    "capture_runtime_screenshot",
+    "open_runtime_bridge",
+    "call_runtime_bridge",
+    "stop_runtime_bridge",
+    "get_game_state",
+    "get_specialized_state",
+    "query_runtime_collisions",
+    "get_debug_output",
+    "analyze_script_semantics",
+    "begin_client_repair",
+    "submit_repair_candidate",
+    "dev_loop",
+    "run_test_scene",
+    "execute_scenario",
+    "wait_for_event",
+    "reload_scene",
+    "compare_screenshots",
+    "get_recent_evidence"
+  ],
+  "cliMappings": [
+    {
+      "cliCommand": "doctor",
+      "mcpTool": "get_godot_version",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "scene-tree",
+      "mcpTool": "get_scene_tree",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "launch",
+      "mcpTool": "launch_project",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "logs",
+      "mcpTool": "get_debug_output",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "stop",
+      "mcpTool": "stop_project",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "context-pack",
+      "mcpTool": "get_context_pack",
+      "status": "VERIFIED"
+    },
+    {
+      "cliCommand": "scenario",
+      "mcpTool": "execute_scenario",
+      "status": "VERIFIED"
+    }
+  ],
+  "rawRunPath": "runs/production-roadmap/T00/2026-09-24T15-20-01-183Z-36360",
+  "rawManifestSha256": "2987548a5628c180b3bc28ef53a6582d34cab123054607d686dd110f43a0772a",
+  "gateStatus": "NOT_RUN",
+  "gateReason": "T01 defect replay not complete"
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "gateId": "G1",
+  "createdAt": "2026-09-25T17:35:00Z",
+  "sourceHash": "ac047a1e47bff7b42f910e2b03d454b263f4707fb2c76caff264c8a8a65ff370",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "status": "PASS",
+  "platformScope": "Windows x64 / Godot 4.7.2 stable / GDScript / local stdio and authenticated HTTP",
+  "command": "npm.cmd run verify:production -- --gate G1",
+  "rawRun": "runs/production-roadmap/G1/2026-09-25T17-33-07-426Z-43496",
+  "rawManifestSha256": "acaf78d2092bc6cdaa5edd7d7bb57accf50183c729677781e7a9d041b6b631d1",
+  "rawResultsSha256": "089036e7ef002f6d2c037b4b06f88caf8743e2a2dfc29931b71c48c669589d00",
+  "rawDefectSummarySha256": "c1f82a745242e0dbb6a082948e9de768708ee511d11868a2b64ab5f89c3f5cce",
+  "checks": {
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 154, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 24, "failed": 0, "skipped": 0 },
+    "authorizationAndLifecycle": { "passed": 29, "failed": 0, "skipped": 0 },
+    "defectReplay": { "D01": "PASS", "D02": "PASS", "D03": "PASS", "D04": "PASS", "D05": "PASS", "D06": "PASS", "D10": "PASS" }
+  },
+  "predecessor": "G0 PASS",
+  "limitations": [
+    "G1 covers the verified Windows/GDScript runtime and authorization scope only; it does not qualify the whole product for production",
+    "D07-D09 remain EXPECTED_DEFECT and belong to T09 or later",
+    "Static file writes, full project resource path resolution, transaction recovery and editor persistence are not claimed safe by G1",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

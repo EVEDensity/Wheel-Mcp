@@ -1,0 +1,261 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T10",
+  "createdAt": "2026-09-26T10:45:34.9964082+08:00",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "3cbad5e7c7929b1a1ad4f30bb3976f62ebfe31acb106d0f2c312e1d71eb91b8d",
+  "source": "MIXED",
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "scope": "Local trusted GDScript fixtures; remote HTTP disabled"
+  },
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T00/2026-09-26T02-42-17-629Z-58196",
+    "rawManifestSha256": "579d311cc88ea59994f471f5fc17bd7fcad8324279da8da96ef6fd2d4a2025c0",
+    "rawResultsSha256": "a92c1d5761b33023fdc423a91bba1b7239d92dd2a67d42329c41f7abd86a1e6d",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "passed": 206,
+      "failed": 0,
+      "skipped": 0
+    },
+    "realGodotSmoke": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T01/2026-09-26T02-44-20-629Z-8980",
+    "rawSummarySha256": "25ae1306d7817da517019ffbe9d082bedd3f4d02f5fdac9b99a77deeaf0b28b2",
+    "rawManifestSha256": "22cc5a84ba25916366638f35197fa6433d5df1bbb09344c69683ca313ecbb485",
+    "provenance": {
+      "engine": "REAL",
+      "transport": "REAL",
+      "projectWriteApproval": "MOCK: isolated fixture form accept; not a human UI confirmation"
+    },
+    "cases": [
+      {
+        "id": "D01",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D02",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D03",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D04",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "MOCK"
+        }
+      },
+      {
+        "id": "D05",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D06",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D07",
+        "status": "EXPECTED_DEFECT",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "MOCK"
+        }
+      },
+      {
+        "id": "D08",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D09",
+        "status": "EXPECTED_DEFECT",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      },
+      {
+        "id": "D10",
+        "status": "PASS",
+        "provenance": {
+          "execution": "REAL",
+          "approval": "NOT_RUN"
+        }
+      }
+    ]
+  },
+  "sourceBreakdown": [
+    {
+      "source": "REAL",
+      "scope": "Godot process validation, repair persistence/rendering, official SDK transports, disconnect cleanup, Windows file I/O/readonly failure and forced OS process termination"
+    },
+    {
+      "source": "MOCK",
+      "scope": "Explicit fixture form accept/decline/cancel and library approval callbacks; not human UI confirmation"
+    },
+    {
+      "source": "MOCK",
+      "scope": "Checkpoint crashes, ENOSPC and second-file fault injection; actual disk exhaustion/power loss NOT_RUN"
+    },
+    {
+      "source": "MIXED",
+      "scope": "Full suite contains real engine tests, synthetic project fixtures and pure protocol/unit doubles; all required checks ran without skips"
+    }
+  ],
+  "contractsVerified": [
+    "Shared prepare/approve/apply/validate/commit/rollback journal is used by exact edits, dev_loop, client repair, generic file/scene writes and bounded git recovery",
+    "Approval binds complete operation set, project, transport owner and before/after hashes; MCP form is a separate trusted-client-hosted confirmation channel, not tool approved:true",
+    "Explicit operationId and expectedSha256 allow same-request idempotent replay; changed request or foreign-owner operation reuse is rejected",
+    "Cross-process lock serializes mutations; unresolved journal barrier is rechecked under the apply lock after approval waits",
+    "Per-write input and pre-commit output hash checks preserve concurrent user edits as CONFLICT; recovery never blindly overwrites different bytes",
+    "All persisted execution/rollback states, write-before-journal and pre-journal orphan staging have regression coverage; actual killed child is kept alive until SIGKILL then recovered",
+    "MCP session close cooperatively drains operations before releasing project locks and reaping its real Godot processes",
+    "Failure responses retain recovery operation ID/state; dev_loop separates attempted/planned paths from committed or unresolved changes",
+    "Git reverse patches mutate only a private disposable mirror before approval/journaled real writes; binary/link/mode/rename/copy patch variants are unsupported",
+    "Installation/setup tests now run actual scripts in separate temporary projects, never rebuild or configure the live workspace"
+  ],
+  "interimFailures": [
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T02-11-28-731Z-26948",
+      "status": "FAIL",
+      "failedCommands": [
+        {
+          "name": "full-tests",
+          "status": "FAIL",
+          "tests": {
+            "tests": 200,
+            "passed": 199,
+            "failed": 1,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          }
+        }
+      ],
+      "resultsSha256": "df516fac846477a3e643bc40b4e544391423acf948aa513eb98852832805e73d"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T02-14-04-450Z-59908",
+      "status": "FAIL",
+      "failedCommands": [
+        {
+          "name": "full-tests",
+          "status": "FAIL",
+          "tests": {
+            "tests": 200,
+            "passed": 199,
+            "failed": 1,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          }
+        }
+      ],
+      "resultsSha256": "7f809eedb4bd03a416d17225a3b1ff0a3a892199620cf59ead14ad2da02f6607"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T02-24-30-555Z-17516",
+      "status": "FAIL",
+      "failedCommands": [
+        {
+          "name": "lint",
+          "status": "FAIL",
+          "tests": null
+        }
+      ],
+      "resultsSha256": "f92eab5473261115d8018e6b2e125c3baa19b47a0c0a971ec5ae827e8ca8eb3d"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T02-35-06-351Z-9828",
+      "status": "FAIL",
+      "failedCommands": [
+        {
+          "name": "full-tests",
+          "status": "FAIL",
+          "tests": {
+            "tests": 205,
+            "passed": 204,
+            "failed": 1,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          }
+        }
+      ],
+      "resultsSha256": "76a57fa92b87413f5160efbe27ca3595b6a4a11ebe9804de98d1174637f93f79"
+    },
+    {
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T02-38-05-291Z-3060",
+      "status": "FAIL",
+      "failedCommands": [
+        {
+          "name": "full-tests",
+          "status": "FAIL",
+          "tests": {
+            "tests": 206,
+            "passed": 205,
+            "failed": 1,
+            "skipped": 0,
+            "cancelled": 0,
+            "todo": 0
+          }
+        }
+      ],
+      "resultsSha256": "47daab162e21b143370b8a60fe54c9d398dcc7bdb252d63fd5300d06a12bbfca"
+    }
+  ],
+  "limitations": [
+    "T10 completion is not G2 or production qualification; T11-T15 and later gates remain pending",
+    "Human confirmation is provided by a trusted client; a malicious auto-accepting host is not detectable as non-human. Genuine desktop client/version UI acceptance remains NOT_RUN until T30",
+    "Legacy scene/text saves explicitly return validation:NOT_RUN; invalid Godot resource rejection remains D07 for T14",
+    "Journal v2 owner binding fails closed on experimental v1 journals; recover with the creating version before upgrade, no automatic adoption",
+    "No OS sandbox, multi-file filesystem atomicity, proven Windows directory/power-failure durability or arbitrary uncooperative-validator cancellation",
+    "Local library inspect/list/recover exist; independent CLI transaction management is not exposed",
+    "Earlier whole-suite installation/setup runs rewrote project-level MCP configuration in the live workspace and recompiled build output. This was discovered and isolated; existing configuration was preserved thereafter without speculative rollback. No global configuration was intentionally installed",
+    "Raw evidence is Git-ignored and must be rerun when unavailable; no commits, push, package publication or deployment performed"
+  ]
+}

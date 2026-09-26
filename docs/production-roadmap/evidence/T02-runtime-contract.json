@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T02",
+  "createdAt": "2026-09-24T16:37:56Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "d4a2e95f6dfa6ea043ac9fb1d5d10e039b2a00b5645dbd22aac13fd296878eff",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-24T16-34-52-964Z-3216",
+    "rawManifestSha256": "b5d47db559a0f7f648f7aca6dee92b12a9a74a75305385b101ba03b9cf28cd12",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 107, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 9, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-24T16-35-32-428Z-52548",
+    "rawSummarySha256": "76345eeb889ad6d63525681cec74e4d4c1ea9af3068b59010a339f60bdc7660b",
+    "D02": "PASS: missing node returns NOT_FOUND with MCP isError=true",
+    "D09_3D": "PASS: unsupported specialized 3D query returns UNSUPPORTED",
+    "remaining": "Nine combined defect cases still EXPECTED_DEFECT; D09 semantic subcheck remains uncorrected"
+  },
+  "contractChecks": [
+    "Bridge handshake identity, protocol version, exact Godot version, plane and method capabilities",
+    "JSON-RPC envelope and business result-shape validation",
+    "Missing node/property, supported empty response and unsupported operation remain distinct",
+    "CLI and official SDK stdio report the same NOT_FOUND code for missing runtime node",
+    "Wrong bridge version and malformed response fail PROTOCOL_MISMATCH",
+    "Closed live-engine connection fails ENGINE_UNAVAILABLE",
+    "Nested error is classified before compact formatting"
+  ],
+  "limitations": [
+    "G1 remains NOT_RUN until T03–T08 pass",
+    "Other D01–D10 defects remain tracked by their owner tasks",
+    "Raw runs are Git-ignored; rerun if unavailable after migration"
+  ]
+}

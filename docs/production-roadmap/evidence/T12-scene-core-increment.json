@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T12",
+  "progressStatus": "in_progress",
+  "acceptance": "CORE_INCREMENT_ONLY",
+  "createdAt": "2026-09-26T04:36:50.969Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "7b79fda7654dbf978f74e483b4532d358f7e6ad00fcc658f59a146b3ce54db86",
+  "source": "MIXED",
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "editorMode": "REAL --headless --editor; desktop UI NOT_RUN",
+    "scope": "Trusted isolated temporary fixtures only; no user plugin installation or configuration changes"
+  },
+  "implementation": {
+    "file": "godot-plugin/addons/wheel_mcp/scene_service.gd",
+    "registeredWritableRpc": false,
+    "registeredNewMcpTools": false,
+    "capabilities": [
+      "create",
+      "delete",
+      "rename",
+      "reparent-local-transform",
+      "set-restricted-property",
+      "connect-immediate-visibility",
+      "disconnect-immediate-visibility",
+      "local-visibility-parent-reference-remap",
+      "one-native-undo-step-per-batch"
+    ],
+    "persisted": false,
+    "validation": "NOT_RUN",
+    "sceneInstantiation": "NOT_IMPLEMENTED",
+    "mcpWriteApproval": "NOT_IMPLEMENTED",
+    "writeDisconnectStatus": "NOT_IMPLEMENTED"
+  },
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T00/2026-09-26T04-30-51-479Z-9764",
+    "rawManifestSha256": "59819ef795d3d679350e0db1e59fb98ed548aead5f88715b50dd0aae4531a634",
+    "rawResultsSha256": "b2ecce4614aa77822e19b9cf7bd72adcacc5dead368661e78d40ebf3a2056481",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "passed": 229,
+      "failed": 0,
+      "skipped": 0
+    },
+    "realGodotSmoke": {
+      "passed": 47,
+      "failed": 0,
+      "skipped": 0
+    },
+    "toolsCount": 60,
+    "mappingIssues": []
+  },
+  "editorTests": {
+    "file": "tests/editor-scene-operations.test.ts",
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0,
+    "realEditorCases": 14,
+    "provenance": "Actual product core loaded by a TEST-ONLY controller in real EditorPlugin; no mock UndoRedoManager",
+    "rawEvidence": "File is required in both full-tests and godot-smoke; structured events in baseline stdout.log",
+    "combinedWithT11": {
+      "passed": 23,
+      "failed": 0,
+      "skipped": 0
+    },
+    "humanAuthorization": "NOT_RUN; fixtures explicitly enable trusted test plugins, not human MCP authoring approval",
+    "faultInjection": "TEST-ONLY plan hash poisoning and deliberately split staged command writes"
+  },
+  "ciEntry": {
+    "command": "node scripts/test-godot-ci.mjs",
+    "status": "PASS",
+    "exitCode": 0,
+    "files": 12,
+    "passed": 47,
+    "failed": 0,
+    "skipped": 0,
+    "rawEvidence": "Independent tool transcript; equivalent required 47-test suite archived in baseline"
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "exitCode": 0,
+    "rawRun": "runs/production-roadmap/T01/2026-09-26T04-34-50-585Z-27716",
+    "rawManifestSha256": "24f71fe466524682b1675e51e3e7c4e6521e7f2b51cfa08a8dc1585f18800452",
+    "rawSummarySha256": "cdda13e6a347def329d0675c2fe6ea761f1815e0ce6494a1ecb3635760b864ad",
+    "provenance": {
+      "engine": "REAL",
+      "transport": "REAL",
+      "projectWriteApproval": "MOCK: isolated fixture form accept; not human UI confirmation"
+    },
+    "cases": [
+      {
+        "id": "D01",
+        "status": "PASS"
+      },
+      {
+        "id": "D02",
+        "status": "PASS"
+      },
+      {
+        "id": "D03",
+        "status": "PASS"
+      },
+      {
+        "id": "D04",
+        "status": "PASS"
+      },
+      {
+        "id": "D05",
+        "status": "PASS"
+      },
+      {
+        "id": "D06",
+        "status": "PASS"
+      },
+      {
+        "id": "D07",
+        "status": "EXPECTED_DEFECT"
+      },
+      {
+        "id": "D08",
+        "status": "PASS"
+      },
+      {
+        "id": "D09",
+        "status": "EXPECTED_DEFECT"
+      },
+      {
+        "id": "D10",
+        "status": "PASS"
+      }
+    ],
+    "controls": [
+      {
+        "id": "C01",
+        "status": "PASS"
+      },
+      {
+        "id": "C02",
+        "status": "PASS"
+      },
+      {
+        "id": "C03",
+        "status": "PASS"
+      }
+    ],
+    "pngEvidence": "C03 actual Godot-rendered PNG"
+  },
+  "verifiedIncrement": [
+    "Real nested 2D/3D create/delete/rename/reparent/set/connect and disconnect; one native undo step restores instance identities, stored properties, owners, groups and signal connections",
+    "All operations preflight on an isolated shadow tree; name/path/type/extra-field/cycle/budget failures leave live scene, native history and dirty state unchanged",
+    "Human edit after preflight is preserved; history/document/source compare-and-swap rejects stale batch; external text edit is not overwritten",
+    "Local Node3D visibility_parent references remap by resolved identity after ancestor rename/reparent; incoming referenced targets cannot be deleted before explicit clearing",
+    "Potential visibility callback side effects and incoming/outgoing persistent signals fail closed; disconnect-first edits restore connections on native undo",
+    "Inherited, external-instance and scripted documents refuse mutation; live PackedScene public metadata used instead of an internal Node method or cached disk inheritance identity",
+    "Injected readback mismatch restores scene and leaves no failed redo/undo action; detached abandoned preview nodes and native redo branch creations are released",
+    "A deliberately split staged JSON command remains invisible until fully published; fixes the observed per-frame polling torn-write failure"
+  ],
+  "intermediateFailures": [
+    {
+      "status": "FAIL",
+      "scope": "Initial real editor compile",
+      "reason": "Inner Batch could not call outer static document; fixed with explicit snapshot Callable",
+      "archive": "Tool transcript and isolated fixture editor logs; not acceptance"
+    },
+    {
+      "status": "FAIL",
+      "scope": "First native preflight",
+      "reason": "Node.get_scene_inherited_state is not public/available; replaced with PackedScene.pack(live root) and SceneState public metadata",
+      "archive": "Tool transcript and isolated fixture editor logs; not acceptance"
+    },
+    {
+      "status": "FAIL",
+      "scope": "2D owner and 3D property acceptance",
+      "reason": "Duplicate/reparent cleared owners; Node3D components lack STORAGE usage. Rebuilt shadow owner graph/restoration and stored full Transform3D inverses",
+      "archive": "Tool transcript; failing assertions retained, not final acceptance"
+    },
+    {
+      "status": "FAIL",
+      "scope": "Reference compile",
+      "reason": "Dynamic Dictionary access could not infer NodePath; added explicit type",
+      "archive": "Tool transcript"
+    },
+    {
+      "status": "FAIL",
+      "scope": "Callback test assumption",
+      "reason": "Original scene connection already hid target while entering tree; test now disconnects and explicitly resets target before exercising change, not an arbitrary expected-value relaxation",
+      "archive": "Tool transcript"
+    },
+    {
+      "status": "FAIL",
+      "scope": "Destructor and intermediate reference state",
+      "reason": "PREDELETE instance method call rejected at zero RefCounted references; cleanup inlined. Engine logged transient invalid relative visibility paths; clear proven subset before structural batch and restore only final references. Assertions now reject engine ERROR as well as SCRIPT ERROR",
+      "archive": "Tool transcript and isolated editor logs"
+    },
+    {
+      "status": "FAIL",
+      "scope": "First complete baseline",
+      "rawRun": "runs/production-roadmap/T00/2026-09-26T04-25-56-315Z-59640",
+      "sourceHash": "0a7b66f479f86abfe3727d9a8efec04bd411c31f4d616669e117123006305687",
+      "rawManifestSha256": "fd6902bd4f420a5c6d499cf8145ffb76bfe00be24c8af6090c77dfe3a39733b4",
+      "rawResultsSha256": "5bfb1c73f123fd12f1552e495a9c8cf9bc52ca63ff4e8456529481d8276df9dd",
+      "fullPassed": 226,
+      "fullFailed": 2,
+      "smokePassed": 45,
+      "smokeFailed": 1,
+      "reason": "TEST-ONLY command file was read before writeFile completed; actual Godot parse errors. Publish by staged write and rename; deterministic split-write regression added. Failure not relabeled PASS"
+    }
+  ],
+  "remainingT12": [
+    "Controlled PackedScene instantiation and explicit instance editing policy",
+    "src/editor/scene-service.ts and authenticated MCP schema/registration",
+    "Independent editor-write opt-in and exact plan/owner/session/revision approval binding",
+    "One-use bounded preview/commit identity, idempotency, cancellation/disconnect UNKNOWN and late-result query",
+    "Actual MCP native authoring positive/negative end-to-end acceptance and capability announcement"
+  ],
+  "limitations": [
+    "Internal core is not accessible through product write RPC/MCP yet; read-only T11 interface retained",
+    "Only proven native class/property/reference/signal subset; arbitrary scripts, resource objects, unsupported refs and instance edits rejected",
+    "Strict normalized-value rejection, not a complete authoring floating-point contract",
+    "Windows/Godot 4.7.2 headless editor verified; desktop rendering/human UI/Linux/macOS NOT_RUN",
+    "Unexpected third-party editor callbacks are not an OS sandbox; failure isolation needed before exposing write RPC",
+    "No scene saving or persisted validation; resource/save/reopen acceptance belongs to T13-T15",
+    "Raw runs are local Git-ignored evidence; rerun if unavailable after transfer",
+    "T12 remains in_progress; T13-T35 todo; G2-G6 NOT_RUN; qualification NOT_QUALIFIED; no commit, push, publication or deployment"
+  ],
+  "nextTask": "T12"
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T04",
+  "createdAt": "2026-09-25T13:43:54Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "e7529bb8fc63c2af06f1d97eecb85c1606835689aaa9705b343149965404eb53",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T13-41-40-585Z-33484",
+    "rawManifestSha256": "0e45624b67d287bb2fb63db471797fba7cc0977c3b8c50a9903b8d59d2b8629a",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 112, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 12, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T13-43-00-158Z-53296",
+    "rawSummarySha256": "b33b8c9029d0c22d65bb68ac96d2f607862ba733d97a7a593ed5912c24393cf4",
+    "D01": "PASS",
+    "D02": "PASS",
+    "D03": "PASS: persistent real Godot notifications are canonical readable events with no invalid lines",
+    "remaining": "Seven combined defect cases remain EXPECTED_DEFECT"
+  },
+  "contractsVerified": [
+    "Bridge gameplay notifications persist as schema-versioned run-bound envelopes with sequence and UTC timestamp",
+    "Ready/control messages are not persisted as gameplay events",
+    "Subscription ACK replays until exact delivered page cursor is acknowledged",
+    "Default wait observes future events; history requires explicit option or cursor",
+    "10,000-event file has bounded in-memory cache and supports early and late cursor pages",
+    "Partial and malformed lines cannot hide later valid events",
+    "Archived segments remain cursor-readable, while a new run rejects an old run cursor",
+    "Event and process logs append in order with segment quotas; stop drains writes"
+  ],
+  "observedFailures": [
+    "An intermediate build failed because findLast was unavailable in the configured TypeScript library; replaced with compatible filtering",
+    "One full parallel test run on the final source had 2 failures (round-trip and shutdown); both passed in isolated rerun and the same-source full rerun passed 112/112; concurrent flake is still a reliability risk"
+  ],
+  "limitations": [
+    "The 10,000-event case uses synthetic JSONL; the bridge path is tested separately against real Godot",
+    "G1 remains NOT_RUN until T05–T08 pass",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}

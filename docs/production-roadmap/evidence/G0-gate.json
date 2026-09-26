@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "gateId": "G0",
+  "status": "PASS",
+  "sourceHash": "6a2bf71a78be6dfaa936bd5fbc22694b283ab52c3e2121f67b41615090ea9e7c",
+  "command": "npm run verify:production -- --gate G0",
+  "rawRun": "runs/production-roadmap/T00/2026-09-24T16-04-12-858Z-56844",
+  "rawManifestSha256": "99911cb89e39f608fa5750c214c966011f2386e48194a95722f0f8b58a8dc97e",
+  "rawResultsSha256": "1be3820bef0ab693444ad75e95ac9f1a982222cd9dbb45c90810dd017158917e",
+  "defectSummarySha256": "f060e95ff74357dae6ebbf3e3ff9e5b2554ffabbed953db9614e6398fa353941",
+  "checks": {
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": "103 PASS, 0 FAIL, 0 SKIP",
+    "realGodotSmoke": "6 PASS, 0 FAIL, 0 SKIP",
+    "officialSdkTools": 57,
+    "cliContracts": 7,
+    "defectCases": "10 EXPECTED_DEFECT, 0 INVALID_REPRO",
+    "realControls": "3 PASS, including a rendered PNG",
+    "httpPermissionCase": "D10 reproduced through authenticated Streamable HTTP"
+  },
+  "meaning": "G0 proves reproducible baseline and defects, not repaired features or production qualification. G1-G6 remain NOT_RUN."
+}

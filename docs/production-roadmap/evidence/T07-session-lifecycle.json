@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T07",
+  "createdAt": "2026-09-25T16:26:58Z",
+  "head": "fc7dcef311bc622f7f6fa38349d148e317d5b087",
+  "sourceHash": "8baad92cda4ce9020944740b4a90c2e2f00b05cb628771d8585ea5839017d019",
+  "godotVersion": "4.7.2.stable.official.ed1daf0bf",
+  "platformScope": "Windows x64 / GDScript / local stdio; HTTP lifecycle tested but remote production qualification remains later",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T00/2026-09-25T16-23-50-683Z-19800",
+    "rawManifestSha256": "20ba71aae3a6ed383db2a9d53bb91bad3cb6fd91f62db30ac896f01719c7813d",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 145, "failed": 0, "skipped": 0 },
+    "realGodotSmoke": { "passed": 24, "failed": 0, "skipped": 0 }
+  },
+  "defectReplay": {
+    "command": "npm.cmd run baseline:defects",
+    "status": "PASS",
+    "rawRun": "runs/production-roadmap/T01/2026-09-25T16-26-01-760Z-40012",
+    "rawSummarySha256": "1097fa9fb1087dfe06acac76def77d7e6529c1df5ffcb82b0782f1c3864efc95",
+    "D06": "PASS: one explicit persistent session shares input, state and screenshot; a second session remains isolated; legacy one-shot calls are labelled",
+    "remaining": "D07-D10 are EXPECTED_DEFECT and assigned to later tasks"
+  },
+  "contractsVerified": [
+    "Run and bridge processes share one cross-process registry, unique ID namespace and bounded quota",
+    "Windows OS process start time and executable identity gate stop, cancel and orphan reclaim; PID reuse fails closed",
+    "A real detached Godot process is reclaimed after its owner is killed, and a dead-owner registry lock is recovered",
+    "Repeated or globally reserved session IDs cannot overwrite earlier live records; double stop is idempotent",
+    "Mutating bridge calls carry operation IDs; cancelled writes report UNKNOWN and late results can be queried without replay",
+    "HTTP DELETE and idle lease, stdio EOF/signals, and scenario cleanup have independent bounded stop paths",
+    "Real HTTP and stdio client tests stop both owned launch and bridge processes and record terminal states"
+  ],
+  "limitations": [
+    "Operation status is process-local and cannot establish whether a crashed in-flight write committed; clients must re-read state",
+    "Linux verified PID signalling is unavailable and remains UNSUPPORTED for live orphan termination",
+    "HTTP idle cleanup is bounded by the configured lease (default five minutes), not immediate after a silent disconnect",
+    "A reused owner PID or abandoned recovery guard can leave the registry fail-closed until intervention",
+    "G1 is NOT_RUN until T08 is complete; this evidence does not confer production qualification",
+    "Raw runs are Git-ignored and must be rerun if unavailable after migration"
+  ]
+}
