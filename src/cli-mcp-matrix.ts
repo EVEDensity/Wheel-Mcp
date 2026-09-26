@@ -86,7 +86,7 @@ export const cliMcpContracts: readonly ToolConsistencyContract[] = [
   },
   {
     cliCommand: 'scenario',
-    mcpTool: 'scenario_executor',
+    mcpTool: 'execute_scenario',
     parameterMap: {
       '--file': 'scenarioPath',
       '--project': 'projectPath',
@@ -104,11 +104,19 @@ export const cliMcpContracts: readonly ToolConsistencyContract[] = [
 ] as const;
 
 export const mcpOnlyTools = [
+  'get_editor_state',
+  'apply_editor_scene',
+  'manage_editor_resource',
+  'save_editor_resource',
+  'save_editor_scene',
+  'write_validated_project_files',
+  'get_editor_scene_operation',
   'list_projects',
   'get_project_info',
   'cancel_project',
   'get_process_status',
   'get_runtime_events',
+  'get_runtime_operation_status',
   'subscribe_runtime_events',
   'list_runs',
   'list_active_runs',
@@ -125,11 +133,21 @@ export const mcpOnlyTools = [
 ] as const;
 
 export const mcpOnlyReasons: Readonly<Record<(typeof mcpOnlyTools)[number], string>> = {
+  save_editor_scene: 'Approved native live-editor save with exact document and source CAS; no unattended CLI',
+  write_validated_project_files: 'Exact approved multi-file engine-validation transaction; no unattended CLI',
+  manage_editor_resource: 'Native editor session-scoped ResourceRef lifecycle; no unattended CLI authoring',
+  save_editor_resource: 'Exact human-approved native ResourceSaver transaction; no unattended CLI writes',
+  get_editor_state:
+    'MCP read-only editor connector; requires a privately authorized transport client, no CLI entry in T11',
+  apply_editor_scene:
+    'MCP-only native authoring requires host-mediated human form approval, separate editor write opt-in and exact plan binding; no unattended CLI equivalent',
+  get_editor_scene_operation: 'MCP owner/session-bound authoring reconciliation; no CLI connector credential surface',
   list_projects: 'MCP discovery API; CLI command not yet exposed',
   get_project_info: 'MCP project metadata API; CLI command not yet exposed',
   cancel_project: 'MCP process control alias; CLI cancel is the equivalent command',
   get_process_status: 'MCP lifecycle inspection API',
   get_runtime_events: 'MCP cursor/event API',
+  get_runtime_operation_status: 'MCP session-bound write receipt; no CLI persistent-session equivalent',
   subscribe_runtime_events: 'MCP resumable subscription API',
   list_runs: 'MCP registry inspection API',
   list_active_runs: 'MCP registry inspection API',

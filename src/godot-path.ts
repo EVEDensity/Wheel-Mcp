@@ -2,6 +2,7 @@ import { access, readdir, readFile, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { WheelError } from './error-schema.js';
 
 function isGodotExecutableName(name: string): boolean {
   if (/^godot(?:[_-].*)?\.exe$/i.test(name)) return true;
@@ -186,7 +187,8 @@ export async function resolveGodotPath(value?: string, envFile?: string): Promis
   if (explicit && (await isReadableFile(path.resolve(explicit)))) return path.resolve(explicit);
   const discovered = await discoverGodotPath({ explicit, envFile });
   if (discovered) return discovered;
-  throw new Error(
+  throw new WheelError(
+    'ENGINE_UNAVAILABLE',
     'GODOT_PATH is required. Run `npm run setup`, set GODOT_PATH in .env, or install Godot 4.7.2 console executable.',
   );
 }
@@ -194,7 +196,8 @@ export async function resolveGodotPath(value?: string, envFile?: string): Promis
 export function resolveGodotPathSync(value?: string): string {
   const explicit = normalizeCandidate(value ?? process.env.GODOT_PATH);
   if (!explicit) {
-    throw new Error(
+    throw new WheelError(
+      'ENGINE_UNAVAILABLE',
       'GODOT_PATH is required. Run `npm run setup`, set GODOT_PATH in .env, or pass godotPath explicitly.',
     );
   }

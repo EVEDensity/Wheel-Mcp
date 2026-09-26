@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { resolveProjectPath } from './project/paths.js';
 
 export interface ScriptStateTransition {
   from?: string;
@@ -168,8 +168,10 @@ export function analyzeScriptSemantics(content: string, scriptPath?: string): Sc
 }
 
 export async function analyzeScriptFile(projectPath: string, scriptPath: string): Promise<ScriptSemanticAnalysis> {
-  const root = path.resolve(projectPath);
-  const file = path.resolve(root, scriptPath);
-  if (file !== root && !file.startsWith(root + path.sep)) throw new Error('script path must remain inside projectPath');
-  return analyzeScriptSemantics(await readFile(file, 'utf8'), path.relative(root, file));
+  const resolved = await resolveProjectPath(projectPath, scriptPath, {
+    mode: 'read',
+    allowAbsolute: true,
+    allowUid: true,
+  });
+  return analyzeScriptSemantics(await readFile(resolved.absolutePath, 'utf8'), resolved.relativePath);
 }

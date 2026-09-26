@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { captureRuntimeScreenshot, injectRuntimeInput, launchProject, stopProcess } from './godot-runtime.js';
+import { captureRuntimeScreenshot, injectRuntimeInput, launchProject } from './godot-runtime.js';
+import { runRegistry } from './run-registry.js';
 import { parse } from 'yaml';
 import { createTimeoutContext } from './timeout.js';
 import { DEFAULT_SCENARIO_TIMEOUT_MS, DEFAULT_STEP_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
@@ -107,16 +108,14 @@ export async function executeScenario({
     cleanup = {
       attempted: true,
       stopped: await bridge
-        .stop(globalContext)
+        .stop()
         .then(() => true)
         .catch(() => false),
     };
   } else if (launch && !launch.child.killed && launch.child.pid) {
-    const stopped = await stopProcess(
-      launch.child.pid,
-      Math.min(DEFAULT_STOP_TIMEOUT_MS, Math.max(0, deadline - Date.now())),
-    )
-      .then((result) => ({ stopped: result.stopped === true }))
+    const stopped = await runRegistry
+      .stop(launch.metadata.run_id!, DEFAULT_STOP_TIMEOUT_MS)
+      .then((result) => ({ stopped: result.state === 'STOPPED' || result.state === 'EXITED' }))
       .catch(() => ({ stopped: false }));
     cleanup = { attempted: true, stopped: stopped.stopped === true };
   }
@@ -232,7 +231,10 @@ async function runStep(
     if (kind === 'stop')
       return context.launch
         ? {
-            status: (await stopProcess(context.launch.child.pid!, context.timeoutMs, context.timeout), 'PASS' as const),
+            status:
+              (await runRegistry.stop(context.launch.metadata.run_id!, context.timeout)).state === 'STOPPED'
+                ? 'PASS'
+                : 'FAIL',
           }
         : { status: 'PASS' };
     return { status: 'FAIL', error: `unknown scenario step: ${kind}` };

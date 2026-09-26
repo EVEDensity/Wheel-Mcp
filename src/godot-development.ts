@@ -2,13 +2,8 @@ import { readFile, writeFile, stat, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { deflateSync, inflateSync } from 'node:zlib';
-
-function inside(root: string, target: string): string {
-  const r = path.resolve(root),
-    t = path.resolve(target);
-  if (t !== r && !t.startsWith(r + path.sep)) throw new Error('path must remain inside projectPath');
-  return t;
-}
+import { projectRelativePath, resolveProjectPath } from './project/paths.js';
+import { writeValidatedProjectText, type ValidatedWriteOptions } from './project/validated-write.js';
 function readU32(b: Buffer, o: number) {
   return b.readUInt32BE(o);
 }
@@ -121,14 +116,18 @@ function encodePng(w: number, h: number, rgba: Buffer) {
 }
 
 export async function readSceneFile(projectPath: string, scenePath: string) {
-  const root = path.resolve(projectPath),
-    file = inside(root, path.isAbsolute(scenePath) ? scenePath : path.join(root, scenePath)),
-    content = await readFile(file, 'utf8');
+  const resolved = await resolveProjectPath(projectPath, scenePath, {
+    mode: 'read',
+    allowAbsolute: true,
+    allowUid: true,
+  });
+  const { root, absolutePath: file } = resolved;
+  const content = await readFile(file, 'utf8');
   return {
     schema_version: '0.1',
     source: 'REAL',
     projectPath: root,
-    scenePath: path.relative(root, file),
+    scenePath: resolved.relativePath,
     content,
     bytes: Buffer.byteLength(content),
   };
@@ -238,26 +237,36 @@ export function parseSceneResourceGraph(content: string, scenePath = '') {
     reverseDependencies,
   };
 }
-export async function writeSceneFile(projectPath: string, scenePath: string, content: string) {
-  const root = path.resolve(projectPath),
-    file = inside(root, path.isAbsolute(scenePath) ? scenePath : path.join(root, scenePath));
+export async function writeSceneFile(
+  projectPath: string,
+  scenePath: string,
+  content: string,
+  options: ValidatedWriteOptions = {},
+) {
+  const resolved = await resolveProjectPath(projectPath, scenePath, { mode: 'write', allowAbsolute: true });
+  const { root, absolutePath: file } = resolved;
   if (!file.endsWith('.tscn')) throw new Error('scenePath must point to a .tscn file');
-  if (!content.includes('[gd_scene')) throw new Error('content is not a Godot scene');
-  await writeFile(file, content, 'utf8');
+  const transaction = await writeValidatedProjectText(projectPath, scenePath, content, options);
   return {
     schema_version: '0.1',
     source: 'REAL',
     projectPath: root,
-    scenePath: path.relative(root, file),
+    scenePath: resolved.relativePath,
     bytes: (await stat(file)).size,
     saved: true,
+    validation: transaction.validation,
+    validationScope: transaction.validationScope,
+    evidenceDir: transaction.evidenceDir,
+    operationId: transaction.operationId,
+    planHash: transaction.planHash,
+    transactionState: transaction.transactionState,
   };
 }
 function virtual(root: string, f: string) {
-  if (f.startsWith('res://')) return { virtualPath: f, absolutePath: inside(root, path.join(root, f.slice(6))) };
+  if (f.startsWith('res://')) return { virtualPath: `res://${projectRelativePath(f, 'read')}` };
+  const relative = root && path.isAbsolute(f) ? path.relative(root, f).replaceAll(path.sep, '/') : '';
   return {
-    virtualPath: root && path.isAbsolute(f) ? path.relative(root, f).replaceAll(path.sep, '/') : '',
-    absolutePath: path.isAbsolute(f) ? f : undefined,
+    virtualPath: relative && !relative.startsWith('../') && relative !== '..' ? relative : f,
   };
 }
 /**
@@ -345,7 +354,7 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
       const message = trimmed;
       const stack: Array<{ file: string; line: number; column?: number }> = [];
       const addLocation = (text: string) => {
-        const m = text.match(/((?:res:\/\/|[A-Za-z]:[\\/])[^\r\n]*?\.(?:gd|tscn|cs)):(\d+)(?::(\d+))?/);
+        const m = text.match(/((?:res:\/\/|[A-Za-z]:[\\/]|\/)[^\r\n]*?\.(?:gd|tscn|cs)):(\d+)(?::(\d+))?/);
         if (!m) return;
         const frame = {
           file: root ? virtual(root, m[1]).virtualPath : m[1],
@@ -392,29 +401,40 @@ export async function readGodotDiagnostics(evidenceDir: string, projectPath?: st
 }
 
 export async function readProjectFile(projectPath: string, filePath: string) {
-  const root = path.resolve(projectPath),
-    file = inside(root, path.isAbsolute(filePath) ? filePath : path.join(root, filePath)),
-    content = await readFile(file, 'utf8');
+  const resolved = await resolveProjectPath(projectPath, filePath, {
+    mode: 'read',
+    allowAbsolute: true,
+    allowUid: true,
+  });
+  const { absolutePath: file } = resolved;
+  const content = await readFile(file, 'utf8');
   return {
     schema_version: '0.1',
     source: 'REAL',
-    path: path.relative(root, file),
+    path: resolved.relativePath,
     content,
     bytes: Buffer.byteLength(content),
   };
 }
-export async function writeProjectFile(projectPath: string, filePath: string, content: string) {
-  const root = path.resolve(projectPath),
-    file = inside(root, path.isAbsolute(filePath) ? filePath : path.join(root, filePath));
-  if (file.includes(`${path.sep}.git${path.sep}`) || file.includes(`${path.sep}.harness${path.sep}`))
-    throw new Error('protected project path');
-  await writeFile(file, content, 'utf8');
+export async function writeProjectFile(
+  projectPath: string,
+  filePath: string,
+  content: string,
+  options: ValidatedWriteOptions = {},
+) {
+  const resolved = await writeValidatedProjectText(projectPath, filePath, content, options);
   return {
     schema_version: '0.1',
     source: 'REAL',
-    path: path.relative(root, file),
+    path: resolved.paths[0],
     bytes: Buffer.byteLength(content),
     saved: true,
+    validation: resolved.validation,
+    validationScope: resolved.validationScope,
+    evidenceDir: resolved.evidenceDir,
+    operationId: resolved.operationId,
+    planHash: resolved.planHash,
+    transactionState: resolved.transactionState,
   };
 }
 export async function searchProject(
@@ -431,8 +451,15 @@ export async function searchProject(
       if (e.name.startsWith('.') || ['.godot', 'node_modules', '.harness'].includes(e.name)) continue;
       const f = path.join(dir, e.name);
       if (e.isDirectory()) await walk(f);
-      else if (!options.glob || new RegExp(options.glob.replace('.', '\\.').replace('*', '.*')).test(e.name)) {
-        const t = await readFile(f, 'utf8').catch(() => '');
+      else if (
+        e.isFile() &&
+        (!options.glob || new RegExp(options.glob.replace('.', '\\.').replace('*', '.*')).test(e.name))
+      ) {
+        const safe = await resolveProjectPath(root, path.relative(root, f).split(path.sep).join('/'), {
+          mode: 'read',
+        }).catch(() => null);
+        if (!safe) continue;
+        const t = await readFile(safe.absolutePath, 'utf8').catch(() => '');
         t.split(/\r?\n/).forEach((l, i) => {
           if (results.length < max && l.toLowerCase().includes(query.toLowerCase()))
             results.push({ path: path.relative(root, f), line: i + 1, text: l.trim() });

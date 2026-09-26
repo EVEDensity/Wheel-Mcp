@@ -1,4 +1,5 @@
-import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 export type EvidenceProfile = 'PROCESS_EVIDENCE' | 'BRIDGE_EVIDENCE';
@@ -22,6 +23,24 @@ export type EvidenceManifest = {
 };
 
 const SENSITIVE_KEY = /(key|token|secret|password|credential|authorization)/i;
+
+export async function writeEvidenceJson(file: string, value: unknown): Promise<void> {
+  const staged = file + '.' + randomUUID() + '.tmp';
+  try {
+    const handle = await open(staged, 'wx', 0o600);
+    try {
+      await handle.writeFile(JSON.stringify(value, null, 2));
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await rename(staged, file);
+  } finally {
+    await unlink(staged).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error;
+    });
+  }
+}
 
 export async function createEvidenceEnvelope(directory: string | undefined, metadata: Record<string, unknown> = {}) {
   if (!directory) return null;
@@ -77,7 +96,7 @@ export async function ensureEvidenceManifest(
     ...(profile === 'BRIDGE_EVIDENCE' ? { events_file: path.join(root, 'events.jsonl') } : {}),
     ...(metadata as Partial<EvidenceManifest>),
   };
-  await writeFile(path.join(root, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  await writeEvidenceJson(path.join(root, 'manifest.json'), manifest);
   return manifest;
 }
 
@@ -85,44 +104,68 @@ export async function finalizeBridgeEvidence(
   directory: string,
   request: unknown,
   response: unknown,
-  process: { exitCode: number | null; stdout: string; stderr: string },
+  process: {
+    exitCode: number | null;
+    stdout: string;
+    stderr: string;
+    signal?: NodeJS.Signals | null;
+    code?: 'OK' | 'TIMEOUT' | 'CANCELLED' | 'FAILED';
+    timed_out?: boolean;
+    cancelled?: boolean;
+    started?: boolean;
+    evidence_status?: 'COMPLETE' | 'INCOMPLETE';
+    evidence_error?: string;
+  },
 ): Promise<void> {
   const root = path.resolve(directory);
   const manifestPath = path.join(root, 'manifest.json');
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as EvidenceManifest;
   const finishedAt = new Date().toISOString();
-  await writeFile(manifest.request_file ?? path.join(root, 'request.json'), JSON.stringify(request, null, 2));
-  await writeFile(manifest.response_file ?? path.join(root, 'response.json'), JSON.stringify(response, null, 2));
-  await writeFile(manifest.stdout_file, process.stdout);
-  await writeFile(manifest.stderr_file, process.stderr);
-  await writeFile(
-    manifest.process_file,
-    JSON.stringify(
-      {
-        schema_version: '0.1',
-        source: 'REAL',
-        started: true,
-        started_at: manifest.created_at,
-        finished_at: finishedAt,
-        exit_code: process.exitCode,
-        lifecycle: process.exitCode === 0 ? 'EXITED' : 'FAILED',
-        timed_out: false,
-        cancelled: false,
-        stdout: manifest.stdout_file,
-        stderr: manifest.stderr_file,
-      },
-      null,
-      2,
-    ),
-  );
-  await writeFile(
-    manifestPath,
-    JSON.stringify(
-      { ...manifest, finished_at: finishedAt, lifecycle: process.exitCode === 0 ? 'EXITED' : 'FAILED' },
-      null,
-      2,
-    ),
-  );
+  const requestFile = manifest.request_file ?? path.join(root, 'request.json');
+  // Preserve the exact request already sent, including query limits and filters.
+  if (!(await stat(requestFile).catch(() => null))) await writeFile(requestFile, JSON.stringify(request, null, 2));
+  const responseFile = manifest.response_file ?? path.join(root, 'response.json');
+  if (response !== null && response !== undefined) await writeFile(responseFile, JSON.stringify(response, null, 2));
+  // A continuously written log must not be replaced by its bounded memory tail.
+  if (!(await stat(manifest.stdout_file).catch(() => null))) await writeFile(manifest.stdout_file, process.stdout);
+  if (!(await stat(manifest.stderr_file).catch(() => null))) await writeFile(manifest.stderr_file, process.stderr);
+  const lifecycle =
+    process.timed_out || process.code === 'TIMEOUT'
+      ? 'TIMEOUT'
+      : process.cancelled || process.code === 'CANCELLED'
+        ? 'CANCELLED'
+        : process.code === 'FAILED' || process.exitCode !== 0
+          ? 'FAILED'
+          : 'EXITED';
+  await writeEvidenceJson(manifest.process_file, {
+    schema_version: '0.1',
+    source: 'REAL',
+    started: process.started !== false,
+    started_at: manifest.created_at,
+    finished_at: finishedAt,
+    exit_code: process.exitCode,
+    signal: process.signal ?? null,
+    lifecycle,
+    timed_out: lifecycle === 'TIMEOUT',
+    cancelled: lifecycle === 'CANCELLED',
+    evidence_status: process.evidence_status ?? 'COMPLETE',
+    ...(process.evidence_error ? { evidence_error: process.evidence_error } : {}),
+    stdout: manifest.stdout_file,
+    stderr: manifest.stderr_file,
+  });
+  const artifacts: Record<string, { status: 'GENERATED' | 'NOT_GENERATED'; path: string; sha256?: string }> = {};
+  for (const name of ['request.json', 'response.json', 'events.jsonl', 'process.json', 'stdout.log', 'stderr.log']) {
+    const target = path.join(root, name);
+    const bytes = await readFile(target).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== 'ENOENT') throw error;
+      return null;
+    });
+    artifacts[name] =
+      bytes === null
+        ? { status: 'NOT_GENERATED', path: target }
+        : { status: 'GENERATED', path: target, sha256: createHash('sha256').update(bytes).digest('hex') };
+  }
+  await writeEvidenceJson(manifestPath, { ...manifest, finished_at: finishedAt, lifecycle, artifacts });
 }
 
 export function redact(value: unknown): unknown {

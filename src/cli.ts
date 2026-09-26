@@ -12,16 +12,15 @@ import {
   launchProject,
   readEvidence,
   resolveGodotPath,
-  stopProcess,
-  cancelProcess,
 } from './godot-runtime.js';
 import { executeScenario, loadScenario } from './scenario-executor.js';
 import { buildContextPack } from './context-pack.js';
 import { classifyError } from './error-schema.js';
 import { createTimeoutContext } from './timeout.js';
-import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_SCENARIO_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
+import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_SCENARIO_TIMEOUT_MS } from './timeouts.js';
 import type { CliOptions } from './tool-types.js';
 import { parseCliBoolean, parseCliJson, parseCliNumber } from './input-schemas.js';
+import { runRegistry } from './run-registry.js';
 
 const [command = 'doctor', ...args] = process.argv.slice(2);
 const options: CliOptions = parseOptions(args);
@@ -193,27 +192,11 @@ try {
     );
   } else if (command === 'stop') {
     console.log(
-      JSON.stringify(
-        await stopProcess(
-          Number(required(options.pid, '--pid')),
-          Math.min(DEFAULT_STOP_TIMEOUT_MS, commandContext.remaining()),
-          commandContext,
-        ),
-        null,
-        2,
-      ),
+      JSON.stringify(await runRegistry.stopByPid(Number(required(options.pid, '--pid')), commandContext), null, 2),
     );
   } else if (command === 'cancel') {
     console.log(
-      JSON.stringify(
-        await cancelProcess(
-          Number(required(options.pid, '--pid')),
-          Math.min(DEFAULT_STOP_TIMEOUT_MS, commandContext.remaining()),
-          commandContext,
-        ),
-        null,
-        2,
-      ),
+      JSON.stringify(await runRegistry.cancelByPid(Number(required(options.pid, '--pid')), commandContext), null, 2),
     );
   } else {
     throw new Error(
