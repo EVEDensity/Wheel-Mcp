@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-test('CLI and MCP classify timeout and failed project discovery consistently', async () => {
+test('CLI and MCP classify timeout and missing project consistently', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'timeout-matrix-'));
   const cli = await runCli(['scene-tree', '--project', root, '--timeout', '0']);
   const cliError = JSON.parse(cli.stderr) as { code: string };
@@ -14,10 +14,10 @@ test('CLI and MCP classify timeout and failed project discovery consistently', a
   assert.equal(readMcpErrorCode(mcpTimeout), 'TIMEOUT');
 
   const missing = path.join(root, 'missing');
-  const cliFailed = await runCli(['scene-tree', '--project', missing]);
-  assert.equal((JSON.parse(cliFailed.stderr) as { code: string }).code, 'FAILED');
-  const mcpFailed = await callMcp('get_scene_tree', { projectPath: missing });
-  assert.equal(readMcpErrorCode(mcpFailed), 'FAILED');
+  const cliMissing = await runCli(['scene-tree', '--project', missing]);
+  assert.equal((JSON.parse(cliMissing.stderr) as { code: string }).code, 'NOT_FOUND');
+  const mcpMissing = await callMcp('get_scene_tree', { projectPath: missing });
+  assert.equal(readMcpErrorCode(mcpMissing), 'NOT_FOUND');
 });
 
 test('parent cancellation is represented by the shared CANCELLED envelope', () => {

@@ -45,3 +45,23 @@ test('getSceneTree parses real static nodes and labels capability', async () => 
   );
   await assert.rejects(() => getSceneTree(root, 'res://../outside.tscn'), /escapes project root/);
 });
+
+test('static tree filters, limits and resumes while constructing only the requested page', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'godot-mcp-tree-page-'));
+  await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
+  const lines = ['[gd_scene format=3]', '[node name="Main" type="Node2D"]'];
+  for (let index = 0; index < 1000; index++) lines.push(`[node name="Child${index}" type="Node2D" parent="."]`);
+  await writeFile(path.join(root, 'main.tscn'), lines.join('\n'));
+  const first = await getSceneTree(root, null, undefined, { limit: 10, fields: ['name', 'path'] });
+  assert.equal(first.nodes.length, 10);
+  assert.equal(first.truncated, true);
+  assert.equal(first.next_cursor, 10);
+  assert.deepEqual(first.nodes[0], { name: 'Main', path: '.' });
+  const second = await getSceneTree(root, null, undefined, { limit: 10, cursor: first.next_cursor! });
+  assert.equal(second.nodes[0].name, 'Child9');
+  const subtree = await getSceneTree(root, null, undefined, { subtree: 'Child500', depth: 0 });
+  assert.deepEqual(
+    subtree.nodes.map((node) => node.name),
+    ['Child500'],
+  );
+});

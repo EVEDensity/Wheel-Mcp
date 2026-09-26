@@ -101,7 +101,14 @@ test('pre-cancelled startup never launches, and spawn failure drains without han
       }),
       /ENOENT/,
     );
-    assert.equal(await readFile(path.join(input.evidenceDir, 'stderr.log'), 'utf8'), '');
+    assert.match(await readFile(path.join(input.evidenceDir, 'stderr.log'), 'utf8'), /ENOENT/);
+    const metadata = JSON.parse(await readFile(path.join(input.evidenceDir, 'process.json'), 'utf8'));
+    assert.equal(metadata.started, false);
+    assert.equal(metadata.lifecycle, 'FAILED');
+    assert.ok(metadata.finished_at);
+    assert.equal(metadata.evidence_status, 'COMPLETE');
+    const manifest = JSON.parse(await readFile(path.join(input.evidenceDir, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.artifacts['responses.jsonl'].status, 'NOT_GENERATED');
   } finally {
     timeout.dispose();
   }

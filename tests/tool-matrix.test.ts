@@ -4,6 +4,10 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { createMcpServer } from '../src/mcp-server-sdk.js';
 import { cliMcpContracts, mcpOnlyTools } from '../src/cli-mcp-matrix.js';
 
 const expectedMcpTools = [
@@ -46,6 +50,20 @@ test('CLI/MCP matrix declares mappings and parity obligations', () => {
   assert.ok(mcpOnlyTools.includes('list_active_runs'));
 });
 
+test('every declared CLI mapping targets a tool exposed by the official MCP client', async () => {
+  const [serverTransport, clientTransport] = InMemoryTransport.createLinkedPair();
+  const server = createMcpServer();
+  const client = new Client({ name: 'contract-check', version: '1.0.0' });
+  try {
+    await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+    const listed = new Set((await client.listTools()).tools.map((tool) => tool.name));
+    for (const contract of cliMcpContracts)
+      assert.ok(listed.has(contract.mcpTool), `${contract.cliCommand} -> ${contract.mcpTool} missing`);
+  } finally {
+    await Promise.all([client.close(), server.close()]);
+  }
+});
+
 test('same scene project produces equivalent CLI and MCP results', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'godot-matrix-'));
   await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
@@ -77,38 +95,18 @@ test('CLI and MCP use the same stable error code for invalid project input', asy
 });
 
 async function callMcp(name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
-  const child = spawn(process.execPath, ['build/src/mcp-server-sdk.js'], { stdio: ['pipe', 'pipe', 'pipe'] });
-  let buffer = '';
-  const lines: Array<Record<string, unknown>> = [];
-  child.stdout.on('data', (chunk) => {
-    buffer += chunk;
-    while (buffer.includes('\n')) {
-      const index = buffer.indexOf('\n');
-      lines.push(JSON.parse(buffer.slice(0, index)));
-      buffer = buffer.slice(index + 1);
-    }
+  const transport = new StdioClientTransport({
+    command: process.execPath,
+    args: [path.resolve('build/src/mcp-server-sdk.js')],
+    stderr: 'pipe',
   });
-  const next = async (): Promise<Record<string, unknown>> => {
-    while (!lines.length) await new Promise((resolve) => setTimeout(resolve, 5));
-    return lines.shift()!;
-  };
+  const client = new Client({ name: 'matrix', version: '1.0' });
   try {
-    child.stdin.write(
-      JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'initialize',
-        params: { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'matrix', version: '1' } },
-      }) + '\n',
-    );
-    await next();
-    child.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} }) + '\n');
-    child.stdin.write(
-      JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } }) + '\n',
-    );
-    return await next();
+    await client.connect(transport);
+    const result = await client.callTool({ name, arguments: args }, undefined, { timeout: 10000 });
+    return { result, isError: result.isError };
   } finally {
-    child.kill();
+    await client.close().catch(() => undefined);
   }
 }
 

@@ -9,7 +9,12 @@ const projectPath = process.env.REAL_GODOT_PROJECT ?? path.resolve('tests/fixtur
 const godotPath = process.env.GODOT_PATH ?? '';
 const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
 const root = path.resolve('runs/full-cli-mcp-matrix');
-const env = { ...process.env, GODOT_PATH: godotPath, GODOT_HARNESS_MAX_CONCURRENT_RUNS: '32' };
+const env = {
+  ...process.env,
+  GODOT_PATH: godotPath,
+  GODOT_HARNESS_MAX_CONCURRENT_RUNS: '32',
+  GODOT_HARNESS_RUN_REGISTRY_PATH: path.join(root, 'run-registry.json'),
+};
 
 test('full CLI/MCP matrix records parameters, results, evidence, metadata, and process state', async (t) => {
   if (!existsSync(projectPath) || !existsSync(godotPath)) {
