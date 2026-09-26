@@ -12,9 +12,229 @@ import {
   getNodeSemantics,
 } from '../../godot-development.js';
 import type { ToolRegistrationContext } from '../tool-context.js';
+import { readEditorState } from '../../editor/editor-bridge.js';
+import { saveEditorScene } from '../../editor/scene-save.js';
+import { writeValidatedProjectFiles } from '../../project/validated-write.js';
+import {
+  manageEditorResource,
+  resourceRequestSchema,
+  resourceRefSchema,
+  saveEditorResource,
+} from '../../editor/resource-service.js';
+import {
+  applyEditorScene,
+  getEditorSceneOperation,
+  createSceneApproval,
+  sceneOperationsSchema,
+} from '../../editor/scene-service.js';
 export function registerProjectTools(context: ToolRegistrationContext): void {
-  const { server, invoke, schemas } = context;
-  const { projectPath, godotPath, evidenceDir, timeoutMs, responseMode } = schemas;
+  const { server, invoke, schemas, approveProjectTransaction, transactionOwnerId } = context;
+  const { projectPath, godotPath, evidenceDir, timeoutMs, responseMode, sceneTreeQuery } = schemas;
+  server.tool(
+    'save_editor_scene',
+    'Export actual owned live editor document through native PackedScene/ResourceSaver, request exact approval, validate isolated project before disk commit. Retains dirty marker/history; awaits observable filesystem completion; committed disk state never misreported as rollback.',
+    {
+      projectPath,
+      godotPath,
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          saveEditorScene({
+            ...args,
+            ownerId: transactionOwnerId,
+            verifyApproval: approveProjectTransaction,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'write_validated_project_files',
+    'Exact host-approved multi-file .tscn/.tres/.gd candidates. Stage/import/load in isolated correct project context BEFORE touching originals; dirty scene and dependency CAS conflicts reject; transactional recovery.',
+    {
+      projectPath,
+      godotPath,
+      files: z
+        .array(
+          z
+            .object({
+              path: z.string().min(1).max(512),
+              content: z.string().max(8 * 1024 * 1024),
+              expectedSha256: z
+                .string()
+                .regex(/^[a-f0-9]{64}$/)
+                .nullable(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(16),
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          writeValidatedProjectFiles(args.projectPath, args.files, {
+            ...args,
+            ownerId: transactionOwnerId,
+            verifyApproval: approveProjectTransaction,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'manage_editor_resource',
+    'Create/reference/read/duplicate/release a bounded editor resource handle. Session/project/owner scoped; does not edit documents. export/adopt only native exact bytes; node assignments require apply_editor_scene approval.',
+    { projectPath, request: resourceRequestSchema, timeoutMs, responseMode },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          manageEditorResource({
+            ...args,
+            ownerId: transactionOwnerId,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'save_editor_resource',
+    'Stage through native ResourceSaver, request exact host approval, then transactionally save .tres. Returns fresh external reference if adoption succeeds; never pretends a committed write rolled back.',
+    {
+      projectPath,
+      ref: resourceRefSchema,
+      filePath: z.string(),
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      expectedSha256: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .nullable()
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          saveEditorResource({
+            ...args,
+            ownerId: transactionOwnerId,
+            verifyApproval: approveProjectTransaction,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'apply_editor_scene',
+    'Preview and request human approval of an exact unsaved native editor batch. Independent write opt-in; one Undo action; never saves files. Query status after UNKNOWN, never blindly retry.',
+    {
+      projectPath,
+      operations: sceneOperationsSchema,
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          applyEditorScene({
+            ...args,
+            ownerId: transactionOwnerId,
+            approve: createSceneApproval(server, transactionOwnerId),
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'get_editor_scene_operation',
+    "Query this owner's native editor commit result for an exact editor session. An unavailable or restarted editor returns UNKNOWN, not a fabricated rollback.",
+    {
+      projectPath,
+      operationId: z.string().regex(/^[a-zA-Z0-9_-]{1,80}$/),
+      sessionId: z.string().regex(/^[a-f0-9]{32}$/),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          getEditorSceneOperation({
+            ...args,
+            ownerId: transactionOwnerId,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'get_editor_state',
+    'Read the already-enabled authenticated editor plane: scene, dirty documents, selection and filesystem. Never installs a plugin or launches a runtime substitute.',
+    { projectPath, limit: z.number().int().min(1).max(100).optional(), timeoutMs, responseMode },
+    async ({ projectPath, limit, timeoutMs, responseMode }, extra) =>
+      invoke(
+        (request) =>
+          readEditorState(projectPath, context.policy?.clientId ?? 'local-client', {
+            limit,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        timeoutMs,
+        extra.signal,
+        responseMode,
+      ),
+  );
+  const writePreconditions = {
+    validationMode: z.enum(['engine', 'raw']).optional(),
+    godotPath,
+    operationId: z
+      .string()
+      .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+      .optional(),
+    expectedSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .nullable()
+      .optional(),
+  };
   server.tool(
     'get_godot_version',
     'Read the configured Godot version.',
@@ -46,9 +266,13 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
   server.tool(
     'get_scene_tree',
     'Read a static Godot scene tree.',
-    { projectPath, scenePath: z.string().optional(), timeoutMs },
-    async ({ projectPath, scenePath, timeoutMs }, extra) =>
-      invoke((context) => getSceneTree(projectPath, scenePath ?? null, context), timeoutMs, extra.signal),
+    { projectPath, scenePath: z.string().optional(), ...sceneTreeQuery, timeoutMs },
+    async ({ projectPath, scenePath, subtree, depth, fields, limit, cursor, timeoutMs }, extra) =>
+      invoke(
+        (context) => getSceneTree(projectPath, scenePath ?? null, context, { subtree, depth, fields, limit, cursor }),
+        timeoutMs,
+        extra.signal,
+      ),
   );
 
   server.tool(
@@ -68,13 +292,25 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'write_project_file',
-    'Write a text file inside a Godot project.',
-    { projectPath, filePath: z.string(), content: z.string(), timeoutMs },
-    async ({ projectPath, filePath, content, timeoutMs }, extra) =>
+    'Exact approved .tscn/.tres/.gd candidate validated in isolated correct-res:// project before replacing originals. Explicit raw mode is NOT_RUN with risk approval. Dirty editor scenes conflict.',
+    { projectPath, filePath: z.string(), content: z.string(), ...writePreconditions, timeoutMs },
+    async (
+      { projectPath, filePath, content, operationId, expectedSha256, timeoutMs, validationMode, godotPath },
+      extra,
+    ) =>
       invoke(
         (context) => {
           context.throwIfCancelled();
-          return writeProjectFile(projectPath, filePath, content);
+          return writeProjectFile(projectPath, filePath, content, {
+            validationMode,
+            godotPath,
+            timeoutMs: context.remaining(),
+            ownerId: transactionOwnerId,
+            operationId,
+            expectedSha256,
+            verifyApproval: approveProjectTransaction,
+            signal: context.signal,
+          });
         },
         timeoutMs,
         extra.signal,
@@ -119,13 +355,25 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'write_scene_file',
-    'Save a Godot .tscn scene file after explicit content edits.',
-    { projectPath, scenePath: z.string(), content: z.string(), timeoutMs },
-    async ({ projectPath, scenePath, content, timeoutMs }, extra) =>
+    'Exact host-approved .tscn candidate, engine import/load in isolated project before originals are touched. Explicit raw mode is NOT_RUN; cannot overwrite an unsaved editor scene.',
+    { projectPath, scenePath: z.string(), content: z.string(), ...writePreconditions, timeoutMs },
+    async (
+      { projectPath, scenePath, content, operationId, expectedSha256, timeoutMs, validationMode, godotPath },
+      extra,
+    ) =>
       invoke(
         (context) => {
           context.throwIfCancelled();
-          return writeSceneFile(projectPath, scenePath, content);
+          return writeSceneFile(projectPath, scenePath, content, {
+            validationMode,
+            godotPath,
+            timeoutMs: context.remaining(),
+            ownerId: transactionOwnerId,
+            operationId,
+            expectedSha256,
+            verifyApproval: approveProjectTransaction,
+            signal: context.signal,
+          });
         },
         timeoutMs,
         extra.signal,
@@ -167,13 +415,13 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'git_recovery',
-    'Reverse an explicit patch.',
+    'Preview a bounded regular-text reverse patch, request host approval, then apply it transactionally. Binary/link/mode/rename patches are unsupported; engine validation is NOT_RUN.',
     { projectPath, patchPath: z.string(), timeoutMs },
     async ({ projectPath, patchPath, timeoutMs }, extra) =>
       invoke(
         async (context) => {
           context.throwIfCancelled();
-          return gitRecovery(projectPath, patchPath, context);
+          return gitRecovery(projectPath, patchPath, context, approveProjectTransaction, transactionOwnerId);
         },
         timeoutMs,
         extra.signal,

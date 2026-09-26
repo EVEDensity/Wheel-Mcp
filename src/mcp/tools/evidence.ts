@@ -1,9 +1,17 @@
 ﻿import { z } from 'zod';
 import { compareScreenshots, getRecentEvidence } from '../../godot-development.js';
+import { readResponsePage } from '../../response-budget.js';
 import type { ToolRegistrationContext } from '../tool-context.js';
 export function registerEvidenceTools(context: ToolRegistrationContext): void {
   const { server, invoke, schemas } = context;
   const { evidenceDir, timeoutMs, responseMode } = schemas;
+  server.tool(
+    'get_response_page',
+    'Continue reading an oversized tool response from its opaque response reference.',
+    { ref: z.string().uuid(), cursor: z.number().int().nonnegative(), timeoutMs },
+    async ({ ref, cursor, timeoutMs }, extra) =>
+      invoke(() => Promise.resolve(readResponsePage(ref, cursor)), timeoutMs, extra.signal),
+  );
   server.tool(
     'compare_screenshots',
     'Compare two PNG screenshots with RGBA pixel diff.',

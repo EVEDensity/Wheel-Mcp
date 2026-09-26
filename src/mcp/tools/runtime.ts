@@ -7,8 +7,6 @@ import {
   mutateRuntimeProperty,
   queryRuntimeProperty,
   queryRuntimeSceneTree,
-  stopProcess,
-  cancelProcess,
   readRuntimeEventsSince,
   subscribeRuntimeEvents,
   streamEventSubscription,
@@ -21,12 +19,16 @@ import {
   listEventSubscriptions,
 } from '../../godot-runtime.js';
 import { runRegistry } from '../../run-registry.js';
-import { DEFAULT_STOP_TIMEOUT_MS } from '../../timeouts.js';
-import { openRuntimeBridge, callRuntimeBridge, stopRuntimeBridge } from '../../persistent-runtime-bridge.js';
+import {
+  openRuntimeBridge,
+  callRuntimeBridge,
+  stopRuntimeBridge,
+  getRuntimeOperationStatus,
+} from '../../persistent-runtime-bridge.js';
 import { keycodeSchema, pidSchema, pressedSchema } from '../../input-schemas.js';
 import type { ToolRegistrationContext } from '../tool-context.js';
 export function registerRuntimeTools(context: ToolRegistrationContext): void {
-  const { server, invoke, schemas } = context;
+  const { server, invoke, schemas, policy } = context;
   const sessionId = z.string().min(1);
   const {
     projectPath,
@@ -39,6 +41,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     eventNames,
     eventPayload,
     runtimeMethod,
+    sceneTreeQuery,
   } = schemas;
   server.tool(
     'launch_project',
@@ -67,20 +70,20 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       ),
   );
 
-  server.tool('stop_project', 'Stop a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
-    invoke(
-      (context) => stopProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
-      timeoutMs,
-      extra.signal,
-    ),
+  server.tool(
+    'stop_project',
+    'Stop a registered process after OS identity verification.',
+    { pid: pidSchema, timeoutMs },
+    async ({ pid, timeoutMs }, extra) =>
+      invoke((context) => runRegistry.stopByPid(pid, context), timeoutMs, extra.signal),
   );
 
-  server.tool('cancel_project', 'Cancel a process.', { pid: pidSchema, timeoutMs }, async ({ pid, timeoutMs }, extra) =>
-    invoke(
-      (context) => cancelProcess(pid, Math.min(timeoutMs ?? DEFAULT_STOP_TIMEOUT_MS, context.remaining()), context),
-      timeoutMs,
-      extra.signal,
-    ),
+  server.tool(
+    'cancel_project',
+    'Cancel a registered process after OS identity verification.',
+    { pid: pidSchema, timeoutMs },
+    async ({ pid, timeoutMs }, extra) =>
+      invoke((context) => runRegistry.cancelByPid(pid, context), timeoutMs, extra.signal),
   );
 
   server.tool(
@@ -105,7 +108,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       evidenceDir: z.string(),
       subscriptionId: z.string().min(1).optional(),
       cursor,
-      limit: z.number().int().positive().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
       timeoutMs,
     },
     async ({ evidenceDir, cursor, limit, timeoutMs }, extra) =>
@@ -130,9 +133,9 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       runId: z.string().min(1).optional(),
       payload: eventPayload,
       continuous: z.boolean().optional(),
-      maxEvents: z.number().int().positive().optional(),
+      maxEvents: z.number().int().min(1).max(500).optional(),
       pollIntervalMs: z.number().int().positive().optional(),
-      limit: z.number().int().positive().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
       timeoutMs: z.number().int().positive().optional(),
     },
     async (
@@ -166,7 +169,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
           }
           const subscription = subscriptionId
             ? { subscription_id: subscriptionId }
-            : await createEventSubscription(evidenceDir, { cursor, filter });
+            : await createEventSubscription(evidenceDir, { cursor, filter, ownerClientId: policy?.clientId });
           const events = [];
           const stream = streamEventSubscription(evidenceDir, subscription.subscription_id, {
             signal: context.signal,
@@ -219,6 +222,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
             cursor,
             filter: event || runId || payload ? { event, run_id: runId, payload } : undefined,
             ackTimeoutMs,
+            ownerClientId: policy?.clientId,
           });
         },
         timeoutMs,
@@ -232,7 +236,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     {
       evidenceDir: z.string(),
       subscriptionId: z.string().min(1),
-      limit: z.number().int().positive().optional(),
+      limit: z.number().int().min(1).max(500).optional(),
       timeoutMs,
     },
     async ({ evidenceDir, subscriptionId, limit, timeoutMs }, extra) =>
@@ -289,14 +293,30 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     'List persisted runtime event subscriptions.',
     { evidenceDir: z.string(), timeoutMs },
     async ({ evidenceDir, timeoutMs }, extra) =>
-      invoke((context) => listEventSubscriptions(evidenceDir), timeoutMs, extra.signal),
+      invoke(
+        async (context) => {
+          const subscriptions = await listEventSubscriptions(evidenceDir);
+          context.throwIfCancelled();
+          return policy && !policy.scopes.has('admin')
+            ? subscriptions.filter((item) => item.owner_client_id === policy.clientId)
+            : subscriptions;
+        },
+        timeoutMs,
+        extra.signal,
+      ),
   );
 
   server.tool('list_active_runs', 'List currently active isolated runs.', { timeoutMs }, async ({ timeoutMs }, extra) =>
     invoke(
       async (context) => {
         context.throwIfCancelled();
-        return { source: 'REAL', runs: runRegistry.active() };
+        return {
+          source: 'REAL',
+          runs:
+            policy && !policy.scopes.has('admin')
+              ? runRegistry.active().filter((run) => policy.ownedRunIds.has(run.runId))
+              : runRegistry.active(),
+        };
       },
       timeoutMs,
       extra.signal,
@@ -330,7 +350,13 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     invoke(
       async (context) => {
         context.throwIfCancelled();
-        return { source: 'REAL', runs: runRegistry.list() };
+        return {
+          source: 'REAL',
+          runs:
+            policy && !policy.scopes.has('admin')
+              ? runRegistry.list().filter((run) => policy.ownedRunIds.has(run.runId))
+              : runRegistry.list(),
+        };
       },
       timeoutMs,
       extra.signal,
@@ -340,7 +366,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
   server.tool(
     'get_runtime_scene_tree',
     'Query runtime scene tree.',
-    { godotPath, projectPath, bridgePath, evidenceDir, timeoutMs },
+    { godotPath, projectPath, bridgePath, evidenceDir, ...sceneTreeQuery, timeoutMs },
     async (args, extra) =>
       invoke(
         (context) =>
@@ -358,7 +384,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'get_runtime_property',
-    'Read a runtime property.',
+    'Legacy one-shot: read a runtime property in a new Godot process. For shared state, open_runtime_bridge and call_runtime_bridge with the same sessionId.',
     {
       godotPath,
       projectPath,
@@ -386,7 +412,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'set_runtime_property',
-    'Write and read back a runtime property.',
+    'Legacy one-shot: write and read back in a new Godot process; state is not retained. For shared state, use one explicit open_runtime_bridge sessionId.',
     {
       godotPath,
       projectPath,
@@ -468,7 +494,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'inject_runtime_input',
-    'Inject a runtime key event.',
+    'Legacy one-shot: inject a key in a new Godot process; later one-shot calls cannot observe that state. Use call_runtime_bridge with one sessionId for continuity.',
     {
       godotPath,
       projectPath,
@@ -496,7 +522,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'capture_runtime_screenshot',
-    'Capture a runtime PNG.',
+    'Legacy one-shot: capture a PNG from a new Godot process. Use call_runtime_bridge with one sessionId to capture the current shared state.',
     { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
     async (args, extra) =>
       invoke(
@@ -551,10 +577,23 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       sessionId: z.string().min(1),
       method: runtimeMethod,
       params: z.record(z.string(), z.unknown()).optional(),
+      operationId: z.string().min(1).max(128).optional(),
       timeoutMs,
     },
-    async ({ sessionId, method, params, timeoutMs }, extra) =>
-      invoke((context) => callRuntimeBridge(sessionId, method, params || {}, context), timeoutMs, extra.signal),
+    async ({ sessionId, method, params, operationId, timeoutMs }, extra) =>
+      invoke(
+        (context) => callRuntimeBridge(sessionId, method, params || {}, context, operationId),
+        timeoutMs,
+        extra.signal,
+      ),
+  );
+
+  server.tool(
+    'get_runtime_operation_status',
+    'Inspect a write operation by sessionId and operationId after timeout or cancellation; never blindly retry an UNKNOWN write.',
+    { sessionId: z.string().min(1), operationId: z.string().min(1).max(128), timeoutMs },
+    async ({ sessionId, operationId, timeoutMs }, extra) =>
+      invoke((context) => getRuntimeOperationStatus(sessionId, operationId), timeoutMs, extra.signal),
   );
 
   server.tool(

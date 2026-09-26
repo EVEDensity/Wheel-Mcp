@@ -8,12 +8,25 @@ export function registerDiagnosticsTools(context: ToolRegistrationContext): void
   server.tool(
     'get_debug_output',
     'Read process evidence.',
-    { evidenceDir: z.string(), timeoutMs },
-    async ({ evidenceDir, timeoutMs }, extra) =>
+    {
+      evidenceDir: z.string(),
+      stdoutCursor: z.number().int().nonnegative().optional(),
+      stderrCursor: z.number().int().nonnegative().optional(),
+      stdoutSegment: z.string().optional(),
+      stderrSegment: z.string().optional(),
+      limitBytes: z
+        .number()
+        .int()
+        .min(1)
+        .max(64 * 1024)
+        .optional(),
+      timeoutMs,
+    },
+    async ({ evidenceDir, stdoutCursor, stderrCursor, stdoutSegment, stderrSegment, limitBytes, timeoutMs }, extra) =>
       invoke(
         async (context) => {
           context.throwIfCancelled();
-          return readEvidence(evidenceDir);
+          return readEvidence(evidenceDir, { stdoutCursor, stderrCursor, stdoutSegment, stderrSegment, limitBytes });
         },
         timeoutMs,
         extra.signal,
