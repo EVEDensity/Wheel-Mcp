@@ -1,4 +1,4 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 export interface RuntimeEvent {
@@ -31,12 +31,15 @@ export interface EventReadResult {
   events: RuntimeEvent[];
   invalid_lines: Array<{ line: number; reason: string }>;
   pending_partial: boolean;
+  invalid_line_count?: number;
+  events_truncated?: boolean;
 }
 
 export interface EventPage extends EventReadResult {
   cursor: number | EventCursor;
   next_cursor: number | EventCursor | null;
   cursor_ahead: boolean;
+  cursor_expired?: boolean;
 }
 
 export interface EventSubscriptionOptions {
@@ -57,6 +60,7 @@ export interface SubscriptionResult extends EventPage {
 export type EventSubscriptionRecord = {
   subscription_id: string;
   evidence_dir: string;
+  owner_client_id?: string;
   cursor: EventCursor | number;
   pending_cursor?: EventCursor | number;
   ack_deadline_at?: string;
@@ -98,6 +102,26 @@ export function parseRuntimeEvent(value: unknown): RuntimeEvent | null {
     event: item.event,
     payload: item.payload as Record<string, unknown>,
   };
+}
+
+/** Convert only gameplay notifications; ready/control messages never enter events.jsonl. */
+export function normalizeBridgeRuntimeEvent(value: unknown, expectedRunId: string): RuntimeEvent | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const notification = value as Record<string, unknown>;
+  if (notification.jsonrpc !== '2.0' || notification.method !== 'runtime/event') return null;
+  if (!notification.params || typeof notification.params !== 'object' || Array.isArray(notification.params))
+    return null;
+  const params = notification.params as Record<string, unknown>;
+  if (params.run_id !== expectedRunId) return null;
+  return parseRuntimeEvent({
+    schema_version: '0.1',
+    source: 'REAL',
+    run_id: params.run_id,
+    sequence: params.sequence,
+    timestamp: params.timestamp,
+    event: params.event,
+    payload: params.payload,
+  });
 }
 
 export function matchesRuntimeEvent(
@@ -254,13 +278,14 @@ async function mutateSubscriptions<T>(
 
 export async function createEventSubscription(
   evidenceDir: string,
-  options: Pick<EventSubscriptionOptions, 'cursor' | 'filter' | 'ackTimeoutMs'> = {},
+  options: Pick<EventSubscriptionOptions, 'cursor' | 'filter' | 'ackTimeoutMs'> & { ownerClientId?: string } = {},
 ): Promise<EventSubscriptionRecord> {
   const root = path.resolve(evidenceDir);
   const events = await readRuntimeEvents(root);
   const record: EventSubscriptionRecord = {
     subscription_id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     evidence_dir: root,
+    ...(options.ownerClientId ? { owner_client_id: options.ownerClientId } : {}),
     cursor: normalizeCursor(options.cursor ?? 0, events.run_id),
     ack_timeout_ms: Math.max(1, options.ackTimeoutMs ?? 30000),
     filter: typeof options.filter === 'function' ? undefined : options.filter,
@@ -272,6 +297,14 @@ export async function createEventSubscription(
     store[record.subscription_id] = record;
     return record;
   });
+}
+
+export async function getEventSubscriptionOwner(
+  evidenceDir: string,
+  subscriptionId: string,
+): Promise<string | undefined> {
+  const store = await readSubscriptions(path.resolve(evidenceDir));
+  return store[subscriptionId]?.owner_client_id;
 }
 
 export async function pollEventSubscription(
@@ -302,6 +335,9 @@ export async function pollEventSubscription(
     if (page.next_cursor !== null && events.length > 0) {
       record.pending_cursor = page.next_cursor;
       record.ack_deadline_at = new Date(Date.now() + record.ack_timeout_ms).toISOString();
+    } else if (page.next_cursor !== null && page.events.length > 0) {
+      // Filtered-out events have no delivery to ACK; advance past them.
+      record.cursor = page.next_cursor;
     }
     record.updated_at = new Date().toISOString();
     return { ...page, events, subscription_id: subscriptionId, status: record.status };
@@ -318,10 +354,12 @@ export async function acknowledgeEventSubscription(
     const record = store[subscriptionId];
     if (!record) throw new Error(`subscription not found: ${subscriptionId}`);
     const normalized = normalizeCursor(cursor, (await readRuntimeEvents(root)).run_id);
+    const previous = normalizeCursor(record.cursor, (await readRuntimeEvents(root)).run_id);
+    if (normalized.sequence < previous.sequence) throw new Error('ack cursor cannot move backwards');
     if (record.pending_cursor !== undefined) {
       const pending = normalizeCursor(record.pending_cursor, (await readRuntimeEvents(root)).run_id);
-      if (normalized.sequence < pending.sequence) throw new Error('ack cursor cannot move backwards');
-    }
+      if (normalized.sequence !== pending.sequence) throw new Error('ack must match the delivered page cursor');
+    } else if (normalized.sequence !== previous.sequence) throw new Error('ack has no pending delivery');
     record.cursor = normalized;
     record.pending_cursor = undefined;
     record.ack_deadline_at = undefined;
@@ -378,52 +416,221 @@ export async function listEventSubscriptions(evidenceDir: string): Promise<Event
   return Object.values(store);
 }
 
-export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadResult> {
+const MAX_CACHED_EVENTS = 2048;
+const MAX_INVALID_LINES = 100;
+const MAX_LINE_BYTES = 1024 * 1024;
+type EventLogCache = {
+  ino: number;
+  offset: number;
+  partial: Buffer;
+  discarding: boolean;
+  lineNumber: number;
+  runId: string | null;
+  maxSequence: number;
+  events: RuntimeEvent[];
+  invalidLines: Array<{ line: number; reason: string }>;
+  invalidLineCount: number;
+  eventsTruncated: boolean;
+};
+const eventLogCaches = new Map<string, EventLogCache>();
+const eventLogLocks = new Map<string, Promise<EventReadResult>>();
+
+function emptyEventLogCache(ino: number): EventLogCache {
+  return {
+    ino,
+    offset: 0,
+    partial: Buffer.alloc(0),
+    discarding: false,
+    lineNumber: 0,
+    runId: null,
+    maxSequence: 0,
+    events: [],
+    invalidLines: [],
+    invalidLineCount: 0,
+    eventsTruncated: false,
+  };
+}
+
+function invalidLine(cache: EventLogCache, reason: string): void {
+  cache.invalidLineCount++;
+  if (cache.invalidLines.length < MAX_INVALID_LINES) cache.invalidLines.push({ line: cache.lineNumber, reason });
+}
+
+function parseCompleteLine(cache: EventLogCache, bytes: Buffer): void {
+  cache.lineNumber++;
+  if (bytes.length > MAX_LINE_BYTES) {
+    invalidLine(cache, 'event line exceeds 1 MiB');
+    return;
+  }
+  const line = bytes.toString('utf8').trim();
+  if (!line) return;
+  let event: RuntimeEvent | null;
+  try {
+    event = parseRuntimeEvent(JSON.parse(line));
+  } catch (error) {
+    invalidLine(cache, error instanceof Error ? error.message : String(error));
+    return;
+  }
+  if (!event) {
+    invalidLine(cache, 'schema validation failed');
+    return;
+  }
+  if (cache.runId === null) cache.runId = event.run_id;
+  if (event.run_id !== cache.runId) {
+    invalidLine(cache, `run_id mismatch: expected ${cache.runId}`);
+    return;
+  }
+  if (event.sequence <= cache.maxSequence) {
+    invalidLine(cache, `sequence must be strictly increasing after ${cache.maxSequence}`);
+    return;
+  }
+  cache.maxSequence = event.sequence;
+  cache.events.push(event);
+  if (cache.events.length > MAX_CACHED_EVENTS) {
+    cache.events.shift();
+    cache.eventsTruncated = true;
+  }
+}
+
+async function refreshEventLog(evidenceDir: string): Promise<EventReadResult> {
   const root = path.resolve(evidenceDir);
-  const text = await readFile(path.join(root, 'events.jsonl'), 'utf8').catch(() => '');
-  const lines = text.split(/\r?\n/);
-  const pending_partial = text.length > 0 && !text.endsWith('\n');
-  const completeLines = pending_partial ? lines.slice(0, -1) : lines;
-  const events: RuntimeEvent[] = [];
-  const invalid_lines: Array<{ line: number; reason: string }> = [];
-  let run_id: string | null = null;
-  let previousSequence = 0;
-  for (let index = 0; index < completeLines.length; index += 1) {
-    const line = completeLines[index];
-    if (!line.trim()) continue;
-    let event: RuntimeEvent | null;
+  const file = path.join(root, 'events.jsonl');
+  const info = await stat(file).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  let cache = eventLogCaches.get(file);
+  if (!info || !cache || cache.ino !== info.ino || info.size < cache.offset) {
+    cache = emptyEventLogCache(info?.ino ?? 0);
+    eventLogCaches.set(file, cache);
+  }
+  if (info && info.size > cache.offset) {
+    const handle = await open(file, 'r');
     try {
-      event = parseRuntimeEvent(JSON.parse(line));
-    } catch (error: unknown) {
-      invalid_lines.push({ line: index + 1, reason: error instanceof Error ? error.message : String(error) });
-      continue;
+      const chunk = Buffer.allocUnsafe(64 * 1024);
+      while (cache.offset < info.size) {
+        const { bytesRead } = await handle.read(
+          chunk,
+          0,
+          Math.min(chunk.length, info.size - cache.offset),
+          cache.offset,
+        );
+        if (!bytesRead) break;
+        cache.offset += bytesRead;
+        let data = Buffer.concat([cache.partial, chunk.subarray(0, bytesRead)]);
+        cache.partial = Buffer.alloc(0);
+        while (true) {
+          const newline = data.indexOf(10);
+          if (newline < 0) break;
+          if (cache.discarding) {
+            cache.discarding = false;
+          } else parseCompleteLine(cache, data.subarray(0, newline));
+          data = data.subarray(newline + 1);
+        }
+        if (data.length > MAX_LINE_BYTES) {
+          cache.lineNumber++;
+          invalidLine(cache, 'event line exceeds 1 MiB');
+          cache.discarding = true;
+        } else cache.partial = Buffer.from(data);
+      }
+    } finally {
+      await handle.close();
     }
-    if (!event) {
-      invalid_lines.push({ line: index + 1, reason: 'schema validation failed' });
-      continue;
-    }
-    if (run_id === null) run_id = event.run_id;
-    if (event.run_id !== run_id) {
-      invalid_lines.push({ line: index + 1, reason: `run_id mismatch: expected ${run_id}` });
-      continue;
-    }
-    if (event.sequence <= previousSequence) {
-      invalid_lines.push({ line: index + 1, reason: `sequence must be strictly increasing after ${previousSequence}` });
-      continue;
-    }
-    previousSequence = event.sequence;
-    events.push(event);
   }
   return {
     schema_version: '0.1',
     source: 'REAL',
     evidenceDir: root,
-    run_id,
-    max_sequence: previousSequence,
-    events,
-    invalid_lines,
-    pending_partial,
+    run_id: cache.runId,
+    max_sequence: cache.maxSequence,
+    events: [...cache.events],
+    invalid_lines: [...cache.invalidLines],
+    invalid_line_count: cache.invalidLineCount,
+    events_truncated: cache.eventsTruncated,
+    pending_partial: cache.partial.length > 0 || cache.discarding,
   };
+}
+
+export async function readRuntimeEvents(evidenceDir: string): Promise<EventReadResult> {
+  const key = path.join(path.resolve(evidenceDir), 'events.jsonl');
+  const prior = eventLogLocks.get(key);
+  if (prior) return prior;
+  const current = refreshEventLog(evidenceDir);
+  eventLogLocks.set(key, current);
+  try {
+    return await current;
+  } finally {
+    if (eventLogLocks.get(key) === current) eventLogLocks.delete(key);
+  }
+}
+
+async function readArchivedPage(
+  file: string,
+  runId: string | null,
+  after: number,
+  limit: number,
+): Promise<RuntimeEvent[]> {
+  const output: RuntimeEvent[] = [];
+  const handle = await open(file, 'r');
+  try {
+    const chunk = Buffer.allocUnsafe(64 * 1024);
+    let position = 0;
+    let partial = Buffer.alloc(0);
+    while (output.length < limit) {
+      const { bytesRead } = await handle.read(chunk, 0, chunk.length, position);
+      if (!bytesRead) break;
+      position += bytesRead;
+      let data = Buffer.concat([partial, chunk.subarray(0, bytesRead)]);
+      partial = Buffer.alloc(0);
+      while (true) {
+        const newline = data.indexOf(10);
+        if (newline < 0) break;
+        const line = data.subarray(0, newline);
+        data = data.subarray(newline + 1);
+        if (line.length > MAX_LINE_BYTES) continue;
+        let event: RuntimeEvent | null;
+        try {
+          event = parseRuntimeEvent(JSON.parse(line.toString('utf8')));
+        } catch {
+          continue;
+        }
+        if (event && event.run_id === runId && event.sequence > after) output.push(event);
+        if (output.length >= limit) break;
+      }
+      if (data.length > MAX_LINE_BYTES) throw new Error('archived event line exceeds 1 MiB');
+      partial = Buffer.from(data);
+    }
+  } finally {
+    await handle.close();
+  }
+  return output;
+}
+
+async function readSegmentedPage(
+  evidenceDir: string,
+  runId: string | null,
+  after: number,
+  limit: number,
+): Promise<RuntimeEvent[]> {
+  const root = path.resolve(evidenceDir);
+  const names = await readdir(root).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  });
+  const segments = names.filter((name) => /^events\.\d{13}-\d{4}\.jsonl$/.test(name)).sort();
+  segments.push('events.jsonl');
+  const output: RuntimeEvent[] = [];
+  for (const name of segments) {
+    const page = await readArchivedPage(path.join(root, name), runId, after, limit - output.length).catch(
+      (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') return [];
+        throw error;
+      },
+    );
+    output.push(...page);
+    if (output.length >= limit) break;
+  }
+  return output;
 }
 
 export async function readRuntimeEventsSince(
@@ -431,11 +638,15 @@ export async function readRuntimeEventsSince(
   cursor: number | EventCursor = 0,
   limit = 100,
 ): Promise<EventPage> {
-  if (!Number.isInteger(limit) || limit < 1) throw new Error('limit must be a positive integer');
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error('limit must be 1–500');
   const result = await readRuntimeEvents(evidenceDir);
   const normalized = normalizeCursor(cursor, result.run_id);
   const effectiveSequence = normalized.sequence;
-  const events = result.events.filter((event) => event.sequence > effectiveSequence).slice(0, limit);
+  const earliestCached = result.events[0]?.sequence ?? result.max_sequence + 1;
+  const fromDisk = effectiveSequence < earliestCached - 1;
+  const events = fromDisk
+    ? await readSegmentedPage(evidenceDir, result.run_id, effectiveSequence, limit)
+    : result.events.filter((event) => event.sequence > effectiveSequence).slice(0, limit);
   const next_cursor = events.length
     ? typeof cursor === 'number'
       ? events[events.length - 1].sequence
@@ -445,7 +656,14 @@ export async function readRuntimeEventsSince(
       : result.run_id
         ? { run_id: result.run_id, sequence: effectiveSequence }
         : null;
-  return { ...result, cursor, next_cursor, cursor_ahead: effectiveSequence > result.max_sequence, events };
+  return {
+    ...result,
+    cursor,
+    next_cursor,
+    cursor_ahead: effectiveSequence > result.max_sequence,
+    cursor_expired: fromDisk && (events.length === 0 || events[0].sequence > effectiveSequence + 1),
+    events,
+  };
 }
 
 export async function* streamRuntimeEvents(

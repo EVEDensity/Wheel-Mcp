@@ -1,11 +1,19 @@
 ﻿import path from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { readFile, writeFile, mkdir, realpath, lstat } from 'node:fs/promises';
-import { isDeepStrictEqual } from 'node:util';
+import { execFile } from 'node:child_process';
+import { appendFile, readFile, writeFile, mkdir, realpath } from 'node:fs/promises';
+import { isDeepStrictEqual, promisify } from 'node:util';
 import { z } from 'zod';
 import { PersistentRuntimeBridge } from './persistent-runtime-bridge.js';
 import { createTimeoutContext, type TimeoutContext } from './timeout.js';
 import { compareScreenshots, readGodotDiagnostics } from './godot-development.js';
+import { snapshotProject, type ProjectSnapshot } from './project-snapshot.js';
+import { resolveGodotPathSync } from './godot-path.js';
+import { WheelError, classifyError, type ErrorCode } from './error-schema.js';
+import { projectRelativePath, resolveProjectPath } from './project/paths.js';
+import { ProjectTransactions, type ApprovalVerifier, type TransactionState } from './project/transactions.js';
+
+const execFileAsync = promisify(execFile);
 
 const editSchema = z.object({
   path: z.string().min(1),
@@ -66,7 +74,11 @@ export const developmentLoopSchema = z
   })
   .superRefine((value, ctx) => {
     const ids = value.checks.map((c) => c.id);
-    if (ids.some((id) => ['execution', 'cleanup', 'diagnostics', 'screenshot', 'shutdown'].includes(id)))
+    if (
+      ids.some((id) =>
+        ['execution', 'cleanup', 'diagnostics', 'screenshot', 'shutdown', 'preflight', 'input_snapshot'].includes(id),
+      )
+    )
       ctx.addIssue({ code: 'custom', message: 'reserved check ID' });
     for (const check of value.checks)
       if (check.op !== 'exists' && check.expected === undefined)
@@ -82,40 +94,29 @@ export type DevelopmentLoopInput = z.input<typeof developmentLoopSchema>;
 type Edit = z.infer<typeof editSchema>;
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
-/** Existing UTF-8 files only. Never follow links, write outside the project, or overwrite a concurrent edit. */
+/** Compose candidate edits in memory. Only validate() may write, using an approved recoverable transaction. */
 export class ProjectEdits {
   private originals = new Map<string, { before: string; after: string }>();
+  readonly transactions: Array<{ operationId: string; planHash: string; impact: string[]; state: TransactionState }> =
+    [];
+  private readonly service: ProjectTransactions;
   constructor(
     private root: string,
     private evidence: string,
-  ) {}
+    verifyApproval?: ApprovalVerifier,
+    ownerId?: string,
+  ) {
+    this.service = new ProjectTransactions({ projectPath: root, ownerId, verifyApproval });
+  }
   async apply(edits: Edit[]): Promise<string[]> {
     const root = await realpath(this.root);
-    const staged = new Map<string, { before: string; after: string }>();
+    const staged = new Map(this.originals);
+    const changed = new Set<string>();
     for (const edit of edits) {
-      const relative = edit.path.replaceAll('\\', '/');
-      if (
-        path.isAbsolute(edit.path) ||
-        relative
-          .split('/')
-          .some(
-            (p) =>
-              ['..', '.', '.git', '.godot', '.harness', ''].includes(p.toLowerCase()) ||
-              p.includes(':') ||
-              [...p].some((c) => c.charCodeAt(0) < 32) ||
-              /[. ]$/.test(p),
-          )
-      )
-        throw new Error('unsafe edit path');
-      const file = path.resolve(root, edit.path);
-      if (!file.startsWith(root + path.sep)) throw new Error('edit escapes project');
-      let current = root;
-      for (const part of path.relative(root, file).split(path.sep)) {
-        current = path.join(current, part);
-        if ((await lstat(current)).isSymbolicLink()) throw new Error('symlink edits are forbidden');
-      }
-      if ((await realpath(file)) !== file) throw new Error('noncanonical edit path');
-      const prior = staged.get(file);
+      const relative = projectRelativePath(edit.path, 'write');
+      const resolved = await resolveProjectPath(root, relative, { mode: 'write' });
+      const file = resolved.absolutePath;
+      const prior = staged.get(relative);
       let before = prior?.after;
       if (before === undefined) {
         const bytes = await readFile(file);
@@ -123,47 +124,52 @@ export class ProjectEdits {
         new TextDecoder('utf-8', { fatal: true }).decode(bytes);
         before = bytes.toString('utf8');
       }
-      if (edit.expectedSha256 && sha(before) !== edit.expectedSha256) throw new Error('edit hash precondition failed');
+      if (edit.expectedSha256 && sha(before) !== edit.expectedSha256)
+        throw new WheelError('CONFLICT', 'edit hash precondition failed');
       if (before.split(edit.find).length !== 2) throw new Error('edit must match exactly once: ' + edit.path);
-      staged.set(file, { before: prior?.before ?? before, after: before.replace(edit.find, () => edit.replace) });
+      staged.set(relative, { before: prior?.before ?? before, after: before.replace(edit.find, () => edit.replace) });
+      changed.add(relative);
     }
-    await mkdir(path.join(this.evidence, 'edits'), { recursive: true });
-    for (const [file, change] of staged) {
-      if ((await readFile(file, 'utf8')) !== change.before) throw new Error('concurrent edit detected');
-      const id = randomUUID();
-      await writeFile(path.join(this.evidence, 'edits', id + '.before'), change.before);
-      await writeFile(
-        path.join(this.evidence, 'edits', id + '.json'),
-        JSON.stringify(
-          { path: path.relative(root, file), beforeSha256: sha(change.before), afterSha256: sha(change.after) },
-          null,
-          2,
-        ),
-      );
-      const original = this.originals.get(file);
-      this.originals.set(file, { before: original?.before ?? change.before, after: change.after });
-      await writeFile(file, change.after);
+    this.originals = staged;
+    return [...changed];
+  }
+  async validate(check: () => Promise<boolean>, signal?: AbortSignal): Promise<boolean> {
+    signal?.throwIfAborted();
+    const operations = [...this.originals]
+      .filter(([, c]) => c.before !== c.after)
+      .map(([file, c]) => ({
+        kind: 'replace' as const,
+        path: file,
+        content: c.after,
+        expectedSha256: sha(c.before),
+      }));
+    if (!operations.length) return check();
+    await this.service.recoverPending();
+    if ((await this.service.list()).some((t) => t.state === 'CONFLICT'))
+      throw new WheelError('CONFLICT', 'Unresolved project transaction requires operator recovery');
+    const plan = await this.service.prepare(operations);
+    const record = {
+      operationId: plan.operationId,
+      planHash: plan.planHash,
+      impact: plan.impact,
+      state: 'PREPARED' as TransactionState,
+    };
+    this.transactions.push(record);
+    try {
+      await this.service.approve(plan.operationId, signal);
+      record.state = await this.service.apply(plan.operationId, check, signal);
+      if (record.state === 'CONFLICT')
+        throw new WheelError('CONFLICT', 'Transaction rollback preserved a concurrent edit');
+      return record.state === 'COMMITTED';
+    } finally {
+      record.state = (await this.service.inspect(plan.operationId)).state;
+      await mkdir(this.evidence, { recursive: true });
+      await writeFile(path.join(this.evidence, 'transactions.json'), JSON.stringify(this.transactions, null, 2));
     }
-    return [...staged.keys()].map((f) => path.relative(root, f));
   }
   async rollback(): Promise<string[]> {
-    const conflicts: string[] = [];
-    for (const [file, change] of this.originals) {
-      try {
-        if (
-          (await realpath(file)) !== file ||
-          (await lstat(file)).isSymbolicLink() ||
-          (await readFile(file, 'utf8')) !== change.after
-        ) {
-          conflicts.push(file);
-          continue;
-        }
-        await writeFile(file, change.before);
-      } catch {
-        conflicts.push(file);
-      }
-    }
-    return conflicts;
+    // apply() never writes, and validate() has already converged under the project lock.
+    return this.transactions.filter((t) => t.state === 'CONFLICT').map((t) => t.operationId);
   }
 }
 export function evaluateCheck(value: unknown, check: { path: string; op: string; expected?: unknown }): boolean {
@@ -207,7 +213,12 @@ export type DevelopmentAttempt = {
 };
 const activeProjects = new Set<string>();
 /** Serialize edits for a canonical project across MCP sessions in this server process. */
-export async function executeDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutContext) {
+export async function executeDevelopmentLoop(
+  input: DevelopmentLoopInput,
+  parent?: TimeoutContext,
+  verifyApproval?: ApprovalVerifier,
+  ownerId?: string,
+) {
   const options = developmentLoopSchema.parse(input);
   const canonical = await realpath(options.projectPath);
   const key = process.platform === 'win32' ? canonical.toLowerCase() : canonical;
@@ -215,21 +226,27 @@ export async function executeDevelopmentLoop(input: DevelopmentLoopInput, parent
     throw Object.assign(new Error('a dev_loop already owns this project'), { code: 'DEV_LOOP_BUSY' });
   activeProjects.add(key);
   try {
-    return await runDevelopmentLoop(options, parent);
+    return await runDevelopmentLoop(options, parent, verifyApproval, ownerId);
   } finally {
     activeProjects.delete(key);
   }
 }
-async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutContext) {
+async function runDevelopmentLoop(
+  input: DevelopmentLoopInput,
+  parent?: TimeoutContext,
+  verifyApproval?: ApprovalVerifier,
+  ownerId?: string,
+) {
   const options = developmentLoopSchema.parse(input);
   const timeout = createTimeoutContext(options.timeoutMs, parent?.signal);
   const evidenceDir = path.resolve(options.evidenceDir, 'dev-loop-' + randomUUID());
   await mkdir(evidenceDir, { recursive: true });
-  const editor = new ProjectEdits(options.projectPath, evidenceDir);
+  const editor = new ProjectEdits(options.projectPath, evidenceDir, verifyApproval, ownerId);
   const attempts: DevelopmentAttempt[] = [];
   const changedFiles = new Set<string>();
   const used = new Set<string>();
   let status = 'FAIL';
+  let code: ErrorCode | undefined;
   let error: string | undefined;
   let cleanup = true;
   let screenshotPath: string | undefined;
@@ -238,115 +255,188 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
   try {
     timeout.throwIfCancelled();
     timeout.throwIfExpired();
+    if (!options.rollbackOnFailure && (options.edits.length || options.repairs.length))
+      throw new WheelError(
+        'INVALID_ARGUMENT',
+        'Unverified project changes cannot be retained; rollbackOnFailure must be true',
+      );
     for (const f of await editor.apply(options.edits)) changedFiles.add(f);
     for (let index = 0; index <= options.maxRetries; index++) {
       timeout.throwIfCancelled();
       timeout.throwIfExpired();
-      const attemptDir = path.join(evidenceDir, 'attempt-' + index);
-      await mkdir(attemptDir, { recursive: true });
-      const checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }> = [];
-      let bridge: PersistentRuntimeBridge | undefined;
-      let shutdown: Awaited<ReturnType<PersistentRuntimeBridge['stop']>> | undefined;
-      let attemptError: string | undefined;
-      let runtimeDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>> | undefined;
-      try {
-        bridge = await PersistentRuntimeBridge.start({
-          projectPath: options.projectPath,
-          godotPath: options.godotPath,
-          bridgePath: options.bridgePath,
-          evidenceDir: attemptDir,
-          scenePath: options.scenePath,
-          headless: !(options.screenshot || options.baselinePath),
-          timeout,
-        });
-        await bridge.waitForEvent(options.waitEvent ?? 'level_started', timeout);
-        await bridge.request('wait_physics_frames', { frames: 3 }, timeout);
-        for (const action of options.actions) await bridge.request(action.method, action.params, timeout);
-        for (const check of options.checks) {
+      const passed = await editor.validate(async () => {
+        const attemptDir = path.join(evidenceDir, 'attempt-' + index);
+        await mkdir(attemptDir, { recursive: true });
+        const checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }> = [];
+        let bridge: PersistentRuntimeBridge | undefined;
+        let shutdown: Awaited<ReturnType<PersistentRuntimeBridge['stop']>> | undefined;
+        let attemptError: string | undefined;
+        let runtimeDiagnostics: Awaited<ReturnType<typeof readGodotDiagnostics>> | undefined;
+        let inputSnapshot: ProjectSnapshot | undefined;
+        try {
+          const sourceBefore = await snapshotProject(options.projectPath, timeout, [options.evidenceDir], true);
+          await writeFile(path.join(attemptDir, 'source-before.json'), JSON.stringify(sourceBefore, null, 2));
+          const executable = resolveGodotPathSync(options.godotPath);
+          let preflightOutput: { stdout: string; stderr: string };
           try {
-            const actual = await bridge.request(check.method, check.params, timeout);
-            checks.push({ id: check.id, passed: evaluateCheck(actual, check), actual });
-          } catch (e) {
-            checks.push({ id: check.id, passed: false, error: String(e) });
+            preflightOutput = await execFileAsync(
+              executable,
+              [
+                '--headless',
+                '--path',
+                options.projectPath,
+                '--editor',
+                '--quit',
+                '--log-file',
+                path.join(attemptDir, 'preflight-godot.log'),
+              ],
+              {
+                windowsHide: true,
+                timeout: Math.min(30000, timeout.remaining()),
+                signal: timeout.signal,
+                maxBuffer: 4 * 1024 * 1024,
+              },
+            );
+          } catch (error) {
+            const failed = error as Error & { stdout?: string; stderr?: string };
+            await Promise.all([
+              appendFile(path.join(attemptDir, 'stdout.log'), failed.stdout ?? ''),
+              appendFile(path.join(attemptDir, 'stderr.log'), failed.stderr ?? ''),
+            ]);
+            throw new WheelError('VALIDATION_FAILED', `Godot editor preflight failed: ${failed.message}`);
           }
-        }
-        if (options.screenshot || options.baselinePath) {
-          const requestedPath = path.join(attemptDir, 'screenshot.png');
-          const captureTimeout = createTimeoutContext(Math.min(10000, timeout.remaining()), timeout.signal);
-          try {
-            await bridge.request('capture_screenshot', { path: requestedPath }, captureTimeout);
-          } finally {
-            captureTimeout.dispose();
-          }
-          // Decode even without a baseline: a nonempty filename is not evidence of a valid framebuffer.
-          const diff = await compareScreenshots(requestedPath, options.baselinePath ?? requestedPath, {
-            threshold: options.threshold,
-            writeDiff: !!options.baselinePath,
-            diffPath: path.join(attemptDir, 'diff.png'),
+          await Promise.all([
+            appendFile(path.join(attemptDir, 'stdout.log'), preflightOutput.stdout),
+            appendFile(path.join(attemptDir, 'stderr.log'), preflightOutput.stderr),
+          ]);
+          const sourceAfter = await snapshotProject(options.projectPath, timeout, [options.evidenceDir], true);
+          await writeFile(path.join(attemptDir, 'source-after.json'), JSON.stringify(sourceAfter, null, 2));
+          if (sourceBefore.sha256 !== sourceAfter.sha256)
+            throw new WheelError('CONFLICT', 'project source changed during editor preflight');
+          inputSnapshot = await snapshotProject(options.projectPath, timeout, [options.evidenceDir]);
+          await writeFile(path.join(attemptDir, 'input-before.json'), JSON.stringify(inputSnapshot, null, 2));
+          checks.push({ id: 'preflight', passed: true, actual: { scope: 'editor_import_and_parse' } });
+          bridge = await PersistentRuntimeBridge.start({
+            projectPath: options.projectPath,
+            godotPath: options.godotPath,
+            bridgePath: options.bridgePath,
+            evidenceDir: attemptDir,
+            scenePath: options.scenePath,
+            headless: !(options.screenshot || options.baselinePath),
+            timeout,
           });
-          screenshotPath = requestedPath;
-          checks.push({
-            id: 'screenshot',
-            passed: diff.width > 1 && diff.height > 1 && diff.differenceRatio <= options.maxDifferenceRatio,
-            actual: diff,
-          });
-        }
-      } catch (e) {
-        attemptError = String(e);
-        checks.push({ id: 'execution', passed: false, error: attemptError });
-      } finally {
-        if (bridge) {
-          try {
-            await bridge.flushLogs();
-            runtimeDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
-          } catch (e) {
-            checks.push({ id: 'evidence', passed: false, error: String(e) });
-          }
-          // Cleanup has its own budget: a cancelled/expired validation must still stop its process.
-          const stopTimeout = createTimeoutContext(10000);
-          try {
-            shutdown = await bridge.stop(stopTimeout);
-            if (shutdown.forced || shutdown.exitCode !== 0) {
-              cleanup = false;
-              checks.push({ id: 'cleanup', passed: false, actual: shutdown });
+          await bridge.waitForEvent(options.waitEvent ?? 'level_started', timeout, { includeHistory: true });
+          await bridge.request('wait_physics_frames', { frames: 3 }, timeout);
+          for (const action of options.actions) await bridge.request(action.method, action.params, timeout);
+          for (const check of options.checks) {
+            try {
+              const actual = await bridge.request(check.method, check.params, timeout);
+              checks.push({ id: check.id, passed: evaluateCheck(actual, check), actual });
+            } catch (e) {
+              checks.push({ id: check.id, passed: false, error: String(e) });
             }
-          } catch (e) {
-            cleanup = false;
-            checks.push({ id: 'cleanup', passed: false, error: String(e) });
-          } finally {
-            stopTimeout.dispose();
-            await bridge.flushLogs();
+          }
+          if (options.screenshot || options.baselinePath) {
+            const requestedPath = path.join(attemptDir, 'screenshot.png');
+            const captureTimeout = createTimeoutContext(Math.min(10000, timeout.remaining()), timeout.signal);
+            try {
+              await bridge.request('capture_screenshot', { path: requestedPath }, captureTimeout);
+            } finally {
+              captureTimeout.dispose();
+            }
+            // Decode even without a baseline: a nonempty filename is not evidence of a valid framebuffer.
+            const diff = await compareScreenshots(requestedPath, options.baselinePath ?? requestedPath, {
+              threshold: options.threshold,
+              writeDiff: !!options.baselinePath,
+              diffPath: path.join(attemptDir, 'diff.png'),
+            });
+            screenshotPath = requestedPath;
+            checks.push({
+              id: 'screenshot',
+              passed: diff.width > 1 && diff.height > 1 && diff.differenceRatio <= options.maxDifferenceRatio,
+              actual: diff,
+            });
+          }
+        } catch (e) {
+          if (e instanceof WheelError && e.code === 'CONFLICT') code = 'CONFLICT';
+          attemptError = String(e);
+          checks.push({ id: 'execution', passed: false, error: attemptError });
+        } finally {
+          if (bridge) {
+            try {
+              await bridge.flushLogs();
+              runtimeDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
+            } catch (e) {
+              checks.push({ id: 'evidence', passed: false, error: String(e) });
+            }
+            // Cleanup has its own budget: a cancelled/expired validation must still stop its process.
+            const stopTimeout = createTimeoutContext(10000);
+            try {
+              shutdown = await bridge.stop(stopTimeout);
+              if (shutdown.forced || shutdown.exitCode !== 0) {
+                cleanup = false;
+                checks.push({ id: 'cleanup', passed: false, actual: shutdown });
+              }
+            } catch (e) {
+              cleanup = false;
+              checks.push({ id: 'cleanup', passed: false, error: String(e) });
+            } finally {
+              stopTimeout.dispose();
+              await bridge.flushLogs();
+            }
           }
         }
-      }
-      const allDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
-      const shutdownDiagnostics = allDiagnostics.diagnostics.flatMap((d) => {
-        const prior = runtimeDiagnostics?.diagnostics.find((r) => r.fingerprint === d.fingerprint);
-        const occurrences = d.occurrences - (prior?.occurrences ?? 0);
-        return occurrences > 0 ? [{ ...d, occurrences }] : [];
-      });
-      const shutdownLeaks = shutdownDiagnostics.filter((d) =>
-        /(?:instances? (?:was|were) leaked|resources? still in use|RID.*leaked)/i.test(d.message),
-      );
-      if (options.diagnosticsScope === 'including-shutdown')
-        checks.push({ id: 'shutdown', passed: shutdownLeaks.length === 0, actual: { shutdown, leaks: shutdownLeaks } });
-      const diagnostics =
-        options.diagnosticsScope === 'runtime' && runtimeDiagnostics ? runtimeDiagnostics : allDiagnostics;
-      errorCount = diagnostics.diagnostics.filter((d) => d.severity === 'error').length;
-      checks.push({ id: 'diagnostics', passed: errorCount <= options.maxErrors, actual: diagnostics });
-      const passed = checks.every((c) => c.passed) && !timeout.signal.aborted && timeout.remaining() > 0;
-      attempts.push({
-        index,
-        status: passed ? 'PASS' : 'FAIL',
-        checks,
-        diagnosticsScope: options.diagnosticsScope,
-        allDiagnostics,
-        runtimeDiagnostics,
-        shutdownDiagnostics,
-        shutdown,
-        evidenceDir: attemptDir,
-      });
-      await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
+        if (inputSnapshot) {
+          try {
+            const after = await snapshotProject(options.projectPath, timeout, [options.evidenceDir]);
+            await writeFile(path.join(attemptDir, 'input-after.json'), JSON.stringify(after, null, 2));
+            const unchanged = inputSnapshot.sha256 === after.sha256;
+            if (!unchanged) code = 'CONFLICT';
+            checks.push({
+              id: 'input_snapshot',
+              passed: unchanged,
+              actual: { before: inputSnapshot.sha256, after: after.sha256, fileCount: after.fileCount },
+              ...(!unchanged ? { error: 'CONFLICT: project inputs changed during verification' } : {}),
+            });
+          } catch (e) {
+            if (e instanceof WheelError && e.code === 'CONFLICT') code = 'CONFLICT';
+            checks.push({ id: 'input_snapshot', passed: false, error: String(e) });
+          }
+        }
+        const allDiagnostics = await readGodotDiagnostics(attemptDir, options.projectPath);
+        const shutdownDiagnostics = allDiagnostics.diagnostics.flatMap((d) => {
+          const prior = runtimeDiagnostics?.diagnostics.find((r) => r.fingerprint === d.fingerprint);
+          const occurrences = d.occurrences - (prior?.occurrences ?? 0);
+          return occurrences > 0 ? [{ ...d, occurrences }] : [];
+        });
+        const shutdownLeaks = shutdownDiagnostics.filter((d) =>
+          /(?:instances? (?:was|were) leaked|resources? still in use|RID.*leaked)/i.test(d.message),
+        );
+        if (options.diagnosticsScope === 'including-shutdown')
+          checks.push({
+            id: 'shutdown',
+            passed: shutdownLeaks.length === 0,
+            actual: { shutdown, leaks: shutdownLeaks },
+          });
+        const diagnostics =
+          options.diagnosticsScope === 'runtime' && runtimeDiagnostics ? runtimeDiagnostics : allDiagnostics;
+        errorCount = diagnostics.diagnostics.filter((d) => d.severity === 'error').length;
+        checks.push({ id: 'diagnostics', passed: errorCount <= options.maxErrors, actual: diagnostics });
+        const passed = checks.every((c) => c.passed) && !timeout.signal.aborted && timeout.remaining() > 0;
+        attempts.push({
+          index,
+          status: passed ? 'PASS' : 'FAIL',
+          checks,
+          diagnosticsScope: options.diagnosticsScope,
+          allDiagnostics,
+          runtimeDiagnostics,
+          shutdownDiagnostics,
+          shutdown,
+          evidenceDir: attemptDir,
+        });
+        await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
+        return passed;
+      }, timeout.signal);
       if (passed) {
         status = 'PASS';
         break;
@@ -355,39 +445,53 @@ async function runDevelopmentLoop(input: DevelopmentLoopInput, parent?: TimeoutC
       timeout.throwIfExpired();
       if (index === options.maxRetries || !cleanup) break;
       const repair = options.repairs.find(
-        (r) => !used.has(r.id) && checks.some((c) => c.id === r.whenFailedCheckId && !c.passed),
+        (r) => !used.has(r.id) && attempts.at(-1)!.checks.some((c) => c.id === r.whenFailedCheckId && !c.passed),
       );
       if (!repair) break;
       for (const f of await editor.apply(repair.edits)) changedFiles.add(f);
       used.add(repair.id);
       attempts.at(-1)!.appliedRepair = repair.id;
-      await writeFile(path.join(attemptDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
+      await writeFile(path.join(attempts.at(-1)!.evidenceDir, 'result.json'), JSON.stringify(attempts.at(-1), null, 2));
     }
   } catch (e) {
+    code = classifyError(e).code;
     error = String(e);
   } finally {
     timeout.dispose();
   }
-  let rollbackConflicts: string[] = [];
-  const rolledBack = status !== 'PASS' && options.rollbackOnFailure;
-  if (rolledBack) rollbackConflicts = await editor.rollback();
+  const rollbackConflicts = await editor.rollback();
+  const unresolved = editor.transactions.filter((t) =>
+    ['APPLYING', 'VALIDATING', 'ROLLING_BACK', 'CONFLICT'].includes(t.state),
+  );
+  const committed = editor.transactions.filter((t) => t.state === 'COMMITTED');
+  const rolledBack =
+    status !== 'PASS' && !unresolved.length && editor.transactions.some((t) => t.state === 'ROLLED_BACK');
   if (error) status = 'FAIL';
   const result = {
     status,
+    code,
     error,
     errorCount,
-    changedFiles: [...changedFiles],
+    plannedFiles: [...changedFiles],
+    changedFiles: [...new Set(committed.flatMap((t) => t.impact))],
+    persisted: committed.length ? true : unresolved.length ? null : false,
+    unresolvedFiles: [...new Set(unresolved.flatMap((t) => t.impact))],
     screenshotPath,
     evidenceDir,
     cleanup,
     rolledBack,
     rollbackConflicts,
+    transactions: editor.transactions,
     summary:
       status === 'PASS'
         ? used.size
           ? 'Approved repair applied and all checks passed'
           : 'All checks passed without a repair'
-        : 'Validation failed; no verified repair',
+        : committed.length
+          ? 'Project changes committed, but result/evidence delivery failed; inspect the transaction before retrying'
+          : unresolved.length
+            ? 'Transaction requires recovery; concurrent content was not overwritten'
+            : 'Validation failed; no verified repair',
     repairMode: 'caller-supplied-exact-patches',
     attempts,
     metrics: {
