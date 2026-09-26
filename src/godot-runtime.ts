@@ -1,15 +1,25 @@
 import { spawn } from 'node:child_process';
-import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { mkdir, open, readFile, readdir, stat, writeFile } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { CancelledError, createTimeoutContext, TimeoutContext, TimeoutError } from './timeout.js';
 import { runRegistry } from './run-registry.js';
 import { transitionLifecycle } from './tool-types.js';
 import type { LifecycleState } from './tool-types.js';
 import { DEFAULT_GODOT_PROCESS_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
-import { ensureEvidenceManifest, finalizeBridgeEvidence } from './evidence.js';
+import { ensureEvidenceManifest, finalizeBridgeEvidence, writeEvidenceJson } from './evidence.js';
 import { terminateProcessTree, type ProcessTreeResult } from './process-tree.js';
 import { readRuntimeEvents, readRuntimeEventsSince, subscribeRuntimeEvents } from './runtime-events.js';
 import { resolveGodotPathSync } from './godot-path.js';
+import { BridgeRpcError, validateBridgeResult } from './bridge-protocol.js';
+import { isStableErrorCode } from './error-schema.js';
+import { WheelError } from './error-schema.js';
+import { validateVariantInput } from './protocol/variant.js';
+import { readProcessIdentity, type ProcessIdentity } from './process-identity.js';
+import { resolveProjectPath } from './project/paths.js';
+import { EvidenceLog } from './evidence-log.js';
 export {
   readRuntimeEvents,
   readRuntimeEventsSince,
@@ -48,6 +58,8 @@ export type ProcessMetadata = {
   source: 'REAL';
   started: boolean;
   pid?: number;
+  run_id?: string;
+  process_identity?: ProcessIdentity;
   executable: string;
   arguments: string[];
   project_path: string;
@@ -61,6 +73,8 @@ export type ProcessMetadata = {
   stdout: string;
   stderr: string;
   process_tree?: ProcessTreeResult;
+  evidence_status?: 'COMPLETE' | 'INCOMPLETE';
+  evidence_error?: string;
 };
 
 // Stop/cancel requests for children launched by this process, keyed by pid, so the
@@ -71,9 +85,13 @@ type ProcessResult = {
   stdout: string;
   stderr: string;
   exitCode: number | null;
+  signal: NodeJS.Signals | null;
+  started: boolean;
   code: 'OK' | 'TIMEOUT' | 'CANCELLED' | 'FAILED';
   timed_out: boolean;
   cancelled: boolean;
+  evidence_status?: 'COMPLETE' | 'INCOMPLETE';
+  evidence_error?: string;
 };
 
 export function resolveGodotPath(value = process.env.GODOT_PATH) {
@@ -124,7 +142,7 @@ export async function listProjects(directory: string, recursive = false, timeout
 export async function getProjectInfo(projectPath: string, timeout?: TimeoutContext) {
   checkTimeout(timeout);
   const root = path.resolve(projectPath);
-  const projectFile = path.join(root, 'project.godot');
+  const projectFile = (await resolveProjectPath(root, 'project.godot', { mode: 'read' })).absolutePath;
   const projectText = await readFile(projectFile, 'utf8');
   const name = projectText.match(/^config\/name\s*=\s*"([^"]*)"/m)?.[1] || null;
   const mainScene = projectText.match(/^run\/main_scene\s*=\s*"([^"]*)"/m)?.[1] || null;
@@ -135,7 +153,7 @@ export async function getProjectInfo(projectPath: string, timeout?: TimeoutConte
       if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
       const target = path.join(current, entry.name);
       if (entry.isDirectory()) await collect(target);
-      else files.push(path.relative(root, target).split(path.sep).join('/'));
+      else if (entry.isFile()) files.push(path.relative(root, target).split(path.sep).join('/'));
     }
   }
   await stat(root);
@@ -152,30 +170,83 @@ export async function getProjectInfo(projectPath: string, timeout?: TimeoutConte
 }
 
 // Static editor-plane query: this reads a real .tscn and never claims runtime state.
-export async function getSceneTree(projectPath: string, scenePath: string | null = null, timeout?: TimeoutContext) {
+export type SceneTreeQuery = {
+  subtree?: string;
+  depth?: number;
+  fields?: Array<'name' | 'type' | 'parent' | 'owner' | 'path'>;
+  limit?: number;
+  cursor?: number;
+};
+
+export async function getSceneTree(
+  projectPath: string,
+  scenePath: string | null = null,
+  timeout?: TimeoutContext,
+  query: SceneTreeQuery = {},
+) {
   checkTimeout(timeout);
   const root = path.resolve(projectPath);
   await stat(root);
   const relative = scenePath || (await getProjectInfo(root, timeout)).mainScene;
   if (!relative || !relative.startsWith('res://'))
     throw new Error('scenePath must use res:// or project main_scene must be configured');
-  const sceneFile = path.resolve(root, relative.slice('res://'.length));
-  if (sceneFile !== root && !sceneFile.startsWith(`${root}${path.sep}`))
-    throw new Error('scenePath escapes project root');
-  if (path.extname(sceneFile).toLowerCase() !== '.tscn') throw new Error('scenePath must reference a .tscn file');
-  const text = await readFile(sceneFile, 'utf8');
-  const nodes: Array<{ name: string; type: string; parent: string | null; owner: string | null }> = [];
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^\[node\s+([^\]]+)\]/);
-    if (!match) continue;
-    const attrs: Record<string, string> = {};
-    for (const item of match[1].matchAll(/(\w+)="([^"]*)"|(\w+)=([^\s]+)/g)) {
-      attrs[item[1] || item[3]] = item[2] ?? item[4];
-    }
-    if (!attrs.name || !attrs.type) continue;
-    nodes.push({ name: attrs.name, type: attrs.type, parent: attrs.parent || null, owner: attrs.owner || null });
+  let sceneFile: string;
+  try {
+    sceneFile = (await resolveProjectPath(root, relative, { mode: 'read' })).absolutePath;
+  } catch (error) {
+    throw new Error(`scenePath escapes project root or is unsafe: ${(error as Error).message}`, { cause: error });
   }
-  if (nodes.length === 0) throw new Error('scene contains no parseable nodes');
+  if (path.extname(sceneFile).toLowerCase() !== '.tscn') throw new Error('scenePath must reference a .tscn file');
+  const limit = query.limit ?? 100;
+  const cursor = query.cursor ?? 0;
+  const depth = query.depth ?? 64;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error('scene tree limit must be 1–500');
+  if (!Number.isInteger(cursor) || cursor < 0) throw new Error('scene tree cursor must be non-negative');
+  if (!Number.isInteger(depth) || depth < 0 || depth > 64) throw new Error('scene tree depth must be 0–64');
+  const subtree = query.subtree ?? '.';
+  const fields = query.fields ?? ['name', 'type', 'parent', 'owner'];
+  const allowed = new Set(['name', 'type', 'parent', 'owner', 'path']);
+  if (fields.some((field) => !allowed.has(field))) throw new Error('unknown scene tree field');
+  const nodes: Array<Record<string, string | null>> = [];
+  let parsed = 0;
+  let matched = 0;
+  let truncated = false;
+  const input = createReadStream(sceneFile, { encoding: 'utf8' });
+  const lines = createInterface({ input, crlfDelay: Infinity });
+  try {
+    for await (const line of lines) {
+      checkTimeout(timeout);
+      const match = line.match(/^\[node\s+([^\]]+)\]/);
+      if (!match) continue;
+      const attrs: Record<string, string> = {};
+      for (const item of match[1].matchAll(/(\w+)="([^"]*)"|(\w+)=([^\s]+)/g))
+        attrs[item[1] || item[3]] = item[2] ?? item[4];
+      if (!attrs.name || !attrs.type) continue;
+      const nodePath =
+        parsed++ === 0 ? '.' : attrs.parent && attrs.parent !== '.' ? `${attrs.parent}/${attrs.name}` : attrs.name;
+      if (subtree !== '.' && nodePath !== subtree && !nodePath.startsWith(`${subtree}/`)) continue;
+      const relativeDepth =
+        (nodePath === '.' ? 0 : nodePath.split('/').length) - (subtree === '.' ? 0 : subtree.split('/').length);
+      if (relativeDepth > depth) continue;
+      if (matched++ < cursor) continue;
+      if (nodes.length >= limit) {
+        truncated = true;
+        break;
+      }
+      const node = {
+        name: attrs.name,
+        type: attrs.type,
+        parent: attrs.parent || null,
+        owner: attrs.owner || null,
+        path: nodePath,
+      };
+      nodes.push(Object.fromEntries(fields.map((field) => [field, node[field]])));
+    }
+  } finally {
+    lines.close();
+    input.destroy();
+  }
+  if (parsed === 0) throw new Error('scene contains no parseable nodes');
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -185,6 +256,8 @@ export async function getSceneTree(projectPath: string, scenePath: string | null
     scenePath: relative,
     sceneFile,
     nodes,
+    truncated,
+    next_cursor: truncated ? cursor + nodes.length : null,
   };
 }
 
@@ -204,7 +277,8 @@ export async function launchProject({
   const stdoutPath = path.join(evidence, 'stdout.log');
   const stderrPath = path.join(evidence, 'stderr.log');
   const metadataPath = path.join(evidence, 'process.json');
-  const godotLogFile = path.join(root, '.harness', 'godot.log');
+  const godotLogFile = path.join(evidence, 'godot.log');
+  const logs = await EvidenceLog.create(evidence);
   await mkdir(path.dirname(godotLogFile), { recursive: true });
   const args: string[] = [];
   if (headless) args.push('--headless');
@@ -217,13 +291,20 @@ export async function launchProject({
     env: { ...process.env, GODOT_PATH: resolveGodotPath(godotPath) },
     detached: process.platform !== 'win32',
   });
+  let spawnError: Error | undefined;
+  child.on('error', (error) => {
+    spawnError = error;
+    logs.append('stderr', error.message + '\n');
+  });
   let cancelled = timeout?.cancelled === true;
   let timedOut = timeout?.timedOut === true;
+  const runIdValue = path.basename(evidence) + '-' + Date.now().toString() + '-' + (child.pid ?? 'unknown').toString();
   const metadata: ProcessMetadata = {
     schema_version: '0.1',
     source: 'REAL',
     started: true,
     pid: child.pid,
+    run_id: runIdValue,
     executable: resolveGodotPath(godotPath),
     arguments: args,
     project_path: root,
@@ -236,19 +317,14 @@ export async function launchProject({
     stdout: stdoutPath,
     stderr: stderrPath,
   };
-  await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+  let metadataWrites: Promise<void> = Promise.resolve();
+  const saveMetadata = () => {
+    const snapshot = structuredClone(metadata);
+    metadataWrites = metadataWrites.then(() => writeEvidenceJson(metadataPath, snapshot));
+    return metadataWrites;
+  };
   if (child.pid) terminationRequests.set(child.pid, null);
-  const runIdValue = path.basename(evidence) + '-' + Date.now().toString() + '-' + (child.pid ?? 'unknown').toString();
-  if (child.pid) {
-    try {
-      runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });
-    } catch (error) {
-      if (child.pid) void terminateProcessTree(child.pid);
-      throw error;
-    }
-  }
-  let stdout = '',
-    stderr = '';
+  let identityCapture: Promise<ProcessIdentity | null> = Promise.resolve(null);
   let terminationPromise: Promise<void> | null = null;
   const terminate = () => {
     if (child.killed) return;
@@ -257,7 +333,7 @@ export async function launchProject({
     if (child.pid) {
       terminationPromise = terminateProcessTree(child.pid).then(async (tree) => {
         metadata.process_tree = tree;
-        await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+        await saveMetadata();
         const manifestPath = path.join(evidence, 'manifest.json');
         const manifest = await readFile(manifestPath, 'utf8')
           .then(JSON.parse)
@@ -268,72 +344,126 @@ export async function launchProject({
     metadata.lifecycle = transitionLifecycle(metadata.lifecycle, timedOut ? 'TIMEOUT' : 'CANCELLED');
     metadata.timed_out = timedOut;
     metadata.cancelled = cancelled;
-    void writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+    void saveMetadata().catch(() => undefined);
   };
   timeout?.signal.addEventListener('abort', terminate, { once: true });
-  child.stdout.on('data', (chunk) => {
-    stdout += chunk;
-  });
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk;
-  });
-  child.once('spawn', async () => {
-    if (timeout?.signal.aborted) {
-      cancelled = timeout.cancelled;
-      timedOut = timeout.timedOut;
-      metadata.lifecycle = transitionLifecycle(metadata.lifecycle, timedOut ? 'TIMEOUT' : 'CANCELLED');
-      metadata.timed_out = timedOut;
-      metadata.cancelled = cancelled;
-      await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-      terminate();
-      return;
-    }
-    metadata.lifecycle = 'RUNNING';
-    await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-  });
-  const close = new Promise((resolve) =>
-    child.once('close', async (code, signal) => {
-      if (terminationPromise) await terminationPromise;
-      const requested = child.pid ? terminationRequests.get(child.pid) : null;
-      if (child.pid) terminationRequests.delete(child.pid);
-      if (requested === 'CANCELLED') cancelled = true;
-      metadata.exit_code = code;
-      metadata.signal = signal;
-      metadata.finished_at = new Date().toISOString();
-      timeout?.signal.removeEventListener('abort', terminate);
-      const terminalState = timedOut
-        ? 'TIMEOUT'
-        : cancelled
-          ? 'CANCELLED'
-          : requested === 'STOPPED'
-            ? 'STOPPED'
-            : code === 0
-              ? 'EXITED'
-              : 'FAILED';
-      metadata.lifecycle = transitionLifecycle(metadata.lifecycle, terminalState);
-      metadata.timed_out = timedOut;
-      metadata.cancelled = cancelled;
-      if (child.pid) {
-        try {
-          runRegistry.markTerminal(runIdValue, terminalState, code);
-        } catch {
-          /* preserve process evidence */
-        }
+  const logFailure = () => {
+    if (child.exitCode === null && child.signalCode === null) child.kill();
+  };
+  logs.attach(child.stdout, 'stdout', logFailure);
+  logs.attach(child.stderr, 'stderr', logFailure);
+  child.once('spawn', () => {
+    void (async () => {
+      if (timeout?.signal.aborted) {
+        cancelled = timeout.cancelled;
+        timedOut = timeout.timedOut;
+        metadata.lifecycle = transitionLifecycle(metadata.lifecycle, timedOut ? 'TIMEOUT' : 'CANCELLED');
+        metadata.timed_out = timedOut;
+        metadata.cancelled = cancelled;
+        await saveMetadata();
+        terminate();
+        return;
       }
-      await writeFile(stdoutPath, stdout);
-      await writeFile(stderrPath, stderr);
-      await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
-      const manifestPath = path.join(evidence, 'manifest.json');
-      const manifest = await readFile(manifestPath, 'utf8')
-        .then(JSON.parse)
-        .catch(() => ({}));
-      await writeFile(
-        manifestPath,
-        JSON.stringify({ ...manifest, finished_at: metadata.finished_at, lifecycle: metadata.lifecycle }, null, 2),
-      );
-      resolve(metadata);
+      metadata.lifecycle = 'RUNNING';
+      await saveMetadata();
+    })().catch((error: unknown) => {
+      metadata.evidence_status = 'INCOMPLETE';
+      metadata.evidence_error = String(error);
+      child.kill();
+    });
+  });
+  const close = new Promise<ProcessMetadata>((resolve, reject) =>
+    child.once('close', async (code, signal) => {
+      try {
+        if (terminationPromise) await terminationPromise;
+        const requested = child.pid ? terminationRequests.get(child.pid) : null;
+        if (child.pid) terminationRequests.delete(child.pid);
+        if (requested === 'CANCELLED') cancelled = true;
+        metadata.exit_code = code;
+        metadata.signal = signal;
+        metadata.started = !spawnError;
+        metadata.finished_at = new Date().toISOString();
+        timeout?.signal.removeEventListener('abort', terminate);
+        const registeredState = runRegistry.get(runIdValue)?.state;
+        const terminalState = timedOut
+          ? 'TIMEOUT'
+          : cancelled || registeredState === 'CANCELLING' || registeredState === 'CANCELLED'
+            ? 'CANCELLED'
+            : requested === 'STOPPED' || registeredState === 'STOPPING' || registeredState === 'STOPPED'
+              ? 'STOPPED'
+              : code === 0
+                ? 'EXITED'
+                : 'FAILED';
+        metadata.lifecycle = transitionLifecycle(metadata.lifecycle, terminalState);
+        metadata.timed_out = timedOut;
+        metadata.cancelled = terminalState === 'CANCELLED';
+        if (child.pid) {
+          try {
+            runRegistry.markTerminal(runIdValue, terminalState, code);
+          } catch {
+            /* preserve process evidence */
+          }
+        }
+        metadata.evidence_status = 'COMPLETE';
+        try {
+          await logs.drain();
+        } catch (error) {
+          metadata.evidence_status = 'INCOMPLETE';
+          metadata.evidence_error = String(error);
+        }
+        await saveMetadata();
+        const manifestPath = path.join(evidence, 'manifest.json');
+        const manifest = await readFile(manifestPath, 'utf8')
+          .then(JSON.parse)
+          .catch(() => ({}));
+        await writeEvidenceJson(manifestPath, {
+          ...manifest,
+          finished_at: metadata.finished_at,
+          lifecycle: metadata.lifecycle,
+          evidence_status: metadata.evidence_status,
+        });
+        resolve(metadata);
+      } catch (error) {
+        reject(error);
+      }
     }),
   );
+  // Callers may only retain metadata for a detached launch. Avoid an unhandled
+  // rejection while preserving the error for anyone explicitly awaiting close.
+  void close.catch(() => undefined);
+  // Install pipe/close/error handlers before registry writes: failed admission
+  // still drains the child and leaves truthful failure evidence.
+  if (child.pid) {
+    try {
+      runRegistry.register({ runId: runIdValue, pid: child.pid, projectPath: root, evidenceDir: evidence });
+      identityCapture = readProcessIdentity(child.pid).then((identity) => {
+        if (identity) {
+          runRegistry.attachIdentity(runIdValue, identity);
+          metadata.process_identity = identity;
+        }
+        return identity;
+      });
+    } catch (error) {
+      child.kill();
+      await close;
+      throw error;
+    }
+  }
+  if (child.exitCode === null && child.signalCode === null) await saveMetadata();
+  let capturedIdentity: ProcessIdentity | null;
+  try {
+    capturedIdentity = await identityCapture;
+  } catch (error) {
+    child.kill();
+    await Promise.race([close, new Promise((resolve) => setTimeout(resolve, DEFAULT_STOP_TIMEOUT_MS))]);
+    throw error;
+  }
+  if (!capturedIdentity && child.exitCode === null && child.signalCode === null) {
+    child.kill();
+    await Promise.race([close, new Promise((resolve) => setTimeout(resolve, DEFAULT_STOP_TIMEOUT_MS))]);
+    throw new WheelError('UNSUPPORTED', 'unable to verify launched process identity; process was stopped');
+  }
+  if (capturedIdentity && child.exitCode === null && child.signalCode === null) await saveMetadata();
   return { metadata, child, close };
 }
 
@@ -420,7 +550,12 @@ export async function queryRuntimeSceneTree({
   evidenceDir,
   bridgePath,
   timeout,
-}: BridgeOptions) {
+  subtree,
+  depth,
+  fields,
+  limit,
+  cursor,
+}: BridgeOptions & SceneTreeQuery) {
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-bridge'));
   await mkdir(evidence, { recursive: true });
@@ -428,7 +563,7 @@ export async function queryRuntimeSceneTree({
   const requestPath = path.join(evidence, 'request.json');
   const responsePath = path.join(evidence, 'response.json');
   const eventsPath = path.join(evidence, 'events.jsonl');
-  await writeFile(requestPath, JSON.stringify({ method: 'get_scene_tree' }));
+  await writeFile(requestPath, JSON.stringify({ method: 'get_scene_tree', subtree, depth, fields, limit, cursor }));
   const projectInfo = await getProjectInfo(root, timeout);
   const result = await runProcess(
     resolveGodotPath(godotPath),
@@ -444,11 +579,11 @@ export async function queryRuntimeSceneTree({
     },
     timeout,
   );
-  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'get_scene_tree' }, response, result);
+  assertLegacyBridgeResponse('get_scene_tree', response, result);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -493,11 +628,11 @@ export async function queryRuntimeProperty({
     },
     timeout,
   );
-  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'get_property', nodePath, property }, response, result);
+  assertLegacyBridgeResponse('get_property', response, result);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -519,6 +654,7 @@ export async function mutateRuntimeProperty({
   value,
   timeout,
 }: PropertyOptions & { value: unknown }) {
+  validateVariantInput(value);
   const root = path.resolve(projectPath);
   const evidence = path.resolve(evidenceDir || path.join(root, '.harness', 'runtime-property-write'));
   await mkdir(evidence, { recursive: true });
@@ -542,11 +678,11 @@ export async function mutateRuntimeProperty({
     },
     timeout,
   );
-  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'set_property', nodePath, property, value }, response, result);
+  assertLegacyBridgeResponse('set_property', response, result);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -590,11 +726,11 @@ export async function injectRuntimeInput({
     },
     timeout,
   );
-  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'inject_input', keycode, pressed }, response, result);
+  assertLegacyBridgeResponse('inject_input', response, result);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -637,11 +773,11 @@ export async function captureRuntimeScreenshot({
     },
     timeout,
   );
-  ensureProcessSuccess(result);
   const response = await readFile(responsePath, 'utf8')
     .then(JSON.parse)
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'capture_screenshot', path: outputPath }, response, result);
+  assertLegacyBridgeResponse('capture_screenshot', response, result);
   const imageStat = await stat(outputPath)
     .then((value) => ({ bytes: value.size }))
     .catch(() => null);
@@ -679,31 +815,86 @@ export async function captureRuntimeScreenshot({
 }
 
 export async function stopLaunchedProcess(
-  launch: { child: { pid?: number }; close: Promise<unknown> },
+  launch: { metadata: { run_id?: string }; child: { pid?: number }; close: Promise<unknown> },
   timeoutMs = DEFAULT_STOP_TIMEOUT_MS,
 ) {
-  if (!launch.child.pid) throw new Error('launched process has no pid');
-  const result = await stopProcess(launch.child.pid, timeoutMs);
+  if (!launch.child.pid || !launch.metadata.run_id) throw new Error('launched process has no registered identity');
+  const result = await runRegistry.stop(launch.metadata.run_id, timeoutMs);
   await Promise.race([launch.close, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
-  return result;
+  return {
+    stopped: result.state === 'STOPPED' || result.state === 'EXITED',
+    pid: launch.child.pid,
+    run_id: result.runId,
+  };
 }
 
-export async function readEvidence(evidenceDir: string) {
+type EvidencePageOptions = {
+  stdoutCursor?: number;
+  stderrCursor?: number;
+  stdoutSegment?: string;
+  stderrSegment?: string;
+  limitBytes?: number;
+};
+
+async function readLogPage(file: string, cursor: number, limit: number) {
+  const handle = await open(file, 'r').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (!handle) return { text: '', nextCursor: null, totalBytes: 0 };
+  try {
+    const size = (await handle.stat()).size;
+    if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > size)
+      throw new WheelError('INVALID_ARGUMENT', 'log cursor is outside the selected segment');
+    const buffer = Buffer.alloc(Math.min(limit + 4, size - cursor));
+    const { bytesRead } = await handle.read(buffer, 0, buffer.length, cursor);
+    if (cursor > 0 && bytesRead > 0 && (buffer[0] & 0xc0) === 0x80)
+      throw new WheelError('INVALID_ARGUMENT', 'log cursor must be on a UTF-8 boundary');
+    let end = Math.min(limit, bytesRead);
+    while (end < bytesRead && (buffer[end] & 0xc0) === 0x80) end--;
+    const next = cursor + end;
+    return { text: buffer.subarray(0, end).toString('utf8'), nextCursor: next < size ? next : null, totalBytes: size };
+  } finally {
+    await handle.close();
+  }
+}
+
+export async function readEvidence(evidenceDir: string, options: EvidencePageOptions = {}) {
   const root = path.resolve(evidenceDir);
-  const [metadata, stdout, stderr] = await Promise.all([
+  const limit = options.limitBytes ?? 16 * 1024;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 64 * 1024)
+    throw new WheelError('INVALID_ARGUMENT', 'log page limit must be 1–65536 bytes');
+  const names = await readdir(root);
+  const segments = names.filter((name) => /^(stdout|stderr)\.\d{13}-\d{4}\.log$/.test(name)).sort();
+  const selected = (kind: 'stdout' | 'stderr', segment?: string) => {
+    const name = segment ?? `${kind}.log`;
+    if (name !== `${kind}.log` && (!segments.includes(name) || !name.startsWith(`${kind}.`)))
+      throw new WheelError('INVALID_ARGUMENT', 'unknown or wrong log segment');
+    return path.join(root, name);
+  };
+  const [metadata, stdoutPage, stderrPage] = await Promise.all([
     readFile(path.join(root, 'process.json'), 'utf8')
       .catch((error: NodeJS.ErrnoException) => {
         if (error.code !== 'ENOENT') throw error;
         return readFile(path.join(root, 'persistent.json'), 'utf8');
       })
       .then(JSON.parse),
-    readFile(path.join(root, 'stdout.log'), 'utf8').catch(() => ''),
-    readFile(path.join(root, 'stderr.log'), 'utf8').catch(() => ''),
+    readLogPage(selected('stdout', options.stdoutSegment), options.stdoutCursor ?? 0, limit),
+    readLogPage(selected('stderr', options.stderrSegment), options.stderrCursor ?? 0, limit),
   ]);
-  return { metadata, stdout, stderr };
+  return {
+    metadata,
+    stdout: stdoutPage.text,
+    stderr: stderrPage.text,
+    stdoutNextCursor: stdoutPage.nextCursor,
+    stderrNextCursor: stderrPage.nextCursor,
+    stdoutTotalBytes: stdoutPage.totalBytes,
+    stderrTotalBytes: stderrPage.totalBytes,
+    availableSegments: segments,
+  };
 }
 
-function runProcess(
+export async function runProcess(
   executable: string,
   args: string[],
   cwd: string,
@@ -713,9 +904,12 @@ function runProcess(
 ): Promise<ProcessResult> {
   // Inject --log-file so Godot writes its engine log inside the project
   // tree instead of user://logs which CI runners often cannot write to.
-  const godotLogFile = path.join(cwd, '.harness', 'godot.log');
+  const directory = extraEnv.GODOT_HARNESS_REQUEST
+    ? path.dirname(extraEnv.GODOT_HARNESS_REQUEST)
+    : path.join(cwd, '.harness', 'process-' + randomUUID());
+  const logs = await EvidenceLog.create(directory);
+  const godotLogFile = path.join(directory, 'godot.log');
   args = [...args, '--log-file', godotLogFile];
-  void mkdir(path.dirname(godotLogFile), { recursive: true }).catch(() => undefined);
   return new Promise((resolve) => {
     const context = timeout ?? createTimeoutContext(timeoutSeconds * 1000);
     const ownsContext = !timeout;
@@ -725,17 +919,17 @@ function runProcess(
       detached: process.platform !== 'win32',
       env: { ...process.env, ...extraEnv },
     });
-    let stdout = '',
-      stderr = '',
-      timedOut = false,
+    let timedOut = false,
       cancelled = false,
       settled = false;
-    child.stdout.on('data', (chunk) => {
-      stdout += chunk;
-    });
-    child.stderr.on('data', (chunk) => {
-      stderr += chunk;
-    });
+    let spawnError: Error | undefined;
+    let logError: Error | undefined;
+    const logFailure = (error: Error) => {
+      logError ??= error;
+      if (!settled) child.kill();
+    };
+    logs.attach(child.stdout, 'stdout', logFailure);
+    logs.attach(child.stderr, 'stderr', logFailure);
     const terminate = () => {
       if (settled) return;
       timedOut = context.timedOut;
@@ -744,35 +938,45 @@ function runProcess(
     };
     const timer = setTimeout(terminate, context.remaining());
     context.signal.addEventListener('abort', terminate, { once: true });
-    const finish = (exitCode: number | null, error?: Error) => {
+    if (context.signal.aborted) terminate();
+    const finish = async (exitCode: number | null, signal: NodeJS.Signals | null) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       context.signal.removeEventListener('abort', terminate);
+      try {
+        await logs.drain();
+      } catch (error) {
+        logError = error instanceof Error ? error : new Error(String(error));
+      }
       const code =
         timedOut || context.timedOut
           ? 'TIMEOUT'
           : cancelled || context.cancelled
             ? 'CANCELLED'
-            : error || exitCode !== 0
+            : spawnError || logError || exitCode !== 0
               ? 'FAILED'
               : 'OK';
       if (ownsContext) context.dispose();
       resolve({
-        stdout,
-        stderr,
-        exitCode: code === 'OK' ? exitCode : null,
+        stdout: logs.tail('stdout'),
+        stderr: logs.tail('stderr'),
+        exitCode,
+        signal,
+        started: !spawnError,
         code,
         timed_out: code === 'TIMEOUT',
         cancelled: code === 'CANCELLED',
+        evidence_status: logError ? 'INCOMPLETE' : 'COMPLETE',
+        ...(logError ? { evidence_error: logError.message } : {}),
       });
     };
-    child.once('close', (exitCode) => {
-      finish(exitCode);
+    child.once('close', (exitCode, signal) => {
+      void finish(exitCode, signal);
     });
     child.once('error', (error) => {
-      stderr += error.message;
-      finish(null, error);
+      spawnError = error;
+      logs.append('stderr', error.message + '\n');
     });
   });
 }
@@ -782,4 +986,24 @@ function ensureProcessSuccess(result: ProcessResult): void {
   if (result.code === 'CANCELLED') throw new CancelledError('Godot bridge cancelled');
   if (result.code === 'FAILED')
     throw new Error(`Godot bridge failed: ${result.stderr.trim() || 'process exited with an error'}`);
+}
+
+function assertLegacyBridgeResponse(method: string, response: unknown, processResult: ProcessResult): void {
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    const value = response as Record<string, unknown>;
+    if (value.status === 'FAIL')
+      throw new BridgeRpcError(
+        isStableErrorCode(value.code) ? value.code : 'INTERNAL_ERROR',
+        typeof value.message === 'string' ? value.message : `Godot ${method} failed`,
+        { method, bridgeResponse: value, exitCode: processResult.exitCode },
+      );
+  }
+  if (processResult.code === 'FAILED')
+    throw new BridgeRpcError('ENGINE_UNAVAILABLE', `Godot bridge process failed during ${method}`, {
+      method,
+      exitCode: processResult.exitCode,
+      stderr: processResult.stderr,
+    });
+  ensureProcessSuccess(processResult);
+  validateBridgeResult(method, response);
 }
