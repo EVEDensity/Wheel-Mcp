@@ -7,6 +7,11 @@ import { HttpAuditLogger, requestAuditFields } from './http-audit.js';
 import { HttpConcurrencyLimiter, HttpRateLimiter } from './http-limits.js';
 import { HttpRequestRegistry, runWithHttpRequestContext } from './http-lifecycle.js';
 import { HttpTokenProvider, type RotatingHttpClientConfig } from './http-token-provider.js';
+import { stopRuntimeBridge } from '../persistent-runtime-bridge.js';
+import { runRegistry } from '../run-registry.js';
+import { createTimeoutContext } from '../timeout.js';
+import { DEFAULT_STOP_TIMEOUT_MS } from '../timeouts.js';
+import { drainMcpOperations } from '../mcp/operation-lifecycle.js';
 
 export type HttpClientConfig = {
   token: string;
@@ -14,6 +19,8 @@ export type HttpClientConfig = {
   scopes: McpPermission[];
   projectRoots: string[];
   evidenceRoots: string[];
+  approvedGodotPaths?: string[];
+  approvedBridgePaths?: string[];
   expiresAt?: string;
 };
 
@@ -33,6 +40,7 @@ export type StreamableHttpConfig = {
   maxConcurrentRequests?: number;
   maxConcurrentRequestsPerClient?: number;
   shutdownTimeoutMs?: number;
+  sessionIdleTimeoutMs?: number;
   auditLog?: string;
 };
 
@@ -40,6 +48,9 @@ type Session = {
   transport: StreamableHTTPServerTransport;
   server: McpServer;
   policy: McpClientPolicy;
+  cleanup: () => Promise<void>;
+  lastActivityAt: number;
+  activeRequests: number;
 };
 
 type HttpServerInstance = {
@@ -49,9 +60,10 @@ type HttpServerInstance = {
 
 export function readStreamableHttpConfig(env = process.env): StreamableHttpConfig {
   const host = env.MCP_HTTP_HOST ?? '127.0.0.1';
-  const allowRemote = env.MCP_HTTP_ALLOW_REMOTE === 'true';
-  if (!allowRemote && !isLoopbackHost(host)) {
-    throw new Error('MCP_HTTP_HOST must be localhost/loopback unless MCP_HTTP_ALLOW_REMOTE=true');
+  if (!isLoopbackHost(host)) {
+    throw new Error(
+      'MCP_HTTP_HOST must be localhost/loopback; remote bind is disabled until project-write TOCTOU controls are qualified',
+    );
   }
   const port = integerEnv(env.MCP_HTTP_PORT, 3000, 'MCP_HTTP_PORT');
   const requestTimeoutMs = integerEnv(env.MCP_HTTP_REQUEST_TIMEOUT_MS, 30_000, 'MCP_HTTP_REQUEST_TIMEOUT_MS');
@@ -96,6 +108,7 @@ export function readStreamableHttpConfig(env = process.env): StreamableHttpConfi
       'MCP_HTTP_MAX_CONCURRENT_REQUESTS_PER_CLIENT',
     ),
     shutdownTimeoutMs: integerEnv(env.MCP_HTTP_SHUTDOWN_TIMEOUT_MS, 10_000, 'MCP_HTTP_SHUTDOWN_TIMEOUT_MS'),
+    sessionIdleTimeoutMs: integerEnv(env.MCP_HTTP_SESSION_IDLE_TIMEOUT_MS, 300_000, 'MCP_HTTP_SESSION_IDLE_TIMEOUT_MS'),
     auditLog: env.MCP_HTTP_AUDIT_LOG,
   };
 }
@@ -104,6 +117,9 @@ export async function startStreamableHttpServer(
   config: StreamableHttpConfig,
   createMcpServer: (policy: McpClientPolicy) => McpServer,
 ): Promise<HttpServerInstance> {
+  if (!isLoopbackHost(config.host))
+    throw new Error('remote MCP HTTP bind is disabled until project-write TOCTOU controls are qualified');
+  await runRegistry.reclaimOrphans(10_000);
   const sessions = new Map<string, Session>();
   const tokenProvider = HttpTokenProvider.fromFile(config.clients, config.tokenFile, config.tokenReloadIntervalMs ?? 0);
   if (config.tokenFile) await tokenProvider.reload();
@@ -120,6 +136,25 @@ export async function startStreamableHttpServer(
   const audit = new HttpAuditLogger(config.auditLog);
   let shuttingDown = false;
   let closePromise: Promise<void> | undefined;
+  const idleTimeoutMs = config.sessionIdleTimeoutMs ?? 300_000;
+  const idleSweep = setInterval(
+    () => {
+      if (shuttingDown) return;
+      const now = Date.now();
+      for (const [id, session] of sessions) {
+        if (session.activeRequests > 0 || now - session.lastActivityAt < idleTimeoutMs) continue;
+        sessions.delete(id);
+        void session.transport
+          .close()
+          .then(() => session.cleanup())
+          .catch((error) =>
+            audit.record({ event: 'session_idle_cleanup_failed', mcpSessionId: id, reason: String(error) }),
+          );
+      }
+    },
+    Math.min(60_000, Math.max(100, Math.floor(idleTimeoutMs / 2))),
+  );
+  idleSweep.unref();
 
   const httpServer = createServer(async (req, res) => {
     const requestId = randomUUID();
@@ -216,6 +251,17 @@ export async function startStreamableHttpServer(
       } else {
         session = await createSession(client, config, createMcpServer, sessions);
       }
+      session.lastActivityAt = Date.now();
+      session.activeRequests += 1;
+      let requestReleased = false;
+      const releaseSessionRequest = () => {
+        if (requestReleased) return;
+        requestReleased = true;
+        session.activeRequests -= 1;
+        session.lastActivityAt = Date.now();
+      };
+      res.once('finish', releaseSessionRequest);
+      res.once('close', releaseSessionRequest);
       await runWithHttpRequestContext(lifecycle!, () =>
         withRequestTimeout(req, res, config.requestTimeoutMs, lifecycle!, () =>
           session.transport.handleRequest(req, res),
@@ -250,6 +296,7 @@ export async function startStreamableHttpServer(
       if (closePromise) return closePromise;
       closePromise = (async () => {
         shuttingDown = true;
+        clearInterval(idleSweep);
         audit.record({ event: 'shutdown_started' });
         requestRegistry.abortAll(new Error('server is shutting down'));
         const serverClosed = new Promise<void>((resolve, reject) =>
@@ -257,7 +304,12 @@ export async function startStreamableHttpServer(
         );
         await requestRegistry.waitForEmpty(config.shutdownTimeoutMs ?? 10_000);
         await serverClosed;
-        await Promise.all([...sessions.values()].map(({ transport }) => transport.close()));
+        await Promise.all(
+          [...sessions.values()].map(async ({ transport, cleanup }) => {
+            await transport.close();
+            await cleanup();
+          }),
+        );
         audit.record({ event: 'shutdown_completed' });
         await audit.flush();
       })();
@@ -286,18 +338,51 @@ async function createSession(
       const existing = sessions.get(id);
       sessions.delete(id);
       await existing?.transport.close();
+      await existing?.cleanup();
     },
     allowedOrigins: config.allowedOrigins,
     allowedHosts: config.allowedHosts,
     enableDnsRebindingProtection: true,
   });
   const server = createMcpServer(policy);
-  const session = { transport, server, policy };
+  let cleanupPromise: Promise<void> | undefined;
+  const cleanup = () => {
+    cleanupPromise ??= drainMcpOperations(server)
+      .then(() => cleanupOwnedResources(policy))
+      .catch((error) => {
+        cleanupPromise = undefined;
+        throw error;
+      });
+    return cleanupPromise;
+  };
+  const session = { transport, server, policy, cleanup, lastActivityAt: Date.now(), activeRequests: 0 };
   transport.onclose = () => {
     if (sessionId) sessions.delete(sessionId);
+    void cleanup().catch(() => undefined);
   };
   await server.connect(transport);
   return session;
+}
+
+export async function cleanupOwnedResources(policy: McpClientPolicy): Promise<void> {
+  const tasks: Array<Promise<unknown>> = [];
+  for (const sessionId of policy.ownedBridgeSessions) {
+    const context = createTimeoutContext(DEFAULT_STOP_TIMEOUT_MS);
+    tasks.push(stopRuntimeBridge(sessionId, context).finally(() => context.dispose()));
+  }
+  for (const pid of policy.ownedPids) {
+    const context = createTimeoutContext(DEFAULT_STOP_TIMEOUT_MS);
+    tasks.push(runRegistry.stopByPid(pid, context).finally(() => context.dispose()));
+  }
+  const results = await Promise.allSettled(tasks);
+  const failures = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+  if (failures.length)
+    throw new AggregateError(
+      failures.map((result) => result.reason),
+      'session resource cleanup failed',
+    );
+  policy.ownedBridgeSessions.clear();
+  policy.ownedPids.clear();
 }
 
 function authenticate(
@@ -342,6 +427,8 @@ function parseClients(env: NodeJS.ProcessEnv): HttpClientConfig[] {
       scopes: parseScopes(splitList(env.MCP_HTTP_SCOPES ?? 'read,run,write'), 'MCP_HTTP_SCOPES'),
       projectRoots: splitList(env.MCP_HTTP_PROJECT_ROOTS ?? process.cwd()),
       evidenceRoots: splitList(env.MCP_HTTP_EVIDENCE_ROOTS ?? `${process.cwd()}/runs`),
+      approvedGodotPaths: splitList(env.MCP_HTTP_APPROVED_GODOT_PATHS ?? env.GODOT_PATH ?? ''),
+      approvedBridgePaths: splitList(env.MCP_HTTP_APPROVED_BRIDGE_PATHS ?? ''),
     },
   ];
 }
@@ -355,6 +442,8 @@ function parseClient(value: unknown, index: number): HttpClientConfig {
   parseScopes(scopes, `MCP_HTTP_AUTH_TOKENS[${index}].scopes`);
   const projectRoots = stringArrayField(entry, 'projectRoots', index);
   const evidenceRoots = stringArrayField(entry, 'evidenceRoots', index);
+  const approvedGodotPaths = optionalStringArrayField(entry, 'approvedGodotPaths', index);
+  const approvedBridgePaths = optionalStringArrayField(entry, 'approvedBridgePaths', index);
   const expiresAt = entry.expiresAt;
   if (expiresAt !== undefined && (typeof expiresAt !== 'string' || Number.isNaN(Date.parse(expiresAt))))
     throw new Error(`MCP_HTTP_AUTH_TOKENS[${index}].expiresAt is invalid`);
@@ -364,8 +453,18 @@ function parseClient(value: unknown, index: number): HttpClientConfig {
     scopes: scopes as McpPermission[],
     projectRoots,
     evidenceRoots,
+    approvedGodotPaths,
+    approvedBridgePaths,
     expiresAt: expiresAt as string | undefined,
   };
+}
+
+function optionalStringArrayField(entry: Record<string, unknown>, field: string, index: number): string[] {
+  const value = entry[field];
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || !value.every((item) => typeof item === 'string' && item.length > 0))
+    throw new Error(`MCP_HTTP_AUTH_TOKENS[${index}].${field} must be a string array`);
+  return value as string[];
 }
 
 function parseScopes(scopes: string[], label: string): McpPermission[] {

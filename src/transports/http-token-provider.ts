@@ -80,10 +80,17 @@ function parseTokenFile(value: unknown): RotatingHttpClientConfig[] {
     const scopes = item.scopes;
     const projectRoots = item.projectRoots;
     const evidenceRoots = item.evidenceRoots;
+    const approvedGodotPaths = item.approvedGodotPaths;
+    const approvedBridgePaths = item.approvedBridgePaths;
     if (!Array.isArray(scopes) || !scopes.every((scope) => ['read', 'run', 'write', 'admin'].includes(String(scope))))
       throw new Error(`token file entry ${index}.scopes is invalid`);
     if (!stringArray(projectRoots) || !stringArray(evidenceRoots))
       throw new Error(`token file entry ${index} roots are invalid`);
+    if (
+      (approvedGodotPaths !== undefined && !stringArrayAllowEmpty(approvedGodotPaths)) ||
+      (approvedBridgePaths !== undefined && !stringArrayAllowEmpty(approvedBridgePaths))
+    )
+      throw new Error(`token file entry ${index} executable allowlists are invalid`);
     if (
       item.expiresAt !== undefined &&
       (typeof item.expiresAt !== 'string' || Number.isNaN(Date.parse(item.expiresAt)))
@@ -95,6 +102,8 @@ function parseTokenFile(value: unknown): RotatingHttpClientConfig[] {
       scopes: scopes as McpPermission[],
       projectRoots,
       evidenceRoots,
+      approvedGodotPaths: approvedGodotPaths as string[] | undefined,
+      approvedBridgePaths: approvedBridgePaths as string[] | undefined,
       expiresAt: item.expiresAt as string | undefined,
     };
   });
@@ -106,4 +115,7 @@ function nonEmptyString(value: unknown, label: string): string {
 }
 function stringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === 'string' && item.length > 0);
+}
+function stringArrayAllowEmpty(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string' && item.length > 0);
 }
