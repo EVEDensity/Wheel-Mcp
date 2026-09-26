@@ -1,17 +1,31 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, writeFile, stat } from 'node:fs/promises';
-import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { sourceIdentity } from './lib/production-manifest.mjs';
+import { cliSucceeded, mcpSucceeded, negativeCase } from './lib/matrix-verdict.mjs';
 
 const repo = process.cwd();
+const candidateSource = await sourceIdentity(repo);
 const projectPath = path.resolve(process.env.REAL_GODOT_PROJECT ?? 'tests/fixtures/runtime-behavior');
 const godotPath = process.env.GODOT_PATH ?? '';
 const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
 const root = path.resolve('runs/matrix');
 const rawRoot = path.join(root, 'raw');
 const node = process.execPath;
-const env = { ...process.env, GODOT_PATH: godotPath, GODOT_HARNESS_MAX_CONCURRENT_RUNS: '32' };
+// Authorize only this fixture/evidence set in the diagnostic subprocess. Do not
+// weaken the product's configured roots or persist client configuration.
+const env = {
+  ...process.env,
+  GODOT_PATH: godotPath,
+  GODOT_HARNESS_MAX_CONCURRENT_RUNS: '32',
+  GODOT_HARNESS_RUN_REGISTRY_PATH: path.join(root, 'run-registry.json'),
+  MCP_STDIO_SCOPES: 'read,run,write',
+  MCP_STDIO_PROJECT_ROOTS: [projectPath, root].join(';'),
+  MCP_STDIO_EVIDENCE_ROOTS: root,
+  MCP_STDIO_APPROVED_GODOT_PATHS: godotPath,
+  MCP_STDIO_APPROVED_BRIDGE_PATHS: bridgePath,
+};
 await mkdir(rawRoot, { recursive: true });
 let transcriptIndex = 0;
 
@@ -62,6 +76,7 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
 } else {
   const mcp = await startMcp();
   const results = [];
+  const negativeCases = [];
   try {
     const cliLaunchEvidence = path.join(rawRoot, 'cli-launch');
     const cliLaunch = await cli([
@@ -136,9 +151,9 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
       ['doctor', ['doctor', '--godot', godotPath], 'get_godot_version', { godotPath }],
       [
         'list-projects',
-        ['list-projects', '--directory', path.dirname(projectPath), '--recursive', 'true'],
+        ['list-projects', '--directory', projectPath, '--recursive', 'true'],
         'list_projects',
-        { directory: path.dirname(projectPath), recursive: true },
+        { directory: projectPath, recursive: true },
       ],
       ['project-info', ['project-info', '--project', projectPath], 'get_project_info', { projectPath }],
       ['scene-tree', ['scene-tree', '--project', projectPath], 'get_scene_tree', { projectPath }],
@@ -187,9 +202,9 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
           '--bridge',
           bridgePath,
           '--property',
-          'name',
+          'visible',
           '--value',
-          '"Flick"',
+          'false',
           '--evidence',
           path.join(rawRoot, 'cli-property-write'),
         ],
@@ -198,8 +213,8 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
           projectPath,
           godotPath,
           bridgePath,
-          property: 'name',
-          value: 'Flick',
+          property: 'visible',
+          value: false,
           evidenceDir: path.join(rawRoot, 'mcp-property-write'),
         },
       ],
@@ -295,14 +310,16 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
       timeoutMs: 10000,
     });
     results.push(await compare('scenario', scenarioCli, scenarioMcp, scenarioEvidenceCli, scenarioEvidenceMcp));
-    const invalidCli = await cli(['scene-tree', '--project', path.join(os.tmpdir(), 'missing-godot-project')]);
+    const missingProject = path.join(projectPath, 'missing-godot-project');
+    const invalidCli = await cli(['scene-tree', '--project', missingProject]);
     const invalidMcp = await mcp.call('get_scene_tree', {
-      projectPath: path.join(os.tmpdir(), 'missing-godot-project'),
+      projectPath: missingProject,
     });
+    negativeCases.push(negativeCase('invalid-project', invalidCli, invalidMcp, 'NOT_FOUND'));
     await writeJson('tool-negative-results.json', {
       schema_version: '0.1',
-      status: 'PASS',
-      cases: [recordError('invalid-project', invalidCli, invalidMcp)],
+      status: negativeCases.every((item) => item.verdict === 'PASS') ? 'PASS' : 'FAIL',
+      cases: negativeCases,
     });
   } finally {
     await mcp.close();
@@ -313,12 +330,17 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
     status: results.every((item) => item.verdict === 'PASS') ? 'PASS' : 'FAIL',
     results,
   });
+  const matrixPassed =
+    results.every((item) => item.verdict === 'PASS') &&
+    negativeCases.length > 0 &&
+    negativeCases.every((item) => item.verdict === 'PASS');
   await writeJson('release-matrix-summary.json', {
     schema_version: '0.1',
-    status: results.every((item) => item.verdict === 'PASS') ? 'PASS' : 'FAIL',
+    status: matrixPassed ? 'PASS' : 'FAIL',
     total: results.length,
     passed: results.filter((item) => item.verdict === 'PASS').length,
     failed: results.filter((item) => item.verdict !== 'PASS').map((item) => item.name),
+    negative: { total: negativeCases.length, failed: negativeCases.filter((item) => item.verdict !== 'PASS') },
     platforms: {
       windows: { status: 'REAL', host: process.platform },
       linux: { status: 'NOT_RUN' },
@@ -331,6 +353,7 @@ if (!existsSync(projectPath) || !existsSync(godotPath)) {
       'release-matrix-summary.json',
     ],
   });
+  if (!matrixPassed) process.exitCode = 1;
 }
 
 async function cli(args) {
@@ -435,14 +458,11 @@ function parseJson(value) {
 async function record(name, channel, result, evidenceDir) {
   await ensureEvidenceManifest(evidenceDir, { tool: name, channel });
   const parsed = channel === 'mcp' ? unwrap(result) : (parseJson(result.stdout) ?? parseJson(result.stderr));
-  const failed =
-    parsed?.status === 'FAIL' ||
-    (typeof parsed?.code === 'string' && ['FAILED', 'TIMEOUT', 'CANCELLED'].includes(parsed.code));
-  const transportOk = channel === 'mcp' ? Boolean(result.response?.result) : result.code === 0;
+  const succeeded = channel === 'mcp' ? mcpSucceeded(result) : cliSucceeded(result);
   return {
     name,
     channel,
-    verdict: transportOk && !failed ? 'PASS' : 'FAIL',
+    verdict: succeeded ? 'PASS' : 'FAIL',
     exit_code: result.code ?? 0,
     error_code: parsed?.code ?? null,
     parsed,
@@ -472,15 +492,12 @@ async function compare(name, cliResult, mcpResult, cliEvidence, mcpEvidence) {
       'inject-input',
       'screenshot',
     ].includes(name);
-  const mcpFailed = mcpValue?.status === 'FAIL' || ['FAILED', 'TIMEOUT', 'CANCELLED'].includes(mcpValue?.code);
-  const cliFailed = cliValue?.status === 'FAIL' || ['FAILED', 'TIMEOUT', 'CANCELLED'].includes(cliValue?.code);
+  const expectedReadback =
+    name !== 'set-runtime-property' || (cliValue?.response?.after === false && mcpValue?.response?.after === false);
   return {
     name,
     channel: 'A/B',
-    verdict:
-      cliResult.code === 0 && !cliFailed && Boolean(mcpResult.response?.result) && !mcpFailed && sameCapability
-        ? 'PASS'
-        : 'FAIL',
+    verdict: cliSucceeded(cliResult) && mcpSucceeded(mcpResult) && sameCapability && expectedReadback ? 'PASS' : 'FAIL',
     cli_exit_code: cliResult.code,
     mcp_error_code: mcpValue?.code ?? null,
     cli_result: cliValue,
@@ -490,11 +507,6 @@ async function compare(name, cliResult, mcpResult, cliEvidence, mcpEvidence) {
     cli_evidence_files: await files(cliEvidence),
     mcp_evidence_files: await files(mcpEvidence),
   };
-}
-function recordError(name, cliResult, mcpResult) {
-  const a = parseJson(cliResult.stderr),
-    b = unwrap(mcpResult);
-  return { name, cli_code: a?.code ?? null, mcp_code: b?.code ?? null, verdict: a?.code === b?.code ? 'PASS' : 'FAIL' };
 }
 async function files(directory) {
   if (!directory || !existsSync(directory)) return [];
@@ -507,7 +519,12 @@ async function files(directory) {
   }
 }
 async function writeJson(name, value) {
-  await writeFile(path.join(root, name), JSON.stringify(value, null, 2));
+  if ((await sourceIdentity(repo)).sourceHash !== candidateSource.sourceHash)
+    throw new Error('Source changed while generating matrix; results cannot qualify this candidate');
+  await writeFile(
+    path.join(root, name),
+    JSON.stringify({ ...value, sourceHash: candidateSource.sourceHash, source: candidateSource }, null, 2),
+  );
 }
 async function writeJsonPath(file, value) {
   await writeFile(file, JSON.stringify(value, null, 2));

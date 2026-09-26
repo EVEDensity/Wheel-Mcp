@@ -1,6 +1,9 @@
 import { readFile, access } from 'node:fs/promises';
 import process from 'node:process';
 import path from 'node:path';
+import { sourceIdentity } from './lib/production-manifest.mjs';
+import { validateRoadmapState } from './lib/roadmap-state.mjs';
+import { assessReleaseQualification } from './lib/release-qualification.mjs';
 
 const packageJson = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 const version = packageJson.version;
@@ -25,8 +28,15 @@ const readme = await readText('README.md');
 const readiness = await readText('docs/RELEASE-READINESS.md');
 if (!/Windows-only/.test(readme) || !/Godot 4\.7\.2/.test(readme))
   throw new Error('README must declare the Windows-only Godot 4.7.2 release scope');
-if (!/Windows-only stable production candidate/.test(readiness))
-  throw new Error('release readiness must record the Windows-only production-candidate decision');
+if (!/NOT_QUALIFIED/.test(readiness))
+  throw new Error('readiness must explicitly distinguish the current roadmap from historical candidate labels');
+const source = await sourceIdentity(path.resolve('.'));
+const roadmap = JSON.parse(await readText('docs/production-roadmap/tasks.json'));
+const roadmapErrors = await validateRoadmapState(
+  roadmap,
+  await readText('docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md'),
+  path.resolve('.'),
+);
 
 const matrixRoot = path.resolve('runs/matrix');
 const requiredFiles = [
@@ -35,7 +45,7 @@ const requiredFiles = [
   'tool-negative-results.json',
   'release-matrix-summary.json',
 ];
-const errors = [];
+const errors = [...roadmapErrors, ...assessReleaseQualification(roadmap, source.sourceHash)];
 const readJson = async (name) => {
   try {
     return JSON.parse(await readFile(path.join(matrixRoot, name), 'utf8'));
@@ -49,6 +59,8 @@ const contract = await readJson('tool-contract-matrix.json');
 const runtime = await readJson('tool-runtime-results.json');
 const negative = await readJson('tool-negative-results.json');
 const summary = await readJson('release-matrix-summary.json');
+for (const [name, value] of Object.entries({ contract, runtime, negative, summary }))
+  if (value?.sourceHash !== source.sourceHash) errors.push(`${name} matrix does not bind current sourceHash`);
 const serialized = JSON.stringify({ contract, runtime, negative, summary });
 if (serialized.includes('PENDING_REAL_RUN')) errors.push('matrix contains PENDING_REAL_RUN');
 const requiredResults = [
@@ -99,6 +111,8 @@ if (errors.length) {
       {
         status: 'FAIL',
         version,
+        sourceHash: source.sourceHash,
+        qualification: roadmap.qualification?.status ?? 'NOT_QUALIFIED',
         checks: [
           'version',
           'sdk-entrypoint',
