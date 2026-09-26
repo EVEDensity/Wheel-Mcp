@@ -22,9 +22,15 @@ If this helps your Godot workflow, **give it a Star**. Bug reports, reproducible
 
 Use `responseMode: "compact"` for concise results and `dev_loop` to combine actions, assertions, and screenshots into one verification call.
 
+Project-file writes and repair candidates now require the client's separate MCP form confirmation of the exact transaction. `approved: true` alone does not authorize edits; clients without form elicitation support fail closed. Each failed candidate rolls back before another is tested. See the [transaction/migration contract](docs/production-roadmap/TRANSACTION-CONTRACT.md).
+
+Optional editor channel: `get_editor_state` reads an already-enabled, privately authorized Godot 4.7.2 editor. Independently opted-in write clients can use exact approved `apply_editor_scene`, bounded resources, native Undo/Redo and `save_editor_scene`. File candidates validate in an isolated project before commit; explicit raw writes report `NOT_RUN`. Native save retains the dirty marker/history. Supported types are deliberately limited, not full authoring or online production qualification. See [manual editor setup](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) and [safe save/migration](docs/production-roadmap/SAFE-SAVE-CONTRACT.md).
+
 Seven controlled cases on 2026-09-13; payload tokens estimated as JSON characters / 4, not billable tokens or runtime speedups.
 
 [Test report](docs/REPAIR-BENCHMARK-2026-09-13.md) · [Reproduce](benchmarks/README.md)
+
+With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three alternating-order one-shot/persistent SDK query pairs. It records end-to-end time, engine starts, tool calls and serialized bytes, retaining every pair. Actual tokens, billing and whole-workflow efficiency are not measured; these results must not be mixed with the historical estimates above.
 
 ## Why Wheel-mcp?
 
@@ -40,7 +46,7 @@ Seven controlled cases on 2026-09-13; payload tokens estimated as JSON character
 
 ## Current status
 
-Release: `0.1.0-preview.2`. This is a preview, not a production-readiness claim. The documented runtime validation scope is Windows with Godot 4.7.2; Linux/macOS real-engine support remains unverified. Client compatibility must be tested per version.
+Release: `0.1.0-preview.2`; production qualification is **NOT_QUALIFIED**. The verified subset is **Windows-only with Godot 4.7.2**, for trusted local projects, not online deployment. T12–T15 and final G2 passed bounded native authoring/save/reopen acceptance (267 full tests, 74 required native checks and 20 consecutive cycles). T16–T35/G3–G6 remain pending; Linux/macOS real-engine support and human client compatibility must be separately qualified. Evidence and exact source identity are in the [task ledger](docs/production-roadmap/tasks.json).
 
 ## Quick start
 
@@ -53,7 +59,6 @@ git clone https://github.com/EVEDensity/Wheel-mcp.git
 cd Wheel-mcp
 npm run go:global
 ```
-
 
 Global setup also includes project configuration. The installer installs dependencies, builds, and looks for Godot. Existing Codex configuration is backed up automatically—**no manual backup needed**.
 

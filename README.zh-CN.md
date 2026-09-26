@@ -28,6 +28,8 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 [测试报告](docs/REPAIR-BENCHMARK-2026-09-13.md) · [复现步骤](benchmarks/README.md)
 
+另可在配置真实 `GODOT_PATH` 后运行 `npm run benchmark:comparison`，复现 3 组交替顺序的逐次启动/持久 SDK 会话对照。记录端到端耗时、引擎启动、工具调用与序列化字节，保留每组结果；不测量实际 Token、账单或完整开发工作流，不能与上述历史估算混用。
+
 ## 为什么值得试
 
 - 搜索场景、脚本和资源，减少在大型项目中翻文件的时间。
@@ -37,7 +39,9 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 当前状态
 
-版本：`0.1.0-preview.2`，仍处于预览阶段。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。编辑器持久化、撤销与事务能力仍在路线图中。
+版本：`0.1.0-preview.2`，仍处于预览阶段，生产资格为 **NOT_QUALIFIED**。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。T12–T15 已完成声明子集的编辑器持久化、撤销、资源与安全保存验收；更完整的 Godot 覆盖和生产运维仍在路线图中。
+
+可选编辑器通道读取已人工启用、私有授权的编辑器。独立 write opt-in 后，支持精确批准的 `apply_editor_scene`、有界资源、原生 Undo/Redo 和 `save_editor_scene`。文件候选先在隔离项目内经引擎校验再落盘；显式 raw 写入返回 NOT_RUN。原生保存保留脏标志和历史，不自动重载用户文档。支持类型有限，不代表完整创作或线上生产资格。接入与边界见 [编辑器连接契约](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) 与 [保存/迁移契约](docs/production-roadmap/SAFE-SAVE-CONTRACT.md)。
 
 ## 快速开始
 
@@ -172,17 +176,17 @@ $repo = (Get-Location).Path
 
 ## 使用边界
 
-- 运行时属性修改不等于保存编辑器场景；持久化与保存后重开验证仍需补齐。
+- 运行时属性修改不等于保存编辑器场景。编辑器保存需独立授权与精确批准，仅支持声明的原生类型；保存后 Undo 的文档/磁盘冲突会阻止普通文件覆盖。
 - 持久会话与单次运行使用不同实例，不能假设状态共享。
 - 仅运行可信项目。项目脚本能够执行代码，本服务器不是操作系统沙箱。
 - 复杂 3D、动画和 Shader 工作流尚不能视为完整支持。
 
 ## 主要路线图
 
-以下均为待完成的大方向，不是已交付能力承诺。详细验收标准见 [实施路线图](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) 与 [任务状态](docs/production-roadmap/tasks.json)。
+以下按声明子集区分已验收与待完成方向，不代表完整能力或生产资格承诺。详细验收标准见 [实施路线图](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) 与 [任务状态](docs/production-roadmap/tasks.json)。
 
-- [ ] **可靠执行层**：完善类型、错误、事件、超时和新代码生效验证。
-- [ ] **编辑器原生能力**：支持场景/节点持久化、撤销、事务和安全保存。
+- [x] **受控可靠执行子集**：类型、错误、事件、生命周期、权限和新进程验证已验收；长时间与跨平台资格另行验证。
+- [x] **受控编辑器原生子集**：场景/节点持久化、原生撤销、声明资源、事务和安全保存，含 20 轮同项目关闭重开验收。
 - [ ] **更完整的 Godot 覆盖**：逐步覆盖 UI、3D、动画、材质、Shader 与物理工作流。
 - [ ] **语义与上下文能力**：建立资源索引、结构化 Resources/Prompts 和可控上下文预算。
 - [ ] **客户端兼容与证据链**：提升 Codex/Cursor 兼容性、固定操作链、补丁验证和回归报告。
