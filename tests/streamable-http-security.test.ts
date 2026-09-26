@@ -10,6 +10,10 @@ import { z } from 'zod';
 import { createMcpServer } from '../src/mcp-server-sdk.js';
 import type { McpPermission } from '../src/mcp/access-policy.js';
 import { startStreamableHttpServer, type StreamableHttpConfig } from '../src/transports/streamable-http.js';
+import { existsSync } from 'node:fs';
+import { getProcessStatus } from '../src/godot-runtime.js';
+import { runRegistry } from '../src/run-registry.js';
+import { createMergedAbortSignal, getHttpRequestSignal } from '../src/transports/http-lifecycle.js';
 
 test('Streamable HTTP works with the official MCP TypeScript client', async () => {
   const config = await securityConfig({
@@ -31,6 +35,289 @@ test('Streamable HTTP works with the official MCP TypeScript client', async () =
   } finally {
     await client.close().catch(() => undefined);
     await transport.close().catch(() => undefined);
+    await instance.close();
+  }
+});
+
+test(
+  'closing an authenticated HTTP session reaps its owned real Godot run',
+  { skip: !existsSync(process.env.GODOT_PATH ?? ''), timeout: 20000 },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-http-owned-run-'));
+    await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
+    await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
+    const bridgePath = path.join(root, 'bridge.gd');
+    await writeFile(bridgePath, await readFile(path.resolve('godot-plugin/runtime_bridge.gd')));
+    const config = await securityConfig({
+      clients: [
+        {
+          ...tokenEntry('client-token'),
+          projectRoots: [root],
+          evidenceRoots: [root],
+          approvedGodotPaths: [process.env.GODOT_PATH!],
+          approvedBridgePaths: [bridgePath],
+        },
+        {
+          ...tokenEntry('attacker-token'),
+          clientId: 'attacker',
+          projectRoots: [root],
+          evidenceRoots: [root],
+          approvedGodotPaths: [process.env.GODOT_PATH!],
+        },
+      ],
+    });
+    const instance = await startStreamableHttpServer(config, createMcpServer);
+    const transport = new StreamableHTTPClientTransport(new URL(`http://${config.host}:${config.port}${config.path}`), {
+      requestInit: { headers: headersFor(config, 'client-token') },
+    });
+    const client = new Client({ name: 'owned-cleanup', version: '1.0.0' });
+    try {
+      await client.connect(transport);
+      const opened = await client.callTool({
+        name: 'launch_project',
+        arguments: {
+          godotPath: process.env.GODOT_PATH,
+          projectPath: root,
+          evidenceDir: path.join(root, 'evidence'),
+          headless: true,
+        },
+      });
+      assert.equal(opened.isError, undefined, JSON.stringify(opened));
+      const body = JSON.parse((opened.content as Array<{ text: string }>)[0].text) as { pid: number; run_id: string };
+      const pid = body.pid;
+      assert.equal(getProcessStatus(pid).running, true);
+      const bridgeOpened = await client.callTool({
+        name: 'open_runtime_bridge',
+        arguments: {
+          godotPath: process.env.GODOT_PATH,
+          projectPath: root,
+          bridgePath,
+          evidenceDir: path.join(root, 'bridge-evidence'),
+          headless: true,
+        },
+      });
+      assert.equal(bridgeOpened.isError, undefined, JSON.stringify(bridgeOpened));
+      const bridge = JSON.parse((bridgeOpened.content as Array<{ text: string }>)[0].text) as {
+        pid: number;
+        session_id: string;
+      };
+      const bridgePid = bridge.pid;
+      assert.equal(getProcessStatus(bridgePid).running, true);
+      const attackerTransport = new StreamableHTTPClientTransport(
+        new URL(`http://${config.host}:${config.port}${config.path}`),
+        { requestInit: { headers: headersFor(config, 'attacker-token') } },
+      );
+      const attacker = new Client({ name: 'cross-client-attack', version: '1.0.0' });
+      try {
+        await attacker.connect(attackerTransport);
+        for (const attempt of [
+          { name: 'stop_run', arguments: { runId: body.run_id } },
+          { name: 'get_process_status', arguments: { pid } },
+          { name: 'get_game_state', arguments: { sessionId: bridge.session_id } },
+        ]) {
+          const denied = await attacker.callTool(attempt);
+          assert.equal(denied.isError, true, JSON.stringify(denied));
+          assert.equal(JSON.parse((denied.content as Array<{ text: string }>)[0].text).code, 'FORBIDDEN');
+        }
+        const listed = await attacker.callTool({ name: 'list_runs', arguments: {} });
+        const listedBody = JSON.parse((listed.content as Array<{ text: string }>)[0].text) as { runs: unknown[] };
+        assert.deepEqual(listedBody.runs, []);
+      } finally {
+        await attacker.close().catch(() => undefined);
+        await attackerTransport.close().catch(() => undefined);
+      }
+      await transport.terminateSession();
+      assert.equal(getProcessStatus(pid).running, false);
+      assert.equal(getProcessStatus(bridgePid).running, false);
+      assert.equal(runRegistry.get(body.run_id)?.state, 'STOPPED');
+      assert.equal(runRegistry.get(bridge.session_id)?.state, 'STOPPED');
+    } finally {
+      await client.close().catch(() => undefined);
+      await transport.close().catch(() => undefined);
+      await instance.close();
+    }
+  },
+);
+
+test(
+  'abandoned HTTP client lease reaps its Godot run without DELETE',
+  { skip: !existsSync(process.env.GODOT_PATH ?? ''), timeout: 15000 },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-http-abandoned-run-'));
+    await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
+    await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
+    const config = await securityConfig({
+      sessionIdleTimeoutMs: 250,
+      clients: [
+        {
+          ...tokenEntry('client-token'),
+          projectRoots: [root],
+          evidenceRoots: [root],
+          approvedGodotPaths: [process.env.GODOT_PATH!],
+        },
+      ],
+    });
+    const instance = await startStreamableHttpServer(config, createMcpServer);
+    const transport = new StreamableHTTPClientTransport(new URL(`http://${config.host}:${config.port}${config.path}`), {
+      requestInit: { headers: headersFor(config, 'client-token') },
+    });
+    const client = new Client({ name: 'abandoned-lease', version: '1.0.0' });
+    try {
+      await client.connect(transport);
+      const opened = await client.callTool({
+        name: 'launch_project',
+        arguments: {
+          godotPath: process.env.GODOT_PATH,
+          projectPath: root,
+          evidenceDir: path.join(root, 'evidence'),
+          headless: true,
+        },
+      });
+      assert.equal(opened.isError, undefined, JSON.stringify(opened));
+      const body = JSON.parse((opened.content as Array<{ text: string }>)[0].text) as { pid: number; run_id: string };
+      assert.equal(getProcessStatus(body.pid).running, true);
+      await client.close(); // no terminateSession/DELETE: model a vanished client connection
+      const deadline = Date.now() + 6000;
+      while (runRegistry.get(body.run_id)?.state !== 'STOPPED' && Date.now() < deadline)
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      assert.equal(getProcessStatus(body.pid).running, false);
+      assert.equal(runRegistry.get(body.run_id)?.state, 'STOPPED');
+    } finally {
+      await client.close().catch(() => undefined);
+      await transport.close().catch(() => undefined);
+      await instance.close();
+    }
+  },
+);
+
+test('authenticated HTTP uses bounded responses with resumable pages', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-http-response-page-'));
+  const content = 'large-世界'.repeat(8000);
+  await writeFile(path.join(root, 'large.txt'), content);
+  const config = await securityConfig({
+    clients: [
+      { ...tokenEntry('client-token'), projectRoots: [root] },
+      { ...tokenEntry('other-token'), clientId: 'client-b', projectRoots: [root] },
+    ],
+  });
+  const instance = await startStreamableHttpServer(config, createMcpServer);
+  const transport = new StreamableHTTPClientTransport(new URL(`http://${config.host}:${config.port}${config.path}`), {
+    requestInit: { headers: { Authorization: 'Bearer client-token', Origin: config.allowedOrigins[0] } },
+  });
+  const client = new Client({ name: 'http-budget', version: '1.0.0' });
+  try {
+    await client.connect(transport);
+    const first = await client.callTool({
+      name: 'read_project_file',
+      arguments: { projectPath: root, filePath: 'large.txt' },
+    });
+    assert.equal(first.isError, undefined);
+    const body = JSON.parse((first.content as Array<{ type: string; text: string }>)[0].text);
+    assert.equal(body.truncated, true);
+    assert.ok((first.content as Array<{ text: string }>)[0].text.length < 32 * 1024);
+    const page = await client.callTool({ name: 'get_response_page', arguments: body.continuation });
+    assert.equal(page.isError, undefined);
+    const next = JSON.parse((page.content as Array<{ type: string; text: string }>)[0].text);
+    assert.equal(next.encoding, 'json');
+    assert.equal(typeof next.chunk, 'string');
+    const foreignTransport = new StreamableHTTPClientTransport(
+      new URL(`http://${config.host}:${config.port}${config.path}`),
+      { requestInit: { headers: { Authorization: 'Bearer other-token', Origin: config.allowedOrigins[0] } } },
+    );
+    const foreignClient = new Client({ name: 'foreign-budget', version: '1.0.0' });
+    try {
+      await foreignClient.connect(foreignTransport);
+      const forbidden = await foreignClient.callTool({ name: 'get_response_page', arguments: body.continuation });
+      assert.equal(forbidden.isError, true);
+      assert.equal(JSON.parse((forbidden.content as Array<{ text: string }>)[0].text).code, 'FORBIDDEN');
+    } finally {
+      await foreignClient.close().catch(() => undefined);
+      await foreignTransport.close().catch(() => undefined);
+    }
+  } finally {
+    await client.close().catch(() => undefined);
+    await transport.close().catch(() => undefined);
+    await instance.close();
+  }
+});
+
+test("two HTTP clients cannot control or enumerate each other's event subscriptions", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'mcp-http-sub-owner-'));
+  await writeFile(
+    path.join(root, 'events.jsonl'),
+    `${JSON.stringify({
+      schema_version: '0.1',
+      source: 'REAL',
+      run_id: 'run-evidence',
+      sequence: 1,
+      timestamp: new Date().toISOString(),
+      event: 'ready',
+      payload: {},
+    })}\n`,
+  );
+  const config = await securityConfig({
+    clients: [
+      { ...tokenEntry('alice-token'), clientId: 'alice', evidenceRoots: [root] },
+      { ...tokenEntry('bob-token'), clientId: 'bob', evidenceRoots: [root] },
+    ],
+  });
+  const instance = await startStreamableHttpServer(config, createMcpServer);
+  const url = new URL(`http://${config.host}:${config.port}${config.path}`);
+  const makeClient = async (token: string) => {
+    const transport = new StreamableHTTPClientTransport(url, { requestInit: { headers: headersFor(config, token) } });
+    const client = new Client({ name: token, version: '1.0.0' });
+    await client.connect(transport);
+    return { client, transport };
+  };
+  const alice = await makeClient('alice-token');
+  const bob = await makeClient('bob-token');
+  const body = (result: Awaited<ReturnType<Client['callTool']>>) =>
+    JSON.parse((result.content as Array<{ text: string }>)[0].text) as Record<string, unknown>;
+  try {
+    const created = await alice.client.callTool({
+      name: 'create_event_subscription',
+      arguments: { evidenceDir: root },
+    });
+    assert.equal(created.isError, undefined, JSON.stringify(created));
+    const id = body(created).subscription_id;
+    assert.equal(typeof id, 'string');
+    const owned = await alice.client.callTool({
+      name: 'list_event_subscriptions',
+      arguments: { evidenceDir: root },
+    });
+    assert.equal((body(owned).data as unknown[]).length, 1);
+    const foreign = await bob.client.callTool({
+      name: 'poll_event_subscription',
+      arguments: { evidenceDir: root, subscriptionId: id },
+    });
+    assert.equal(foreign.isError, true);
+    assert.equal(body(foreign).code, 'FORBIDDEN');
+    const hidden = await bob.client.callTool({
+      name: 'list_event_subscriptions',
+      arguments: { evidenceDir: root },
+    });
+    assert.deepEqual(body(hidden).data, []);
+    const aliceReconnect = await makeClient('alice-token');
+    try {
+      const recovered = await aliceReconnect.client.callTool({
+        name: 'poll_event_subscription',
+        arguments: { evidenceDir: root, subscriptionId: id },
+      });
+      assert.equal(recovered.isError, undefined, JSON.stringify(recovered));
+      const recoveredList = await aliceReconnect.client.callTool({
+        name: 'list_event_subscriptions',
+        arguments: { evidenceDir: root },
+      });
+      assert.equal((body(recoveredList).data as unknown[]).length, 1);
+    } finally {
+      await aliceReconnect.client.close().catch(() => undefined);
+      await aliceReconnect.transport.close().catch(() => undefined);
+    }
+  } finally {
+    await alice.client.close().catch(() => undefined);
+    await bob.client.close().catch(() => undefined);
+    await alice.transport.close().catch(() => undefined);
+    await bob.transport.close().catch(() => undefined);
     await instance.close();
   }
 });
@@ -113,8 +400,8 @@ test('HTTP concurrency slots cover tool execution and release after completion',
   let resolveStarted: (() => void) | undefined;
   const started = new Promise<void>((resolve) => (resolveStarted = resolve));
   let releaseSlow: (() => void) | undefined;
-  const serverFactory = (policy: Parameters<typeof createMcpServer>[0]) => {
-    const server = createMcpServer(policy);
+  const serverFactory = () => {
+    const server = new McpServer({ name: 'transport-slot-test', version: '1.0.0' });
     server.tool('slow_slot', 'hold a concurrency slot', {}, async () => {
       resolveStarted?.();
       await new Promise<void>((resolve) => (releaseSlow = resolve));
@@ -167,14 +454,15 @@ test('HTTP abort and graceful shutdown propagate cancellation to an MCP tool', a
   let observedSignal: AbortSignal | undefined;
   let resolveStarted: (() => void) | undefined;
   const handlerStarted = new Promise<void>((resolve) => (resolveStarted = resolve));
-  const serverFactory = (policy: Parameters<typeof createMcpServer>[0]) => {
-    const server = createMcpServer(policy);
+  const serverFactory = () => {
+    const server = new McpServer({ name: 'transport-abort-test', version: '1.0.0' });
     server.tool('slow_test', 'wait for cancellation', { delayMs: z.number() }, async ({ delayMs }, extra) => {
-      observedSignal = extra.signal;
+      const merged = createMergedAbortSignal(extra.signal, getHttpRequestSignal());
+      observedSignal = merged?.signal ?? extra.signal;
       resolveStarted?.();
       await new Promise<void>((resolve) => {
         const timer = setTimeout(resolve, delayMs);
-        extra.signal.addEventListener(
+        observedSignal?.addEventListener(
           'abort',
           () => {
             clearTimeout(timer);
@@ -183,7 +471,8 @@ test('HTTP abort and graceful shutdown propagate cancellation to an MCP tool', a
           { once: true },
         );
       });
-      return { content: [{ type: 'text', text: JSON.stringify({ aborted: extra.signal.aborted }) }] };
+      merged?.dispose();
+      return { content: [{ type: 'text', text: JSON.stringify({ aborted: observedSignal?.aborted }) }] };
     });
     return server;
   };

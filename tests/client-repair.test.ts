@@ -8,6 +8,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ClientRepairCoordinator, beginClientRepairSchema, submitRepairCandidateSchema } from '../src/client-repair.js';
 import { runClientRepair } from '../src/clients/repair-workflow.js';
 import { authorizeToolCall, createClientPolicy } from '../src/mcp/access-policy.js';
+import { fixtureApproval, enableFixtureApproval } from './helpers/project-approval.js';
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'client-repair-'));
@@ -42,7 +43,7 @@ async function fixture() {
   };
 }
 
-test('candidate contract forbids missing approval, oracle changes and unconstrained edits; HTTP requires run plus write', () => {
+test('candidate contract forbids missing approval, oracle changes and unconstrained edits; HTTP requires run plus write', async () => {
   assert.equal(submitRepairCandidateSchema.safeParse({ repairId: 'id', approved: false }).success, false);
   assert.equal(beginClientRepairSchema.safeParse({ diagnosticsScope: 'runtime' }).success, false);
   const policy = createClientPolicy({
@@ -52,7 +53,7 @@ test('candidate contract forbids missing approval, oracle changes and unconstrai
     evidenceRoots: [process.cwd()],
   });
   for (const name of ['begin_client_repair', 'submit_repair_candidate'])
-    assert.throws(() => authorizeToolCall(policy, name, {}), /run/);
+    await assert.rejects(authorizeToolCall(policy, name, {}), /run/);
 });
 
 test(
@@ -60,7 +61,11 @@ test(
   { skip: !process.env.GODOT_PATH, timeout: 60000 },
   async () => {
     const input = await fixture();
-    const client = new Client({ name: 'client-generated-repair-e2e', version: '1' });
+    const client = new Client(
+      { name: 'client-generated-repair-e2e', version: '1' },
+      { capabilities: { elicitation: { form: {} } } },
+    );
+    enableFixtureApproval(client);
     const transport = new StdioClientTransport({
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
@@ -100,7 +105,7 @@ test(
       });
       assert.equal(proposals, 2);
       assert.equal(approvals, 2);
-      assert.equal(result.status, 'PASS');
+      assert.equal(result.status, 'PASS', JSON.stringify(result));
       assert.equal(result.requestClosed, true);
       assert.deepEqual((result.changedFiles as string[]).sort(), ['config.gd', 'main.gd']);
       const reused = await client.callTool({
@@ -183,7 +188,7 @@ test(
   { skip: !process.env.GODOT_PATH, timeout: 30000 },
   async () => {
     const input = await fixture();
-    const coordinator = new ClientRepairCoordinator();
+    const coordinator = new ClientRepairCoordinator(Date.now, fixtureApproval);
     const packet = await coordinator.begin({ ...input, maxCandidates: 1 });
     assert.ok('repairId' in packet);
     if (!('repairId' in packet)) return;

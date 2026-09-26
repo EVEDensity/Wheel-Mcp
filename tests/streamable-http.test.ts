@@ -147,6 +147,15 @@ test('Streamable HTTP configuration rejects unsafe defaults and invalid scopes',
     () => readStreamableHttpConfig({ MCP_HTTP_HOST: '0.0.0.0', MCP_HTTP_BEARER_TOKEN: 'secret' }),
     /loopback/,
   );
+  assert.throws(
+    () =>
+      readStreamableHttpConfig({
+        MCP_HTTP_HOST: '0.0.0.0',
+        MCP_HTTP_ALLOW_REMOTE: 'true',
+        MCP_HTTP_BEARER_TOKEN: 'secret',
+      }),
+    /loopback/,
+  );
   assert.throws(() => readStreamableHttpConfig({}), /BEARER_TOKEN/);
   assert.throws(
     () =>
@@ -155,6 +164,14 @@ test('Streamable HTTP configuration rejects unsafe defaults and invalid scopes',
         MCP_HTTP_SCOPES: 'read,unknown',
       }),
     /invalid permission/,
+  );
+});
+
+test('a direct HTTP server config cannot bypass the local-only path safety boundary', async () => {
+  const local = readStreamableHttpConfig({ MCP_HTTP_BEARER_TOKEN: 'local-test-token' });
+  await assert.rejects(
+    () => startStreamableHttpServer({ ...local, host: '0.0.0.0' }, createMcpServer),
+    /remote MCP HTTP bind is disabled/,
   );
 });
 

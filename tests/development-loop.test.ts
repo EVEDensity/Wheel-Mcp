@@ -8,11 +8,12 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { ProjectEdits, evaluateCheck, developmentLoopSchema, executeDevelopmentLoop } from '../src/development-loop.js';
 import { createTimeoutContext } from '../src/timeout.js';
 import { authorizeToolCall, createClientPolicy } from '../src/mcp/access-policy.js';
+import { fixtureApproval, enableFixtureApproval } from './helpers/project-approval.js';
 test('exact edits validate the entire batch before writes; rollback preserves concurrent edits', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'loop-edit-'));
   const evidence = path.join(root, 'e');
   await writeFile(path.join(root, 'a.gd'), 'value = 1');
-  const edits = new ProjectEdits(root, evidence);
+  const edits = new ProjectEdits(root, evidence, fixtureApproval);
   await assert.rejects(
     edits.apply([
       { path: 'a.gd', find: '1', replace: '2' },
@@ -28,11 +29,25 @@ test('exact edits validate the entire batch before writes; rollback preserves co
     /hash/,
   );
   await edits.apply([{ path: 'a.gd', find: '1', replace: '2' }]);
+  assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 1', 'apply only composes the candidate');
+  assert.equal(
+    await edits.validate(async () => {
+      assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 2');
+      return false;
+    }),
+    false,
+  );
   assert.deepEqual(await edits.rollback(), []);
   assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 1');
-  const next = new ProjectEdits(root, evidence);
+  const next = new ProjectEdits(root, evidence, fixtureApproval);
   await next.apply([{ path: 'a.gd', find: '1', replace: '2' }]);
-  await writeFile(path.join(root, 'a.gd'), 'external');
+  await assert.rejects(
+    next.validate(async () => {
+      await writeFile(path.join(root, 'a.gd'), 'external');
+      return false;
+    }),
+    /concurrent/,
+  );
   assert.equal((await next.rollback()).length, 1);
   assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'external');
 });
@@ -54,19 +69,22 @@ test('assertions fail closed and dev_loop requires non-vacuous checks', () => {
     false,
   );
 });
-test('HTTP dev_loop needs both write and run and isolates baseline evidence', () => {
+test('HTTP dev_loop needs both write and run and isolates baseline evidence', async () => {
   const root = path.resolve('runs');
-  const args = { projectPath: root, bridgePath: root, evidenceDir: root };
+  const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
+  const args = { projectPath: root, bridgePath, godotPath: process.execPath, evidenceDir: root };
   const policy = createClientPolicy({ clientId: 'x', scopes: ['write'], projectRoots: [root], evidenceRoots: [root] });
-  assert.throws(() => authorizeToolCall(policy, 'dev_loop', args), /run/);
+  await assert.rejects(authorizeToolCall(policy, 'dev_loop', args), /run/);
   const full = createClientPolicy({
     clientId: 'x',
     scopes: ['write', 'run'],
     projectRoots: [root],
     evidenceRoots: [root],
+    approvedGodotPaths: [process.execPath],
+    approvedBridgePaths: [bridgePath],
   });
-  assert.throws(
-    () => authorizeToolCall(full, 'dev_loop', { ...args, baselinePath: path.resolve('package.json') }),
+  await assert.rejects(
+    authorizeToolCall(full, 'dev_loop', { ...args, baselinePath: path.resolve('package.json') }),
     /authorized root/,
   );
 });
@@ -115,7 +133,8 @@ test(
       stderr: 'pipe',
     });
     transport.stderr?.on('data', () => {});
-    const client = new Client({ name: 'repair-test', version: '1' });
+    const client = new Client({ name: 'repair-test', version: '1' }, { capabilities: { elicitation: { form: {} } } });
+    enableFixtureApproval(client);
     const args = {
       projectPath: project,
       godotPath: process.env.GODOT_PATH,
@@ -217,7 +236,7 @@ test(
     };
     const context = createTimeoutContext(20000);
     try {
-      const pending = executeDevelopmentLoop(input, context);
+      const pending = executeDevelopmentLoop(input, context, fixtureApproval);
       let pid: number | undefined;
       const deadline = Date.now() + 10000;
       while (Date.now() < deadline) {
@@ -244,7 +263,7 @@ test(
       assert.equal(cancelled.metrics.retryCount, 0);
       assert.equal(await readFile(path.join(root, 'code.gd'), 'utf8'), 'before');
       assert.throws(() => process.kill(pid!, 0));
-      const timed = await executeDevelopmentLoop({ ...input, timeoutMs: 1500 });
+      const timed = await executeDevelopmentLoop({ ...input, timeoutMs: 1500 }, undefined, fixtureApproval);
       assert.equal(timed.status, 'FAIL');
       assert.equal(timed.cleanup, true);
       assert.equal(timed.rolledBack, true);
