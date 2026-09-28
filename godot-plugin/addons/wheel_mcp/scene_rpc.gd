@@ -66,7 +66,7 @@ func dispatch(method: String, params: Dictionary, owner: String, identity: Dicti
 		if prepared.has("code"):
 			return prepared
 		var id := Crypto.new().generate_random_bytes(16).hex_encode()
-		var binding := {"sessionId": identity.sessionId, "projectId": identity.projectId, "projectPath": identity.projectPath, "ownerId": owner, "scenePath": root.scene_file_path, "operationId": operation, "operations": operations, "beforeHash": prepared.beforeHash, "afterHash": prepared.afterHash, "sourceHash": prepared.batch.source_hash, "historyVersion": prepared.batch.history_version}
+		var binding := {"sessionId": identity.sessionId, "projectId": identity.projectId, "projectPath": identity.projectPath, "ownerId": owner, "scenePath": root.scene_file_path, "operationId": operation, "operations": operations, "beforeHash": prepared.beforeHash, "afterHash": prepared.afterHash, "sourceHash": prepared.batch.source_hash, "historyVersion": prepared.batch.history_version, "dependencyHashes": prepared.batch.instance_sources}
 		var hash := JSON.stringify(binding).sha256_text()
 		var preview := binding.duplicate(true)
 		preview.merge({"status": "PASS", "plane": "editor", "persisted": false, "validation": "NOT_RUN", "planId": id, "planHash": hash, "expiresInMs": TTL, "undoSteps": 1})

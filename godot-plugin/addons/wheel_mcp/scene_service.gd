@@ -2,13 +2,17 @@
 extends RefCounted
 
 # Small native authoring core, reached by independently opted-in scene RPC.
-# Scripts, resource-bearing and inherited documents fail closed. Restricted
-# local instances can be created, but their roots/children remain protected.
+# Scripted/unknown documents fail closed. Native instances and inheritance
+# retain their boundaries; only explicit bounded overrides may cross them.
 # The only supported NodePath reference is local Node3D.visibility_parent.
 const Resources = preload("res://addons/wheel_mcp/resource_service.gd")
-const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D"]
+const Dependencies = preload("res://addons/wheel_mcp/scene_dependencies.gd")
+const UI = preload("res://addons/wheel_mcp/ui_service.gd")
+const Physics = preload("res://addons/wheel_mcp/physics_service.gd")
+const Animations = preload("res://addons/wheel_mcp/animation_service.gd")
+const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
 const PROPERTIES := ["position", "rotation", "scale", "visible", "visibility_parent"]
-const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "connect", "disconnect", "resource_assign", "resource_set"]
+const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
 
 static func _instance_boundary(node: Node, root: Node) -> Node:
 	var cursor := node
@@ -18,60 +22,87 @@ static func _instance_boundary(node: Node, root: Node) -> Node:
 		cursor = cursor.get_parent()
 	return null
 
-# Deliberately small source grammar BEFORE ResourceLoader. No scripts, objects,
-# imports, subresources, expressions, signals or dependencies can be evaluated.
-# Broader instance overrides/dependency graphs belong to T16, not a silent fallback.
+# Bounded transitive native grammar is checked before any dependency is loaded.
 static func _instance_source(raw: Variant, expected: Variant) -> Dictionary:
-	if not raw is String or not raw.begins_with("res://") or not raw.ends_with(".tscn") or raw.length() > 512 or not expected is String or expected.length() != 64:
-		return _error("INVALID_ARGUMENT", "Expected a fingerprinted local .tscn")
-	var relative: String = raw.substr(6)
-	var parent := "res://"
-	for part in relative.split("/"):
-		if part.is_empty() or part in [".", ".."] or part.to_lower() in [".git", ".godot", ".harness"] or ":" in part or "\\" in part or part.ends_with(" ") or part.ends_with("."):
-			return _error("FORBIDDEN", "Unsafe instance source path")
-		var directory := DirAccess.open(parent)
-		if directory == null or directory.is_link(part):
-			return _error("FORBIDDEN", "Linked instance source path")
-		parent = parent.path_join(part)
-	var file := FileAccess.open(raw, FileAccess.READ)
-	if file == null or file.get_length() > 65536:
-		return _error("UNSUPPORTED", "Instance source missing or exceeds 64 KiB")
-	var text := file.get_as_text()
-	file.close()
-	if text.sha256_text() != expected or FileAccess.get_sha256(raw) != expected:
-		return _error("CONFLICT", "Instance source changed")
-	var header := RegEx.new()
-	header.compile('^\\[gd_scene format=3(?: uid="uid://[a-zA-Z0-9_]+")?\\]$')
-	var node := RegEx.new()
-	node.compile('^\\[node name="[a-zA-Z0-9_-]+" type="(Node|Node2D|Node3D|Marker2D|Marker3D|MeshInstance3D)"(?: parent="[a-zA-Z0-9_./-]+")?\\]$')
-	var property := RegEx.new()
-	property.compile('^(position|rotation|scale|visible) = (true|false|[-+0-9.eE]+|Vector[23]\\([-+0-9.eE, ]+\\))$')
-	var first := true
-	var count := 0
-	for raw_line in text.split("\n"):
-		var line := raw_line.strip_edges()
-		if line.is_empty() or line.begins_with(";"):
-			continue
-		if first:
-			if header.search(line) == null:
-				return _error("UNSUPPORTED", "Instance source outside restricted native scene grammar")
-			first = false
-		elif node.search(line) != null:
-			count += 1
-		elif count == 0 or property.search(line) == null:
-			return _error("UNSUPPORTED", "Instance source has unsupported dependencies/properties")
-	if count == 0 or count > 32:
-		return _error("UNSUPPORTED", "Instance source must contain 1..32 native nodes")
-	var packed = ResourceLoader.load(raw, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE)
-	if not packed is PackedScene or FileAccess.get_sha256(raw) != expected:
-		return _error("CONFLICT", "Instance source failed load or changed")
-	var state: SceneState = packed.get_state()
-	if state.get_base_scene_state() != null or state.get_connection_count() != 0 or state.get_node_count() != count:
-		return _error("UNSUPPORTED", "Instance inheritance/connections not supported")
+	var graph := Dependencies.collect(raw, expected)
+	if graph.has("code"): return graph
+	var packed = ResourceLoader.load(raw, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE_DEEP)
+	if not packed is PackedScene: return _error("VALIDATION_FAILED", "Native dependency load failed")
+	for source in graph.hashes:
+		if FileAccess.get_sha256(source) != graph.hashes[source]: return _error("CONFLICT", "Dependency changed during native load")
+	return {"packed": packed, "hashes": graph.hashes}
+
+static func _state_signature(state: SceneState, depth: int = 0) -> String:
+	if state == null: return ""
+	if depth > 16 or state.get_node_count() > 100: return "UNSUPPORTED"
+	var entries: Array = []
 	for index in range(state.get_node_count()):
-		if str(state.get_node_type(index)) not in CLASSES or state.get_node_instance(index) != null:
-			return _error("UNSUPPORTED", "Nested/unknown instance type")
-	return {"packed": packed}
+		var properties: Dictionary = {}
+		for p in range(state.get_node_property_count(index)):
+			properties[str(state.get_node_property_name(index, p))] = var_to_bytes(state.get_node_property_value(index, p)).hex_encode()
+		var instance: PackedScene = state.get_node_instance(index)
+		entries.append([str(state.get_node_name(index)), str(state.get_node_type(index)), str(state.get_node_path(index)), properties, _state_signature(instance.get_state(), depth + 1) if instance != null else ""])
+	return JSON.stringify([state.get_path(), entries, _state_signature(state.get_base_scene_state(), depth + 1)]).sha256_text()
+
+# Cached SceneState is not proof of current disk dependencies. Compare the
+# actual live packed base/instances with fresh, prevalidated native states.
+static func _dependency_guard(packed: PackedScene) -> Dictionary:
+	var pending: Array[SceneState] = []
+	var state := packed.get_state()
+	if state.get_base_scene_state() != null: pending.append(state.get_base_scene_state())
+	for i in range(state.get_node_count()):
+		var instance: PackedScene = state.get_node_instance(i)
+		if instance != null: pending.append(instance.get_state())
+	var hashes: Dictionary = {}
+	for live in pending:
+		var path := live.get_path()
+		var fresh := _instance_source(path, FileAccess.get_sha256(path))
+		if fresh.has("code"): return fresh
+		if _state_signature(live) != _state_signature(fresh.packed.get_state()): return _error("CONFLICT", "Live dependency state differs from disk; reopen explicitly before authoring")
+		hashes.merge(fresh.hashes)
+		if hashes.size() > 32: return _error("UNSUPPORTED", "Combined scene graph exceeds 32 files")
+	for dirty in EditorInterface.get_unsaved_scenes():
+		if dirty != EditorInterface.get_edited_scene_root().scene_file_path and hashes.has(dirty): return _error("CONFLICT", "Scene dependency has unsaved editor changes")
+	return {"hashes": hashes}
+
+static func _verify_native_pack(root: Node, packed: PackedScene) -> Dictionary:
+	var candidate := packed.instantiate(PackedScene.GEN_EDIT_STATE_MAIN)
+	if candidate == null: return _error("VALIDATION_FAILED", "Native scene pack cannot instantiate")
+	var failure: Dictionary = {}
+	for node in _nodes(root):
+		var restored := candidate.get_node_or_null(root.get_path_to(node))
+		if restored == null or restored.get_class() != node.get_class():
+			failure = _error("CONFLICT", "Native pack would lose a scene node")
+			break
+		for property in PROPERTIES:
+			if property not in node: continue
+			if node is Control and property == "position": continue # Anchor/Container-derived geometry checked separately at runtime.
+			if restored.get(property) != node.get(property):
+				failure = _error("CONFLICT", "Native pack would lose a transform/visibility override")
+				break
+		if not failure.is_empty(): break
+		if node is Control and UI.signature(node) != UI.signature(restored):
+			failure = _error("CONFLICT", "Native pack would lose authored UI properties")
+			break
+		if Physics.signature(node) != Physics.signature(restored):
+			failure = _error("CONFLICT", "Native pack would lose authored physics properties")
+			break
+		if Animations.signature(node) != Animations.signature(restored):
+			failure = _error("CONFLICT", "Native pack would lose authored animation properties")
+			break
+		if Animations.graph_signature(node) != Animations.graph_signature(restored):
+			failure = _error("CONFLICT", "Native pack would lose authored animation graph")
+			break
+		var expected_owner := str(root.get_path_to(node.owner)) if node.owner != null else ""
+		var actual_owner := str(candidate.get_path_to(restored.owner)) if restored.owner != null else ""
+		if expected_owner != actual_owner:
+			failure = _error("CONFLICT", "Native pack would change ownership")
+			break
+		if node != root and not node.scene_file_path.is_empty() and candidate.is_editable_instance(restored) != root.is_editable_instance(node):
+			failure = _error("CONFLICT", "Native pack would lose editable-children flags")
+			break
+	candidate.free()
+	return failure
 
 static func _error(code: String, message: String) -> Dictionary:
 	return {"code": code, "message": message, "status": "FAIL", "persisted": false}
@@ -142,14 +173,27 @@ static func _reference_target(root: Node, node: Node, value: NodePath) -> Node:
 
 static func _references(root: Node) -> Dictionary:
 	var references: Array[Dictionary] = []
+	var animation_validation := Animations.validate_tree(root)
+	if animation_validation.has("code"): return animation_validation
 	for node in _nodes(root):
 		for property in node.get_property_list():
 			if not (int(property.usage) & PROPERTY_USAGE_STORAGE):
 				continue
 			var value: Variant = node.get(property.name)
+			if node is AnimationPlayer and str(property.name).begins_with("libraries/"): continue
+			if node is AnimationTree and str(property.name) == "tree_root": continue
 			if value is NodePath and not value.is_empty():
+				# Native AnimationMixer root defaults to its parent. This fixed local
+				# anchor is safe for a new player, but structural moves must not
+				# silently retarget tracks (guarded below).
+				if node is AnimationMixer and str(property.name) == "root_node" and value == NodePath("..") and node != root:
+					continue
+				if node is AnimationTree and str(property.name) == "advance_expression_base_node" and value == NodePath("."):
+					continue
+				if node is AnimationTree and str(property.name) == "anim_player" and node.tree_root != null:
+					continue # Validated against the local player by Animations.validate_tree.
 				if not node is Node3D or str(property.name) != "visibility_parent":
-					return _error("CONFLICT", "Unsupported stored NodePath reference")
+					return _error("CONFLICT", "Unsupported stored NodePath reference: " + node.get_class() + "." + str(property.name) + "=" + str(value))
 				var target := _reference_target(root, node, value)
 				if target == null:
 					return _error("CONFLICT", "Visibility parent is unresolved, external or wrong type")
@@ -194,8 +238,15 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 	var items: Array[Dictionary] = []
 	for node in nodes:
 		var props: Dictionary = {}
+		var animation_state := Animations.signature(node)
+		if animation_state.has("code"): return animation_state
+		var graph_state := Animations.graph_signature(node)
+		if graph_state.has("code"): return graph_state
 		for property in node.get_property_list():
 			if int(property.usage) & PROPERTY_USAGE_STORAGE:
+				if node is AnimationPlayer and str(property.name).begins_with("libraries/"): continue
+				if node is AnimationTree and str(property.name) == "tree_root": continue
+				if UI.derived(node, str(property.name)): continue
 				var value: Variant = node.get(property.name)
 				if not _safe_value(value, false):
 					return _error("UNSUPPORTED", "Resource/object storage needs the resource service")
@@ -214,36 +265,58 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 		var groups := node.get_groups().filter(func(group: StringName) -> bool: return not str(group).begins_with("_"))
 		groups.sort()
 		var item := {"id": _id(node, mapping), "path": str(root.get_path_to(node)), "name": str(node.name), "type": node.get_class(), "owner": _id(node.owner, mapping), "properties": props, "groups": groups, "signals": signals}
+		if node is AnimationPlayer: item["animation"] = animation_state
+		if node is AnimationTree: item["animationGraph"] = graph_state
+		if UI.managed(node): item["layoutOwner"] = "Container"
 		if node != root and not node.scene_file_path.is_empty():
 			item["instanceSource"] = node.scene_file_path
 			item["instanceHash"] = FileAccess.get_sha256(node.scene_file_path)
+			item["editableChildren"] = root.is_editable_instance(node)
 		items.append(item)
 	return {"nodes": items, "hash": JSON.stringify(items).sha256_text()}
 
 static func inspect_save(root: Node) -> Dictionary:
 	if root == null or EditorInterface.get_edited_scene_root() != root: return _error("ENGINE_UNAVAILABLE", "No current edited scene")
+	var animation_validation := Animations.validate_tree(root)
+	if animation_validation.has("code"): return animation_validation
+	var physics_validation := Physics.validate_tree(root)
+	if not physics_validation.is_empty(): return physics_validation
 	if not root.scene_file_path.begins_with("res://") or not FileAccess.file_exists(root.scene_file_path): return _error("UNSUPPORTED", "Only an existing saved source scene is supported")
 	var nodes := _nodes(root)
 	if nodes.size() > 100: return _error("UNSUPPORTED", "Scene save exceeds node budget")
 	for node in nodes:
 		if node.get_class() not in CLASSES or node.get_script() != null or node.unique_name_in_owner: return _error("UNSUPPORTED", "Scene save outside declared native subset")
 		var boundary := _instance_boundary(node, root)
-		if node != root and node.owner != root and (boundary == null or node.owner != boundary): return _error("CONFLICT", "Unowned/invalid owned node would be lost during pack")
+		if node != root and node.owner != root and (node.owner == null or not node.owner.is_ancestor_of(node) or node.owner.scene_file_path.is_empty()): return _error("CONFLICT", "Unowned/invalid owned node would be lost during pack")
 		if boundary == node:
 			var source := _instance_source(node.scene_file_path, FileAccess.get_sha256(node.scene_file_path))
 			if source.has("code"): return source
 		for signal_info in node.get_signal_list():
 			for connection in node.get_signal_connection_list(signal_info.name):
 				if int(connection.flags) & Object.CONNECT_PERSIST:
-					if str(signal_info.name) != "visibility_changed" or str(connection.callable.get_method()) not in ["hide", "show"] or int(connection.flags) != Object.CONNECT_PERSIST:
+					if str(signal_info.name) not in ["visibility_changed", "pressed"] or (str(signal_info.name) == "pressed" and not node is Button) or str(connection.callable.get_method()) not in ["hide", "show"] or int(connection.flags) != Object.CONNECT_PERSIST:
 						return _error("CONFLICT", "Save signal callback outside proven immediate subset")
 	var refs := _references(root)
 	if refs.has("code"): return refs
 	var state := document(root)
 	if state.has("code"): return state
 	var packed := PackedScene.new()
-	if packed.pack(root) != OK or packed.get_state().get_base_scene_state() != null: return _error("FORBIDDEN", "Invalid/inherited scene pack")
-	return {"packed": packed}
+	if packed.pack(root) != OK: return _error("FORBIDDEN", "Invalid native scene pack")
+	var guard := _dependency_guard(packed)
+	if guard.has("code"): return guard
+	var packed_readback := _verify_native_pack(root, packed)
+	if packed_readback.has("code"): return packed_readback
+	var hashes: Dictionary = {}
+	if packed.get_state().get_base_scene_state() != null:
+		var graph := Dependencies.collect(root.scene_file_path, FileAccess.get_sha256(root.scene_file_path))
+		if graph.has("code"): return graph
+		hashes.merge(graph.hashes)
+	for node in nodes:
+		if node == root or node.scene_file_path.is_empty(): continue
+		var graph := Dependencies.collect(node.scene_file_path, FileAccess.get_sha256(node.scene_file_path))
+		if graph.has("code"): return graph
+		hashes.merge(graph.hashes)
+	return {"packed": packed, "dependencyHashes": hashes}
 
 static func _owners(node: Node, mapping: Dictionary) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
@@ -314,6 +387,21 @@ class Batch extends RefCounted:
 			pair.node.owner = pair.owner
 
 	func _execute(record: Dictionary, reverse: bool) -> void:
+		if record.kind == "physics_set":
+			Physics.apply(record.node, record.before if reverse else record.after)
+			return
+		if record.kind == "animation_clips":
+			Animations.apply(record.node, record.library, reverse)
+			return
+		if record.kind == "animation_graph":
+			record.node.active = false
+			record.node.tree_root = null if reverse else record.root
+			record.node.anim_player = record.before_player if reverse else record.after_player
+			record.node.active = record.before_active if reverse else true
+			return
+		if record.kind == "ui_set":
+			UI.apply(record.node, record.before if reverse else record.after)
+			return
 		if record.kind == "resource_set":
 			var resource: Resource = record.resource
 			for property in record.before:
@@ -323,6 +411,8 @@ class Batch extends RefCounted:
 			return
 		var node: Node = record.node
 		match record.kind:
+			"editable_children":
+				root.set_editable_instance(node, record.before if reverse else record.after)
 			"create", "delete":
 				var attach: bool = (record.kind == "create") != reverse
 				if attach:
@@ -437,7 +527,7 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 	for operation in operations:
 		if not operation is Dictionary or operation.get("kind") not in OPERATIONS:
 			return _error("INVALID_ARGUMENT", "Unknown scene operation")
-		var fields: Array = {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
+		var fields: Array = {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "ui_set": ["kind", "path", "properties"], "physics_set": ["kind", "path", "properties"], "animation_clips": ["kind", "path", "clips"], "animation_graph": ["kind", "path", "graph"], "animation_blend": ["kind", "path", "blend"], "override": ["kind", "path", "property", "value"], "editable_children": ["kind", "path", "enabled"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
 		if operation.size() != fields.size():
 			return _error("INVALID_ARGUMENT", "Operation has missing or extra fields")
 		for field in fields:
@@ -455,12 +545,12 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 			var source := _instance_source(boundary.scene_file_path, FileAccess.get_sha256(boundary.scene_file_path))
 			if source.has("code"):
 				return source
-		if node != root and node.owner != root and (boundary == null or node.owner != boundary):
+		if node != root and node.owner != root and (node.owner == null or not node.owner.is_ancestor_of(node) or node.owner.scene_file_path.is_empty()):
 			return _error("CONFLICT", "Only current-scene ownership is supported")
 		for signal_info in node.get_signal_list():
 			for connection in node.get_signal_connection_list(signal_info.name):
 				if int(connection.flags) & Object.CONNECT_PERSIST:
-					if str(signal_info.name) != "visibility_changed" or str(connection.callable.get_method()) not in ["hide", "show"] or int(connection.flags) != Object.CONNECT_PERSIST:
+					if str(signal_info.name) not in ["visibility_changed", "pressed"] or (str(signal_info.name) == "pressed" and not node is Button) or str(connection.callable.get_method()) not in ["hide", "show"] or int(connection.flags) != Object.CONNECT_PERSIST:
 						return _error("CONFLICT", "Signal callback/flags outside the proven immediate visibility subset")
 	var references := _references(root)
 	if references.has("code"):
@@ -470,8 +560,15 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 	var packed := PackedScene.new()
 	if packed.pack(root) != OK:
 		return _error("CONFLICT", "Live scene cannot be inspected through PackedScene")
+	var guard := _dependency_guard(packed)
+	if guard.has("code"): return guard
+	var dependency_hashes: Dictionary = guard.hashes
 	if packed.get_state().get_base_scene_state() != null:
-		return _error("FORBIDDEN", "Inherited scene requires an explicit editing policy")
+		var graph := Dependencies.collect(root.scene_file_path, FileAccess.get_sha256(root.scene_file_path))
+		if graph.has("code"): return graph
+		dependency_hashes.merge(graph.hashes)
+		for operation in operations:
+			if operation.kind not in ["override", "editable_children"]: return _error("FORBIDDEN", "Inherited documents require explicit nonstructural override policy")
 	var source_hash := FileAccess.get_sha256(root.scene_file_path)
 	if source_hash.length() != 64:
 		return _error("CONFLICT", "Scene source cannot be fingerprinted")
@@ -489,6 +586,7 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 		node.scene_file_path = actual.scene_file_path
 		if actual.owner != null:
 			node.owner = _resolve(shadow, str(root.get_path_to(actual.owner)))
+		if node != shadow and not actual.scene_file_path.is_empty(): shadow.set_editable_instance(node, root.is_editable_instance(actual))
 	var batch := Batch.new()
 	batch.resource_refs = resource_refs
 	for ref in resource_refs:
@@ -512,15 +610,21 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 	batch.before_references = references.references
 	batch.source_hash = source_hash
 	batch.history_version = manager.get_history_undo_redo(manager.get_object_history_id(root)).get_version()
+	batch.instance_sources.merge(dependency_hashes)
 	for node in live_nodes:
 		if node != root and not node.scene_file_path.is_empty():
-			batch.instance_sources[node.scene_file_path] = FileAccess.get_sha256(node.scene_file_path)
+			var graph := Dependencies.collect(node.scene_file_path, FileAccess.get_sha256(node.scene_file_path))
+			if graph.has("code"):
+				shadow.free()
+				return graph
+			batch.instance_sources.merge(graph.hashes)
 	var removed: Array[Node] = []
 	var failure: Dictionary = {}
 	for operation in operations:
 		failure = _prepare_one(shadow, operation, mapping, batch, removed)
 		if not failure.is_empty():
 			break
+	if failure.is_empty(): failure = Physics.validate_tree(shadow)
 	if failure.is_empty():
 		var after_references := _references(shadow)
 		var after := document(shadow, mapping)
@@ -579,8 +683,10 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 				staged = live.duplicate(true)
 			else: staged = original
 			var before: Dictionary = {}
+			var resource_state := Resources.describe(live)
+			if resource_state.has("code"): return resource_state
 			for property in op.properties:
-				if property not in Resources.FIELDS.get(live.get_class(), []): return _error("UNSUPPORTED", "Resource property not supported")
+				if not resource_state.properties.has(property): return _error("UNSUPPORTED", "Resource property not supported")
 				before[property] = live.get_shader_parameter(property) if live is ShaderMaterial else live.get(property)
 			var update := Resources.set_values(staged, op.properties)
 			if update.has("code"): return update
@@ -623,7 +729,7 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 			mapping[child] = real.get_node(node.get_path_to(child))
 		var owners := _owners(node, mapping)
 		batch.created.append(real)
-		batch.instance_sources[op.scenePath] = op.sourceHash
+		batch.instance_sources.merge(source.hashes)
 		batch.records.append({"kind": "create", "node": real, "parent": mapping[parent], "name": op.name, "index": node.get_index(), "owners": owners})
 		return {}
 	if op.kind == "create":
@@ -649,15 +755,68 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 	if node == null:
 		return _error("NOT_FOUND", "Operation node path not found or outside scene")
 	var real: Node = mapping[node]
-	if _instance_boundary(node, root) != null:
+	var boundary := _instance_boundary(node, root)
+	if op.kind == "editable_children":
+		if boundary != node or not op.get("enabled") is bool: return _error("FORBIDDEN", "Editable children requires an instance root")
+		var previous := root.is_editable_instance(node)
+		batch.records.append({"kind": "editable_children", "node": real, "before": previous, "after": op.enabled})
+		root.set_editable_instance(node, op.enabled)
+		return {}
+	if boundary != null and op.kind != "override":
 		return _error("FORBIDDEN", "External instance roots and children are read-only under preserve policy")
+	if op.kind == "override":
+		if op.get("property") not in ["position", "rotation", "scale", "visible"]: return _error("UNSUPPORTED", "Only transform/visibility overrides supported")
+		var cursor := node.get_parent()
+		while cursor != null and cursor != root:
+			if not cursor.scene_file_path.is_empty() and not root.is_editable_instance(cursor): return _error("FORBIDDEN", "Enable editable children on every ancestor instance before override")
+			cursor = cursor.get_parent()
+		op = op.duplicate(true)
+		op.kind = "set"
+	if op.kind == "ui_set":
+		var prepared := UI.prepare(node, op.properties)
+		if prepared.has("code"): return prepared
+		batch.records.append({"kind": "ui_set", "node": real, "before": prepared.before, "after": prepared.after})
+		return {}
+	if op.kind == "physics_set":
+		var prepared := Physics.prepare(node, op.properties)
+		if prepared.has("code"): return prepared
+		batch.records.append({"kind":"physics_set", "node":real, "before":prepared.before, "after":prepared.after})
+		return {}
+	if op.kind == "animation_clips":
+		if not node is AnimationPlayer: return _error("INVALID_ARGUMENT", "Animation clips require AnimationPlayer")
+		var prepared := Animations.prepare(node, root, op.clips)
+		if prepared.has("code"): return prepared
+		if node.add_animation_library(Animations.LIBRARY, prepared.library) != OK:
+			return _error("VALIDATION_FAILED", "Native AnimationPlayer rejected library")
+		batch.records.append({"kind":"animation_clips", "node":real, "library":prepared.library})
+		return {}
+	if op.kind == "animation_graph":
+		if not node is AnimationTree: return _error("INVALID_ARGUMENT", "Animation graph requires AnimationTree")
+		var prepared := Animations.prepare_graph(node, root, op.graph)
+		if prepared.has("code"): return prepared
+		batch.records.append({"kind":"animation_graph", "node":real, "root":prepared.root, "before_player":node.anim_player, "after_player":prepared.player, "before_active":node.active})
+		node.tree_root = prepared.root
+		node.anim_player = prepared.player
+		node.active = true
+		return {}
+	if op.kind == "animation_blend":
+		if not node is AnimationTree: return _error("INVALID_ARGUMENT", "Animation blend requires AnimationTree")
+		var prepared := Animations.prepare_blend(node, root, op.blend)
+		if prepared.has("code"): return prepared
+		batch.records.append({"kind":"animation_graph", "node":real, "root":prepared.root, "before_player":node.anim_player, "after_player":prepared.player, "before_active":node.active})
+		node.tree_root = prepared.root
+		node.anim_player = prepared.player
+		node.active = true
+		return {}
 	if op.kind in ["delete", "rename", "reparent"] and node == root:
 		return _error("FORBIDDEN", "Scene root structural edits are protected")
 	if op.kind in ["rename", "reparent"]:
+		if node is AnimationMixer and op.kind == "reparent": return _error("CONFLICT", "Animation root path needs an explicit retarget policy")
 		var references := _references(root)
 		if references.has("code"):
 			return references
 		var parent: Node = node.get_parent() if op.kind == "rename" else _resolve(root, op.get("parent"))
+		if op.kind == "reparent" and node is Control and (UI.managed(node) or parent is Container): return _error("CONFLICT", "Container reparent needs an explicit layout policy")
 		var name: Variant = op.get("name") if op.kind == "rename" else str(node.name)
 		if parent == null or parent == node or node.is_ancestor_of(parent) or not _name(name):
 			return _error("INVALID_ARGUMENT", "Invalid parent/name or cycle")
@@ -710,6 +869,7 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 		removed.append(node)
 		return {}
 	if op.kind == "set":
+		if UI.managed(node) and op.get("property") in ["position", "scale", "rotation"]: return _error("CONFLICT", "Container manages child transforms; use UI layout policy")
 		if op.get("property") not in PROPERTIES:
 			return _error("UNSUPPORTED", "Property not in authoring capability subset")
 		var metadata: Dictionary = {}
@@ -742,8 +902,8 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 	var target := _resolve(root, op.get("target"))
 	if target != null and _instance_boundary(target, root) != null:
 		return _error("FORBIDDEN", "Connections into external instances require an override policy")
-	if target == null or op.get("signal") != "visibility_changed" or op.get("method") not in ["hide", "show"] or not node.has_signal(op.signal) or not target.has_method(op.method):
-		return _error("UNSUPPORTED", "Signal subset is visibility_changed -> hide/show without binds")
+	if target == null or op.get("signal") not in ["visibility_changed", "pressed"] or (op.signal == "pressed" and not node is Button) or op.get("method") not in ["hide", "show"] or not node.has_signal(op.signal) or not target.has_method(op.method):
+		return _error("UNSUPPORTED", "Signal subset is visibility_changed/Button.pressed -> hide/show without binds")
 	var callable := Callable(target, op.method)
 	var connected := node.is_connected(op.signal, callable)
 	if connected == (op.kind == "connect"):

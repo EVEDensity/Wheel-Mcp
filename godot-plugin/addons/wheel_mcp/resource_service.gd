@@ -1,5 +1,7 @@
 @tool
 extends RefCounted
+const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
+const ShaderAuthoring = preload("res://addons/wheel_mcp/shader_service.gd")
 
 # Explicit native types only. Handles never interpret a client path as a Resource.
 const FIELDS := {
@@ -11,9 +13,11 @@ const FIELDS := {
 	"RectangleShape2D": ["size"], "CircleShape2D": ["radius"],
 	"CapsuleShape2D": ["radius", "height"],
 	"BoxMesh": ["size"], "SphereMesh": ["radius", "height"],
+	"Theme": ["default_font_size"],
+	"StyleBoxFlat": ["bg_color", "border_color", "border_width_left", "border_width_top", "border_width_right", "border_width_bottom", "corner_radius_top_left", "corner_radius_top_right", "corner_radius_bottom_left", "corner_radius_bottom_right", "content_margin_left", "content_margin_top", "content_margin_right", "content_margin_bottom"],
 }
 const SHADER := "shader_type spatial;\nuniform vec4 tint : source_color = vec4(1.0);\nuniform float roughness = 0.5;\nvoid fragment() { ALBEDO = tint.rgb; ROUGHNESS = roughness; }\n"
-const NODE_PROPERTIES := ["material_override", "mesh", "shape", "physics_material_override"]
+const NODE_PROPERTIES := ["material_override", "mesh", "shape", "physics_material_override", "theme"]
 var _handles: Dictionary = {}
 var _exports: Dictionary = {}
 const TTL := 120000
@@ -30,22 +34,42 @@ static func encode(value: Variant) -> Variant:
 static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary:
 	if resource == null or resource.get_script() != null or not FIELDS.has(resource.get_class()):
 		return error("UNSUPPORTED", "Unsupported/scripted resource type")
+	var fields: Array = FIELDS[resource.get_class()]
+	if resource is ShaderMaterial and resource.shader is Shader and resource.shader.code != SHADER:
+		fields = ShaderAuthoring.fields(resource.shader)
+		if not ShaderAuthoring.supported(resource.shader): return error("UNSUPPORTED", "Unrecognized shader source or visual graph")
 	# Reject every opaque object graph, including texture, next_pass and cycles.
 	# A fixed authored shader is the only nested Resource supported in this slice.
 	var storage: Dictionary = {}
 	for property in resource.get_property_list():
 		if not (int(property.usage) & PROPERTY_USAGE_STORAGE): continue
+		if resource is Theme:
+			var inspected := UITheme.storage(resource)
+			if inspected.has("code"): return inspected
+			storage = inspected.storage
+			break
 		var value: Variant = resource.get(property.name)
 		if value is Object:
-			if resource is ShaderMaterial and str(property.name) == "shader" and value is Shader and value.get_script() == null and value.code == SHADER:
-				storage[str(property.name)] = SHADER.sha256_text()
+			if resource is ShaderMaterial and str(property.name) == "shader" and value is Shader and value.get_script() == null and (value.code == SHADER or ShaderAuthoring.supported(value)):
+				storage[str(property.name)] = value.code.sha256_text()
 				continue
-			return error("UNSUPPORTED", "Resource graph contains an unsupported dependency or cycle")
+			if resource is ShaderMaterial and resource.shader is Shader and resource.shader.code == ShaderAuthoring.TEXTURE_BLEND_TEXT and str(property.name) in ["shader_parameter/layer_a", "shader_parameter/layer_b"] and value is ImageTexture:
+				storage[str(property.name)] = value.get_image().get_data().hex_encode()
+				continue
+			return error("UNSUPPORTED", "Resource graph contains an unsupported dependency or cycle at " + str(property.name))
 		if value is Array or value is Dictionary:
 			return error("UNSUPPORTED", "Container resource graphs are not supported")
 		storage[str(property.name)] = var_to_bytes(value).hex_encode()
+	if resource is ShaderMaterial and resource.shader is Shader and resource.shader.code == ShaderAuthoring.TEXTURE_BLEND_TEXT:
+		for key in ["layer_a", "layer_b"]:
+			var texture: Variant = resource.get_shader_parameter(key)
+			if not texture is ImageTexture: return error("UNSUPPORTED", "Texture blend requires native ImageTexture tiles")
+			var image: Image = texture.get_image()
+			if image == null or image.get_width() != 2 or image.get_height() != 2 or image.get_format() != Image.FORMAT_RGBA8:
+				return error("UNSUPPORTED", "Texture tile changed type/dimensions")
+			storage[key] = image.get_data().hex_encode()
 	var properties: Dictionary = {}
-	for property in FIELDS[resource.get_class()]:
+	for property in fields:
 		var value: Variant = resource.get_shader_parameter(property) if resource is ShaderMaterial else resource.get(property)
 		properties[property] = encode(value)
 	var actual: Resource = mapping.get(resource, resource)
@@ -54,13 +78,15 @@ static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary
 static func set_values(resource: Resource, values: Dictionary) -> Dictionary:
 	var state := describe(resource)
 	if state.has("code"): return state
+	var fields: Array = state.properties.keys()
 	if values.is_empty() or values.size() > 8: return error("INVALID_ARGUMENT", "Expected 1..8 resource properties")
 	var decoded: Dictionary = {}
 	for property in values:
-		if property not in FIELDS[resource.get_class()]: return error("UNSUPPORTED", "Resource property not declared")
+		if property not in fields: return error("UNSUPPORTED", "Resource property not declared")
 		var expected: Variant = resource.get_shader_parameter(property) if resource is ShaderMaterial else resource.get(property)
 		var raw: Variant = values[property]
 		var value: Variant = raw
+		if (resource is StyleBoxFlat or resource is Theme) and expected is int and raw is float and is_finite(raw) and raw == floor(raw): value = int(raw)
 		if raw is Dictionary:
 			if raw.get("type") == "Color" and raw.size() == 5 and raw.get("r") is float and raw.get("g") is float and raw.get("b") is float and raw.get("a") is float:
 				value = Color(raw.r, raw.g, raw.b, raw.a)
@@ -70,11 +96,12 @@ static func set_values(resource: Resource, values: Dictionary) -> Dictionary:
 				value = Vector3(raw.x, raw.y, raw.z)
 			else: return error("INVALID_ARGUMENT", "Malformed typed resource value")
 		if typeof(value) != typeof(expected): return error("INVALID_ARGUMENT", "Resource property type mismatch")
+		if value is int and (value < 0 or value > 128 or (resource is Theme and value < 1)): return error("INVALID_ARGUMENT", "UI resource metric outside 0..128")
 		if value is float and (not is_finite(value) or value < 0 or value > 1000000): return error("INVALID_ARGUMENT", "Invalid numeric resource value")
 		if value is Vector2 and (not value.is_finite() or value.x <= 0 or value.y <= 0 or value.x > 1000000 or value.y > 1000000): return error("INVALID_ARGUMENT", "Invalid resource size")
 		if value is Vector3 and (not value.is_finite() or value.x <= 0 or value.y <= 0 or value.z <= 0 or value.abs().max_axis_index() < 0 or value.length() > 1000000): return error("INVALID_ARGUMENT", "Invalid resource size")
 		if value is Color and (not is_finite(value.r) or not is_finite(value.g) or not is_finite(value.b) or not is_finite(value.a) or value.r < 0 or value.g < 0 or value.b < 0 or value.a < 0 or value.r > 1 or value.g > 1 or value.b > 1 or value.a > 1): return error("INVALID_ARGUMENT", "Color must be finite 0..1")
-		if property in ["roughness", "metallic", "bounce"] and value > 1: return error("INVALID_ARGUMENT", "Resource fraction must be 0..1")
+		if property in ["roughness", "metallic", "bounce", "blend"] and value > 1: return error("INVALID_ARGUMENT", "Resource fraction must be 0..1")
 		if property in ["radius", "height"] and value <= 0: return error("INVALID_ARGUMENT", "Shape dimension must be positive")
 		decoded[property] = value
 	# Set only a detached duplicate during preflight. Never mutate a live object here.
@@ -138,6 +165,24 @@ func resolve(ref: Variant, owner: String, identity: Dictionary) -> Dictionary:
 func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictionary:
 	if params.get("sessionId") != identity.sessionId: return error("CONFLICT", "Resource editor session changed")
 	var action: Variant = params.get("action")
+	if action == "shader_capabilities":
+		return {"status": "PASS", "capability": "scene.shader/v1", "textTemplates": ["spatial-unshaded-tint/v1", "spatial-unshaded-texture-blend/v1"], "visualNodes": ["color", "mix"], "visualPorts": {"color": {"outputs": ["vec3", "float"]}, "mix": {"inputs": ["vec3", "vec3", "float"], "outputs": ["vec3"]}, "fragment": {"inputs": {"ALBEDO": "vec3"}}}, "renderModes": ["spatial/unshaded", "spatial/visual-fragment"], "supportedRenderers": ["forward_plus", "mobile", "gl_compatibility"], "editorRenderer": RenderingServer.get_current_rendering_method(), "renderValidation": "NOT_RUN", "persisted": false}
+	if action == "theme":
+		var resources: Dictionary = {}
+		if not params.get("items") is Array: return error("INVALID_ARGUMENT", "Missing Theme items")
+		for item in params.items:
+			if item is Dictionary and item.get("kind") == "stylebox":
+				var checked := resolve(item.get("ref"), owner, identity)
+				if checked.has("code"): return checked
+				resources[item.ref.handle] = checked.resource
+		var made := UITheme.create(params.items, resources)
+		if made.has("code"): return made
+		return retain(made.resource, owner, identity)
+	if action == "shader":
+		var authored := ShaderAuthoring.create(params.get("source"))
+		if authored.has("code"): return authored
+		if not authored.has("resource"): return error("VALIDATION_FAILED", "Native shader authoring produced no resource")
+		return retain(authored.resource, owner, identity)
 	if action == "adopt":
 		_expire()
 		var raw: Variant = params.get("path")
@@ -203,7 +248,7 @@ func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictio
 		var loaded: Resource = ResourceLoader.load(staged, "", ResourceLoader.CACHE_MODE_IGNORE)
 		var before := describe(copy)
 		var after := describe(loaded)
-		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties):
+		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties) or ((copy is Theme or copy is StyleBoxFlat or copy is ShaderMaterial) and after.storage != before.storage):
 			return error("VALIDATION_FAILED", "ResourceSaver roundtrip differs")
 		var content := FileAccess.get_file_as_string(staged)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(staged))

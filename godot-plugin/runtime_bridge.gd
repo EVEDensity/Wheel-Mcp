@@ -13,6 +13,13 @@ var last_collision: Dictionary = {}
 var collision_cache: Dictionary = {}
 var collision_history_limit: int = 32
 var shutting_down: bool = false
+var physics_requests: Array[Dictionary] = []
+
+# Direct space access is only safe in a native physics callback, not the TCP idle poll.
+class PhysicsSampler extends Node:
+	var bridge: SceneTree
+	func _physics_process(_delta: float) -> void:
+		bridge._sample_physics_request()
 
 func _initialize() -> void:
 	persistent_run_id = OS.get_environment("GODOT_HARNESS_RUN_ID")
@@ -36,6 +43,11 @@ func _initialize() -> void:
 		return
 	root.add_child(persistent_instance)
 	current_scene = persistent_instance
+	var sampler := PhysicsSampler.new()
+	sampler.name = "_WheelPhysicsSampler"
+	sampler.bridge = self
+	sampler.process_mode = Node.PROCESS_MODE_ALWAYS
+	root.add_child(sampler)
 	var port := _persistent_port()
 	if port > 0:
 		_start_persistent(port)
@@ -108,13 +120,13 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.2.0",
+			"bridgeVersion": "0.3.0",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"plane": "runtime",
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -154,6 +166,16 @@ func _handle_persistent_request(request: Dictionary) -> void:
 	if shutting_down:
 		_respond_error(request_id, -32000, "runtime is stopping")
 		return
+	if method == "query_collisions" or method == "get_specialized_state":
+		var physics_node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
+		if physics_node is Node3D or physics_node is NavigationAgent3D or (method == "query_collisions" and (physics_node is CollisionObject2D or physics_node is RayCast2D)):
+			if paused:
+				_respond_error(request_id, -32009, "physics sampling is unavailable while the scene is paused")
+			elif physics_requests.size() >= 16:
+				_respond_error(request_id, -32009, "physics query queue is full")
+			else:
+				physics_requests.append({"id":request_id, "method":method, "params":params.duplicate(true), "sceneId":persistent_instance.get_instance_id()})
+			return
 	if method == "get_specialized_state":
 		var specialized_result := _specialized_state(params)
 		if specialized_result.has("error"):
@@ -162,9 +184,13 @@ func _handle_persistent_request(request: Dictionary) -> void:
 			_respond(request_id, specialized_result)
 		return
 	if method == "wait_physics_frames":
-		var frames := clampi(int(params.get("frames", 2)), 1, 120)
-		for index in range(frames): await physics_frame
-		_respond(request_id, {"frames":frames, "physicsFrame":Engine.get_physics_frames()})
+		var raw_frames = params.get("frames", 2)
+		if not (raw_frames is int or raw_frames is float) or not is_finite(float(raw_frames)) or float(raw_frames) != floor(float(raw_frames)) or raw_frames < 1 or raw_frames > 120 or params.size() > 1 or (params.size() == 1 and not params.has("frames")):
+			_respond_error(request_id, -32602, "frames must be an integer in 1..120")
+		elif paused or physics_requests.size() >= 16:
+			_respond_error(request_id, -32009, "physics barrier unavailable or queue full")
+		else:
+			physics_requests.append({"id":request_id, "method":method, "frames":int(raw_frames), "targetFrame":Engine.get_physics_frames() + int(raw_frames), "sceneId":persistent_instance.get_instance_id()})
 		return
 	if method == "reload_scene":
 		var scene_path := str(params.get("scenePath", persistent_main_scene))
@@ -254,6 +280,25 @@ func _respond(request_id, value: Dictionary) -> void:
 		_respond_error(request_id, -32601, "response contains an unsupported Variant")
 		return
 	_emit_json({"jsonrpc": "2.0", "id": request_id, "result": encoded})
+
+func _sample_physics_request() -> void:
+	if shutting_down or physics_requests.is_empty(): return
+	if physics_requests[0].method == "wait_physics_frames" and Engine.get_physics_frames() < physics_requests[0].targetFrame: return
+	var request: Dictionary = physics_requests.pop_front()
+	if not is_instance_valid(persistent_instance) or persistent_instance.get_instance_id() != request.sceneId:
+		_respond_error(request.id, -32009, "scene changed before physics sampling")
+		return
+	if paused:
+		_respond_error(request.id, -32009, "scene paused before physics sampling")
+		return
+	if request.method == "wait_physics_frames":
+		_respond(request.id, {"frames":request.frames, "physicsFrame":Engine.get_physics_frames(), "schedule":"physics_process"})
+		return
+	var result: Dictionary = _query_collisions(request.params) if request.method == "query_collisions" else _specialized_state(request.params)
+	if result.has("error"):
+		_respond_error(request.id, int(result.get("errorCode", -32602)), str(result.error), {"nodePath":request.params.get("nodePath", ".")})
+	else:
+		_respond(request.id, result)
 
 func _respond_error(request_id, code: int, message: String, data: Dictionary = {}) -> void:
 	_emit_json({"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message, "data": data}})
@@ -684,6 +729,10 @@ func _query_collisions(params: Dictionary) -> Dictionary:
 	var requested_path := str(params.get("nodePath", "."))
 	var node := _resolve_node(persistent_instance, requested_path)
 	if node == null: return {"error": "node not found", "errorCode": -32004}
+	if node is CollisionObject3D or node is RayCast3D: return _query_collisions_3d(node, params)
+	for key in params:
+		if key not in ["nodePath", "historyLimit", "refresh"]:
+			return {"error":"3D query options are unsupported for this node type", "errorCode":-32601}
 	if not (node is CollisionObject2D or node is RayCast2D):
 		return {"error": "collision queries are unsupported for this node type", "errorCode": -32601}
 	var node_path := str(node.get_path())
@@ -727,6 +776,148 @@ func _query_collisions(params: Dictionary) -> Dictionary:
 	collision_cache[node_path] = cached
 	return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "nodePath":requested_path, "overlaps":cached["overlaps"], "lastCollision":cached["lastCollision"], "updatedAt":cached["updatedAt"], "history":cached["history"], "historyLimit":history_limit, "historyMode":"query_samples"}
 
+func _physics_identity(collider, shape: int, kind: String) -> Dictionary:
+	if not is_instance_valid(collider) or not collider is CollisionObject3D:
+		return {"error":"unassociated or unsupported 3D collider", "errorCode":-32601}
+	return {"name":str(collider.name), "path":str(collider.get_path()), "class":collider.get_class(), "shape":shape, "type":kind}
+
+func _uniform_physics_basis(basis: Basis) -> bool:
+	var scale := basis.get_scale()
+	return basis.determinant() > 0.0 and scale.x > 0.000001 and absf(scale.x - scale.y) <= scale.x * 0.00001 and absf(scale.x - scale.z) <= scale.x * 0.00001 and absf(basis.x.normalized().dot(basis.y.normalized())) < 0.0001 and absf(basis.x.normalized().dot(basis.z.normalized())) < 0.0001 and absf(basis.y.normalized().dot(basis.z.normalized())) < 0.0001
+
+func _query_collisions_3d(node: Node3D, params: Dictionary) -> Dictionary:
+	if node != persistent_instance and not persistent_instance.is_ancestor_of(node):
+		return {"error":"3D physics observation is restricted to the persistent scene", "errorCode":-32601}
+	var mode := str(params.get("queryMode", "auto"))
+	if mode == "auto": mode = "overlap" if node is Area3D else ("ray" if node is RayCast3D else "intersect_shape")
+	if (mode == "overlap" and not node is Area3D) or (mode == "ray" and not node is RayCast3D) or (mode == "intersect_shape" and not node is CollisionObject3D):
+		return {"error":"query mode does not match the node type", "errorCode":-32601}
+	if mode not in ["overlap", "ray", "intersect_shape"]: return {"error":"unknown query mode", "errorCode":-32602}
+	var overrides := false
+	for key in ["collisionMask", "collideWithBodies", "collideWithAreas", "exclude", "margin"]:
+		if params.has(key): overrides = true
+	if mode == "overlap" and overrides:
+		return {"error":"cached Area3D overlaps cannot override native monitoring filters; use intersect_shape", "errorCode":-32601}
+	if mode == "overlap" and not node.monitorable:
+		return {"error":"non-monitorable Area3D native overlaps are backend-sensitive; use intersect_shape", "errorCode":-32601}
+	if mode == "ray" and params.has("margin"):
+		return {"error":"ray queries do not have a shape margin", "errorCode":-32602}
+	if node is CollisionObject3D and not _uniform_physics_basis(node.global_basis):
+		return {"error":"non-uniform, mirrored or sheared collision transforms are unsupported", "errorCode":-32601}
+	var excluded: Array[RID] = []
+	var excluded_paths: Array[String] = []
+	for requested in params.get("exclude", []):
+		var excluded_node := _resolve_node(persistent_instance, str(requested))
+		if excluded_node == null: return {"error":"excluded node not found: " + str(requested), "errorCode":-32004}
+		if not excluded_node is CollisionObject3D: return {"error":"excluded node must be CollisionObject3D", "errorCode":-32601}
+		if excluded_node != persistent_instance and not persistent_instance.is_ancestor_of(excluded_node):
+			return {"error":"excluded collider is outside the persistent scene", "errorCode":-32601}
+		if not excluded.has(excluded_node.get_rid()):
+			excluded.append(excluded_node.get_rid())
+			excluded_paths.append(str(excluded_node.get_path()))
+	excluded_paths.sort()
+	if node is CollisionObject3D: excluded.append(node.get_rid())
+	if node is RayCast3D and node.exclude_parent and node.get_parent() is CollisionObject3D:
+		excluded.append(node.get_parent().get_rid())
+	var mask := int(params.get("collisionMask", node.collision_mask))
+	var bodies := bool(params.get("collideWithBodies", node.collide_with_bodies if node is RayCast3D else true))
+	var areas := bool(params.get("collideWithAreas", node.collide_with_areas if node is RayCast3D else mode == "overlap"))
+	var margin := float(params.get("margin", 0.0))
+	var max_results := int(params.get("maxResults", 32))
+	var native_ray := mode == "ray" and str(params.get("queryMode", "auto")) == "auto" and not overrides
+	var filter_policy := "native_monitoring" if mode == "overlap" else ("native_raycast" if native_ray else "explicit_query")
+	var filters := {"collisionMask":mask, "collideWithBodies":bodies, "collideWithAreas":areas, "exclude":excluded_paths, "margin":margin, "maxResults":max_results, "policy":filter_policy}
+	if node is Area3D: filters.merge({"monitoring":node.monitoring, "monitorable":node.monitorable})
+	# Include instance identity and the full normalized filter contract; cache misses are not empty success.
+	var cache_key := "3D:" + str(node.get_instance_id()) + ":" + mode + ":" + JSON.stringify(filters)
+	var limit := int(params.get("historyLimit", collision_history_limit))
+	if not bool(params.get("refresh", true)):
+		if not collision_cache.has(cache_key): return {"error":"no sample exists for these query filters", "errorCode":-32009}
+		var previous: Dictionary = collision_cache[cache_key].duplicate(true)
+		previous.history = previous.history.slice(0, limit)
+		previous.historyLimit = limit
+		previous.cached = true
+		return previous
+	if not collision_cache.has(cache_key) and collision_cache.size() >= 128:
+		return {"error":"collision sample cache is full; reload the scene to clear history", "errorCode":-32009}
+	var hits: Array = []
+	var owners: Array = []
+	var truncated := false
+	if mode == "overlap":
+		if not node.monitoring: return {"error":"Area3D monitoring is disabled", "errorCode":-32009}
+		for collider in node.get_overlapping_bodies() + node.get_overlapping_areas():
+			var identity := _physics_identity(collider, -1, "overlap")
+			if identity.has("error"): return identity
+			hits.append(identity)
+	elif mode == "ray":
+		if native_ray:
+			node.force_raycast_update()
+			if node.is_colliding():
+				var identity := _physics_identity(node.get_collider(), node.get_collider_shape(), "ray")
+				if identity.has("error"): return identity
+				identity.merge({"point":node.get_collision_point(), "normal":node.get_collision_normal(), "faceIndex":node.get_collision_face_index()})
+				hits.append(identity)
+		else:
+			var query := PhysicsRayQueryParameters3D.create(node.global_position, node.to_global(node.target_position), mask, excluded)
+			query.collide_with_bodies = bodies
+			query.collide_with_areas = areas
+			query.hit_back_faces = node.hit_back_faces
+			query.hit_from_inside = node.hit_from_inside
+			var hit: Dictionary = node.get_world_3d().direct_space_state.intersect_ray(query)
+			if not hit.is_empty():
+				var identity := _physics_identity(hit.get("collider"), int(hit.get("shape", -1)), "ray")
+				if identity.has("error"): return identity
+				identity.merge({"point":hit.position, "normal":hit.normal, "faceIndex":int(hit.get("face_index", -1))})
+				hits.append(identity)
+	else:
+		var total_shapes := 0
+		for owner_id in node.get_shape_owners():
+			if node.is_shape_owner_disabled(owner_id): continue
+			var local_transform: Transform3D = node.shape_owner_get_transform(owner_id)
+			if not _uniform_physics_basis(local_transform.basis):
+				return {"error":"unsupported shape-owner scale or shear", "errorCode":-32601}
+			for shape_index in range(node.shape_owner_get_shape_count(owner_id)):
+				total_shapes += 1
+				if total_shapes > 32: return {"error":"enabled shapes exceed the query budget", "errorCode":-32009}
+				var query := PhysicsShapeQueryParameters3D.new()
+				query.shape = node.shape_owner_get_shape(owner_id, shape_index)
+				if not (query.shape is BoxShape3D or query.shape is SphereShape3D or query.shape is CapsuleShape3D or query.shape is CylinderShape3D):
+					return {"error":"shape query supports box, sphere, capsule and cylinder only", "errorCode":-32601}
+				query.transform = node.global_transform * local_transform
+				query.collision_mask = mask
+				query.collide_with_bodies = bodies
+				query.collide_with_areas = areas
+				query.exclude = excluded
+				query.margin = margin
+				owners.append({"ownerId":owner_id, "shapeIndex":shape_index, "localTransform":local_transform, "worldTransform":query.transform, "shapeType":query.shape.get_class()})
+				var results: Array[Dictionary] = node.get_world_3d().direct_space_state.intersect_shape(query, max_results + 1)
+				if results.size() > max_results: truncated = true
+				for hit in results:
+					var identity := _physics_identity(hit.get("collider"), int(hit.get("shape", -1)), "intersect_shape")
+					if identity.has("error"): return identity
+					identity.merge({"queryOwnerId":owner_id, "queryShapeIndex":shape_index})
+					if hits.size() < max_results: hits.append(identity)
+					else: truncated = true
+	if hits.size() > max_results:
+		truncated = true
+		hits = hits.slice(0, max_results)
+	var timestamp := Time.get_ticks_msec()
+	var frame := Engine.get_physics_frames()
+	var history: Array = collision_cache.get(cache_key, {}).get("history", []).duplicate(true)
+	history.push_front({"timestamp":timestamp, "physicsFrame":frame, "matchCount":hits.size(), "truncated":truncated, "firstHit":hits[0].duplicate(true) if not hits.is_empty() else null})
+	while history.size() > limit: history.pop_back()
+	var latest: Dictionary = hits[0].duplicate(true) if not hits.is_empty() else {}
+	if not latest.is_empty():
+		latest.merge({"timestamp":timestamp, "physicsFrame":frame, "nodePath":str(node.get_path())})
+		last_collision = latest
+	var result := {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_COLLISION_QUERY", "dimension":"3D", "nodePath":str(params.nodePath), "queryMode":mode, "coordinateSpace":"world", "shapeOwnerTransformSpace":"local_to_collision_object", "schedule":"physics_process", "physicsFrame":frame, "filterPolicy":filter_policy, "filters":filters, "shapeOwners":owners, "overlaps":hits, "truncated":truncated, "lastCollision":latest, "updatedAt":timestamp, "history":history, "historyLimit":limit, "historyMode":"query_samples", "contactHistory":"NOT_IMPLEMENTED", "cached":false}
+	if node is RayCast3D:
+		result.merge({"rayTargetSpace":"ray_local", "rayFrom":node.global_position, "rayTo":node.to_global(node.target_position), "rayEnabled":node.enabled})
+	if node is CollisionObject3D: result["collisionLayer"] = node.collision_layer
+	result["physicsEngine"] = ProjectSettings.get_setting("physics/3d/physics_engine", "DEFAULT")
+	collision_cache[cache_key] = result.duplicate(true)
+	return result
+
 func _game_state_result(params: Dictionary) -> Dictionary:
 	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
 	if node == null: return {"error": "node not found", "errorCode": -32004}
@@ -745,9 +936,49 @@ func _specialized_state(params: Dictionary) -> Dictionary:
 	var node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
 	var state: Dictionary = {"animation": {}, "camera": {}, "input": {}, "navigation": {}, "audio": {}, "lastCollision": last_collision}
 	if node == null: return {"error":"node not found", "errorCode": -32004}
-	if node is Node3D:
+	if (node is Node3D or node is NavigationAgent3D) and node != persistent_instance and not persistent_instance.is_ancestor_of(node):
+		return {"error":"3D specialized observation is restricted to the persistent scene", "errorCode":-32601}
+	if node is Node3D and not node is Camera3D:
 		return {"error":"specialized state is unsupported for 3D nodes", "errorCode": -32601}
-	if node is AnimationPlayer: state.animation = {"current": node.current_animation, "position": node.current_animation_position, "playing": node.is_playing()}
+	if node is Camera3D:
+		state.camera = {"globalTransform":node.global_transform, "position":node.global_position, "current":node.is_current(), "projection":node.projection, "fov":node.fov, "size":node.size, "near":node.near, "far":node.far, "h_offset":node.h_offset, "v_offset":node.v_offset, "keep_aspect":node.keep_aspect}
+	if node is NavigationAgent3D:
+		if not node.get_parent() is Node3D:
+			return {"error":"NavigationAgent3D requires a Node3D parent", "errorCode":-32601}
+		var map: RID = node.get_navigation_map()
+		var iteration: int = NavigationServer3D.map_get_iteration_id(map) if map.is_valid() else 0
+		var navigation_path: Array = []
+		for position in node.get_current_navigation_path(): navigation_path.append(position)
+		if navigation_path.size() > 1024:
+			return {"error":"navigation path exceeds the observation budget", "errorCode":-32009}
+		# get_next_path_position mutates path progress; observers must not call it.
+		state.navigation = {"observation":"read_only", "synchronization":"READY" if iteration > 0 else "PENDING", "pathStatus":"AVAILABLE" if not navigation_path.is_empty() else "NOT_INITIALIZED_OR_EMPTY", "map_iteration":iteration, "path":navigation_path, "path_index":node.get_current_navigation_path_index(), "target_position":node.target_position, "velocity":node.velocity, "distance":node.distance_to_target()}
+		if iteration > 0:
+			state.navigation.merge({"navigation_finished":node.is_navigation_finished(), "target_reached":node.is_target_reached(), "target_reachable":node.is_target_reachable()})
+	if node is AnimationPlayer: state.animation = {"current": node.current_animation, "position": node.current_animation_position, "length":node.current_animation_length, "playing": node.is_playing()}
+	if node is AnimationTree:
+		if node.tree_root is AnimationNodeStateMachine:
+			var playback: Variant = node.get("parameters/playback")
+			if not playback is AnimationNodeStateMachinePlayback:
+				return {"error":"AnimationTree playback state is unavailable", "errorCode":-32009}
+			var conditions: Dictionary = {}
+			var machine: AnimationNodeStateMachine = node.tree_root
+			if machine.get_transition_count() > 17:
+				return {"error":"AnimationTree transitions exceed observation budget", "errorCode":-32601}
+			for index in range(machine.get_transition_count()):
+				var transition: AnimationNodeStateMachineTransition = machine.get_transition(index)
+				var condition := str(transition.advance_condition)
+				if not condition.is_empty(): conditions[condition] = node.get("parameters/conditions/" + condition)
+			state.animation = {"graphType":"state_machine", "active":node.active, "current":str(playback.get_current_node()), "position":playback.get_current_play_position(), "length":playback.get_current_length(), "conditions":conditions, "playerPath":str(node.anim_player)}
+		elif node.tree_root is AnimationNodeBlendTree:
+			var blend: AnimationNodeBlendTree = node.tree_root
+			var blend_id := ""
+			if blend.get_node_list().size() > 4: return {"error":"Blend graph exceeds observation budget", "errorCode":-32601}
+			for blend_name in blend.get_node_list():
+				if blend.get_node(blend_name) is AnimationNodeBlend2: blend_id = str(blend_name)
+			if blend_id.is_empty(): return {"error":"Blend2 node unavailable", "errorCode":-32601}
+			state.animation = {"graphType":"blend2", "active":node.active, "blendId":blend_id, "blendAmount":node.get("parameters/" + blend_id + "/blend_amount"), "playerPath":str(node.anim_player)}
+		else: return {"error":"AnimationTree graph type is outside the observed subset", "errorCode":-32601}
 	if node is Camera2D: state.camera = {"position": node.global_position, "enabled": node.enabled, "zoom": node.zoom}
 	if node is NavigationAgent2D:
 		var next_position: Vector2 = node.get_next_path_position()
@@ -769,6 +1000,9 @@ func _quiesce(node: Node) -> void:
 		node.stop()
 
 func _shutdown(request_id) -> void:
+	for request in physics_requests:
+		_respond_error(request.id, -32050, "runtime stopped before physics sampling")
+	physics_requests.clear()
 	_emit_notification("runtime_stopping", {"scene": persistent_main_scene})
 	paused = false
 	for child in root.get_children():

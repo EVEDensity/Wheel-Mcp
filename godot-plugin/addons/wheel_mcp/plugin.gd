@@ -16,6 +16,7 @@ var _lease_owned := false
 var _scene_rpc = preload("res://addons/wheel_mcp/scene_rpc.gd").new()
 var _resources = preload("res://addons/wheel_mcp/resource_service.gd").new()
 var _scene_save = preload("res://addons/wheel_mcp/scene_save.gd").new()
+var _asset_import = preload("res://addons/wheel_mcp/asset_import.gd").new()
 
 func _release_lease() -> void:
 	if _lease_owned:
@@ -83,14 +84,14 @@ func _enter_tree() -> void:
 		_release_lease()
 		return
 	_identity = {
-		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.1.0",
+		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.0",
 		"projectId": _config.get("projectId", ""), "projectPath": project_path,
 		"sessionId": Crypto.new().generate_random_bytes(16).hex_encode(),
 		"godotVersion": Engine.get_version_info().string, "editorPid": OS.get_process_id(),
 		"port": _server.get_local_port(), "capabilities": ["get_editor_state", "editor.cancel"], "authorized": true,
 	}
 	if not _config.get("writeClients", {}).is_empty():
-		_identity.capabilities.append_array(["scene.prepare", "scene.commit", "scene.discard", "scene.status", "resource.manage", "scene.export", "scene.verify", "scene.notify", "scene.observe"])
+		_identity.capabilities.append_array(["scene.prepare", "scene.commit", "scene.discard", "scene.status", "resource.manage", "scene.export", "scene.verify", "scene.notify", "scene.observe", "asset.scan", "asset.status", "scene.dependencies/v1", "scene.overrides/v1", "scene.ui/v1", "scene.physics3d/v1", "scene.animation/v1", "scene.shader/v1", "asset.import/v1"])
 	var staged := LEASE + "/endpoint.json"
 	var output := FileAccess.open(staged, FileAccess.WRITE)
 	if output == null:
@@ -174,7 +175,7 @@ func _message(peer: Dictionary, message: Variant) -> void:
 				removed = true
 		_reply(peer, id, {"cancelled": removed, "state": "CANCELLED" if removed else "NOT_PENDING"})
 		return
-	if method in ["scene.prepare", "scene.commit", "scene.discard", "scene.status", "resource.manage", "scene.export", "scene.verify", "scene.notify", "scene.observe"]:
+	if method in ["scene.prepare", "scene.commit", "scene.discard", "scene.status", "resource.manage", "scene.export", "scene.verify", "scene.notify", "scene.observe", "asset.scan", "asset.status"]:
 		if not _config.get("writeClients", {}).has(peer.client) or params.get("authority") != _config.writeClients[peer.client]:
 			_reply(peer, id, "Editor writes require independent per-client opt-in authority", "FORBIDDEN")
 			return
@@ -290,7 +291,9 @@ func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() >= request.deadline:
 		_reply(request.peer, request.id, "Editor queued read timed out", "TIMEOUT")
 	elif request.has("method"):
-		if request.method == "resource.manage":
+		if request.method in ["asset.scan", "asset.status"]:
+			_reply(request.peer, request.id, _asset_import.dispatch(request.method, request.params))
+		elif request.method == "resource.manage":
 			_reply(request.peer, request.id, _resources.dispatch(request.params, request.peer.client, _identity))
 		elif request.method in ["scene.export", "scene.verify", "scene.notify", "scene.observe"]:
 			_reply(request.peer, request.id, _scene_save.dispatch(request.method, request.params, request.peer.client, _identity, get_undo_redo()))

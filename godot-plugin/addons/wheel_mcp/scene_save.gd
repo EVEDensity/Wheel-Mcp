@@ -52,12 +52,19 @@ func dispatch(method: String, params: Dictionary, owner: String, identity: Dicti
 		if ResourceSaver.save(inspected.packed, staged) != OK: return Core._error("VALIDATION_FAILED", "Native PackedScene staging save failed")
 		var uid := ResourceLoader.get_resource_uid(root.scene_file_path)
 		if uid != ResourceUID.INVALID_ID and ResourceSaver.set_uid(staged, uid) != OK: return Core._error("VALIDATION_FAILED", "Scene UID preservation failed")
+		# Text serialization can omit defaults and a preset can change them on
+		# reload. Verify actual ResourceSaver bytes, not only the in-memory pack.
+		var loaded = ResourceLoader.load(staged, "PackedScene", ResourceLoader.CACHE_MODE_IGNORE_DEEP)
+		var roundtrip := Core._verify_native_pack(root, loaded) if loaded is PackedScene else Core._error("VALIDATION_FAILED", "Staged native scene cannot reload")
+		if roundtrip.has("code"):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(staged))
+			return roundtrip
 		var content := FileAccess.get_file_as_string(staged)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(staged))
 		if content.to_utf8_buffer().size() > 24000: return Core._error("UNSUPPORTED", "Native scene exceeds exact review budget")
 		var doc := Core.document(root)
 		if doc.has("code"): return doc
-		var binding := {"operationId": operation, "projectPath": identity.projectPath, "projectId": identity.projectId, "sessionId": identity.sessionId, "ownerId": owner, "scenePath": root.scene_file_path, "documentHash": doc.hash, "historyVersion": manager.get_history_undo_redo(manager.get_object_history_id(root)).get_version(), "sourceHash": FileAccess.get_sha256(root.scene_file_path), "contentHash": content.sha256_text()}
+		var binding := {"operationId": operation, "projectPath": identity.projectPath, "projectId": identity.projectId, "sessionId": identity.sessionId, "ownerId": owner, "scenePath": root.scene_file_path, "documentHash": doc.hash, "historyVersion": manager.get_history_undo_redo(manager.get_object_history_id(root)).get_version(), "sourceHash": FileAccess.get_sha256(root.scene_file_path), "contentHash": content.sha256_text(), "dependencyHashes": inspected.dependencyHashes}
 		var preview := binding.duplicate(true)
 		preview.merge({"status": "PASS", "planHash": JSON.stringify(binding).sha256_text(), "content": content, "persisted": false, "validation": "NOT_RUN"})
 		_plans[key] = {"preview": preview, "root": root, "expires": Time.get_ticks_msec() + 120000}
@@ -69,6 +76,8 @@ func dispatch(method: String, params: Dictionary, owner: String, identity: Dicti
 	if doc.get("hash") != plan.documentHash or manager.get_history_undo_redo(manager.get_object_history_id(root)).get_version() != plan.historyVersion: return Core._error("CONFLICT", "Live scene changed during save")
 	if method == "scene.verify":
 		if FileAccess.get_sha256(plan.scenePath) != plan.sourceHash: return Core._error("CONFLICT", "Scene file changed during save")
+		for source in plan.dependencyHashes:
+			if FileAccess.get_sha256(source) != plan.dependencyHashes[source]: return Core._error("CONFLICT", "Scene dependency changed during save")
 		return {"status": "PASS", "verified": true, "persisted": false}
 	if FileAccess.get_sha256(plan.scenePath) != plan.contentHash: return Core._error("CONFLICT", "Committed scene bytes changed")
 	_saved_documents[root.get_instance_id()] = {"root": weakref(root), "path": plan.scenePath, "contentHash": plan.contentHash, "documentHash": plan.documentHash}
