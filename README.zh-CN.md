@@ -39,9 +39,11 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 当前状态
 
-版本：`0.1.0-preview.2`，仍处于预览阶段，生产资格为 **NOT_QUALIFIED**。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。T12–T15 已完成声明子集的编辑器持久化、撤销、资源与安全保存验收；更完整的 Godot 覆盖和生产运维仍在路线图中。
+版本：`0.1.0-preview.2`，仍处于预览阶段，生产资格为 **NOT_QUALIFIED**。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。T12–T15 已完成声明子集的编辑器持久化、撤销、资源与安全保存验收。T16 补齐有界原生实例/继承覆盖、传递依赖保护和保守引用迁移，边界见 [场景依赖/迁移契约](docs/production-roadmap/SCENE-DEPENDENCY-CONTRACT.md)。T16–T21 的 G3 冻结源码门禁通过：全量 300/300、必需 Godot 105/105、连续原生周期 20/20，以及代表性工作流 18/18；自动化审批为 MOCK。T22–T35/G4–G6 尚待完成，默认 registry 恢复缺陷待 T31 修复。更完整的 Godot 覆盖和生产运维仍在路线图中。
 
-可选编辑器通道读取已人工启用、私有授权的编辑器。独立 write opt-in 后，支持精确批准的 `apply_editor_scene`、有界资源、原生 Undo/Redo 和 `save_editor_scene`。文件候选先在隔离项目内经引擎校验再落盘；显式 raw 写入返回 NOT_RUN。原生保存保留脏标志和历史，不自动重载用户文档。支持类型有限，不代表完整创作或线上生产资格。接入与边界见 [编辑器连接契约](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) 与 [保存/迁移契约](docs/production-roadmap/SAFE-SAVE-CONTRACT.md)。
+可选编辑器通道读取已人工启用、私有授权的编辑器。独立 write opt-in 后，支持精确批准的 `apply_editor_scene`、有界资源、原生 Undo/Redo 和 `save_editor_scene`。文件候选先在隔离项目内经引擎校验再落盘；显式 raw 写入返回 NOT_RUN。原生保存保留脏标志和历史，不自动重载用户文档。T17 新增有界 UI 布局和平面主题，要求显式插件能力 `scene.ui/v1`；用户已于 2026-09-27 确认单独人工视觉验收通过。T18 新增有界 3D 物理查询与编辑。T19 新增有界动画片段、状态机与两源 Blend2，要求 `scene.animation/v1`。T20 新增受控 shader 文本/纹理混合与 VisualShader Color/Mix 图，要求 `scene.shader/v1`，并通过 Vulkan 真实像素验收；不支持任意 shader。T21 新增有界 PNG 导入、二进制精确事务，以及隔离项目中的 2D/3D 内容切片；后续源码改动不能沿用旧资格。支持类型有限，不代表完整创作或线上生产资格。见 [UI 边界](docs/production-roadmap/UI-AUTHORING-CONTRACT.md)、[3D 物理边界](docs/production-roadmap/PHYSICS-3D-CONTRACT.md)、[动画边界](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md)、[Shader 边界](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md)、[内容工作流边界](docs/production-roadmap/CONTENT-WORKFLOWS-CONTRACT.md)、[编辑器连接契约](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) 与 [保存/迁移契约](docs/production-roadmap/SAFE-SAVE-CONTRACT.md)。
+
+T22 仍在进行中。`analyze_script_semantics` 明确为启发式摘要；新增 `query_script_semantics` 仅从已授权本地 Godot 编辑器/LSP 读取有界的符号、引用、定义和诊断。原生 LSP 引用可能包含同名字符串与注释，两个工具都不能授权 rename。见[语义服务边界](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md)。
 
 ## 快速开始
 
