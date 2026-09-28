@@ -31,10 +31,18 @@ export async function wireEditor(
   const [a, b] = InMemoryTransport.createLinkedPair();
   await server.connect(a);
   await client.connect(b);
+  const tools = await client.listTools();
+  const projectTools = new Set(
+    tools.tools.filter((tool) => tool.inputSchema.properties?.projectPath).map((tool) => tool.name),
+  );
   return {
     client,
     async call(name: string, args: Record<string, unknown> = {}) {
-      return client.callTool({ name, arguments: { projectPath: root, ...args } }, undefined, { timeout: 120000 });
+      return client.callTool(
+        { name, arguments: { ...(projectTools.has(name) ? { projectPath: root } : {}), ...args } },
+        undefined,
+        { timeout: 120000 },
+      );
     },
     async close() {
       await client.close();

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cp, mkdir, mkdtemp, readFile, realpath, rename, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
+import { copyFile, cp, mkdir, mkdtemp, readFile, realpath, rename, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -55,6 +56,8 @@ export async function startEditorFixture(
     scene?: string;
     files?: Record<string, string>;
     writeEnabled?: boolean;
+    /** TEST ONLY: isolated Godot language-server port for protocol probes. */
+    lspPort?: number;
     /** TEST ONLY: reopen an existing isolated temporary fixture without replacing scene bytes. */
     existingRoot?: string;
     writeCommand?: (stagedPath: string, json: string) => Promise<void>;
@@ -108,9 +111,41 @@ export async function startEditorFixture(
       : {}),
   };
   await writeFile(path.join(root, '.harness/editor-bridge.json'), JSON.stringify(config), { mode: 0o600 });
+  // TEST ONLY: each fixture gets an immutable copy of the executable and native
+  // self-contained editor settings. Concurrent editors must never write the
+  // user's global editor_settings file. Keep the profile on same-project reopen.
+  // Windows console builds are launchers for the sibling non-console binary.
+  if (process.platform === 'darwin') throw new Error('Isolated macOS app-bundle fixtures are not implemented');
+  const engineDir = path.join(root, '.harness/engine');
+  await mkdir(engineDir, { recursive: true });
+  const fixtureGodot = path.join(engineDir, path.basename(godotPath));
+  const copyExecutable = async (from: string, to: string) => {
+    try {
+      await copyFile(from, to, constants.COPYFILE_EXCL);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      // A reopened fixture may only reuse identical executable bytes.
+      if (!(await readFile(from)).equals(await readFile(to)))
+        throw new Error('Fixture engine bytes changed', { cause: error });
+    }
+  };
+  await copyExecutable(godotPath, fixtureGodot);
+  if (process.platform === 'win32' && /_console\.exe$/i.test(godotPath)) {
+    await copyExecutable(godotPath.replace(/_console\.exe$/i, '.exe'), fixtureGodot.replace(/_console\.exe$/i, '.exe'));
+  }
+  await writeFile(path.join(engineDir, '_sc_'), '');
   const child = spawn(
-    godotPath,
-    ['--headless', '--editor', '--path', root, 'res://main.tscn', '--log-file', path.join(root, '.harness/editor.log')],
+    fixtureGodot,
+    [
+      '--headless',
+      '--editor',
+      '--path',
+      root,
+      'res://main.tscn',
+      '--log-file',
+      path.join(root, '.harness/editor.log'),
+      ...(options.lspPort ? ['--lsp-port', String(options.lspPort)] : []),
+    ],
     { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   let output = '';
