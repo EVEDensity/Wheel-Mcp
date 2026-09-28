@@ -4,7 +4,7 @@
 
 [English README](../README.md) | [中文说明](../README.zh-CN.md)
 
-Current discovery: **September 26, 2026**, `0.1.0-preview.2`, **66 tools**. The official SDK discovery test checks the exact tool list and permission classification against the five registration modules. Editor authoring/resource/save additions are explicitly opt-in, scoped and approval-controlled; tool count is not production qualification.
+Current discovery: **September 28, 2026**, `0.1.0-preview.2`, **69 tools**. The official SDK discovery test checks the exact tool list and permission classification against the five registration modules. Editor authoring/resource/save additions are explicitly opt-in, scoped and approval-controlled; tool count is not production qualification.
 
 Use MCP `tools/list` on your running server for current schemas, defaults and required fields. This page is navigation, not a substitute for schema discovery. Tool count is not a gameplay-correctness score.
 
@@ -19,9 +19,9 @@ Current transaction migration: project text/scene writes, `dev_loop` edits and c
 - `dev_loop` owns a fresh runtime and cleanup for a bounded validation; `run_test_scene` uses the Scenario schema, not the `dev_loop` schema.
 - Bridge RPC names such as `get_property` are not standalone MCP tool names. They belong in the appropriate bridge/loop method field.
 
-There are **no standalone `get_script_errors` or `get_runtime_errors` MCP tools in this snapshot**. Use `dev_loop` diagnostic evidence and `get_debug_output` for collected logs; `analyze_script_semantics` is static analysis, not a substitute for Godot parser execution.
+There are **no standalone `get_script_errors` or `get_runtime_errors` MCP tools in this snapshot**. Use `dev_loop` diagnostic evidence and `get_debug_output` for collected logs; `analyze_script_semantics` is heuristic only. `query_script_semantics` requires an authorized local editor with a verified LSP listener and remains read-only.
 
-## project (21)
+## project (22)
 
 Registration: [`src/mcp/tools/project.ts`](../src/mcp/tools/project.ts).
 
@@ -30,9 +30,11 @@ Registration: [`src/mcp/tools/project.ts`](../src/mcp/tools/project.ts).
 | `analyze_collisions`            | Analyze static collision layers, masks and shapes in a Godot project.                                                   |
 | `get_context_pack`              | Build a read-only context pack.                                                                                         |
 | `get_editor_state`              | Read the authorized editor scene, dirty state, selection and filesystem; never auto-enable.                             |
-| `apply_editor_scene`            | Exact approved native batch with scoped resources and one Undo/Redo action; does not save.                              |
+| `apply_editor_scene`            | Exact approved native batch, bounded UI layout/Container ownership, scoped resources and one Undo/Redo; does not save. |
+| `import_project_png`            | Exact approved project-local PNG bytes (max 2 MiB), isolated native import/load before commit and optional live-editor confirmation. |
+| `move_project_scene`           | Exact approved scene move and reliable reference impact; isolated engine validation without old source, UID preserved; close editor first. |
 | `get_editor_scene_operation`    | Query original-session operation outcome after an uncertain submission; no blind replay.                                |
-| `manage_editor_resource`        | Manage bounded owner/session resource handles; declared native types only.                                              |
+| `manage_editor_resource`        | Manage bounded owner/session handles; 14 declared types including Theme and flat styles; typed Theme items.              |
 | `save_editor_resource`          | Native export/readback and exact approved transactional .tres save; return fresh reference.                             |
 | `save_editor_scene`             | Native scene export + isolated engine validation + approved commit + observable filesystem sync; dirty marker retained. |
 | `write_validated_project_files` | Validate an exact approved multi-file candidate in isolated res:// context before committing.                           |
@@ -74,7 +76,7 @@ Registration: [`src/mcp/tools/runtime.ts`](../src/mcp/tools/runtime.ts).
 | `get_runtime_operation_status` | Read the owning session's write receipt without repeating a mutation. |
 | `get_runtime_property`         | Read a runtime property.                                              |
 | `get_runtime_scene_tree`       | Query runtime scene tree.                                             |
-| `get_specialized_state`        | Read specialized runtime state.                                       |
+| `get_specialized_state`        | Read bounded native state, including Camera3D and read-only NavigationAgent3D.                                       |
 | `inject_runtime_input`         | Inject a runtime key event.                                           |
 | `launch_project`               | Launch a Godot project.                                               |
 | `list_active_runs`             | List currently active isolated runs.                                  |
@@ -83,7 +85,7 @@ Registration: [`src/mcp/tools/runtime.ts`](../src/mcp/tools/runtime.ts).
 | `open_runtime_bridge`          | Open a persistent Godot runtime bridge session.                       |
 | `pause_event_subscription`     | Pause a runtime event subscription.                                   |
 | `poll_event_subscription`      | Poll a subscription and advance its persistent cursor.                |
-| `query_runtime_collisions`     | Query runtime collisions and history.                                 |
+| `query_runtime_collisions`     | Query legacy 2D or physics-scheduled 3D overlap/ray/shape samples; not contact events.                                 |
 | `reclaim_orphan_runs`          | Reclaim orphaned processes recorded by the run registry.              |
 | `set_runtime_property`         | Write and read back a runtime property.                               |
 | `stop_project`                 | Stop a process.                                                       |
@@ -91,14 +93,15 @@ Registration: [`src/mcp/tools/runtime.ts`](../src/mcp/tools/runtime.ts).
 | `stop_runtime_bridge`          | Stop a persistent Godot runtime bridge session.                       |
 | `subscribe_runtime_events`     | Subscribe to runtime events with resumable cursor and filters.        |
 
-## diagnostics (2)
+## diagnostics (3)
 
 Registration: [`src/mcp/tools/diagnostics.ts`](../src/mcp/tools/diagnostics.ts).
 
 | Tool                       | Purpose                                                   |
 | -------------------------- | --------------------------------------------------------- |
-| `analyze_script_semantics` | Analyze GDScript structure and state-machine transitions. |
-| `get_debug_output`         | Read process evidence.                                    |
+| `analyze_script_semantics` | Heuristic GDScript structure/state summary; no parser diagnostics or safe refactor authority. |
+| `query_script_semantics`   | Authorized local Godot LSP symbols, references, definitions and syntax diagnostics; raw references can include comments/strings and never authorize rename. |
+| `get_debug_output`         | Read process evidence. |
 
 ## scenario (7)
 

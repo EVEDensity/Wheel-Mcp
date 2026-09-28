@@ -43,3 +43,15 @@
 - [Node3D](https://docs.godotengine.org/en/stable/classes/class_node3d.html)：变换分量与 visibility_parent 的 GeometryInstance3D 约束。
 
 文档用于选 API；可用性和行为以本仓库固定版本的真实测试为准。
+
+## T16 显式扩展
+
+上述 preserve/普通 set 的实例只读规则保留。新的依赖绑定批次、原生继承和显式 `override`/`editable_children` 按 [场景依赖契约](SCENE-DEPENDENCY-CONTRACT.md) 执行，不表示将所有实例节点改为可写。原生保存会额外核对实际打包后 owner/transform/visibility/editable 标记，依赖变更或丢覆盖拒绝。
+
+## T17 显式扩展
+
+有界 `ui_set`、Container 布局归属、Theme/StyleBoxFlat、可访问名称及 Button `pressed` 持久即时信号见 [UI 契约](UI-AUTHORING-CONTRACT.md)。本页前文为 T12 原始范围，不应用来声称新 UI 能力已完整资格化；T17 验收/人工视觉记录以任务清单为准。保存额外加载实际 ResourceSaver 暂存字节，拒绝预设默认值导致的重开属性变化。
+
+## T18 显式扩展
+
+新增 `physics_set`、Area3D/RayCast3D、受控物理配置与保存后的逐属性核对，见 [3D 物理观测契约](PHYSICS-3D-CONTRACT.md)。正均匀缩放、shape owners、native overlap 与几何相交语义有明确边界，不开放任意物理回调或导航编辑。

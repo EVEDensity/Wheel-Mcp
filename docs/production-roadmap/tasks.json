@@ -4,7 +4,7 @@
   "createdAt": "2026-09-14T16:05:02.6315047+08:00",
   "execution": {
     "mode": "strict-sequential",
-    "nextTask": "T16",
+    "nextTask": "T22",
     "allowedStatuses": ["todo", "in_progress", "blocked", "done"],
     "maxInProgress": 1,
     "autoCommit": false,
@@ -876,44 +876,155 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T16-SCENE-DEPENDENCIES",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T16-scene-dependencies.json",
+          "sha256": "b78d48e3f3fcb08c0d44fbf18fbac10bc9989fd99ffa08ec68416e18b86fd17d",
+          "sourceHash": "1c9fb1d054678b45808c5eb9458c29669d6ee5b55e9897d21bf80fe94d843876",
+          "createdAt": "2026-09-26T10:39:16Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source full build/format/lint, 279/279 full, 84/84 required real Godot, 20/20 native save-reopen cycles; no skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T16-SCENE-DEPENDENCIES"
+        },
+        {
+          "name": "Three-level inheritance/instances, override/owner persistence, editable flags, fresh dependencies, UID/depth/link negatives, safe reference move and authority/discovery contracts",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T16-SCENE-DEPENDENCIES"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-26：静态 heuristic 与权威 native SceneState 分离；三层实例/继承、显式 override/editable flags、原生 Undo/Redo/保存重开、基础属性传播、传递依赖 CAS、UID/环/深度/链接/脚本拒绝及可靠引用事务迁移通过。冻结源码 1c9fb1d0，279/279、84/84、20/20，build/format/lint PASS、0 skip。首轮完整失败及深层覆盖丢失修复保留。仅声明有限原生子集，动态/模糊引用迁移冲突；真人批准 MOCK，生产 NOT_QUALIFIED，G3 NOT_RUN。",
+      "completedAt": "2026-09-26T10:39:16Z"
     },
     {
       "id": "T17",
       "title": "UI 布局、主题与信号批量搭建",
       "phase": "P3",
-      "dependencies": ["T12", "T13", "T15", "T16"],
+      "dependencies": [
+        "T12",
+        "T13",
+        "T15",
+        "T16"
+      ],
       "estimatedDays": {
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T17-UI-AUTHORING",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T17-ui-authoring.json",
+          "sha256": "bf461d9b70b0c15aedae8dfe21820359204fd4755583f0cf425cdd0dc7abda26",
+          "sourceHash": "51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43",
+          "createdAt": "2026-09-26T11:27:20Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T17-HUMAN-VISUAL",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T17-human-visual-review.json",
+          "sha256": "7066e7cb58c6fbb0fbaa454f36a2c9075383b56e8330009e10e35fd8ba045fa8",
+          "sourceHash": "51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43",
+          "createdAt": "2026-09-27T11:10:52Z",
+          "source": "REAL"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source build/format/lint, 283/283 full, 88/88 required Godot suite, 20/20 native cycles and 40 artifact hashes; zero skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T17-UI-AUTHORING"
+        },
+        {
+          "name": "Three responsive localized viewports, Theme/storage/native save-reopen and real GUI button input",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T17-UI-AUTHORING"
+        },
+        {
+          "name": "Separate human visual review of SHA256-bound 800x600, 1280x720 and 1600x900 native screenshots",
+          "command": "User review of settings.png in three native viewport fixtures",
+          "required": true,
+          "kind": "human_visual",
+          "status": "PASS",
+          "exitCode": null,
+          "evidenceId": "T17-HUMAN-VISUAL"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-26：UI/Container/Theme/StyleBoxFlat/可访问名称/pressed 受控批次已实现。冻结源码 51506880，283/283 全量、88/88 必需 Godot、20/20 原生周期、40 产物 hash，build/format/lint PASS、0 skip；保存预设 grow 丢失先复现后拒绝，失败原件保留。三个原生 viewport 德语长文本/真实 Enter 输入/完整 authored 重开/外部主题保存通过。唯一待验为单独真人视觉复核，已发问未收到答复；T17 blocked，不用代理检查冒充真人 PASS。T18–T35 不提前启动，生产 NOT_QUALIFIED。 2026-09-27：用户明确视觉验收通过；当前源码未变、18 个 report/PNG hash 重核一致，REAL receipt 已绑定三张图片。T17 done，历史失败与 NOT_RUN 记录保留。",
+      "completedAt": "2026-09-27T11:10:52Z"
     },
     {
       "id": "T18",
       "title": "3D Transform、碰撞与导航可观测性",
       "phase": "P3",
-      "dependencies": ["T03", "T13", "T15", "T16"],
+      "dependencies": [
+        "T03",
+        "T13",
+        "T15",
+        "T16"
+      ],
       "estimatedDays": {
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T18-PHYSICS-3D",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T18-physics-3d.json",
+          "sha256": "ae2deeafdb8fed118e7dda63799270ca920d81cce3baa168511fbf14c6247151",
+          "sourceHash": "860d1e483acc39f238ddabb058c991ee96fd31911df31c775e175ebc685d4f5f",
+          "createdAt": "2026-09-28T02:22:37Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source build/format/lint, 288/288 full, 93/93 required Godot suite, 20/20 native cycles and 40 scene/PNG artifact hashes; zero skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T18-PHYSICS-3D"
+        },
+        {
+          "name": "3D runtime physics queries and bounded editor authoring/native save-reopen with negative cases",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T18-PHYSICS-3D"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-27：真人验收后按序启动，先复现 3D UNSUPPORTED，再实现有界物理查询、坐标/过滤、物理帧屏障、只读 Camera3D/NavigationAgent3D、碰撞 authoring/save-reopen。2026-09-28：冻结源码 860d1e48 的 build/format/lint、288/288 全量、93/93 Godot、20/20 原生周期及 40 个场景/截图哈希一致；真实引擎与 mock 表单分开记载，失败原件保留。T18 子集 done，不代表线上生产资格。默认 registry 旧 recovery lock 缺陷仍在 T31 待修，隔离测试通过不能替代产品恢复验证；G3–G6 NOT_RUN。",
+      "completedAt": "2026-09-28T02:33:23Z"
     },
     {
       "id": "T19",
@@ -924,12 +1035,40 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T19-ANIMATION-AUTHORING",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T19-animation-authoring.json",
+          "sha256": "8e851745e8b405c62fc9a6510e4892897ff6f16ad7e955f21e80f66303aebf09",
+          "sourceHash": "f44ca7b8c347e9ff663b2ba1cea8b88fce540dbd67a31779f4e1e17993cc9035",
+          "createdAt": "2026-09-28T04:50:46Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source build/format/lint, 291/291 full, 96/96 required Godot suite, 20/20 native cycles and 40 scene/PNG artifact hashes; zero skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T19-ANIMATION-AUTHORING"
+        },
+        {
+          "name": "Native clips, state machine, Blend2, exact transaction/Undo/save-reopen, input-driven runtime observation and shared-resource negative case",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T19-ANIMATION-AUTHORING"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-28：T18 完成后按序先复现 schema 拒绝；实现有界本地 2D position keyframe/AnimationLibrary、稳定 ID StateMachine 与两源 Blend2、路径/图/共享资源校验、一个原生 Undo 与安全保存重开。真实输入事件经 TEST-ONLY 脚本触发 idle→walk→attack，运行态返回当前状态/进度/条件，Blend2 参数 0.75 读回。冻结源码 f44ca7b8 全量 291/291、独立 Godot 96/96、20/20 原生周期及 40 哈希通过，0 skip；表单批准为 MOCK，非真人授权。边界见 ANIMATION-AUTHORING-CONTRACT.md；T20–T35/G3–G6 未通过，生产 NOT_QUALIFIED。",
+      "completedAt": "2026-09-28T04:54:08Z"
     },
     {
       "id": "T20",
@@ -940,12 +1079,40 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T20-SHADER-AUTHORING",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T20-shader-authoring.json",
+          "sha256": "c12f534e3a259e2273e49a85784783ca52c1a3d5e12074b66e590b30de71aa3f",
+          "sourceHash": "4570a16011239abd454111c6806e5cec3ea852c5b3a861b44fccd01ac14cdb04",
+          "createdAt": "2026-09-28T08:25:34Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source build/format/lint, 293/293 full, 98/98 required Godot, 20/20 native cycles and 40 scene/PNG hashes; zero skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T20-SHADER-AUTHORING"
+        },
+        {
+          "name": "Native shader text/VisualShader/texture blend, save-reopen, wrong-source/edge preflight refusal, Undo/Redo and Vulkan center-pixel proof",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T20-SHADER-AUTHORING"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-28：T19 后按序先复现 shader action UNSUPPORTED；受控精确文本 tint/texture-blend 模板、Color/Mix VisualShader 图、真实纹理采样、端口/拓扑重开校验、shader-preflight 诊断、原生保存/Undo/Redo 及固定 Vulkan 场景四张图片像素断言。冻结源码 4570a160 的 293/293 全量、98/98 独立 Godot、20/20 原生周期与 40 个 scene/PNG 哈希通过，0 skip。并发 4 的两次非 shader 间歇失败原件保留，并发 2 同断言通过；非任意 shader/GPU 编译器内部诊断，边界见 SHADER-AUTHORING-CONTRACT.md。T21–T35/G3–G6 尚未通过，生产 NOT_QUALIFIED。",
+      "completedAt": "2026-09-28T08:26:42Z"
     },
     {
       "id": "T21",
@@ -956,12 +1123,40 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T21-CONTENT-WORKFLOWS",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T21-content-workflows.json",
+          "sha256": "ba72a2268dbe9b0c8a6d17770c5f5e4c3989b89adbc038d8af920ef4576fd040",
+          "sourceHash": "ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626",
+          "createdAt": "2026-09-28T10:11:35Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "Frozen-source build/format/lint, 300/300 full, 105/105 required Godot, 20/20 native cycles and 40 scene/PNG hashes; zero skip",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T21-CONTENT-WORKFLOWS"
+        },
+        {
+          "name": "Native PNG import/scan, binary rollback, 2D and 3D content slices, save/reopen, runtime navigation/collision/input and scene reference move",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_editor",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T21-CONTENT-WORKFLOWS"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-09-28：先写二进制/导入/两类切片失败用例，再按原始失败修复 CRC 夹具、Godot 类型推断、脚本化场景结构化编辑越界、绑定插件场景移动误报、3D 动画维度及导航初始化。受限 PNG 经隔离引擎导入后精确事务提交；编辑器扫描/导入单独观察。2D/3D 均从空隔离项目走 MCP 创建、原生编辑/保存重开、受控文件补充导航与脚本、运行时读回。源码 ca4e4ebe 的 300/300 全量、105/105 Godot、20/20 原生周期和 40 个场景/PNG 哈希通过，零 skip。导航/脚本/Sprite2D 只经批准文本候选，非结构化编辑能力；审批 MOCK，限制见 CONTENT-WORKFLOWS-CONTRACT.md。G3 尚须单独聚合，T22–T35/G4–G6 未完成，生产 NOT_QUALIFIED。",
+      "completedAt": "2026-09-28T10:13:05Z"
     },
     {
       "id": "T22",
@@ -972,11 +1167,11 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
+      "status": "in_progress",
       "evidence": [],
       "verification": [],
       "blocker": null,
-      "notes": "",
+      "notes": "2026-09-29：已授权 Godot LSP 只读语义查询与内部 previewRename 候选预检，均非写入授权；真实 Godot 证明 references/rename/definition 会误含字符串/注释，保守预检整体拒绝。不同函数同名局部变量只取目标作用域；TEST-ONLY 候选经 MOCK 审批、隔离引擎及 SHA 事务成功，非法候选不改原件。先前源码 ab9cea41 的全量因系统 Temp ENOSPC 失败；现每轮门禁使用独立 Temp 根并在子进程退出后清理，隔离资源验证暂存亦在结束后清理，正式审计证据保留。当前源码 7aa8a47a 全量 302/302、独立 Godot 106/106、零失败/跳过，两轮 tempCleanup PASS，详情见 LOG-RETENTION-CONTRACT.md；旧共享 Temp 目录未追溯删除。动态引用、场景/NodePath、可靠语义及公开 rename 写入仍缺，T22 未完成，T23 不启动，生产 NOT_QUALIFIED。",
       "completedAt": null
     },
     {
@@ -1120,7 +1315,7 @@
       "evidence": [],
       "verification": [],
       "blocker": null,
-      "notes": "",
+      "notes": "2026-09-27 T18 恢复复查：默认 registry primary lock 死 owner + legacy 空 .lock.recover 导致永久 TIMEOUT；原件 hash/path 与失败 baseline 在 WORKLOG。必须补回收 guard 的崩溃/PID 复用/活 owner 保留测试及安全迁移/人工恢复，不可将隔离 registry 测试通过冒充产品恢复缺陷已修复。当前仍 todo，未提前执行 T31。",
       "completedAt": null
     },
     {
@@ -1280,9 +1475,18 @@
       "id": "G3",
       "tasks": ["T16", "T17", "T18", "T19", "T20", "T21"],
       "predecessorGates": ["G0", "G1", "G2"],
-      "status": "NOT_RUN",
-      "evidence": [],
-      "sourceHash": null
+      "status": "PASS",
+      "evidence": [
+        {
+          "id": "G3-FINAL-GATE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/G3-gate.json",
+          "sha256": "8248664be0c23371139a684f9dc508d96692fc5b02abbbea8f7bdcf157a9b3a9",
+          "sourceHash": "ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626",
+          "createdAt": "2026-09-28T10:32:34Z",
+          "source": "MIXED"
+        }
+      ],
+      "sourceHash": "ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626"
     },
     {
       "id": "G4",

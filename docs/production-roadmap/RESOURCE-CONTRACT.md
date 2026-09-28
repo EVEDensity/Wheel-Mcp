@@ -23,3 +23,11 @@ ResourceRef 含 type、随机 handle、resourceType、projectId、sessionId、ow
 ## API 依据
 
 [ResourceSaver](https://docs.godotengine.org/en/stable/classes/class_resourcesaver.html)、[Resource](https://docs.godotengine.org/en/stable/classes/class_resource.html) 的复制、保存及 UID API。文档决定 API 选择，结果以本仓库固定 Godot 4.7.2 的实际测试为准。文档快照忽略 Godot 保留的下划线组，并排序非内部组；[Node.get_groups](https://docs.godotengine.org/en/stable/classes/class_node.html) 不保证组顺序，\_root_canvas 等内部组仅在入树后生成，不能当用户编辑差异。
+
+## T17 UI 资源扩展
+
+新增 Theme、StyleBoxFlat 共 14 种；主题 item 及完整 storage/native export/save-reopen 校验见 [UI 契约](UI-AUTHORING-CONTRACT.md)。需要插件 `scene.ui/v1`；StyleBoxFlat 为 Theme 子项而非节点材质。原资源逐类导出测试仍包含两种新类型，Theme 挂 Control.theme，样式的组合 Theme 同项目重开由 UI 专项验收，不将其错误地赋到 material_override。
+
+## T20 Shader 资源扩展
+
+上述固定 ShaderMaterial 描述是 T13 当时的范围；T20 新增两个精确文本模板、嵌入 2×2 纹理混合与有界 Color/Mix VisualShader 图，不放开任意 shader 程序。能力发现、资源哈希/原生重开、负例和真实 Vulkan 截图的详细边界见 [Shader 契约](SHADER-AUTHORING-CONTRACT.md)。

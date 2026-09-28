@@ -252,3 +252,148 @@ Gate：本次实际执行结果 / 尚未执行项 / 证据是否失效
 - **发布门禁实际拒绝**：第一次检查先发现英文 README 缺检查器要求的精确 Windows-only 声明，已改为“Windows-only/Godot 4.7.2、可信本机有限预览、NOT_QUALIFIED”，未改实现或放宽门禁。最终 `npm run release:check` 真实 exit 1 / FAIL，52 条均为 T16–T35 未完成、G3–G6 未运行、G0/G1 非最终源码及资格不满足；当前证据/矩阵完整性无额外报告错误。保留 `runs/production-roadmap/release-check-final-2026-09-26.json`。这是预期拒绝，不是生产 PASS。
 - **交付边界**：本次请求的整合、权限/失败证据、日志诊断、T12–T15、门禁与效率路线已验收；整个 36 项生产路线尚未完成，不能线上发布，也不能用公网代理绕过 loopback。当前源码/哈希与命令结果汇总在 `docs/production-roadmap/evidence/route-completion-2026-09-26.json`。测试确认/特定故障注入是 MOCK，真人客户端、其他平台、任意 UI/脚本/Shader 等仍需后续资格。
 - **保留与外部操作**：未提交、推送、发布、部署或启用用户项目插件；用户 audit 文件夹未修改。`runs/` 与临时原生项目不入 Git，迁移需保留实际文件及 hash 或重跑，不能只凭摘要恢复资格。
+
+## 2026-09-26：继续完整路线，T16 启动
+
+- **启动自查**：干净 main HEAD `663f9208e95b8b14207220a2c7df6bbf10999d08`；源码仍为 `27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610`，与既有 G2 一致。Node 24.18.0/npm 11.16.0/Godot 4.7.2.stable.official.ed1daf0bf，C 盘约 119 GiB 空闲；任务校验 PASS。未发现仓库/父目录 AGENTS.md。
+- **范围**：先处理 T16；根 instance 判定与 heuristic 标注、有界依赖/UID/CAS、原生三层实例继承及局部覆盖保存重开、引用迁移必须逐项验收。仅测试临时项目，不启用用户项目插件，不自动提交/推送/发布。T17–T35 不提前启动。
+- **方法**：先增加能复现错误的断言，再修改；保留失败记录，不将静态推断或模拟批准冒充权威原生结果/真人批准。当前 T16 in_progress，生产仍 NOT_QUALIFIED。
+
+## 2026-09-26：T16 小步实现与自查，完整回归进行中
+
+- **静态预览**：初次新断言编译报告缺 analysisLevel/editableChildren，实际运行 0/3 PASS，复现普通实例误报继承。修正根 instance 的 ID、heuristic 标注、override/editable metadata、slash 属性和字符串内假引用；3/3 通过。静态树保留无 type 声明的节点，type 为 null，避免继承/覆盖节点被静默省略。
+- **原生首轮失败**：新继承/嵌套验收为 2/4，未标完成。继承用例全部值/重开检查已通过，但 test-only 控制器对 root 调用 is_editable_instance 导致真实 ERROR；补祖先前置条件，不删除错误断言。嵌套实例则真实丢失深层 override：首版只开最深层 editable children，保存文件没有覆盖。保留 `wheel-editor-Vxz4rJ` / `wheel-editor-y5jAxy` 临时夹具和此前工具失败输出；这些失败不是资格。
+- **修正与再次复查**：每个祖先实例需明确开启 editable 标记，批量 native Undo/Redo 精确还原；原生 pack 实例化比较 transform/visibility/owner/flags，可能丢失覆盖时拒绝保存。三层继承、三层实例、保存重开、基础未覆盖属性传播、第二次修改保存、关闭前磁盘依赖变化/批准后 CAS、循环/缺依赖/脚本孙节点等 9/9（含已有保存回归）通过。独立现有实例+保存 6/6 通过，既有 structural preserve 仍拒绝。
+- **引用迁移**：先增加未实现接口的编译失败，随后 `move_project_scene` 通过实际 SDK 精确模拟批准、隔离候选移除旧路径、引擎导入/加载/实例化、引用/UID/配置读回，以及拒绝批准/缺 run/人工并发修改等 4/4。仅迁移可靠 PackedScene ext_resource/main_scene 声明，动态、模糊、UID-only 引用冲突；主机安全路径和 T10 journal/CAS 沿用，必须关闭编辑器。
+- **完整验收未完成**：结构/原生/迁移相关定向 26/26，0 skip。lint 自查捕获声明 prefer-const 与测试字符串多余转义，修正后 lint/format PASS；冻结源码完整 `verify:production -- --baseline` 已启动于 `runs/production-roadmap/T00/2026-09-26T10-12-20-967Z-22800/`，运行结束之前 T16 保持 in_progress，不用局部成功替代整轮结果。T17–T35/G3–G6 尚未执行，生产 NOT_QUALIFIED。
+
+## 2026-09-26：T16 完整失败定位与边界补验
+
+- **首轮完整失败保留**：源码 `ca636301209e2d2df0da57ac128fc91baadcd7a206bc9b3afe9c6c7f106ec130`，上述 T00 原始目录完整保留；build/format/lint PASS，全量 276/278（2 FAIL）、必需 Godot 82/83（1 FAIL）、零 skip。20/20 原生周期只是同轮局部结果，不能覆盖 FAIL。
+- **定位与修复**：只读插件缺 scene.prepare 先返回 FORBIDDEN，不能先以缺依赖能力误报 PROTOCOL_MISMATCH；保存入口 scene.export 同理。工具发现黄金清单补入 move_project_scene，继续逐项核对全部 67 工具和权限表，不删除集合断言。发布资格负向测试从硬编码 T16 改为首个实际未完成任务，保持未完成阻断。修复后对应 12/12 定向通过。
+- **边界主动补验**：真实 ResourceUID.create_id/add_id 映射与 ext_resource 路径不一致、18 层依赖、直接及传递硬链接均在批准前拒绝，活文档/原件不变。首次 5/6：新增测试对直接硬链接期望 FORBIDDEN，但已有 instantiate 宿主入口已明确返回 UNSUPPORTED；核对原代码后保留该既有错误契约，另加传递硬链接 FORBIDDEN 断言，不放宽链接保护。边界专项 1/1 通过，最终全部将在新的冻结源码整轮重跑；T16 仍 in_progress。
+
+## 2026-09-26：T16 验收完成，按序启动 T17
+
+- **最终同源实跑**：源码 `1c9fb1d054678b45808c5eb9458c29669d6ee5b55e9897d21bf80fe94d843876`；`T00/2026-09-26T10-30-14-490Z-620/` build/format/lint PASS、全量 279/279、必需 Godot 84/84、0 FAIL/SKIP。67 工具官方 SDK 发现及精确权限表通过。20/20 原生周期同源通过，逐个核对 40 个 scene/PNG 实际字节 hash，无遗留 Godot 进程；查看 round-0 PNG 有预期标题，不将其算作任意 UI/3D 视觉资格。
+- **完成登记**：`T16-scene-dependencies.json` SHA-256 `b78d48e3f3fcb08c0d44fbf18fbac10bc9989fd99ffa08ec68416e18b86fd17d`；T16 done，README 中英文/工具总数/依赖契约同步。失败原件保留，模拟表单批准明确 MOCK。历史 G2 与当前 baseline 分离，G3 NOT_RUN、生产 NOT_QUALIFIED。
+- **T17 启动**：新增 UI batch 声明能力前先复现：设置页/背包、anchors/offsets、Container/size flags、Theme/StyleBoxFlat、可访问名称和 pressed 即时信号。布局归属不能把 Container 覆盖的坐标当作稳定 authored 值；所有扩展保持 preview/精确批准/native Undo/原生安全保存，至少 3 viewport 与长本地化文本的真实几何/PNG/视觉复核。只在临时夹具中操作，未启动 T18 或公共发布。
+
+## 2026-09-26：T17 实现与逐步回看，未提前资格化
+
+- **先复现**：新 UI 请求在旧 schema 下失败；补 ui_set/节点类后再暴露 StyleBoxFlat 不支持。依次补可维护原生 UI 节点、有限属性、Container 管理约束、主题 item、可访问名称及 Button pressed 持久信号，沿用精确批准/CAS/一次 Undo/单独保存，不开放任意脚本或动态 setter。
+- **几何复查**：首次实际 get_global_rect 返回 codec UNSUPPORTED，Rect2 不属于 T03 子集。改为真实 global_position/size，并要求 rotation=0、scale=1；没有将假 Rect2 接口算通过。`T17/2026-09-26T10-55-46-362Z/` 虽几何无裁切，但截图显示三个尺寸标题宽度均 364。加入 width=viewport-48 断言立即复现 364≠752；改明确 Control 根锚点，Node2D 父节点非零锚点返回 CONFLICT。保留此前失败，不以“无裁切”冒充响应式。
+- **保存重开复查**：比较完整 authored 属性而非节点数，`T17/2026-09-26T11-01-22-039Z/` 发现 grow_horizontal/vertical 默认 1→2。显式声明 grow=2，UI signature 纳入 grow，并在产品保存阶段重新加载实际 ResourceSaver 暂存字节后验证；不能持久化相同属性则拒绝覆盖。新负向验证原件未改，显式修正后允许保存。
+- **真实输入与资源**：800×600、1280×720、1600×900 固定 Latin 字体/18px/德语长文本，真实原生运行截图和边界/自适应几何；输入 Enter 到实际 GUI Button，持久 pressed 回调使背包隐藏，状态与 >1000 像素差异共同判定。同项目编辑器关闭重开全部 authored UI/owner/signal/Theme storage 一致。Theme/StyleBoxFlat 外部导出、完整 storage 读回、T10 精确保存与同项目重开通过；共享样式先 make_unique。字体/纹理/不支持资源图不开放。
+- **旧回归失败保留**：资源类型扩为 14 后，旧逐类测试将 Theme/StyleBoxFlat 错当 material_override，产品正确拒绝 INVALID_ARGUMENT。测试按 Theme→Control.theme、StyleBoxFlat→原生导出/读回+独立 UI Theme 组合重开验证调整，不放宽类型保护。第一次调整仍 12/13：read 响应类型位于 ref.resourceType 而非顶层；改为既有真实契约继续重跑，不删除断言。包含 6 个继承、1 个共享、2 个资源和 4 个 UI 用例；失败输出与临时夹具保留。
+- **视觉证据边界**：代理查看 `wheel-editor-ogBAyl/.harness/ui-{800x600,1280x720,1600x900}/settings.png`，无明显裁切/重叠；人工视觉复核已向用户单独发问，未收到回答不标真人 PASS。表单批准是 MOCK，实际引擎/原生保存/输入/渲染是 REAL。T17 仍 in_progress，完整基线与真人复核待验；T18–T35 未启动，G3–G6 NOT_RUN，生产 NOT_QUALIFIED。
+
+## 2026-09-26：T17 自动化验收完成，等待真人视觉复核
+
+- **冻结源码**：`51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43`，HEAD `663f9208e95b8b14207220a2c7df6bbf10999d08`。基线 `T00/2026-09-26T11-18-09-203Z-39360/` 从 11:18:09.201Z 到 11:25:50.049Z，build/format/lint PASS、全量 **283/283**、独立必需 Godot suite **88/88**、零 FAIL/SKIP/CANCEL/TODO。原始 manifest SHA-256 `0f23662c5a8c699d5fd743272ce5b3d7a1ab25f1f4a6fd941b98ce1e2750d4e0`，results `d7a105eb29ce70a790c1fc89a454ed309be0365b9c441258429a181a9989bf09`；源码终态未变。
+- **产物复查**：同源 20/20 原生周期，summary `T15/2026-09-26T11-18-20-097Z/summary.json` SHA-256 `d3609e6024a9c8c33d311104116418308ce3e037c2999b8260ae4e8dd756ce1f`；逐个读取 40 个 scene/PNG 文件核对 hash，零问题。完整/独立两轮 UI reports 分别为 `T17/2026-09-26T11-21-17-431Z/`、`T17/2026-09-26T11-25-13-552Z/`，三种尺寸 settings/hidden PNG 哈希两轮一致，并与已展示复核图片一致。重新查看完整基线三个实际 PNG，未见明显裁切/重叠；仍只算代理检查。结束后 Win32_Process 查询没有遗留 Godot 进程，未结束任何用户进程。
+- **状态登记**：`T17-ui-authoring.json` SHA-256 `bf461d9b70b0c15aedae8dfe21820359204fd4755583f0cf425cdd0dc7abda26` 保存 REAL/MOCK 区别、完整自动化记录、实际图片/report/call 哈希、早期失败、真人待验项。T17 的自动项 PASS，required human_visual 为 NOT_RUN；任务置 blocked，仅等待用户确认三张图片没有明显裁切/重叠或指出需改之处。不得用缺答复、代理检查或几何 PASS 推断真人 PASS；T18–T35 保持 todo。
+- **发布与边界**：当前源码 `release-check` 实际 exit 1 / FAIL，缺后续任务/G3–G6、历史 G0/G1/G2 和矩阵不绑定当前源码；证据 `T17-release-refusal.json` SHA-256 `1dd7ac25990e7dee6087202392e11bee41cdbd745d29ba83d61e5ec598d6a240`。这是正确拒绝，不是生产资格。任务清单校验 PASS（36 tasks / 7 gates / 0 errors），diff whitespace 检查通过；未提交、推送、发布、部署、启用用户项目插件或修改外部 audit 文件夹。
+
+## 2026-09-27：T17 真人视觉确认，按序推进 T18
+
+- **真人确认**：用户明确“已查看，视觉验收通过”。已核对先前三个 viewport 图片与自动验收产物哈希、源码 `51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43` 未变化；新增独立 REAL human_visual 收据 `T17-human-visual-review.json`，SHA-256 `7066e7cb58c6fbb0fbaa454f36a2c9075383b56e8330009e10e35fd8ba045fa8`，时间 2026-09-27T11:10:52Z。T17 done、T18 in_progress；旧自动表单接受仍 MOCK，旧 pending 记录作为历史原件保留，不重写成真人批准。
+- **T18 先复现**：真实 SDK→Godot RayCast3D 返回 UNSUPPORTED；原生创作请求 physics_set/Area3D/RayCast3D 在旧 schema 下拒绝。分别保存运行证据，不凭静态代码声明支持。逐步新增严格参数、声明能力、物理回调调度、三种查询语义、只读 Camera3D/NavigationAgent3D、批次 physics_set 和原生保存属性核对。
+- **失败回看**：首轮编辑器辅助脚本显式 Basis 类型缺失引发真实 GDScript parse error，修正后继续验收。导航用例发现 map READY 不能代表已有 path，改为分别报告 synchronization/pathStatus；真实 NavigationMesh 得到路径后连续 4 次查询与游戏路径更新计数共同证实只读，不调用 get_next_path_position 推进导航。
+- **原生引擎边界**：monitorable=false Area3D 保存重开全部 authored 属性一致，但原生 overlap 空集；同位置 intersect_shape 命中，将 monitorable 改 true 后原生 overlap 命中。保留 `T18/2026-09-27T11-30-07.494Z`、`T18/2026-09-27T11-32-18.167Z` 的失败/诊断，未捏造结果。该配置的 overlap 明确 UNSUPPORTED，并提示显式 shape 查询；过滤覆盖不应用于原生 overlap 缓存。
+- **小步验收**：旋转/均匀缩放父树的斜坡射线命中与 world 坐标/法线 epsilon 1e-4、shape owner 局部偏移/disabled 跳过、真实 layer/mask miss/排除目标、不同过滤缓存不串用、128 条缓存满拒绝、重载清旧证据、原生一批创建→Undo/Redo→保存→同项目关闭重开→runtime 读回通过。make_unique 身份分离、非法字段/掩码/非均匀缩放无文档修改通过。新增专项最终 4/4，相关原生保存/资源/2D 回归合计 10/10，错误契约/重载/握手相关另 10/10，均零 skip；build/lint PASS，format 初次指出 run.mjs 格式，修正后再查。
+- **完整验收准备**：T18 仍 in_progress，未用定向通过代替冻结源码完整 baseline。T19–T35 未提前启动，G3–G6 NOT_RUN、生产 NOT_QUALIFIED；未提交、推送、发布、部署或启用用户项目插件。README 同步 T17 已完成人工验收；后续源码不沿用旧 T17/G2 资格。
+
+## 2026-09-27：T18 全量检查点后继续主动边界复查
+
+- **历史检查点**：源码 `729d5fe36a0b8624e46431bbf6d071f10319137c5f042a164d657917f9501f9d` 的 `T00/2026-09-27T11-44-08-596Z-35644` build/format/lint、全量 287/287、必需 Godot 92/92、20 原生周期 PASS。但额外真实探针 `T18/tiny-scale-1790509843616.json` 在同一源码接受 1:2:1 的极小非均匀缩放，真实 exit 1/FAIL，因此没有登记 T18 done；不让全量通过掩盖新发现缺陷。
+- **逐项复现与修复**：新 runtime 断言先复现；原生批次针对无剪切的 Area 子树再复现。均匀性改为 1e-5 相对比例，极小非均匀、剪切和反射拒绝，不任意放宽 world 坐标断言。修正后继续运行，新增兄弟节点查询断言又发现跨场景成功空集，收紧 3D 查询/排除/专项状态为持久根与后代，拒绝外部节点。失败原件保留，不改为 PASS。
+- **统一调度**：2D 旧碰撞接口也进入真实物理回调；仍保留其参数/响应，避免直接空间访问留在 TCP idle poll。屏障语义只到达指定物理帧的采样点，不冒充所有自定义优先级回调均已执行。
+- **修正后专项**：新增 4/4 再次 PASS；加 2D/错误/重载相关共 9/9，零 skip，lint PASS。格式检查发现刚修改的测试需格式化，修正后冻结新源码重新完整验收。T18 保持 in_progress；T19–T35/G3–G6/生产发布资格均未提前标通过。
+
+## 2026-09-27：T18 完整回归捕获共享编辑器配置问题
+
+- **失败原件**：源码 `8f3228cae13411c9eb6ae42267c300af2e12c2b51739da2bb228395b6492a425`，`T00/2026-09-27T12-02-00-023Z-33692` 全量 286/287、独立 Godot 92/92、零 skip。20 周期第 7 次读取用户 `%APPDATA%/Godot/editor_settings-4.7.tres` 失败，6 个完成周期不能算 20/20。T18 专项虽通过，整轮仍 FAIL。
+- **隔离复现**：新增原生 EditorPaths 断言先真实 FAIL，两个 fixture 配置均指向用户目录。改为每个 fixture 的 `.harness/engine` 独立二进制副本及官方 `_sc_` 自包含配置；Windows console launcher 的同名普通 exe 一并复制，重开仅复用相同字节。没有修改用户安装目录的 `_sc_`、设置或结束用户编辑器。macOS app bundle 尚未实现，明确拒绝而非泄漏用户配置。
+- **自查**：隔离/同项目重开/无原生 ERROR 与 3D 专项 5/5 PASS。随后 lint 指出 preserve-caught-error；`T00/2026-09-27T12-13-26-373Z-33032` 资格运行明确 ABORTED（未写完 manifest，不制造源码 hash/通过结果）。核对 PID 33032 命令行后只终止这棵测试进程树，保留临时夹具及 aborted.json。补 cause 后 lint/format PASS，重新冻结源码全量运行；T18 尚未 done。
+
+## 2026-09-27：中断恢复与 T18 验收隔离补强
+
+- **恢复事实**：源码仍为 `c4717f1a14ff1750426c0a8610437fd2ba41728d959aa9ad5041c79da58a1eef`，T18 in_progress。上轮 session 不存在，`T00/2026-09-27T12-16-04-818Z-17268` 没有完整 manifest/results；T15 partial failure 保存 6 周期后原生 Editor exited 3221225794。标 INCOMPLETE，未假定成功。
+- **本轮真实失败**：`T00/2026-09-27T15-06-06-200Z-13684` 完整原件保留。全量 subprocess 超时（900s），仅收集到 2 个事件；独立 Godot 21/42，工具发现 Connection closed，均 FAIL。定位为默认 `.harness/run-registry.json.lock` 的死 owner 41744 + 早已遗留的空 `.lock.recover`；旧恢复流程无法回收 guard，启动失败。旧 MCP 握手测试无限 polling，即使用 Node test timeout 也留下活动等待，导致整轮卡住。
+- **小步修正与边界**：验收脚本现在为每次运行指定全新 TEST-ONLY registry，各测试进程同一隔离目录共享配额；不删除/重写用户登记或 recovery 锁，不允许测试 orphan 回收操作用户登记。握手测试添加 child exit/error/stderr 和 10s deadline，停止并等待自己的 child，不忽略 malformed JSON。空 recovery guard 的产品恢复缺陷尚未解决，作为后续生命周期必须验收项，不把隔离测试 PASS 当作该缺陷修复。原登记 SHA256 `18f28c9633012c74366c1c1718d5c86951a185404cc0f34aedbed86a3b154af6`；primary lock `1e984a2a119827d9079c0eeefe83ba3945808a9d29ec80710bbc64c27e06b152`，empty guard `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`，原件保留。
+- **范围**：全程只处理当前 T18 验收与恢复所需检查。尚未启动 T19、提交/推送/发布或对用户项目启用插件；后续冻结源完整通过后才登记 T18。
+
+## 2026-09-28：T20 Shader 有界子集验收完成，按序启动 T21
+
+- **先失败再实现**：官方 MCP 首轮 `shader` 返回 `UNSUPPORTED`；原生图测试揭示 VisualShaderNode 没有通用端口计数 API，改用精确白名单端口类型并以 Godot `can_connect_nodes` 验证。纹理资源首次遭资源图保护拒绝，随后只放行两张精确 2×2 ImageTexture 并将像素字节纳入指纹/导出读回。`resource_set` 首次被旧静态字段表拒绝，改为读取安全 `describe` 的动态字段；每次修改均回跑真实 Godot。错误 shader/边返回 `shader-preflight` 诊断，不能伪称 GPU 编译器原始消息。
+- **渲染与事务**：官方 MCP 创建蓝色文本、红蓝 VisualShader 混合、红绿两纹理 0.5 混合材质并经 `.tres` 原生导出/重开；场景 `blend=1`、Undo 回 0.5、Redo 回 1 与 `save_editor_scene` 通过。固定相机/BoxMesh/灯光的真实 Vulkan Forward+ 截图中心像素分别为绿 `[0,255,0]`、蓝 `[64,127,191]`、紫 `[195,27,195]`、黄绿 `[188,188,0]`，四份日志无编译错误；相机/灯光与纹理像素是 TEST-ONLY 夹具，不对用户项目自动插入。错误源/边拒绝且既存 `.tres` 字节不变。
+- **完整同源复核**：原生用例纳入全量与独立 Godot smoke。并发 4 的两轮原始基线分别在既有修复/事件与动画端点测试出现非 shader 间歇失败，原件 `T00/2026-09-28T06-20-50-669Z-37120` 和 `T00/2026-09-28T06-36-28-135Z-23036` 保留；两项单独串行 7/7 PASS。保持断言和用例数，验收并发设为 2。最终冻结源码 `4570a16011239abd454111c6806e5cec3ea852c5b3a861b44fccd01ac14cdb04`，`T00/2026-09-28T08-03-23-044Z-36260` exit 0：build/format/lint、全量 293/293、独立 Godot 98/98、0 skip；`T15/2026-09-28T08-04-09-501Z` 20/20 原生周期和 40 个 scene/PNG 哈希检查通过。八个报告/图片 hash 与当前源码复核相符；证据 `evidence/T20-shader-authoring.json` SHA-256 `c12f534e3a259e2273e49a85784783ca52c1a3d5e12074b66e590b30de71aa3f`。
+- **状态与边界**：T20 done、T21 in_progress；只开放精确文本模板和 Color/Mix 图，未知 renderer 拒绝，只有 Windows/Godot 4.7.2 Vulkan Forward+ 自动视觉实证。表单批准 MOCK，不是用户真人批准；G3–G6 NOT_RUN，T31 默认 registry 恢复缺陷未修，生产 NOT_QUALIFIED。未提交、推送、部署、发布或改动用户实际 Godot 项目。
+
+## 2026-09-28：T18 冻结源码验收完成，按序启动 T19
+
+- **冻结源码**：`860d1e483acc39f238ddabb058c991ee96fd31911df31c775e175ebc685d4f5f`。原始基线 `runs/production-roadmap/T00/2026-09-28T02-12-30-674Z-32312/` exit 0：build/format/lint PASS，全量 288/288、独立 Godot 93/93、0 failed/skipped/cancelled/todo；`T15/2026-09-28T02-12-42-522Z` 连续 20/20 原生周期及 40 个场景/PNG 文件哈希一致。T18 原生编辑与运行报告单独保存。证据 `evidence/T18-physics-3d.json` SHA-256 `ae2deeafdb8fed118e7dda63799270ca920d81cce3baa168511fbf14c6247151`，记录 REAL/MOCK 边界和既往失败。T18 done，T19 in_progress。
+- **未越界**：默认 registry 的遗留空 recovery guard 仍可能阻断非隔离实例启动，留待 T31；T19–T35 未完成，G3–G6 NOT_RUN，生产 NOT_QUALIFIED。后续改动需重新冻结源码验收，不能沿用这份 T18 结果。未改用户项目、提交、推送、部署或发布。
+
+## 2026-09-28：T19 原生动画子集验收完成，按序启动 T20
+
+- **先复现**：`runs/production-roadmap/T19/2026-09-28T02-44-20.078Z/initial-create.json` 保留官方 MCP 拒绝 AnimationPlayer 的原始记录，SHA-256 `5afa221be3276d6179043e28962f3ef46b81d9778c279e7e401917d1a08f5f48`。后续又复现默认动画 NodePath、native pack 内部资源路径、测试夹具 `unique_id` 导致按键脚本未挂载、GDScript 类型推导错误；均先失败后修正，未把失败轮次当成通过。
+- **有界实现与小步复查**：一个本地 `wheel` AnimationLibrary、稳定片段/轨道 ID、有限 2D position keys；状态机入口、可达性、条件唯一性、循环约束；两源 Blend2 三边拓扑；外部/共享资源、陈旧目标路径、安全保存、Undo/Redo 均明确校验。独立受控 capability `scene.animation/v1`。真实按键 D/A 通过仅测试夹具脚本令 idle→walk→attack；工具本身不创作该脚本，不能冒称通用输入绑定。每步原生测试通过后才继续，最终 `tests/animation-authoring-e2e.test.ts` 3/3。
+- **冻结源码**：`f44ca7b8c347e9ff663b2ba1cea8b88fce540dbd67a31779f4e1e17993cc9035`；`T00/2026-09-28T04-31-53-749Z-41848` exit 0，build/format/lint、全量 291/291、独立 Godot 96/96、0 skip；`T15/2026-09-28T04-32-03-578Z` 20/20 周期与 40 个真实 scene/PNG 文件哈希一致。三份 T19 原始报告分别记录运行状态、共享拒绝和 Blend2 参数，hash 验证一致。证据 `evidence/T19-animation-authoring.json` SHA-256 `8e851745e8b405c62fc9a6510e4892897ff6f16ad7e955f21e80f66303aebf09`。T19 done，T20 in_progress；源码未来变化需重验。
+- **边界**：表单接受是 MOCK；Windows/Godot 4.7.2 隔离 fixture 才是 REAL，通用 3D/骨骼/方法轨道与图替换均 UNSUPPORTED。G3–G6 NOT_RUN，默认登记恢复缺陷仍属 T31，生产 NOT_QUALIFIED；未提交、推送、发布或改用户项目。
+
+## 2026-09-28：T21 内容切片与 G3 冻结源码门禁完成
+
+- **小步验收**：T21 先保留 PNG CRC、Godot 类型推断、结构化编辑越界、场景移动误报、3D 动画维度和导航初始化的真实失败，再逐一收紧。二进制候选在隔离 Godot 项目验证，精确 SHA 事务提交/回滚；2D/3D 内容切片在空隔离项目经 MCP、原生编辑、保存重开与运行时读回。脚本、导航和 Sprite2D 仅经批准的精确文件候选，不冒称结构化编辑能力。审批表单为 MOCK。
+- **T21 冻结基线**：源码 `ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626`，`runs/production-roadmap/T00/2026-09-28T09-53-48-198Z-27672` exit 0：build/format/lint、全量 300/300、独立 Godot 105/105、零失败或跳过；`runs/production-roadmap/T15/2026-09-28T09-55-17-286Z/summary.json` 20/20 周期和 40 个 scene/PNG 哈希检查通过。T21 证据 `evidence/T21-content-workflows.json` SHA-256 `ba72a2268dbe9b0c8a6d17770c5f5e4c3989b89adbc038d8af920ef4576fd040`。
+- **G3 独立复核**：相同源码 `runs/production-roadmap/G3/2026-09-28T10-13-38-849Z-39732` exit 0：全量 300/300、Godot 105/105；T16–T21 九类代表性工作流分别在两套测试中 PASS（18/18），缺陷基线 PASS。原始 manifest/results/assessment SHA-256 分别为 `8a98c100af16f5161585db563d2f98a5f20c7aefe6225c427c78ca8d58fa3015`、`640a882c4fa26fc5ade72ddbb2c27ab1e7d9ec73f043d9058cdf1665076ed832`、`4311cfb596cf50b10d5db2edbdf53b793411217b8d5d865f4587d82834668d64`。G3 证据 `evidence/G3-gate.json` SHA-256 `8248664be0c23371139a684f9dc508d96692fc5b02abbbea8f7bdcf157a9b3a9`。
+- **边界与下一步**：G3 仅证明 Windows/Godot 4.7.2 声明子集；T22–T35/G4–G6 尚未完成，默认 registry 恢复缺陷仍属 T31，生产 `NOT_QUALIFIED`。未提交、推送、部署、发布或修改用户真实 Godot 项目。下一步按序 T22 GDScript 语义服务与安全重构。
+
+## 2026-09-28：T22 首步——语义接口降级标注与真实后端核对
+
+- **先失败**：现有 `analyze_script_semantics` 仅按行正则扫描，尽管 `source: REAL` 表示读取真实文件，却没有声明分析层级；新断言要求 `analysisLevel: heuristic` 与 `safeRefactor: false`，初次 build 因字段缺失明确失败。无可靠 symbols/references/definition/语法错误/WorkspaceEdit 后端，不能作安全 rename。
+- **最小修正后自查**：响应显式标注启发式只读，工具说明不再暗示引擎语义诊断；build、定向测试 3/3、lint、format 和 `verify:roadmap` PASS，`git diff --check` 无输出。Godot 4.7.2 本地可执行程序 `--help` 明确支持 `--lsp-port`，但连接、项目身份、版本、超时、位置/编辑范围及真实重构尚未实现或验收。当前源码 hash `8a0726102e8de19f6687a878df506faf49dfccc34e9a73a81cdd5c294ed8acbf` 与历史 G3 冻结源码不同，不能沿用 G3 作当前源码全量资格。
+- **状态**：T22 `in_progress`，T23–T35/G4–G6 未开始，生产仍 `NOT_QUALIFIED`；此步不是 T22 完成证据。下一步用隔离项目实测 Godot LSP，建立受项目/版本/超时约束的只读语义查询，再实现经语义定位、事务预览、原生验证的 rename。未修改用户实际项目、提交、推送或发布。
+- **真实 LSP 探针**：随后在 TEST-ONLY 自包含编辑器夹具加入可选 `--lsp-port`，真实 `initialize`、`didOpen`、`textDocument/documentSymbol` 成功读取 `class_name SemanticProbe`；夹具还含命名 enum 与多行函数。`tests/script-semantic-service.test.ts` 实测 1/1、0 skip，build/lint/format/路线图检查 PASS。此测试仅验证隔离编辑器只读协议，不把原始本地端口当成已认证生产后端；项目身份、版本/失联、引用、定义、诊断及 WorkspaceEdit 仍待验证。最新源码 hash `34d84a80b8cca6f3bffedd6f48afc0a2a48767baa3708c8a7ce62dd73980f03a`，前述 `8a072610...` 为本任务首步历史检查点。
+
+## 2026-09-28：T22 LSP 原生复查、安全预检与完整回归检查点
+
+- **中断恢复**：上一轮 `T00/2026-09-28T10-49-26-661Z-48488` 只有临时 registry、无 manifest/results，且没有运行中的验证进程；明确记为 INCOMPLETE，不计 PASS。
+- **真实后端行为**：隔离 Godot 4.7.2 LSP 的 `initialize`、多行函数/命名 enum 脚本符号、局部定义/引用和跨文件 `class_name` 引用可读。原始 `references` 与 `rename` 却同时包含同名字符串和注释；原始失败断言保留在测试演进中，不直接应用 WorkspaceEdit。Godot 通知使用编码后的 Windows URI，首轮诊断监听用未编码 URI 误匹配并超时；修正 URI 关联后真实 `publishDiagnostics` 报语法错误，独立 `--check-only` 也拒绝同一非法脚本。
+- **安全预检**：新增 `preflightGodotRename`，限制项目内 `.gd`、文件/编辑预算、UTF-8、完整标识符、精确旧文本、非重叠范围和每文件 SHA；任一字符串/注释范围出现就整体拒绝，无写入。无歧义局部变量候选在 TEST-ONLY 项目经过 MOCK 审批、隔离引擎校验、事务提交及旧 SHA 重试拒绝。该函数仅产出候选，尚不证明所有语义位置属于同一符号，也不暴露生产 rename 工具。
+- **原生并发失败与修正**：首次当前源码全量 `T00/2026-09-28T12-50-44-955Z-34836` 为 299/302，独立 Godot 106/106。三项失败原件的候选资源加载均 PASS，但并行 `--editor --import` 共享用户级 EditorPaths，报“Could not create editor temporary directory”，验证器按要求拒绝。验证进程现用临时目录中的 Windows 自包含 `_sc_` 引擎入口（优先硬链接、必要时复制），不修改用户引擎/设置；相关并发原生复测 8/8，含连续 20 周期。
+- **当前源码完整检查点**：源码 `88d3eff8f189017c74cc9c4f0723c124b8e146a5a3a9ebf3a479393a005552bd`，`runs/production-roadmap/T00/2026-09-28T13-28-30-082Z-40828` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106、零失败/跳过。manifest/results SHA-256 分别为 `8fb95f29ca624e62841d2954deaa6896fe106e15a28d7a96900c29ea0ce1b098` 与 `2d6e16f5379d965c9623702ecba5055d3db95434d39363f23843b6819033f429`，manifest 源码哈希与当前一致；路线图 36 tasks / 7 gates PASS，diff 空白检查无输出。
+- **未完成边界**：T22 仍 `in_progress`。未有绑定已授权编辑器 PID/项目/端口/版本的生产 LSP 连接器，也未有逐位置定义一致性、动态引用人工清单、场景/NodePath 重构边界的完整验收；不能把测试用例直连本地端口当作线上语义服务。T23–T35/G4–G6 均未通过，生产 `NOT_QUALIFIED`；未提交、推送、部署、发布或修改用户真实 Godot 项目。
+
+## 2026-09-28：T22 已授权编辑器与本地 LSP 监听器绑定检查
+
+- **小步实现与失败复现**：新增 Windows-only `verifyEditorLspBinding`：先经既有私有授权 EditorBridge 读取项目、Godot 版本与 editor PID，再确认进程身份、环回监听端口的 OS OwningProcess，并在返回前复核同一进程身份。首轮仅按 Godot 帮助中的“推荐端口”上限 49151 拒绝了合法动态端口，改为 1024–65535；首轮仅接受 `4.7.2.`，真实编辑器报告 `4.7.2-stable (official)`，改成精确主版本加分隔符校验。错误客户端和另一个 Node 进程持有的端口均真实拒绝；测试源仅为隔离项目。
+- **同源全量检查点**：源码 `7269ae1aef5610d395361bb56f4f0e3ccf1b6890820b6e8b73c66a9f1fed2645`，`runs/production-roadmap/T00/2026-09-28T14-09-14-500Z-43272` exit 0；build/format/lint、全量 302/302、独立 Godot 106/106，零失败/跳过。manifest/results SHA-256 分别为 `9b2a1d2fe33e968a46da9a04869164bcc4e1ae388a87f71d38ddf3312934da6b` 与 `59878d4cc1b465e19ae102036d70a53b28b89ed97ecee9b68427ca93814a1637`；manifest 与当前源码哈希一致，路线图 36/7 PASS，diff 空白检查通过。
+- **仍未完成**：此函数只证明已授权编辑器的本地端口归属，不是完整 LSP 会话管理/API。生产级请求超时、断线处理、逐位置定义核对、跨文件场景与动态引用清单、可靠 rename 工具和 T22 完整验收仍待实现。T22 保持 `in_progress`，T23 不启动，G4–G6 NOT_RUN，生产 `NOT_QUALIFIED`。
+
+## 2026-09-28：T22 只读语义服务上线到有限 MCP 子集
+
+- **协议与权限**：新增 `GodotLspClient` 仅连接已授权、同项目/版本/PID/本地监听端口的编辑器；帧长/脚本大小/响应数量有界，初始化、请求超时、取消、关闭失联及文件 SHA 变更均 fail closed。只支持 `symbols`、`references`、`definition`、`diagnostics`，返回 `analysisLevel: godot-lsp` 和 `refactorSafe: false`。`query_script_semantics` 经官方 MCP SDK 发现、read 权限、项目路径策略与实际调用验收；越界脚本路径拒绝。不创建编辑器或启用用户项目插件。目录计数 69 工具，边界见 `SCRIPT-SEMANTIC-CONTRACT.md`。
+- **逐步自查**：原生 fixture 测试了已授权项目绑定、错误客户端、另一进程端口、语法错误通知、定义/引用、源码变更、取消、有限局部 rename 候选与注释/字符串误改拒绝；安全候选的持久化只发生在 TEST-ONLY 项目，审批为 MOCK。工具发现列表初次因测试期望顺序错误失败，移至字母排序位置后 3/3 定向 PASS；未放宽安全断言。
+- **当前同源完整基线**：源码 `40a4f679598b63a58df689715f539d8ba8603c25e8fe88eae6d6eccc20e4e362`，`runs/production-roadmap/T00/2026-09-28T14-45-02-879Z-14176` exit 0；build/format/lint、全量 302/302、独立 Godot 106/106，零失败/跳过。manifest/results SHA-256 分别为 `b9f5054374d8826093d087ad207f51e0e552cfd83b4fa34cc555c89a6b81bdff` 和 `a8a7031edeab16e93080c024b3a401bbfa65361782991d50dd0199f66b35089c`，源码哈希与工作树一致。路线图 36 tasks / 7 gates PASS，`git diff --check` 无输出。
+- **未越界**：Godot LSP 的原始 WorkspaceEdit 仍会误含同名字符串/注释；只读引用可能有同类假阳性。逐编辑位置语义归属、动态引用清单、场景脚本路径/NodePath、正式 rename 写入与回滚全套门禁仍未完成。T22 继续 `in_progress`，T23–T35/G4–G6 未通过、生产 `NOT_QUALIFIED`。未提交、推送、部署、发布或修改用户真实 Godot 项目。
+
+## 2026-09-28：T22 原生 LSP 误定位复查与拒绝回归
+
+- **原生探针**：同一 `class_name SemanticProbe` 在真正 `extends`、字符串、注释三个位置的 `textDocument/definition` 都返回同一类声明；不能靠“定义目标一致”直接推断可编辑。对同文件局部变量 `score` 的 `textDocument/rename` 也把字符串和注释列为编辑。固定这些实际响应形状为回归，`preflightGodotRename` 整体拒绝，原文件未改。
+- **正例与失败保护**：两个函数各有同名局部变量时，Godot 只返回选中函数的两处位置；保守预检候选保留另一函数原文。TEST-ONLY 的无混淆局部变量候选经 MOCK 审批、隔离引擎校验后提交；追加语法损坏候选被引擎拒绝，提交后原脚本字节保持不变。接口描述与 `SCRIPT-SEMANTIC-CONTRACT.md` 明示 definitions/references 均非重构授权。
+- **逐步自查与全量证据**：初次全量未传 `GODOT_PATH`，201/302、101 skipped，状态 FAIL，不计入通过。明确传入 Godot 4.7.2 后，同一源码 `22198000b2d7a07f6f4e32af2c8800fcdfa943330fd7a094814dadc8b4f0c2f8`，`runs/production-roadmap/T00/2026-09-28T15-39-52-297Z-35572` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过；manifest/results SHA-256 为 `c9d7d8184da7b65a076e45db773d7d4f8406399800d4074c7d614b686ae5b1dc` / `169af844a811acbbd6c06b2a4e2cd949e674332f11f0b4328ada8b52f187ca08`。manifest 与当前源码身份一致；`verify:roadmap` 36/7 PASS、`git diff --check` 无输出。
+- **边界/下一步**：仍没有可公开的语义 rename 写入：原始 WorkspaceEdit 与逐位置 definition 已证实有非代码误定位；动态引用、场景脚本路径/NodePath、跨文件快照与完整重构后验证尚缺。T22 仍 `in_progress`，不启动依赖它的 T23–T35/G4–G6，生产 `NOT_QUALIFIED`。未改用户真实 Godot 项目、提交、推送、部署或发布。
+
+## 2026-09-29：T22 已授权会话的内部 rename 候选预览；全量门禁因磁盘耗尽失败
+
+- **小步实现**：`GodotLspClient.previewRename` 仅在已授权的编辑器/LSP 会话内请求原始 WorkspaceEdit，核对目标标识符与磁盘 SHA，执行保守 `preflightGodotRename`，返回 `refactorSafe:false`；不注册 MCP 写工具、不审批或提交。真实 Godot 定向测试验证无混淆局部候选、类名和局部字符串/注释误定位拒绝、错误光标与源码变化拒绝，1/1 PASS；build/format/lint、路线图检查、diff 空白检查也 PASS。
+- **当前源码全量失败证据**：当前源码 hash `ab9cea418450ded4cfff7d7ac1d11c6541a0a8724ca9b5b2a2912b2afd26b230`；`runs/production-roadmap/T00/2026-09-28T16-06-38-650Z-45816` 状态 FAIL，全量 263/302、39 fail、0 skip；Godot smoke 55/106、51 fail、0 skip。原始失败多为 `ENOSPC`，在复制隔离引擎到系统 Temp 的 `wheel-editor-*` 目录时触发；C 盘剩余约 22–49 MB。manifest/results SHA-256 为 `f002e507c24a76b4982fe29f3f4f77c9692a0f8dbe718a2c91ab47a538bfa07e` / `f4517e396052321a7378846e94b441b9220b5b82de961bd853672ba0edd9bbb9`。不能沿用上一源码 `22198000` 的 PASS 充当当前门禁。
+- **恢复条件**：系统 Temp 下识别 1740 个 `wheel-editor-*`、996 个 `wheel-validate-*` 测试夹具，确认无 Godot 进程；递归清理命令被环境策略拒绝，未删除任何目录。需由用户/环境以获准方式清理这些已结束的临时测试目录并留出足够空间，随后在相同源码上重跑 `verify:production -- --baseline` 且要求零失败/跳过。T22 仍 `in_progress`，后续任务与门禁不可宣称完成，生产 `NOT_QUALIFIED`。
+
+## 2026-09-29：测试暂存清理与证据保留
+
+- **起因和失败自查**：反复运行造成共享系统 Temp 中上千个旧 `wheel-editor-*`/`wheel-validate-*` 目录。首次尝试在各测试文件的 `after` 钩子里删除编辑器夹具，Windows 对仍被子进程锁定的可执行文件返回 `EBUSY`/`EPERM`，完整门禁失败；已撤回这个过早清理钩子，未掩盖失败。旧目录仍未由本任务追溯删除。
+- **收敛实现**：`validateCandidateFiles` 在所有完成路径清理其精确 `wheel-validate-*` 隔离目录；成功/失败原生用例分别确认目录消失、原项目仍正确。`verify-production` 给每轮测试分配独立 `wheel-gate-*` Temp 根，子进程退出、结果收集后核对归属并清理；清理失败令该命令和总门禁 FAIL，记录精确路径。正式 `manifest/results` 与原始 stdout/stderr 保留，保留边界见 `LOG-RETENTION-CONTRACT.md`。
+- **同源验收**：源码 `7aa8a47a6ae89009bf15edef5aa1bc504e9eb1d5dce0762cd883fc466e98ec95`，`runs/production-roadmap/T00/2026-09-28T17-03-09-616Z-15904` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过；两轮 `tempCleanup:PASS`，结束后新 `wheel-gate-*` 根数为 0。manifest/results SHA-256 为 `f04f71ab8b692a01231154c77cd0625a0a59a33f878268d23433b9ffac9c9ca5` / `87fb2dec12389a3c98ecfd82764cf73ab4daaf763acedf88d218d675c77f06232`。这是当前源码的基线，不改变 T22 `in_progress`、G4–G6 NOT_RUN、生产 `NOT_QUALIFIED`。
