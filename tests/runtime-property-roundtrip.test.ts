@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdtemp, writeFile } from 'node:fs/promises';
@@ -81,6 +82,7 @@ func unsafe_int_value() -> int:
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: fixtureStdioEnv(),
     });
     const client = new Client({ name: 'variant-roundtrip', version: '1.0.0' });
     let sessionId = '';

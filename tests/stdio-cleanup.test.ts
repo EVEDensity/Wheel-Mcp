@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
@@ -22,6 +23,7 @@ test(
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: fixtureStdioEnv(),
     });
     const client = new Client({ name: 'stdio-cleanup', version: '1.0.0' });
     let stage = 'initial connect';
@@ -84,6 +86,7 @@ test(
           command: process.execPath,
           args: [path.resolve('build/src/mcp-server-sdk.js')],
           stderr: 'pipe',
+          env: fixtureStdioEnv(),
         });
         const restartClient = new Client({ name: 'stdio-recovery', version: '1.0.0' });
         restartTransport.stderr?.on('data', captureErrors);

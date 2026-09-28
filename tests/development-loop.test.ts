@@ -1,4 +1,5 @@
 ﻿import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, mkdir, readdir } from 'node:fs/promises';
 import os from 'node:os';
@@ -131,6 +132,7 @@ test(
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: fixtureStdioEnv(),
     });
     transport.stderr?.on('data', () => {});
     const client = new Client({ name: 'repair-test', version: '1' }, { capabilities: { elicitation: { form: {} } } });

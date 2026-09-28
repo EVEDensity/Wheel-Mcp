@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { appendFile, mkdtemp, readFile, rename, writeFile } from 'node:fs/promises';
@@ -42,6 +43,7 @@ test(
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: fixtureStdioEnv(),
     });
     const client = new Client({ name: 'persistent-events', version: '1.0.0' });
     let sessionId = '';

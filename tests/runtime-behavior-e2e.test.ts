@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
@@ -18,6 +19,7 @@ test('official MCP client to persistent bridge to real Godot behavior scene', as
     command: process.execPath,
     args: ['build/src/mcp-server-sdk.js'],
     stderr: 'pipe',
+    env: fixtureStdioEnv(),
   });
   const client = new Client({ name: 'godot-behavior-e2e', version: '1.0' });
   let sessionId = '';

@@ -1,4 +1,5 @@
 ﻿import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
@@ -70,6 +71,7 @@ test(
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: fixtureStdioEnv(),
     });
     let proposals = 0,
       approvals = 0;

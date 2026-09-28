@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { readFile, mkdtemp } from 'node:fs/promises';
 import path from 'node:path';
@@ -42,6 +43,7 @@ test(
           command: process.execPath,
           args: [path.resolve('build/src/mcp-server-sdk.js')],
           stderr: 'pipe',
+          env: fixtureStdioEnv(),
         }),
       );
       const result = await client.callTool(

@@ -27,7 +27,9 @@ test('large roadmap input uses stdin without Windows command-line length limits'
   state.tasks[0].notes += 'x'.repeat(100000);
   const errors = check(state);
   assert.ok(errors.some((e) => e.includes('NOT_QUALIFIED')));
-  assert.ok(errors.some((e) => e.includes('T16')));
+  const pending = state.tasks.find((t: { status: string }) => t.status !== 'done');
+  assert.ok(pending, 'fixture must contain unfinished work');
+  assert.ok(errors.some((e) => e.includes(pending.id)));
 });
 test('even forged done/PASS labels cannot promote a different source fingerprint', () => {
   const state = structuredClone(original);

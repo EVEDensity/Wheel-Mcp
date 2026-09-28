@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
@@ -117,6 +118,7 @@ test(
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
       env: {
+        ...fixtureStdioEnv(),
         GODOT_PATH: godotPath,
         MCP_STDIO_APPROVED_BRIDGE_PATHS: [wrongBridgePath, malformedBridgePath].join(';'),
       },
