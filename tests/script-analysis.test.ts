@@ -22,10 +22,19 @@ func _physics_process(delta):
   assert.equal(result.stateMachine.transitions.length, 2);
   assert.equal(result.stateMachine.transitions[1].to, 'JUMP');
   assert.ok(result.stateMachine.entryPoints.includes('_physics_process'));
+  assert.equal(result.analysisLevel, 'heuristic');
+  assert.equal(result.safeRefactor, false);
 });
 
 test('analyzeScriptSemantics reports state variables without transitions', () => {
   const result = analyzeScriptSemantics('extends Node\nvar current_state: String = "idle"\n');
   assert.equal(result.stateMachine.stateVariable, 'current_state');
   assert.ok(result.diagnostics.some((item) => item.code === 'STATE_MACHINE_NO_TRANSITIONS'));
+});
+
+test('heuristic summary does not claim Godot syntax diagnostics or safe rename', () => {
+  const result = analyzeScriptSemantics('extends Node\nfunc broken(\n    pass\n');
+  assert.equal(result.analysisLevel, 'heuristic');
+  assert.equal(result.safeRefactor, false);
+  assert.ok(result.diagnostics.every((item) => item.severity !== ('error' as string)));
 });

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import os from 'node:os';
@@ -98,7 +99,12 @@ test(
       command: process.execPath,
       args: [path.resolve('build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
-      env: { MCP_STDIO_PROJECT_ROOTS: fixture.root, MCP_STDIO_EVIDENCE_ROOTS: fixture.root, MCP_STDIO_SCOPES: 'read' },
+      env: {
+        ...fixtureStdioEnv(),
+        MCP_STDIO_PROJECT_ROOTS: fixture.root,
+        MCP_STDIO_EVIDENCE_ROOTS: fixture.root,
+        MCP_STDIO_SCOPES: 'read',
+      },
     });
     const client = new Client({ name: 'editor-stdio-fixture', version: '1' });
     let stderr = '';

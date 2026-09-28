@@ -17,6 +17,7 @@ test('parseSceneResourceGraph builds resource and reverse dependency graph', () 
   ].join(String.fromCharCode(10));
 
   const graph = parseSceneResourceGraph(content, 'res://player.tscn');
+  assert.equal(graph.analysisLevel, 'heuristic');
   assert.equal(graph.format, '3');
   assert.equal(graph.loadSteps, 4);
   assert.deepEqual(
@@ -31,4 +32,40 @@ test('parseSceneResourceGraph builds resource and reverse dependency graph', () 
   assert.deepEqual(graph.reverseDependencies['1_script'], ['Player.script']);
   assert.deepEqual(graph.reverseDependencies['2_base'], ['Player.instance']);
   assert.deepEqual(graph.reverseDependencies['RectangleShape2D_body'], ['Player.shape']);
+});
+
+test('ordinary child instances are not inheritance; root instance uses its own resource ID, not the first', () => {
+  const resources =
+    '[ext_resource type="PackedScene" path="res://child.tscn" id="child"]\n' +
+    '[ext_resource type="PackedScene" uid="uid://base" path="res://base.tscn" id="base"]\n';
+  const normal = parseSceneResourceGraph(
+    '[gd_scene format=3]\n' +
+      resources +
+      '[node name="Main" type="Node2D"]\n[node name="Child" parent="." instance=ExtResource("child")]\n',
+  );
+  assert.equal(normal.inheritedScene, undefined);
+  const inherited = parseSceneResourceGraph(
+    '[gd_scene format=3]\n' +
+      resources +
+      '[node name="Derived" instance=ExtResource("base")]\n[node name="Child" parent="." instance=ExtResource("child")]\n',
+  );
+  assert.deepEqual(inherited.inheritedScene, { path: 'res://base.tscn', type: 'PackedScene', ref: 'base' });
+  assert.equal(inherited.extResources[1].uid, 'uid://base');
+});
+
+test('override paths, editable children and slash properties remain inspectable without false references in strings', () => {
+  const graph = parseSceneResourceGraph(`[gd_scene format=3]
+[ext_resource type="PackedScene" path="res://base.tscn" id="base"]
+[node name="Main" type="Node2D"]
+[node name="Branch" parent="." instance=ExtResource("base")]
+[node name="Leaf" parent="Branch" index="0"]
+position = Vector2(3, 4)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "Example ExtResource(\\"ghost\\")"
+[editable path="Branch"]
+`);
+  assert.deepEqual(graph.editableChildren, ['Branch']);
+  assert.equal(graph.nodes[2].override, true);
+  assert.equal(graph.nodes[2].properties['theme_override_colors/font_color'], 'Color(1, 1, 1, 1)');
+  assert.equal(graph.reverseDependencies.ghost, undefined);
 });

@@ -55,7 +55,7 @@ export const defectCatalog = [
     ownerTasks: ['T18', 'T22'],
     title: '3D capability and semantic analysis boundary',
     expected:
-      '3D specialized queries explicitly report unsupported capability and semantic analysis resolves qualified enum transitions',
+      'Camera3D returns native read-only state, undeclared Node3D specialization reports UNSUPPORTED, and semantic analysis resolves qualified enum transitions',
   },
   {
     id: 'D10',

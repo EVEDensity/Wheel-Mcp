@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, writeFile } from 'node:fs/promises';
@@ -8,23 +9,52 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { LoggingMessageNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 
-test('stdio MCP handshake and tool discovery', async () => {
-  const child = spawn(process.execPath, ['build/src/mcp-server-sdk.js'], { stdio: ['pipe', 'pipe', 'pipe'] });
+test('stdio MCP handshake and tool discovery', { timeout: 15000 }, async () => {
+  const child = spawn(process.execPath, ['build/src/mcp-server-sdk.js'], {
+    windowsHide: true,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
   let buffer = '';
+  let stderr = '';
+  let failure: Error | undefined;
+  let closed = false;
+  const exited = new Promise<void>((resolve) =>
+    child.once('close', () => {
+      closed = true;
+      resolve();
+    }),
+  );
+  child.once('error', (error) => {
+    failure = error;
+  });
+  child.stdin.on('error', (error) => {
+    failure = error;
+  });
+  child.stderr.on('data', (chunk) => {
+    stderr = (stderr + String(chunk)).slice(-4096);
+  });
   const lines: Array<Record<string, any>> = [];
   child.stdout.on('data', (chunk) => {
     buffer += chunk;
     while (buffer.includes('\n')) {
       const idx = buffer.indexOf('\n');
-      lines.push(JSON.parse(buffer.slice(0, idx)));
+      try {
+        lines.push(JSON.parse(buffer.slice(0, idx)));
+      } catch (error) {
+        failure = new Error('Malformed MCP handshake response', { cause: error });
+      }
       buffer = buffer.slice(idx + 1);
     }
   });
   const next = async () => {
-    for (;;) {
+    const deadline = Date.now() + 10000;
+    while (Date.now() < deadline) {
+      if (failure) throw failure;
       if (lines.length) return lines.shift();
+      if (closed || child.exitCode !== null) throw new Error(`MCP exited ${child.exitCode}: ${stderr}`);
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
+    throw new Error(`MCP response timed out: ${stderr}`);
   };
   try {
     child.stdin.write(
@@ -42,7 +72,8 @@ test('stdio MCP handshake and tool discovery', async () => {
     const listed = (await next()) as Record<string, any>;
     assert.ok(listed.result.tools.length >= 17);
   } finally {
-    child.kill();
+    if (!closed) child.kill();
+    await exited;
   }
 });
 
@@ -64,6 +95,7 @@ test('official MCP client receives runtime event notifications', async () => {
     command: process.execPath,
     args: ['build/src/mcp-server-sdk.js'],
     stderr: 'pipe',
+    env: fixtureStdioEnv(),
   });
   const client = new Client({ name: 'notification-test', version: '1.0' });
   const notifications: Array<Record<string, unknown>> = [];

@@ -141,6 +141,9 @@ async function main() {
     command: process.execPath,
     args: [path.join(root, 'build/src/mcp-server-sdk.js')],
     stderr: 'pipe',
+    env: process.env.GODOT_HARNESS_RUN_REGISTRY_PATH
+      ? { GODOT_HARNESS_RUN_REGISTRY_PATH: process.env.GODOT_HARNESS_RUN_REGISTRY_PATH }
+      : {},
   });
   const client = new Client(
     { name: 'production-defect-baseline', version: '1.0.0' },
@@ -545,26 +548,37 @@ async function main() {
       { scenePath: 'res://three_d.tscn', nodePath: 'Camera', semanticScript: 'semantics.gd' },
       async () => {
         const second = await open(client, projectPath, 'three-d', { scenePath: 'res://three_d.tscn' });
-        let specialized;
+        let specialized, undeclared;
         try {
           specialized = await call(client, 'get_specialized_state', {
             sessionId: second.sessionId,
             nodePath: 'Camera',
           });
+          undeclared = await call(client, 'get_specialized_state', {
+            sessionId: second.sessionId,
+            nodePath: '.',
+          });
         } finally {
           await stop(client, second.sessionId);
         }
         const semantics = await call(client, 'analyze_script_semantics', { projectPath, scriptPath: 'semantics.gd' });
-        const unsupported = specialized.isError && specialized.body.code === 'UNSUPPORTED';
+        const supported =
+          !specialized.isError &&
+          specialized.data.source === 'REAL' &&
+          specialized.data.state?.camera?.fov === 75 &&
+          specialized.data.state?.camera?.globalTransform?.type === 'Transform3D' &&
+          undeclared.isError &&
+          undeclared.body.code === 'UNSUPPORTED';
         const qualified = semantics.data.stateMachine?.transitions?.some((item) => item.to === 'RUNNING');
         return {
           verified: !semantics.isError && (specialized.data.state !== undefined || specialized.isError),
-          correct: unsupported && qualified,
+          correct: supported && qualified,
           subchecks: [
-            { id: 'D09-3D', ownerTask: 'T18', status: unsupported ? 'PASS' : 'EXPECTED_DEFECT' },
+            { id: 'D09-3D', ownerTask: 'T18', status: supported ? 'PASS' : 'EXPECTED_DEFECT' },
             { id: 'D09-SEMANTICS', ownerTask: 'T22', status: qualified ? 'PASS' : 'EXPECTED_DEFECT' },
           ],
           actual: {
+            undeclared: { isError: undeclared.isError, code: undeclared.body.code },
             specialized: {
               isError: specialized.isError,
               code: specialized.body.code,

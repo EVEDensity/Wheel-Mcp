@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { mkdtemp, readFile, writeFile, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -31,6 +31,8 @@ test('invalid scene, script and dependency candidates never replace original byt
         assert.equal(error.code, 'VALIDATION_FAILED');
         assert.equal(error.details.result.status, 'FAIL');
         assert.equal(error.details.result.files[0].path, 'res://' + name);
+        const inputs = JSON.parse(readFileSync(path.join(error.details.evidenceDir, 'inputs.json'), 'utf8'));
+        assert.equal(existsSync(path.dirname(inputs.stage)), false, 'isolated validation stage must be removed');
         return true;
       },
     );
@@ -65,6 +67,8 @@ test(
     const report = JSON.parse(await readFile(path.join(r.evidenceDir!, 'report.json'), 'utf8'));
     assert.equal(report.status, 'PASS');
     assert.equal(report.result.files[1].instantiated, true);
+    const inputs = JSON.parse(await readFile(path.join(r.evidenceDir!, 'inputs.json'), 'utf8'));
+    assert.equal(existsSync(path.dirname(inputs.stage)), false, 'successful validation stage must be removed');
     await assert.rejects(
       writeValidatedProjectFiles(
         f.root,

@@ -76,22 +76,38 @@ test(
         const text = await readFile(path.join(f.root, `r${i}.tres`), 'utf8');
         assert.match(text, /uid="uid:\/\//);
         files[`r${i}.tres`] = text;
+        if (type === 'StyleBoxFlat') {
+          // StyleBox is a Theme item, not a node material. Its composed Theme
+          // save/reopen path is covered by ui-authoring-e2e; still export and
+          // read back this external resource here rather than dropping the type.
+          const readback = await call('manage_editor_resource', {
+            request: { action: 'read', ref: saved.ref },
+          });
+          assert.equal(readback.ref.resourceType, type);
+          assert.deepEqual(readback.properties, made.properties);
+          continue;
+        }
         const shape = type.includes('Shape'),
-          physics = type === 'PhysicsMaterial';
-        const nodeType = shape
-          ? type.endsWith('2D')
-            ? 'CollisionShape2D'
-            : 'CollisionShape3D'
-          : physics
-            ? 'StaticBody3D'
-            : 'MeshInstance3D';
-        const property = shape
-          ? 'shape'
-          : physics
-            ? 'physics_material_override'
-            : type.endsWith('Mesh')
-              ? 'mesh'
-              : 'material_override';
+          physics = type === 'PhysicsMaterial',
+          theme = type === 'Theme';
+        const nodeType = theme
+          ? 'Control'
+          : shape
+            ? type.endsWith('2D')
+              ? 'CollisionShape2D'
+              : 'CollisionShape3D'
+            : physics
+              ? 'StaticBody3D'
+              : 'MeshInstance3D';
+        const property = theme
+          ? 'theme'
+          : shape
+            ? 'shape'
+            : physics
+              ? 'physics_material_override'
+              : type.endsWith('Mesh')
+                ? 'mesh'
+                : 'material_override';
         ops.push(
           { kind: 'create', parent: '.', name: `R${i}`, type: nodeType },
           { kind: 'resource_assign', path: `R${i}`, property, ref: saved.ref, policy: 'shared' },
@@ -107,7 +123,9 @@ test(
         }
       }
       await call('apply_editor_scene', { operations: ops });
-      assert.equal(approvals, 13);
+      assert.equal(Object.keys(files).length, resourceTypes.length);
+      assert.equal(Object.keys(expected).length, resourceTypes.length - 1);
+      assert.equal(approvals, resourceTypes.length + 1);
       const packed = await f.command('test-only-pack');
       assert.equal(packed.pack, 0);
       assert.equal(packed.save, 0);
