@@ -221,7 +221,7 @@ export async function getSceneTree(
       const attrs: Record<string, string> = {};
       for (const item of match[1].matchAll(/(\w+)="([^"]*)"|(\w+)=([^\s]+)/g))
         attrs[item[1] || item[3]] = item[2] ?? item[4];
-      if (!attrs.name || !attrs.type) continue;
+      if (!attrs.name) continue;
       const nodePath =
         parsed++ === 0 ? '.' : attrs.parent && attrs.parent !== '.' ? `${attrs.parent}/${attrs.name}` : attrs.name;
       if (subtree !== '.' && nodePath !== subtree && !nodePath.startsWith(`${subtree}/`)) continue;
@@ -235,7 +235,7 @@ export async function getSceneTree(
       }
       const node = {
         name: attrs.name,
-        type: attrs.type,
+        type: attrs.type || null,
         parent: attrs.parent || null,
         owner: attrs.owner || null,
         path: nodePath,
@@ -251,6 +251,8 @@ export async function getSceneTree(
     schema_version: '0.1',
     source: 'REAL',
     capability: 'STATIC_SCENE_TREE',
+    analysisLevel: 'heuristic' as const,
+    authoritative: false,
     runtime: false,
     projectPath: root,
     scenePath: relative,

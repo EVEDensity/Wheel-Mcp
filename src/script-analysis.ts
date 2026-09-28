@@ -18,6 +18,10 @@ export interface ScriptState {
 export interface ScriptSemanticAnalysis {
   schema_version: '0.1';
   source: 'REAL';
+  /** This parser scans lines with regexes; it is not a Godot semantic or syntax service. */
+  analysisLevel: 'heuristic';
+  /** Heuristic output must never authorize symbol rename or other source edits. */
+  safeRefactor: false;
   scriptPath?: string;
   extends?: string;
   className?: string;
@@ -59,6 +63,8 @@ export function analyzeScriptSemantics(content: string, scriptPath?: string): Sc
   const result: ScriptSemanticAnalysis = {
     schema_version: '0.1',
     source: 'REAL',
+    analysisLevel: 'heuristic',
+    safeRefactor: false,
     ...(scriptPath ? { scriptPath } : {}),
     signals: [],
     variables: [],

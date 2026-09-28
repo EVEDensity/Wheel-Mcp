@@ -160,18 +160,43 @@ function headerAttributes(line: string): Record<string, string> {
   while ((m = re.exec(line))) result[m[1]] = m[2].replace(/^"|"$/g, '');
   return result;
 }
-/** Parse a Godot text scene into a navigable resource dependency graph. */
+/** Lexical resource references, excluding quoted strings and comments. Not a Godot parser. */
+export function sceneResourceReferences(value: string): Array<{ kind: 'external' | 'sub'; id: string }> {
+  const refs: Array<{ kind: 'external' | 'sub'; id: string }> = [];
+  let quoted = false;
+  for (let index = 0; index < value.length; index++) {
+    if (value[index] === '\\' && quoted) {
+      index++;
+      continue;
+    }
+    if (value[index] === '"') {
+      quoted = !quoted;
+      continue;
+    }
+    if (quoted) continue;
+    if (value[index] === ';') break;
+    if (index > 0 && /[\w]/.test(value[index - 1])) continue;
+    const match = value.slice(index).match(/^(ExtResource|SubResource)\("([^"\\]+)"\)/);
+    if (!match) continue;
+    refs.push({ kind: match[1] === 'ExtResource' ? 'external' : 'sub', id: match[2] });
+    index += match[0].length - 1;
+  }
+  return refs;
+}
+/** Heuristic text preview only. SceneState/editor inspection is authoritative. */
 export function parseSceneResourceGraph(content: string, scenePath = '') {
   const lines = content.split(/\r?\n/),
     extResources: any[] = [],
     subResources: any[] = [],
     nodes: any[] = [];
   const reverseDependencies: Record<string, string[]> = {};
+  const editableChildren: string[] = [];
   let current: any;
   const addRef = (id: string, target: string) => {
     (reverseDependencies[id] ??= []).push(target);
   };
-  for (const line of lines) {
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
     if (!line.trim() || line.startsWith(';')) continue;
     const section = line.match(/^\[(\w+)(?:\s+([^\]]+))?\]/);
     if (section) {
@@ -181,6 +206,7 @@ export function parseSceneResourceGraph(content: string, scenePath = '') {
           id: attrs.id ?? '',
           type: attrs.type ?? '',
           path: attrs.path ?? '',
+          uid: attrs.uid,
           properties: {},
           dependencies: [],
         };
@@ -199,6 +225,8 @@ export function parseSceneResourceGraph(content: string, scenePath = '') {
           properties: {},
           resourceRefs: [],
           instance: attrs.instance,
+          isRoot: !Object.hasOwn(attrs, 'parent') && nodes.length === 0,
+          override: !attrs.type && !attrs.instance && Object.hasOwn(attrs, 'parent'),
         };
         nodes.push(current);
         if (attrs.instance) {
@@ -208,16 +236,19 @@ export function parseSceneResourceGraph(content: string, scenePath = '') {
             addRef(r[1], current.path + '.instance');
           }
         }
-      } else current = undefined;
+      } else {
+        if (section[1] === 'editable' && attrs.path) editableChildren.push(attrs.path);
+        current = undefined;
+      }
       continue;
     }
-    const property = line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+    const property = line.match(/^([A-Za-z_][\w/]*)\s*=\s*(.+)$/);
     if (!property || !current) continue;
     const key = property[1],
       parsed = parseSceneValue(property[2]);
     current.properties[key] = parsed;
-    for (const r of property[2].matchAll(/(ExtResource|SubResource)\("([^"]+)"\)/g)) {
-      const id = r[2];
+    for (const r of sceneResourceReferences(property[2])) {
+      const id = r.id;
       current.resourceRefs?.push(id);
       addRef(id, (current.path ?? current.id) + '.' + key);
       current.dependencies?.push(id);
@@ -225,14 +256,20 @@ export function parseSceneResourceGraph(content: string, scenePath = '') {
   }
   const sceneLine = lines.find((l) => l.startsWith('[gd_scene'));
   const sceneAttrs = headerAttributes(sceneLine?.replace(/^\[gd_scene\s*|\]$/g, '') ?? '');
-  const inherited = extResources.find((r) => r.type === 'PackedScene');
+  const rootInstance = sceneResourceReferences(nodes.find((node) => node.isRoot)?.instance ?? '').find(
+    (ref) => ref.kind === 'external',
+  );
+  const inherited = rootInstance && extResources.find((r) => r.id === rootInstance.id && r.type === 'PackedScene');
   return {
+    analysisLevel: 'heuristic' as const,
+    authoritative: false,
     scenePath,
     format: sceneAttrs.format,
     loadSteps: Number(sceneAttrs.load_steps) || undefined,
     extResources,
     subResources,
     nodes,
+    editableChildren,
     inheritedScene: inherited ? { path: inherited.path, type: inherited.type, ref: inherited.id } : undefined,
     reverseDependencies,
   };
@@ -526,6 +563,21 @@ export async function compareScreenshots(
     maxChannelDelta,
     boundingBox: differentPixels ? box : null,
     diffPath,
+  };
+}
+/** Exact RGBA sample from a decoded PNG for native rendering assertions. */
+export async function readScreenshotPixel(filePath: string, x: number, y: number) {
+  const image = decodePng(await readFile(filePath));
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x >= image.width || y >= image.height)
+    throw new Error('Screenshot pixel coordinate is outside image bounds');
+  const offset = (y * image.width + x) * 4;
+  return {
+    width: image.width,
+    height: image.height,
+    r: image.rgba[offset],
+    g: image.rgba[offset + 1],
+    b: image.rgba[offset + 2],
+    a: image.rgba[offset + 3],
   };
 }
 export async function getRecentEvidence(evidenceDir: string) {

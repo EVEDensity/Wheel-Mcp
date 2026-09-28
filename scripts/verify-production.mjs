@@ -1,4 +1,5 @@
 import { spawnSync, execFileSync } from 'node:child_process';
+import { lstatSync, mkdtempSync, rmSync } from 'node:fs';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -49,7 +50,7 @@ if (args.includes('--check-report')) {
     );
     process.exit(2);
   }
-  if (!['G0', 'G1', 'G2'].includes(gateId)) {
+  if (!['G0', 'G1', 'G2', 'G3'].includes(gateId)) {
     console.error(`${gateId} suite is NOT_RUN: owner tasks and Gate-specific tests are not implemented yet`);
     process.exit(2);
   }
@@ -63,6 +64,10 @@ async function runBaseline({ gateId, baselineOnly }) {
   const runId = new Date().toISOString().replace(/[:.]/g, '-') + '-' + process.pid;
   const runDir = path.join(root, `runs/production-roadmap/${gateId === 'G0' ? 'T00' : gateId}`, runId);
   await mkdir(runDir, { recursive: true });
+  // Qualification processes share a fresh TEST-ONLY registry. Never let a
+  // developer's interrupted local runs or PID reuse contaminate test fixtures,
+  // nor let test reclamation operate on the user's actual run registry.
+  process.env.GODOT_HARNESS_RUN_REGISTRY_PATH = path.join(runDir, 'test-run-registry.json');
   const source = await sourceIdentity(root);
   const godot = process.env.GODOT_PATH ?? '';
   let godotVersion = 'NOT_RUN';
@@ -85,14 +90,20 @@ async function runBaseline({ gateId, baselineOnly }) {
     stderrLog = '';
   function execute(name, program, argv, required = true, testReport = false, envOverride = {}) {
     const start = Date.now();
+    // Test-only scratch lives in a unique root, never in the developer's shared Temp.
+    const testTempRoot = testReport ? mkdtempSync(path.join(os.tmpdir(), 'wheel-gate-')) : undefined;
     const useNpmCli = process.platform === 'win32' && program === 'npm.cmd' && process.env.npm_execpath;
     const executable = useNpmCli ? process.execPath : program;
     const executableArgs = useNpmCli ? [process.env.npm_execpath, ...argv] : argv;
     const result = spawnSync(executable, executableArgs, {
       cwd: root,
-      env: { ...process.env, ...envOverride },
+      env: {
+        ...process.env,
+        ...envOverride,
+        ...(testTempRoot ? { TEMP: testTempRoot, TMP: testTempRoot } : {}),
+      },
       encoding: 'utf8',
-      timeout: 900000,
+      timeout: testReport && name === 'full-tests' ? 1800000 : 900000,
       maxBuffer: 16 * 1024 * 1024,
       shell: process.platform === 'win32' && program === 'npm.cmd' && !useNpmCli,
     });
@@ -123,8 +134,27 @@ async function runBaseline({ gateId, baselineOnly }) {
         : undefined,
       reportError: assessed?.reportError,
     };
+    if (testTempRoot) {
+      try {
+        const tempParent = path.resolve(os.tmpdir());
+        const exactRoot = path.resolve(testTempRoot);
+        if (
+          path.dirname(exactRoot) !== tempParent ||
+          !/^wheel-gate-[A-Za-z0-9]+$/.test(path.basename(exactRoot)) ||
+          lstatSync(exactRoot).isSymbolicLink()
+        )
+          throw new Error('Test scratch cleanup target escaped its owned Temp root');
+        rmSync(exactRoot, { recursive: true, force: false, maxRetries: 10, retryDelay: 250 });
+        record.tempCleanup = 'PASS';
+      } catch (error) {
+        record.status = 'FAIL';
+        record.tempCleanup = 'FAIL';
+        record.tempRoot = testTempRoot;
+        record.tempCleanupError = error.message;
+      }
+    }
     commands.push(record);
-    console.log(`${name}: ${status}${record.tests ? ' ' + JSON.stringify(record.tests) : ''}`);
+    console.log(`${name}: ${record.status}${record.tests ? ' ' + JSON.stringify(record.tests) : ''}`);
     return { ...record, stdout };
   }
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -140,7 +170,7 @@ async function runBaseline({ gateId, baselineOnly }) {
       fullTestRun = execute(
         'full-tests',
         process.execPath,
-        ['--test', '--test-concurrency=4', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...files],
+        ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...files],
         true,
         true,
       );
@@ -157,11 +187,21 @@ async function runBaseline({ gateId, baselineOnly }) {
       });
     if (godotVersion !== 'NOT_RUN') {
       const smokeFiles = [
+        'editor-fixture-isolation',
         'process-evidence',
         'validated-project-write',
         'editor-scene-save',
         'editor-scene-rpc',
         'editor-instance-rpc',
+        'inherited-scene-roundtrip',
+        'scene-move',
+        'ui-authoring-e2e',
+        'runtime-3d-e2e',
+        'physics-authoring-e2e',
+        'animation-authoring-e2e',
+        'shader-authoring-e2e',
+        'content-workflows-e2e',
+        'script-semantic-service',
         'resource-roundtrip',
         'resource-sharing',
         'editor-bridge-e2e',
@@ -177,13 +217,63 @@ async function runBaseline({ gateId, baselineOnly }) {
         'reload-scene',
         'shutdown',
       ].map((name) => `build/tests/${name}.test.js`);
-      execute(
+      const smokeRun = execute(
         'godot-smoke',
         process.execPath,
-        ['--test', '--test-concurrency=4', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...smokeFiles],
+        ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...smokeFiles],
         true,
         true,
       );
+      if (gateId === 'G3') {
+        const required = [
+          'official MCP three-level inherited override',
+          'official MCP native settings/inventory UI',
+          'T18 real native physics authoring',
+          'T19 real editor creates bounded animation clips',
+          'T20 native shader resources are authored',
+          'T21 official MCP PNG import',
+          'T21 live editor scans committed PNG',
+          'T21 2D UI/combat slice',
+          'T21 3D interaction slice',
+        ];
+        const checks = [];
+        for (const run of [fullTestRun, smokeRun]) {
+          let passed = [];
+          try {
+            passed = run.stdout
+              .split('\n')
+              .filter(Boolean)
+              .map((line) => JSON.parse(line))
+              .filter((event) => event.type === 'test:pass' && !event.data?.skip && !event.data?.todo)
+              .map((event) => event.data?.name);
+          } catch {
+            /* malformed output remains a required failure */
+          }
+          for (const name of required)
+            checks.push({
+              run: run === fullTestRun ? 'full-tests' : 'godot-smoke',
+              name,
+              status: run.status === 'PASS' && passed.some((item) => item?.startsWith(name)) ? 'PASS' : 'FAIL',
+            });
+        }
+        const assessment = {
+          sourceHash: source.sourceHash,
+          checks,
+          status: checks.every((item) => item.status === 'PASS') ? 'PASS' : 'FAIL',
+        };
+        await writeFile(path.join(runDir, 'G3-assessment.json'), JSON.stringify(assessment, null, 2));
+        commands.push({
+          name: 'G3-content-workflow-assessment',
+          argv: ['assess-frozen-required-cases'],
+          required: true,
+          status: assessment.status,
+          exitCode: assessment.status === 'PASS' ? 0 : 1,
+          signal: null,
+          durationMs: 0,
+          outputHash: sha256(JSON.stringify(assessment)),
+        });
+        console.log(`G3-content-workflow-assessment: ${assessment.status}`);
+      }
       if (gateId === 'G1') {
         execute(
           'G1-authorization-and-lifecycle',
@@ -353,6 +443,7 @@ async function runBaseline({ gateId, baselineOnly }) {
       command: process.execPath,
       args: [path.join(root, 'build/src/mcp-server-sdk.js')],
       stderr: 'pipe',
+      env: { GODOT_HARNESS_RUN_REGISTRY_PATH: process.env.GODOT_HARNESS_RUN_REGISTRY_PATH },
     });
     const client = new Client({ name: 'production-baseline', version: '1.0.0' });
     try {
@@ -393,7 +484,7 @@ async function runBaseline({ gateId, baselineOnly }) {
     (id) => state.gates.find((item) => item.id === id)?.status === 'PASS',
   );
   const status =
-    gateId === 'G2' && godotVersion === 'NOT_RUN'
+    ['G2', 'G3'].includes(gateId) && godotVersion === 'NOT_RUN'
       ? 'NOT_RUN'
       : complete && (baselineOnly || (gateTasksDone && predecessorsPassed))
         ? 'PASS'
@@ -425,13 +516,14 @@ async function runBaseline({ gateId, baselineOnly }) {
       ? ['T01-summary.json']
       : []),
     ...((await stat(path.join(runDir, 'T15-assessment.json')).catch(() => null)) ? ['T15-assessment.json'] : []),
+    ...((await stat(path.join(runDir, 'G3-assessment.json')).catch(() => null)) ? ['G3-assessment.json'] : []),
   ])
     evidence.push({ path: name, sha256: sha256(await readFile(path.join(runDir, name))) });
   const finished = Date.now();
   const manifest = {
     schemaVersion: 1,
     caseId: gateId === 'G0' ? 'T00-baseline' : `${gateId}-gate`,
-    taskId: gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : 'T15',
+    taskId: gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : 'T21',
     gateId,
     source,
     environment,

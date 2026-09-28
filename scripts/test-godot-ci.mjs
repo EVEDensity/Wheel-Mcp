@@ -16,11 +16,21 @@ if (!godotIsFile) {
 }
 
 const testFiles = [
+  'build/tests/editor-fixture-isolation.test.js',
   'build/tests/editor-authoring-e2e.test.js',
   'build/tests/editor-scene-save.test.js',
   'build/tests/validated-project-write.test.js',
   'build/tests/editor-scene-rpc.test.js',
   'build/tests/editor-instance-rpc.test.js',
+  'build/tests/inherited-scene-roundtrip.test.js',
+  'build/tests/scene-move.test.js',
+  'build/tests/ui-authoring-e2e.test.js',
+  'build/tests/runtime-3d-e2e.test.js',
+  'build/tests/physics-authoring-e2e.test.js',
+  'build/tests/animation-authoring-e2e.test.js',
+  'build/tests/shader-authoring-e2e.test.js',
+  'build/tests/content-workflows-e2e.test.js',
+  'build/tests/script-semantic-service.test.js',
   'build/tests/resource-roundtrip.test.js',
   'build/tests/resource-sharing.test.js',
   'build/tests/process-evidence.test.js',
@@ -40,7 +50,7 @@ const testFiles = [
 
 const result = spawnSync(
   process.execPath,
-  ['--test', '--test-concurrency=4', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...testFiles],
+  ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...testFiles],
   {
     cwd: process.cwd(),
     encoding: 'utf8',
