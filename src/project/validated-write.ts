@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { readFile, writeFile, mkdir, mkdtemp, lstat } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, lstat, unlink, link, copyFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,7 +18,38 @@ export type ValidatedWriteOptions = ProjectWriteOptions & {
   validationMode?: 'engine' | 'raw';
   /** Library-only: native save supplies an exact live-document guard. Not a tool argument. */ allowDirtyScene?: boolean;
 };
-export type CandidateFile = { path: string; content: string; expectedSha256: string | null };
+export type CandidateFile = { path: string; content: string | Buffer; expectedSha256: string | null };
+
+/** Each Windows editor import needs its own settings profile, even for headless validation. */
+async function isolatedValidationExecutable(source: string, stageRoot: string): Promise<string> {
+  if (process.platform !== 'win32') return source;
+  const engineDir = path.join(stageRoot, 'engine');
+  await mkdir(engineDir);
+  const target = path.join(engineDir, path.basename(source));
+  const install = async (from: string, to: string) => {
+    try {
+      await link(from, to);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw error;
+      await copyFile(from, to);
+    }
+  };
+  await install(source, target);
+  if (/_console\.exe$/i.test(source))
+    await install(source.replace(/_console\.exe$/i, '.exe'), target.replace(/_console\.exe$/i, '.exe'));
+  await writeFile(path.join(engineDir, '_sc_'), '');
+  return target;
+}
+
+async function cleanupValidationStage(stageRoot: string): Promise<void> {
+  const tempRoot = path.resolve(os.tmpdir());
+  const exactStage = path.resolve(stageRoot);
+  if (path.dirname(exactStage) !== tempRoot || !/^wheel-validate-[A-Za-z0-9]+$/.test(path.basename(exactStage)))
+    throw new WheelError('FORBIDDEN', 'Validation cleanup target escaped the temporary root');
+  const info = await lstat(exactStage);
+  if (info.isSymbolicLink()) throw new WheelError('FORBIDDEN', 'Validation stage became a symlink');
+  await rm(exactStage, { recursive: true, force: false });
+}
 
 /** Do not replace a dirty document with a file tool. Absence of an enabled editor is not emulated. */
 export async function assertDocumentsClean(
@@ -41,11 +72,16 @@ export async function validateCandidateFiles(
   projectPath: string,
   files: CandidateFile[],
   options: ValidatedWriteOptions = {},
+  /** Library-only scene move: remove old paths from the isolated candidate, never the original. */
+  removedPaths: readonly string[] = [],
 ) {
   const timeout = createTimeoutContext(options.timeoutMs ?? 60000, options.signal);
   const id = randomUUID();
   let evidenceDir: string | undefined;
   let safeEvidence = false;
+  let stageRoot: string | undefined;
+  let primaryFailure: unknown;
+  let outcome: { evidenceDir: string; inputHash: string; validation: 'PASS'; scope: string } | undefined;
   try {
     const evidence = await resolveProjectPath(projectPath, 'project.godot', { mode: 'read' });
     evidenceDir = path.join(evidence.root, '.harness', 'validation', id);
@@ -66,7 +102,8 @@ export async function validateCandidateFiles(
     const inputs = await snapshotProject(evidence.root, timeout);
     if (inputs.totalBytes > 256 * 1024 * 1024)
       throw new WheelError('UNSUPPORTED', 'Isolated validation snapshot exceeds 256 MiB');
-    const stage = path.join(await mkdtemp(path.join(os.tmpdir(), 'wheel-validate-')), 'project');
+    stageRoot = await mkdtemp(path.join(os.tmpdir(), 'wheel-validate-'));
+    const stage = path.join(stageRoot, 'project');
     await mkdir(stage);
     for (const item of inputs.files) {
       timeout.throwIfCancelled();
@@ -80,7 +117,9 @@ export async function validateCandidateFiles(
     }
     for (const file of files) {
       // Resource declarations may not escape the isolated res:// context.
-      for (const match of file.content.matchAll(/\[ext_resource[^\]\n]*\bpath="([^"\n]+)"/g)) {
+      for (const match of (typeof file.content === 'string' ? file.content : '').matchAll(
+        /\[ext_resource[^\]\n]*\bpath="([^"\n]+)"/g,
+      )) {
         if (!match[1].startsWith('res://'))
           throw new WheelError('FORBIDDEN', 'External resource paths must be project-local res:// paths');
         await resolveProjectPath(stage, match[1], { mode: 'write' });
@@ -89,6 +128,10 @@ export async function validateCandidateFiles(
       await mkdir(path.dirname(target), { recursive: true });
       await writeFile(target, file.content);
     }
+    for (const removed of removedPaths) {
+      const target = await resolveProjectPath(stage, removed, { mode: 'write' });
+      await unlink(target.absolutePath);
+    }
     // Only this temporary project disables editor plugin activation; the source configuration stays intact.
     const projectFile = path.join(stage, 'project.godot');
     const settings = await readFile(projectFile, 'utf8');
@@ -96,11 +139,17 @@ export async function validateCandidateFiles(
       projectFile,
       settings.replace(/\[editor_plugins\][\s\S]*?(?=\n\[|$)/g, '[editor_plugins]\nenabled=PackedStringArray()\n'),
     );
-    const executable = resolveGodotPath(options.godotPath);
+    const executable = await isolatedValidationExecutable(resolveGodotPath(options.godotPath), stageRoot);
     await writeFile(
       path.join(evidenceDir, 'inputs.json'),
       JSON.stringify(
-        { inputs, files: files.map((f) => ({ path: f.path, sha256: sha(f.content) })), stage, executable },
+        {
+          inputs,
+          files: files.map((f) => ({ path: f.path, sha256: sha(f.content) })),
+          removedPaths,
+          stage,
+          executable,
+        },
         null,
         2,
       ),
@@ -120,7 +169,12 @@ export async function validateCandidateFiles(
       ['--headless', '--path', stage, '--script', checker],
       stage,
       Math.max(1, timeout.remaining() / 1000),
-      { WHEEL_VALIDATION_FILES: JSON.stringify(files.map((f) => 'res://' + f.path)), WHEEL_VALIDATION_OUTPUT: output },
+      {
+        WHEEL_VALIDATION_FILES: JSON.stringify(
+          files.filter((f) => f.path !== 'project.godot').map((f) => 'res://' + f.path),
+        ),
+        WHEEL_VALIDATION_OUTPUT: output,
+      },
       timeout,
     );
     const result = await readFile(output, 'utf8')
@@ -151,8 +205,11 @@ export async function validateCandidateFiles(
       });
     if ((await snapshotProject(evidence.root, timeout)).sha256 !== inputs.sha256)
       throw new WheelError('CONFLICT', 'Source project changed during isolated validation', { evidenceDir });
-    return { evidenceDir, inputHash: inputs.sha256, validation: 'PASS' as const, scope: result.scope };
+    if (typeof result.scope !== 'string')
+      throw new WheelError('PROTOCOL_MISMATCH', 'Godot validation report omitted its scope');
+    outcome = { evidenceDir, inputHash: inputs.sha256, validation: 'PASS', scope: result.scope };
   } catch (error) {
+    primaryFailure = error;
     if (safeEvidence && evidenceDir)
       await writeFile(
         path.join(evidenceDir, 'failure.json'),
@@ -167,10 +224,23 @@ export async function validateCandidateFiles(
           2,
         ),
       );
-    throw error;
   } finally {
     timeout.dispose();
+    if (stageRoot) {
+      try {
+        await cleanupValidationStage(stageRoot);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT' && !primaryFailure)
+          primaryFailure = new WheelError('ENGINE_UNAVAILABLE', 'Temporary validation stage cleanup failed', {
+            stageRoot,
+            cause: (error as Error).message,
+          });
+      }
+    }
   }
+  if (primaryFailure) throw primaryFailure;
+  if (!outcome) throw new WheelError('ENGINE_UNAVAILABLE', 'Validation ended without an outcome');
+  return outcome;
 }
 
 export async function writeValidatedProjectFiles(
@@ -195,11 +265,16 @@ export async function writeValidatedProjectFiles(
       options.signal,
     );
   const raw = options.validationMode === 'raw';
+  if (normalized.some((f) => Buffer.isBuffer(f.content) && (raw || !/\.png$/.test(f.path))))
+    throw new WheelError('UNSUPPORTED', 'Binary candidates require native PNG import validation');
   const beforeApproval = raw ? undefined : await snapshotProject(projectPath);
-  if (!raw && normalized.some((f) => !/\.(tscn|tres|gd)$/.test(f.path)))
+  if (
+    !raw &&
+    normalized.some((f) => !/\.(tscn|tres|gd)$/.test(f.path) && !(Buffer.isBuffer(f.content) && /\.png$/.test(f.path)))
+  )
     throw new WheelError(
       'UNSUPPORTED',
-      'Engine validation supports .tscn/.tres/.gd; choose explicit raw with risk approval for other text',
+      'Engine validation supports .tscn/.tres/.gd text and .png bytes; choose explicit raw with risk approval for other text',
     );
   const intent =
     (raw

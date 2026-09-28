@@ -16,7 +16,7 @@ const identitySchema = z.object({
   godotVersion: z.string().min(1),
   editorPid: z.number().int().positive(),
   port: z.number().int().min(1).max(65535),
-  capabilities: z.array(z.string()).max(16),
+  capabilities: z.array(z.string()).max(20),
   authorized: z.literal(true),
 });
 type EditorIdentity = z.infer<typeof identitySchema>;
@@ -229,7 +229,9 @@ export class EditorBridge {
       | 'scene.export'
       | 'scene.verify'
       | 'scene.notify'
-      | 'scene.observe',
+      | 'scene.observe'
+      | 'asset.scan'
+      | 'asset.status',
     params: Record<string, unknown>,
     options: { timeoutMs?: number; signal?: AbortSignal } = {},
   ): Promise<unknown> {

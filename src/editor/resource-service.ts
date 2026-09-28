@@ -18,6 +18,8 @@ export const resourceTypes = [
   'CapsuleShape2D',
   'BoxMesh',
   'SphereMesh',
+  'Theme',
+  'StyleBoxFlat',
 ] as const;
 export const resourceRefSchema = z
   .object({
@@ -59,8 +61,96 @@ const typed = z.discriminatedUnion('type', [
 export const resourcePropertiesSchema = z
   .record(z.string().min(1).max(80), z.union([z.boolean(), z.number().finite(), typed]))
   .refine((v) => Object.keys(v).length <= 8, 'Resource property budget exceeded');
-export const resourcePropertySchema = z.enum(['material_override', 'mesh', 'shape', 'physics_material_override']);
+export const resourcePropertySchema = z.enum([
+  'material_override',
+  'mesh',
+  'shape',
+  'physics_material_override',
+  'theme',
+]);
+const themeType = z.enum([
+  'Control',
+  'Label',
+  'Button',
+  'CheckButton',
+  'HSlider',
+  'PanelContainer',
+  'GridContainer',
+  'VBoxContainer',
+  'HBoxContainer',
+  'MarginContainer',
+]);
+const themeName = z.string().min(1).max(40);
+const themeItem = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('color'), themeType, name: themeName, value: typed.options[0] }).strict(),
+  z
+    .object({ kind: z.literal('constant'), themeType, name: themeName, value: z.number().int().min(0).max(128) })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('font_size'),
+      themeType,
+      name: z.literal('font_size'),
+      value: z.number().int().min(1).max(128),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('stylebox'),
+      themeType,
+      name: themeName,
+      ref: resourceRefSchema,
+      policy: z.literal('make_unique'),
+    })
+    .strict(),
+]);
+const shaderColor = typed.options[0];
+const shaderSource = z.discriminatedUnion('format', [
+  z
+    .object({
+      format: z.literal('text'),
+      code: z.string().min(1).max(4096),
+      uniforms: z
+        .record(z.string().regex(/^[a-z][a-z0-9_]{0,31}$/), z.union([shaderColor, z.number().finite().min(0).max(1)]))
+        .refine((value) => Object.keys(value).length <= 8, 'Shader uniform budget exceeded'),
+      textures: z
+        .object({ layer_a: z.array(shaderColor).length(4), layer_b: z.array(shaderColor).length(4) })
+        .strict()
+        .optional(),
+    })
+    .strict(),
+  z
+    .object({
+      format: z.literal('visual'),
+      nodes: z
+        .array(
+          z.discriminatedUnion('kind', [
+            z.object({ id: z.number().int().min(2).max(64), kind: z.literal('color'), color: shaderColor }).strict(),
+            z.object({ id: z.number().int().min(2).max(64), kind: z.literal('mix') }).strict(),
+          ]),
+        )
+        .min(1)
+        .max(16),
+      edges: z
+        .array(
+          z
+            .object({
+              from: z.number().int().min(2).max(64),
+              fromPort: z.number().int().min(0).max(4),
+              to: z.number().int().min(0).max(64),
+              toPort: z.number().int().min(0).max(16),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(32),
+    })
+    .strict(),
+]);
 export const resourceRequestSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('theme'), items: z.array(themeItem).min(1).max(24) }).strict(),
+  z.object({ action: z.literal('shader_capabilities') }).strict(),
+  z.object({ action: z.literal('shader'), source: shaderSource }).strict(),
   z
     .object({ action: z.literal('create'), resourceType: z.enum(resourceTypes), properties: resourcePropertiesSchema })
     .strict(),
@@ -98,6 +188,21 @@ export async function manageEditorResource(options: {
   const request = resourceRequestSchema.parse(options.request);
   const bridge = await EditorBridge.connect(options);
   try {
+    if (!bridge.identity.capabilities.includes('resource.manage'))
+      throw new WheelError('FORBIDDEN', 'Resources require independent private write opt-in');
+    if (
+      (request.action === 'shader' || request.action === 'shader_capabilities') &&
+      !bridge.identity.capabilities.includes('scene.shader/v1')
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks bounded shader authoring; upgrade explicitly');
+    if (
+      (request.action === 'theme' ||
+        (request.action === 'create' && ['Theme', 'StyleBoxFlat'].includes(request.resourceType)) ||
+        ('ref' in request && ['Theme', 'StyleBoxFlat'].includes(request.ref.resourceType)) ||
+        (request.action === 'reference' && request.property === 'theme')) &&
+      !bridge.identity.capabilities.includes('scene.ui/v1')
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks declared UI themes; upgrade explicitly');
     const value = (await bridge.sceneRequest('resource.manage', request, options)) as Record<string, unknown>;
     if (!value || typeof value !== 'object') throw new WheelError('PROTOCOL_MISMATCH', 'Malformed resource response');
     if (value.status === 'FAIL')

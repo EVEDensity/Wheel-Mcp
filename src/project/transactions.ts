@@ -8,8 +8,8 @@ import { WheelError, classifyError } from '../error-schema.js';
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const MAX_CONTENT_BYTES = 8 * 1024 * 1024;
 export type TransactionOperation =
-  | { kind: 'create'; path: string; content: string }
-  | { kind: 'replace'; path: string; content: string; expectedSha256: string }
+  | { kind: 'create'; path: string; content: string | Buffer }
+  | { kind: 'replace'; path: string; content: string | Buffer; expectedSha256: string }
   | { kind: 'delete'; path: string; expectedSha256: string }
   | { kind: 'rename'; from: string; to: string; expectedSha256: string };
 export type ExactTransactionEdit = { path: string; find: string; replace: string; expectedSha256: string };
@@ -142,22 +142,33 @@ async function planWithPreview(journal: Journal, dir: string): Promise<Transacti
   const pieces: string[] = [];
   for (let index = 0; index < journal.mutations.length; index++) {
     const item = journal.mutations[index];
-    const before = item.beforeSha256 === null ? '' : await readFile(path.join(dir, `${index}.before`), 'utf8');
-    const after = item.afterSha256 === null ? '' : await readFile(path.join(dir, `${index}.after`), 'utf8');
+    const before = item.beforeSha256 === null ? Buffer.alloc(0) : await readFile(path.join(dir, `${index}.before`));
+    const after = item.afterSha256 === null ? Buffer.alloc(0) : await readFile(path.join(dir, `${index}.after`));
     if (
       (item.beforeSha256 !== null && digest(before) !== item.beforeSha256) ||
       (item.afterSha256 !== null && digest(after) !== item.afterSha256)
     )
       throw new Error('transaction preview staging hash mismatch');
-    pieces.push(
-      `--- ${item.path}\n${before
-        .split('\n')
-        .map((line) => `- ${line}`)
-        .join('\n')}\n+++ ${item.path}\n${after
-        .split('\n')
-        .map((line) => `+ ${line}`)
-        .join('\n')}`,
-    );
+    let beforeText: string;
+    let afterText: string;
+    try {
+      beforeText = new TextDecoder('utf-8', { fatal: true }).decode(before);
+      afterText = new TextDecoder('utf-8', { fatal: true }).decode(after);
+      if (beforeText.includes('\0') || afterText.includes('\0')) throw new Error('binary content');
+      pieces.push(
+        `--- ${item.path}\n${beforeText
+          .split('\n')
+          .map((line) => `- ${line}`)
+          .join('\n')}\n+++ ${item.path}\n${afterText
+          .split('\n')
+          .map((line) => `+ ${line}`)
+          .join('\n')}`,
+      );
+    } catch {
+      pieces.push(
+        `--- ${item.path}\n[binary ${item.beforeBytes} bytes; SHA-256 ${item.beforeSha256 ?? 'absent'}]\n+++ ${item.path}\n[binary ${item.afterBytes} bytes; SHA-256 ${item.afterSha256 ?? 'absent'}]`,
+      );
+    }
   }
   const preview = pieces.join('\n');
   plan.diffPreviewTruncated = Buffer.byteLength(preview) > 32 * 1024;
@@ -291,13 +302,12 @@ export class ProjectTransactions {
     );
   }
 
-  private async snapshot(relative: string): Promise<string | null> {
+  private async snapshot(relative: string): Promise<Buffer | null> {
     const resolved = await resolveProjectPath(this.projectPath, relative, { mode: 'write' });
     try {
       const bytes = await readFile(resolved.absolutePath);
       if (bytes.length > MAX_CONTENT_BYTES) throw new Error('transaction file exceeds 8 MiB');
-      new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-      return bytes.toString('utf8');
+      return bytes;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
       throw error;
@@ -306,10 +316,23 @@ export class ProjectTransactions {
 
   async prepare(operations: TransactionOperation[], operationId: string = randomUUID()): Promise<TransactionPlan> {
     const root = await realpath(this.projectPath);
+    const requestOperations = operations.map((operation) =>
+      'content' in operation && Buffer.isBuffer(operation.content)
+        ? { ...operation, content: { sha256: digest(operation.content), bytes: operation.content.length } }
+        : operation,
+    );
     return this.prepareWithRequestHash(
       operations,
       operationId,
-      digest(JSON.stringify({ root, ownerId: this.ownerId, kind: 'operations', operations, intent: this.intent })),
+      digest(
+        JSON.stringify({
+          root,
+          ownerId: this.ownerId,
+          kind: 'operations',
+          operations: requestOperations,
+          intent: this.intent,
+        }),
+      ),
     );
   }
 
@@ -332,25 +355,26 @@ export class ProjectTransactions {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       }
-      const staged: Array<{ mutation: Mutation; before: string | null; after: string | null }> = [];
+      const staged: Array<{ mutation: Mutation; before: Buffer | null; after: Buffer | null }> = [];
       const seen = new Set<string>();
-      const add = async (file: string, before: string | null, after: string | null) => {
+      const add = async (file: string, before: Buffer | null, after: string | Buffer | null) => {
+        const afterBytes = typeof after === 'string' ? Buffer.from(after) : after;
         const relative = projectRelativePath(file, 'write');
         const key = process.platform === 'win32' ? relative.toLowerCase() : relative;
         if (seen.has(key)) throw new Error('transaction has duplicate target');
         seen.add(key);
-        if (after !== null && Buffer.byteLength(after) > MAX_CONTENT_BYTES)
+        if (afterBytes !== null && afterBytes.length > MAX_CONTENT_BYTES)
           throw new Error('transaction content exceeds 8 MiB');
         staged.push({
           mutation: {
             path: relative,
             beforeSha256: before === null ? null : digest(before),
-            afterSha256: after === null ? null : digest(after),
+            afterSha256: afterBytes === null ? null : digest(afterBytes),
             beforeBytes: before === null ? 0 : Buffer.byteLength(before),
-            afterBytes: after === null ? 0 : Buffer.byteLength(after),
+            afterBytes: afterBytes === null ? 0 : afterBytes.length,
           },
           before,
-          after,
+          after: afterBytes,
         });
       };
       for (const operation of operations) {
@@ -458,7 +482,9 @@ export class ProjectTransactions {
       const key = process.platform === 'win32' ? relative.toLowerCase() : relative;
       const prior = staged.get(key);
       if (prior && prior.path !== relative) throw new Error('exact edit path casing changed');
-      const current = prior?.current ?? (await this.snapshot(relative));
+      const source = prior ? null : await this.snapshot(relative);
+      const current =
+        prior?.current ?? (source === null ? null : new TextDecoder('utf-8', { fatal: true }).decode(source));
       if (current === null) throw new Error('exact edit target does not exist');
       if (digest(current) !== edit.expectedSha256)
         throw new WheelError('CONFLICT', 'exact edit hash precondition failed');
@@ -679,7 +705,7 @@ export class ProjectTransactions {
     await this.checkpoint?.('ROLLING_BACK', journal.operationId);
     for (let index = journal.mutations.length - 1; index >= 0; index--) {
       const mutation = journal.mutations[index];
-      let current: string | null;
+      let current: Buffer | null;
       try {
         current = await this.snapshot(mutation.path);
       } catch (error) {

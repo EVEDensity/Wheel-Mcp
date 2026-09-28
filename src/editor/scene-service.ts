@@ -6,6 +6,10 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { EditorBridge } from './editor-bridge.js';
 import { WheelError, isStableErrorCode } from '../error-schema.js';
 import { resourceRefSchema, resourcePropertySchema, resourcePropertiesSchema } from './resource-service.js';
+import { verifySceneDependencies } from './scene-dependencies.js';
+import { uiPropertiesSchema, uiTypes } from './ui-schema.js';
+import { physicsPropertiesSchema, physicsTypes } from './physics-schema.js';
+import { animationClipsSchema, animationGraphSchema, animationBlendSchema } from './animation-schema.js';
 
 const nodePath = z.string().min(1).max(512);
 const name = z.string().min(1).max(80);
@@ -56,10 +60,28 @@ export const sceneOperationsSchema = z
             'Control',
             'Label',
             'Camera3D',
+            'AnimationPlayer',
+            'AnimationTree',
+            ...physicsTypes,
+            ...uiTypes,
           ]),
         })
         .strict(),
       z.object({ kind: z.literal('delete'), path: nodePath }).strict(),
+      z.object({ kind: z.literal('ui_set'), path: nodePath, properties: uiPropertiesSchema }).strict(),
+      z.object({ kind: z.literal('physics_set'), path: nodePath, properties: physicsPropertiesSchema }).strict(),
+      z.object({ kind: z.literal('animation_clips'), path: nodePath, clips: animationClipsSchema }).strict(),
+      z.object({ kind: z.literal('animation_graph'), path: nodePath, graph: animationGraphSchema }).strict(),
+      z.object({ kind: z.literal('animation_blend'), path: nodePath, blend: animationBlendSchema }).strict(),
+      z.object({ kind: z.literal('editable_children'), path: nodePath, enabled: z.boolean() }).strict(),
+      z
+        .object({
+          kind: z.literal('override'),
+          path: nodePath,
+          property: z.enum(['position', 'rotation', 'scale', 'visible']),
+          value: z.union([z.boolean(), z.number().finite(), vector]),
+        })
+        .strict(),
       z
         .object({
           kind: z.literal('instantiate'),
@@ -84,7 +106,7 @@ export const sceneOperationsSchema = z
         .object({
           kind: z.literal('connect'),
           path: nodePath,
-          signal: z.literal('visibility_changed'),
+          signal: z.enum(['visibility_changed', 'pressed']),
           target: nodePath,
           method: z.enum(['hide', 'show']),
         })
@@ -93,7 +115,7 @@ export const sceneOperationsSchema = z
         .object({
           kind: z.literal('disconnect'),
           path: nodePath,
-          signal: z.literal('visibility_changed'),
+          signal: z.enum(['visibility_changed', 'pressed']),
           target: nodePath,
           method: z.enum(['hide', 'show']),
         })
@@ -118,6 +140,7 @@ export const scenePlanSchema = z.object({
   beforeHash: hash,
   afterHash: hash,
   sourceHash: hash,
+  dependencyHashes: z.record(z.string().max(512), hash).refine((value) => Object.keys(value).length <= 32),
   historyVersion: z.number().int().nonnegative(),
   planId: z.string().regex(/^[a-f0-9]{32}$/),
   planHash: hash,
@@ -166,6 +189,7 @@ export function createSceneApproval(server: McpServer, actor: string): SceneAppr
       `Project: ${plan.projectId} (${plan.projectPath}); scene: ${plan.scenePath}; owner: ${plan.ownerId}`,
       `Editor session: ${plan.sessionId}; history version: ${plan.historyVersion}`,
       `Plan SHA-256: ${plan.planHash}; source SHA-256: ${plan.sourceHash}`,
+      `Transitive scene dependencies: ${JSON.stringify(plan.dependencyHashes)}`,
       `Document: ${plan.beforeHash} -> ${plan.afterHash}`,
       JSON.stringify(plan.operations, null, 2),
     ].join('\n');
@@ -218,7 +242,45 @@ export async function applyEditorScene(
   let plan: ScenePlan | undefined;
   let submitted = false;
   try {
+    if (!bridge.identity.capabilities.includes('scene.prepare'))
+      throw new WheelError('FORBIDDEN', 'Editor scene writes require independent private opt-in');
+    if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
+    if (
+      operations.some(
+        (op) =>
+          op.kind === 'ui_set' ||
+          (op.kind === 'create' && (uiTypes as readonly string[]).includes(op.type)) ||
+          ((op.kind === 'connect' || op.kind === 'disconnect') && op.signal === 'pressed') ||
+          ((op.kind === 'resource_assign' || op.kind === 'resource_set') && op.property === 'theme'),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.ui/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks declared UI authoring capability; upgrade explicitly',
+      );
     const current = await bridge.snapshot(options);
+    if (
+      operations.some(
+        (op) =>
+          op.kind === 'physics_set' || (op.kind === 'create' && (physicsTypes as readonly string[]).includes(op.type)),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.physics3d/v1')
+    ) {
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks declared 3D physics authoring capability');
+    }
+    if (
+      operations.some(
+        (op) =>
+          op.kind === 'animation_clips' ||
+          op.kind === 'animation_graph' ||
+          op.kind === 'animation_blend' ||
+          (op.kind === 'create' && ['AnimationPlayer', 'AnimationTree'].includes(op.type)),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.animation/v1')
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks declared animation authoring capability');
     if (!current.currentScene) throw new WheelError('ENGINE_UNAVAILABLE', 'No edited scene');
     try {
       await resolveProjectPath(options.projectPath, current.currentScene.path, { mode: 'write' });
@@ -240,10 +302,12 @@ export async function applyEditorScene(
     )
       throw new WheelError('PROTOCOL_MISMATCH', 'Scene preview identity/operations mismatch');
     plan = parsed.data;
+    await verifySceneDependencies(options.projectPath, plan.dependencyHashes, options.signal);
     const approval = await options.approve(plan, options.signal);
     if (!approval || approval.planHash !== plan.planHash || approval.actor !== options.ownerId || !approval.receipt)
       throw new WheelError('FORBIDDEN', 'This exact editor plan was not approved');
     options.signal?.throwIfAborted();
+    await verifySceneDependencies(options.projectPath, plan.dependencyHashes, options.signal);
     submitted = true;
     return result(
       await bridge.sceneRequest('scene.commit', { operationId, planId: plan.planId, planHash: plan.planHash }, options),

@@ -5,6 +5,7 @@ import { EditorBridge } from './editor-bridge.js';
 import { WheelError, isStableErrorCode } from '../error-schema.js';
 import { writeValidatedProjectFiles, type ValidatedWriteOptions } from '../project/validated-write.js';
 import { resolveProjectPath } from '../project/paths.js';
+import { verifySceneDependencies } from './scene-dependencies.js';
 const hash = z.string().regex(/^[a-f0-9]{64}$/);
 const exportedSchema = z.object({
   status: z.literal('PASS'),
@@ -17,6 +18,7 @@ const exportedSchema = z.object({
   documentHash: hash,
   historyVersion: z.number().int().nonnegative(),
   sourceHash: hash,
+  dependencyHashes: z.record(z.string().max(512), hash).refine((value) => Object.keys(value).length <= 32),
   contentHash: hash,
   planHash: hash,
   content: z.string().max(24000),
@@ -37,6 +39,10 @@ export async function saveEditorScene(options: ValidatedWriteOptions & { project
     operationId = options.operationId ?? randomUUID();
   let saved: Awaited<ReturnType<typeof writeValidatedProjectFiles>> | undefined;
   try {
+    if (!bridge.identity.capabilities.includes('scene.export'))
+      throw new WheelError('FORBIDDEN', 'Native editor save requires independent private write opt-in');
+    if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound native save; upgrade explicitly');
     const raw = response(await bridge.sceneRequest('scene.export', { operationId }, options));
     const exported = exportedSchema.parse(raw);
     if (
@@ -48,16 +54,18 @@ export async function saveEditorScene(options: ValidatedWriteOptions & { project
     )
       throw new WheelError('PROTOCOL_MISMATCH', 'Native scene export binding mismatch');
     const target = await resolveProjectPath(options.projectPath, exported.scenePath, { mode: 'write' });
+    await verifySceneDependencies(options.projectPath, exported.dependencyHashes, options.signal);
     saved = await writeValidatedProjectFiles(
       options.projectPath,
       [{ path: target.relativePath, content: exported.content, expectedSha256: exported.sourceHash }],
       {
         ...options,
         operationId,
-        intent: `NATIVE SAVE: session=${exported.sessionId}; document=${exported.documentHash}; history=${exported.historyVersion}; nativePlan=${exported.planHash}. Dirty marker retained; no automatic document reload.`,
+        intent: `NATIVE SAVE: session=${exported.sessionId}; document=${exported.documentHash}; history=${exported.historyVersion}; nativePlan=${exported.planHash}; dependencies=${JSON.stringify(exported.dependencyHashes)}. Dirty marker retained; no automatic document reload.`,
         validationMode: 'engine',
         allowDirtyScene: true,
         beforeApply: async () => {
+          await verifySceneDependencies(options.projectPath, exported.dependencyHashes, options.signal);
           response(await bridge.sceneRequest('scene.verify', { operationId, planHash: exported.planHash }, options));
           await options.beforeApply?.(options.signal);
         },
