@@ -15,6 +15,8 @@ import type { ToolRegistrationContext } from '../tool-context.js';
 import { readEditorState } from '../../editor/editor-bridge.js';
 import { saveEditorScene } from '../../editor/scene-save.js';
 import { writeValidatedProjectFiles } from '../../project/validated-write.js';
+import { moveProjectScene } from '../../project/scene-move.js';
+import { importProjectPng } from '../../project/asset-import.js';
 import {
   manageEditorResource,
   resourceRequestSchema,
@@ -30,6 +32,70 @@ import {
 export function registerProjectTools(context: ToolRegistrationContext): void {
   const { server, invoke, schemas, approveProjectTransaction, transactionOwnerId } = context;
   const { projectPath, godotPath, evidenceDir, timeoutMs, responseMode, sceneTreeQuery } = schemas;
+  server.tool(
+    'import_project_png',
+    'Import a bounded PNG source texture. Strict base64, project-local path, exact SHA-256 precondition, host approval, native isolated Godot import/load before disk commit. Other importers are unsupported.',
+    {
+      projectPath,
+      godotPath,
+      path: z.string().min(1).max(512),
+      dataBase64: z.string().min(1).max(2_796_208),
+      expectedSha256: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .nullable(),
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          importProjectPng(args.projectPath, args.path, args.dataBase64, args.expectedSha256, {
+            ...args,
+            ownerId: transactionOwnerId,
+            verifyApproval: approveProjectTransaction,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
+  server.tool(
+    'move_project_scene',
+    'Move a .tscn with exact approved reference-impact transaction. Supports PackedScene ext_resource/main_scene references only; dynamic/UID-only/ambiguous references conflict. Editor must be closed. Validate isolated candidate with old source removed before commit, preserve UID, reopen explicitly.',
+    {
+      projectPath,
+      godotPath,
+      from: z.string().min(1).max(512),
+      to: z.string().min(1).max(512),
+      operationId: z
+        .string()
+        .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      timeoutMs,
+      responseMode,
+    },
+    async (args, extra) =>
+      invoke(
+        (request) =>
+          moveProjectScene(args.projectPath, args.from, args.to, {
+            ...args,
+            ownerId: transactionOwnerId,
+            verifyApproval: approveProjectTransaction,
+            timeoutMs: Math.min(120000, request.remaining()),
+            signal: request.signal,
+          }),
+        args.timeoutMs,
+        extra.signal,
+        args.responseMode,
+      ),
+  );
   server.tool(
     'save_editor_scene',
     'Export actual owned live editor document through native PackedScene/ResourceSaver, request exact approval, validate isolated project before disk commit. Retains dirty marker/history; awaits observable filesystem completion; committed disk state never misreported as rollback.',

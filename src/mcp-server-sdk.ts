@@ -31,7 +31,7 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
         name,
         {
           description,
-          inputSchema: schema,
+          inputSchema: name === 'query_runtime_collisions' ? z.object(schema).strict() : schema,
           ...(['get_editor_state', 'get_editor_scene_operation'].includes(name)
             ? {
                 annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -47,7 +47,7 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
                 }
               : {}),
         },
-        async (args, extra) =>
+        async (args: any, extra: any) =>
           operations.run(async (closingSignal) => {
             try {
               if (policy) await authorizeToolCall(policy, name, args as Record<string, unknown>);

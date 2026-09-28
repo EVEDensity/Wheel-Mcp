@@ -26,6 +26,7 @@ import {
   getRuntimeOperationStatus,
 } from '../../persistent-runtime-bridge.js';
 import { keycodeSchema, pidSchema, pressedSchema } from '../../input-schemas.js';
+import { collisionQuerySchema } from '../../runtime/physics-query.js';
 import type { ToolRegistrationContext } from '../tool-context.js';
 export function registerRuntimeTools(context: ToolRegistrationContext): void {
   const { server, invoke, schemas, policy } = context;
@@ -641,12 +642,10 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'query_runtime_collisions',
-    'Query runtime collisions and history.',
+    'Query 2D collisions or physics-frame scheduled 3D overlap/ray/shape samples. History is not contact events.',
     {
       sessionId,
-      nodePath: z.string(),
-      historyLimit: z.number().int().min(1).max(256).optional(),
-      refresh: z.boolean().optional(),
+      ...collisionQuerySchema.shape,
       responseMode,
       timeoutMs,
     },
@@ -660,6 +659,13 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
               nodePath: a.nodePath,
               historyLimit: a.historyLimit,
               refresh: a.refresh,
+              queryMode: a.queryMode,
+              collisionMask: a.collisionMask,
+              collideWithBodies: a.collideWithBodies,
+              collideWithAreas: a.collideWithAreas,
+              exclude: a.exclude,
+              margin: a.margin,
+              maxResults: a.maxResults,
             },
             c,
           ),

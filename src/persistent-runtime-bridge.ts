@@ -12,6 +12,7 @@ import { EvidenceLog } from './evidence-log.js';
 import { DEFAULT_GODOT_PROCESS_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { resolveGodotPathSync } from './godot-path.js';
 import { validateVariantInput } from './protocol/variant.js';
+import { validateCollisionQuery } from './runtime/physics-query.js';
 import { normalizeBridgeRuntimeEvent, type EventCursor, type RuntimeEvent } from './runtime-events.js';
 import {
   BridgeProtocolError,
@@ -880,6 +881,23 @@ export async function callRuntimeBridge(
       sessionId,
       method,
     });
+  if (method === 'query_collisions') {
+    params = validateCollisionQuery(params);
+    if (
+      Object.keys(params).some((key) => !['nodePath', 'historyLimit', 'refresh'].includes(key)) &&
+      !bridge.handshake?.capabilities.includes('physics3d/v1')
+    ) {
+      throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise physics3d/v1', { sessionId });
+    }
+  }
+  if (
+    method === 'wait_physics_frames' &&
+    (Object.keys(params).some((key) => key !== 'frames') ||
+      (params.frames !== undefined &&
+        (!Number.isInteger(params.frames) || Number(params.frames) < 1 || Number(params.frames) > 120)))
+  ) {
+    throw new BridgeRpcError('INVALID_ARGUMENT', 'frames must be an integer in 1..120', { sessionId });
+  }
   const response = await bridge.request(method, params, timeout, id);
   await bridge.flushLogs();
   return {

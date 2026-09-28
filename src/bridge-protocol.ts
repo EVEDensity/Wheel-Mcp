@@ -1,6 +1,7 @@
 import path from 'node:path';
 import type { ErrorCode } from './error-schema.js';
 import { validateVariantOutput } from './protocol/variant.js';
+import { physics3dResultSchema } from './protocol/physics3d.js';
 
 export const BRIDGE_PROTOCOL_VERSION = 'wheel-runtime/1';
 
@@ -154,5 +155,10 @@ export function validateBridgeResult(method: string, value: unknown): Record<str
         key,
       });
   validateVariantOutput(value, `bridge.${method}`);
+  if (method === 'query_collisions' && value.dimension === '3D') {
+    const parsed = physics3dResultSchema.safeParse(value);
+    if (!parsed.success)
+      throw new BridgeProtocolError('Invalid 3D physics observation', { issues: parsed.error.issues });
+  }
   return value;
 }

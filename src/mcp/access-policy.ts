@@ -36,10 +36,12 @@ export const toolPermissions: Readonly<Record<string, McpPermission>> = {
   get_project_info: 'read',
   get_editor_state: 'read',
   apply_editor_scene: 'write',
+  move_project_scene: 'write',
   manage_editor_resource: 'write',
   save_editor_resource: 'write',
   save_editor_scene: 'write',
   write_validated_project_files: 'write',
+  import_project_png: 'write',
   get_editor_scene_operation: 'read',
   read_project_file: 'read',
   write_project_file: 'write',
@@ -51,6 +53,7 @@ export const toolPermissions: Readonly<Record<string, McpPermission>> = {
   get_node_semantics: 'read',
   get_debug_output: 'read',
   analyze_script_semantics: 'read',
+  query_script_semantics: 'read',
   get_response_page: 'read',
   get_recent_evidence: 'read',
   compare_screenshots: 'write',
@@ -265,7 +268,7 @@ export async function authorizeToolCall(
   if (typeof projectRoot === 'string') {
     const fileInput = ['read_project_file', 'write_project_file'].includes(toolName)
       ? args.filePath
-      : toolName === 'analyze_script_semantics'
+      : ['analyze_script_semantics', 'query_script_semantics'].includes(toolName)
         ? args.scriptPath
         : [
               'read_scene_file',
@@ -290,10 +293,15 @@ export async function authorizeToolCall(
   }
   const pid = args.pid;
   if (
-    ['write_project_file', 'write_scene_file', 'write_validated_project_files', 'save_editor_scene'].includes(
-      toolName,
-    ) &&
-    args.validationMode !== 'raw'
+    toolName === 'move_project_scene' ||
+    ([
+      'write_project_file',
+      'write_scene_file',
+      'write_validated_project_files',
+      'import_project_png',
+      'save_editor_scene',
+    ].includes(toolName) &&
+      args.validationMode !== 'raw')
   ) {
     requireScope(policy, 'run', toolName);
     assertApprovedPath(args.godotPath ?? process.env.GODOT_PATH, policy.approvedGodotPaths, 'godotPath');
