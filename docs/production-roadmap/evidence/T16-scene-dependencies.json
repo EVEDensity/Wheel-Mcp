@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T16",
+  "createdAt": "2026-09-26T10:39:16Z",
+  "source": "MIXED",
+  "sourceHash": "1c9fb1d054678b45808c5eb9458c29669d6ee5b55e9897d21bf80fe94d843876",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "rawRun": "runs/production-roadmap/T00/2026-09-26T10-30-14-490Z-620",
+  "rawManifestSha256": "260d5dcb8b5ed55dd1743a769c0e5829b921ce08d5c04b9d84bdf22d3a83e2c9",
+  "rawResultsSha256": "15b5b159395b2b4b176e364d3e99cb60707ef14e1acc1396821a0df881626775",
+  "baseline": {
+    "status": "PASS",
+    "command": "npm.cmd run verify:production -- --baseline",
+    "startedAt": "2026-09-26T10:30:14.487Z",
+    "finishedAt": "2026-09-26T10:37:35.852Z",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": {
+      "passed": 279,
+      "failed": 0,
+      "skipped": 0
+    },
+    "requiredGodot": {
+      "passed": 84,
+      "failed": 0,
+      "skipped": 0
+    },
+    "toolsCount": 67,
+    "sourceUnchanged": true
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "real headless EditorPlugin and rendered Vulkan runtime; human desktop editor UI NOT_RUN"
+  },
+  "tests": [
+    "tests/scene-resource-graph.test.ts",
+    "tests/inherited-scene-roundtrip.test.ts",
+    "tests/scene-move.test.ts",
+    "tests/editor-scene-rpc.test.ts",
+    "tests/editor-scene-save.test.ts",
+    "tests/tool-registry.test.ts",
+    "tests/release-qualification.test.ts"
+  ],
+  "verified": {
+    "real": [
+      "Three-level native root inheritance: explicit override, native Undo/Redo, native save and exact same-project reopen without flattening",
+      "Three nested native instances: every ancestor editable-children flag, owners, override persistence and refusal of lossy pack",
+      "Base scene unmodified property propagates after reopen while local override remains; second edit/save works with engine unique_id metadata",
+      "Fresh SceneState differs from stale live base: CONFLICT before preview; comment/content changes after preview and save approval preserve original files",
+      "Cycles, missing and scripted grandchildren refused before instantiation; script sentinel absent",
+      "Actual ResourceUID mapping conflicts, excessive graph depth, direct and transitive hardlink rejection before approval",
+      "Official MCP move: UID retained, references and project main_scene migrated; isolated candidate really lacks old source; actual Godot import/load/instance and transactional byte readback",
+      "Permission/approval refusal, dynamic/ambiguous/UID-only references, existing/protected targets and human concurrent edits fail closed"
+    ],
+    "heuristic": [
+      "Static graph labels authoritative:false/analysisLevel:heuristic; actual root instance resource ID used; no-type override nodes retained with unknown type:null"
+    ],
+    "explicitMock": [
+      "Official SDK form acceptance and exact test approval receipts; not evidence of human approval UX"
+    ]
+  },
+  "nativeCycles": {
+    "count": 20,
+    "status": "PASS",
+    "sameSource": true,
+    "summary": "runs/production-roadmap/T15/2026-09-26T10-30-25-198Z/summary.json",
+    "summarySha256": "63db0acaddea69b963b8089808c9bb00d5478765a76f3d82a33336887ae5f677",
+    "artifactHashChecks": 40,
+    "artifactHashIssues": [],
+    "visualReview": "Agent viewed round 0 actual PNG: visible expected text on neutral background; not arbitrary UI or 3D visual qualification"
+  },
+  "intermediateFailures": [
+    {
+      "run": "runs/production-roadmap/T00/2026-09-26T10-12-20-967Z-22800",
+      "sourceHash": "ca636301209e2d2df0da57ac128fc91baadcd7a206bc9b3afe9c6c7f106ec130",
+      "full": "276/278, 2 FAIL",
+      "requiredGodot": "82/83, 1 FAIL",
+      "reason": "Private write opt-in error precedence and exact discovery golden list",
+      "resolution": "Keep FORBIDDEN before dependency negotiation; add new tool to exact list; final full rerun above"
+    },
+    {
+      "reason": "Deep override lost with only innermost editable flag",
+      "resolution": "All ancestor flags required; native pack readback protects against lossy save"
+    },
+    {
+      "reason": "Root is_editable_instance test-controller error",
+      "resolution": "Only descendants passed to native API, ERROR assertions retained"
+    },
+    {
+      "reason": "Direct hardlink expected FORBIDDEN but existing instantiate contract returns UNSUPPORTED",
+      "resolution": "Preserve existing error code and add separate transitive dependency FORBIDDEN assertion"
+    }
+  ],
+  "limitations": [
+    "Only declared script-free native instance dependency grammar: 64 KiB/32 declarations per file, 32 files, depth 16; arbitrary scripts/imported asset/resource graphs unsupported",
+    "Inherited documents only explicit nonstructural transform/visibility overrides and editable flags; not arbitrary inheritance refactoring",
+    "Scene move is conservative syntax impact, not semantic refactoring: dynamic plugin load/preload, C# or GDExtension can conflict; editor must close, reopen explicit",
+    "Approval MOCK is not live Codex/Cursor UX; Windows/Godot 4.7.2 trusted local subset only, not an OS sandbox",
+    "Historical G2 source is unchanged in ledger; this baseline does not mark G3 or production qualification",
+    "T17-T35/G3-G6 unfinished; NOT_QUALIFIED; no commit, push, public release or user project plugin enable"
+  ],
+  "evidenceRetention": "runs/ and temporary projects are ignored; retain raw files and hashes when transferring or rerun. Summary alone is not a substitute for missing engine artifacts."
+}

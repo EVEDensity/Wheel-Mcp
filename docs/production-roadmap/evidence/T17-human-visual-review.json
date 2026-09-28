@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T17",
+  "createdAt": "2026-09-27T11:10:52Z",
+  "source": "REAL",
+  "sourceHash": "51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43",
+  "status": "PASS",
+  "kind": "human_visual",
+  "reviewer": "User in current conversation",
+  "userStatement": "已查看，视觉验收通过，现在根据当前的路线完成全部的任务，没完成一小步就会过头来查看自己的任务是否符合预期",
+  "scope": "Human visual acceptance of the three previously displayed settings/inventory native viewport screenshots; not authorization to publish or change user projects.",
+  "reviewedAssets": [
+    {
+      "viewport": "800x600",
+      "path": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-800x600\\settings.png",
+      "sha256": "50673f9a03dee562d2dfd383e9327257e4229f5a1f072907c6b29c73581e0b18"
+    },
+    {
+      "viewport": "1280x720",
+      "path": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1280x720\\settings.png",
+      "sha256": "5ec39b4020e7eace4ecb35abca764ccefa2aa0bf07c167a6818d310c750565fa"
+    },
+    {
+      "viewport": "1600x900",
+      "path": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1600x900\\settings.png",
+      "sha256": "4e1842586234f31c8c2b2c6e0ead58a5f50dc07b889073e070f47f0ff043ecee"
+    }
+  ],
+  "artifactRecheck": {
+    "reportsAndPNGs": 18,
+    "hashIssues": [],
+    "sourceUnchanged": true
+  },
+  "automatedEvidence": {
+    "path": "docs/production-roadmap/evidence/T17-ui-authoring.json",
+    "sha256": "bf461d9b70b0c15aedae8dfe21820359204fd4755583f0cf425cdd0dc7abda26"
+  },
+  "note": "Earlier NOT_RUN review records remain historical. This explicit user receipt resolves them; test approval forms remain MOCK."
+}

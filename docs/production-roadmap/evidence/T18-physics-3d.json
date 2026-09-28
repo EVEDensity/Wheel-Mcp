@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T18",
+  "createdAt": "2026-09-28T02:22:37Z",
+  "status": "PASS_DECLARED_SUBSET",
+  "source": "MIXED",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "sourceHash": "860d1e483acc39f238ddabb058c991ee96fd31911df31c775e175ebc685d4f5f",
+  "environment": {
+    "os": "Windows x64",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "headless editor plus real rendered runtime fixture",
+    "project": "isolated fixtures only"
+  },
+  "rawRun": "runs/production-roadmap/T00/2026-09-28T02-12-30-674Z-32312",
+  "rawManifestSha256": "ea253c51eb3b98aa73f18795a39df7839c92afabd5bab4600f242380af85167e",
+  "rawResultsSha256": "1af58eaedd71bbe6ef2ca458c2d744cecda4b285453dba3aad710f345a710c0b",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "startedAt": "2026-09-28T02:12:30.672Z",
+    "finishedAt": "2026-09-28T02:21:50.204Z",
+    "sourceUnchanged": true,
+    "build": "PASS/0",
+    "format": "PASS/0",
+    "lint": "PASS/0",
+    "fullTests": { "passed": 288, "total": 288, "failed": 0, "skipped": 0 },
+    "requiredGodot": { "passed": 93, "total": 93, "failed": 0, "skipped": 0 }
+  },
+  "nativeCycles": {
+    "summary": "runs/production-roadmap/T15/2026-09-28T02-12-42-522Z/summary.json",
+    "sha256": "6ef90a5f7db5eadbcafe18578b768f46c48447229b664cabde8e38c7c313d47f",
+    "status": "PASS",
+    "count": 20,
+    "sceneAndPngHashChecks": 40,
+    "issues": []
+  },
+  "taskArtifacts": [
+    {
+      "path": "runs/production-roadmap/T18/2026-09-28T02-20-23.581Z/physics-authoring.json",
+      "sha256": "c7b3e746713ce595a2c1b5e70826a2373c311cb087216e6b9795ceffe7e7ded2"
+    },
+    {
+      "path": "runs/production-roadmap/T18/2026-09-28T02-20-39.952Z/runtime-3d.json",
+      "sha256": "187db586bae39a0589a7c1be8dbb7f06266b21c5a3769810a67be0dd36de588c"
+    }
+  ],
+  "verifiedReal": [
+    "Physics-process scheduled 3D area, ray and enabled shape-owner intersections with explicit world/owner spaces, filters and cache/sample histories",
+    "Rotated uniformly scaled hierarchy ray hit world position and normal within 1e-4, native mask miss/exclusion and non-vacuous hits",
+    "Tiny nonuniform, sheared/mirrored and cross-scene query boundaries reject rather than fabricate empty success",
+    "Read-only NavigationAgent3D observes native path/index repeatedly without advancing the game agent",
+    "Official MCP native collision authoring/one Undo/Redo/save/close/reopen and runtime readback",
+    "Parallel isolated editor settings and same-project reopen; no global user settings touched by native editor fixtures"
+  ],
+  "approval": "MOCK form acceptance in isolated fixture, never human approval",
+  "intermediateFailures": [
+    "docs/production-roadmap/evidence/T18-initial-reproduction.json",
+    "runs/production-roadmap/T18/tiny-scale-1790509843616.json",
+    "runs/production-roadmap/T00/2026-09-27T12-02-00-023Z-33692/results.json",
+    "runs/production-roadmap/T00/2026-09-27T15-06-06-200Z-13684/results.json"
+  ],
+  "limitations": [
+    "No contact-event history, arbitrary 3D physics, navigation editing/baking or broad physics-backend qualification",
+    "Area monitoring cache is not geometric intersection; monitorable=false overlap explicitly UNSUPPORTED on tested engine",
+    "Old default run-registry empty recovery guard remains unresolved and is tracked for T31; isolated qualification does not prove recovery",
+    "G3-G6 remain NOT_RUN; production NOT_QUALIFIED; no release/publish"
+  ]
+}

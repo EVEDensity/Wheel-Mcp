@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "gateId": "G3",
+  "taskId": "T21",
+  "createdAt": "2026-09-28T10:32:34Z",
+  "source": "MIXED",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "sourceHash": "ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626",
+  "status": "PASS",
+  "rawRun": "runs/production-roadmap/G3/2026-09-28T10-13-38-849Z-39732",
+  "rawManifestSha256": "8a98c100af16f5161585db563d2f98a5f20c7aefe6225c427c78ca8d58fa3015",
+  "rawResultsSha256": "640a882c4fa26fc5ade72ddbb2c27ab1e7d9ec73f043d9058cdf1665076ed832",
+  "assessmentSha256": "4311cfb596cf50b10d5db2edbdf53b793411217b8d5d865f4587d82834668d64",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --gate G3",
+    "status": "PASS",
+    "build": "PASS/0",
+    "format": "PASS/0",
+    "lint": "PASS/0",
+    "fullTests": { "passed": 300, "total": 300, "failed": 0, "skipped": 0, "cancelled": 0, "todo": 0 },
+    "requiredGodot": { "passed": 105, "total": 105, "failed": 0, "skipped": 0, "cancelled": 0, "todo": 0 }
+  },
+  "gateChecks": {
+    "assessment": "G3-assessment.json",
+    "status": "PASS",
+    "passed": 18,
+    "total": 18,
+    "scope": "Nine T16-T21 representative native workflows each in full tests and independent Godot smoke"
+  },
+  "defectBaseline": "PASS",
+  "limitations": [
+    "Approval in automated fixtures is MOCK, not human authorization",
+    "Only the declared Windows/Godot 4.7.2 isolated-project subset is qualified by G3",
+    "T22-T35 and G4-G6 are not complete; production remains NOT_QUALIFIED",
+    "Default run-registry recovery defect remains assigned to T31"
+  ]
+}

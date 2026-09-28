@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T21",
+  "createdAt": "2026-09-28T10:11:35Z",
+  "status": "PASS_DECLARED_SUBSET",
+  "source": "MIXED",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "sourceHash": "ca4e4ebe743c7633fd62cb007b402463c32a6236e52a6f0daa6a0c1c25883626",
+  "environment": {
+    "os": "Windows x64",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "project": "isolated empty projects and native editor/runtime fixtures only"
+  },
+  "rawRun": "runs/production-roadmap/T00/2026-09-28T09-53-48-198Z-27672",
+  "rawManifestSha256": "dd84dc0c9d2faef1388fba7b734169ce29ae9a184e6786b984b126eca497280c",
+  "rawResultsSha256": "f0296f15057fbb0203bb26e34ab9bba0e85e724774a59c9180762c6e804d0245",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "build": "PASS/0",
+    "format": "PASS/0",
+    "lint": "PASS/0",
+    "fullTests": { "passed": 300, "total": 300, "failed": 0, "skipped": 0, "cancelled": 0 },
+    "requiredGodot": { "passed": 105, "total": 105, "failed": 0, "skipped": 0, "cancelled": 0 }
+  },
+  "nativeCycles": {
+    "summary": "runs/production-roadmap/T15/2026-09-28T09-55-17-286Z/summary.json",
+    "sha256": "07a1fed9a5597f0854e5d13765e4bdccad177d908e8cefd06bb482570efe2029",
+    "status": "PASS",
+    "count": 20,
+    "sceneAndPngHashChecks": 40
+  },
+  "verifiedReal": [
+    "Official MCP discovers import_project_png with write+run permission; bad format, invalid CRC, stale hash, denied permission and declined approval do not write target files",
+    "Exact PNG source bytes are SHA-256-bound in approval/rollback journal and imported/loaded in a disposable native Godot project before commit; a live opted-in editor scans and confirms Texture2D without a fixed completion sleep",
+    "A 2D UI/combat slice starts with an empty test project; MCP creates scene/script and imports texture, native editor authors HUD/collision/position animation, save/reopen succeeds, exact scene write adds navigation and sprite, runtime input increments hits and yields a 2D path, then approved scene rename updates project.godot main_scene",
+    "A 3D interaction slice starts with an empty test project; native editor authors material/mesh/collision/ray/camera/local Vector3 position animation, invalid key dimension fails without partial authoring, save/reopen succeeds, exact scene write adds navigation, and runtime input, ray hit and 3D path are observed",
+    "Only byte-identical bundled plugin scripts without the moved path/UID bypass an unrelated dynamic-load move heuristic; altered plugin scripts still conflict"
+  ],
+  "approval": "MOCK form acceptance in isolated tests, not human approval",
+  "failedChecksRetained": [
+    "First PNG fixture had a bad CRC; native isolated import correctly rejected it and preserved the original project",
+    "First live editor test found a GDScript type-inference compilation error in asset_import.gd; the raw editor log remains in the isolated fixture",
+    "First content slice tried structured authoring on scripted or unsupported graph nodes; the editor correctly refused. Final workflow uses only declared native nodes, with separate approved text candidates for script/navigation/imported Sprite2D",
+    "First 3D navigation observation was empty until the runtime called the native path update after map synchronization; the test now waits for actual navigation readiness"
+  ],
+  "limitations": [
+    "Only default PNG importer, strict base64 <=2 MiB, image dimensions <=4096; no custom importer, arbitrary host source path, asset rename or binary format family",
+    "Navigation, sprite and gameplay script attachments in these slices are exact approved .tscn/.gd candidate files, not structured editor graph operations; general scripted/unknown editor documents remain read-only for native authoring",
+    "Only local Node2D/Vector2 and Node3D/Vector3 position animation tracks; no skeletal/method/audio tracks or general graph families",
+    "Native editor synchronization is a separate post-commit observation and can be NOT_OBSERVED without misreporting durable disk commit as rollback",
+    "Only Windows/Godot 4.7.2 isolated fixtures are qualified; form approval is MOCK and user real projects were not changed",
+    "G3-G6 and T22-T35 still require separate gates; default run registry recovery defect remains assigned to T31, so production stays NOT_QUALIFIED"
+  ]
+}

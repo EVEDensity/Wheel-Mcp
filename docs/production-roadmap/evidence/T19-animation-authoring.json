@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T19",
+  "createdAt": "2026-09-28T04:50:46Z",
+  "status": "PASS_DECLARED_SUBSET",
+  "source": "MIXED",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "sourceHash": "f44ca7b8c347e9ff663b2ba1cea8b88fce540dbd67a31779f4e1e17993cc9035",
+  "environment": {
+    "os": "Windows x64",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "project": "isolated native editor/runtime fixtures only"
+  },
+  "rawRun": "runs/production-roadmap/T00/2026-09-28T04-31-53-749Z-41848",
+  "rawManifestSha256": "4d0955791cd3221236a8466fd7a13fadbfa32dd86ba4cadcfe0ede08786faabb",
+  "rawResultsSha256": "5bf8ca018608a1e6a1e4ea65dde59d6271a6499c415ad24e122f8179608363ed",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "startedAt": "2026-09-28T04:31:53.747Z",
+    "sourceUnchanged": true,
+    "build": "PASS/0",
+    "format": "PASS/0",
+    "lint": "PASS/0",
+    "fullTests": { "passed": 291, "total": 291, "failed": 0, "skipped": 0 },
+    "requiredGodot": { "passed": 96, "total": 96, "failed": 0, "skipped": 0 }
+  },
+  "nativeCycles": {
+    "summary": "runs/production-roadmap/T15/2026-09-28T04-32-03-578Z/summary.json",
+    "sha256": "42fdba9772e910d29836c54f24f6da0ba9d580c35186d414a21f74d0fba16bfe",
+    "status": "PASS",
+    "count": 20,
+    "sceneAndPngHashChecks": 40,
+    "issues": []
+  },
+  "taskArtifacts": [
+    {
+      "path": "runs/production-roadmap/T19/2026-09-28T04-37-52.028Z/animation-authoring.json",
+      "sha256": "1c836459ae77068fb009d1370c6270df3b4b71ed163714e0d6812e1c7fc0ebe3"
+    },
+    {
+      "path": "runs/production-roadmap/T19/2026-09-28T04-38-07.861Z/shared-resources.json",
+      "sha256": "39305f769bc91194b54f4812fb31fd2e723e3b956ebf380991e55d477ec723eb"
+    },
+    {
+      "path": "runs/production-roadmap/T19/2026-09-28T04-38-11.652Z/blend-tree.json",
+      "sha256": "19fb3fd95f208372e78992db160dca8cec359e0dd17f65d3ccc367b3d16d572d"
+    }
+  ],
+  "verifiedReal": [
+    "Official MCP to native Godot editor creates local AnimationPlayer, AnimationTree and stable-ID AnimationLibrary clips/tracks/keyframes in one exact batch; one Undo/Redo and safe save/reopen retain clip and graph signatures",
+    "Native state machine idle to walk to attack uses actual condition parameters; test-only Godot script connects real D/A input events to those parameters, and runtime specialized state reports actual active node and playback position/length",
+    "Invalid track target, automatic transition cycle, stale track target rename/delete and mixer reparent reject without changing the original scene",
+    "Two-source native Blend2 graph saves/reopens with exact three-edge topology and live blend parameter 0.75 is read back from runtime",
+    "Shared native AnimationLibrary refuses save and unrelated authoring; source scene bytes remain unchanged"
+  ],
+  "approval": "MOCK form acceptance in isolated fixture, not human approval",
+  "initialFailure": {
+    "path": "runs/production-roadmap/T19/2026-09-28T02-44-20.078Z/initial-create.json",
+    "sha256": "5afa221be3276d6179043e28962f3ef46b81d9778c279e7e401917d1a08f5f48",
+    "observation": "AnimationPlayer was initially rejected by the MCP operation schema"
+  },
+  "limitations": [
+    "Only local 2D position value tracks, one new local wheel library, a bounded conditional state machine or exact two-source Blend2 graph; no arbitrary 3D/skeletal/method/audio tracks or graph replacement",
+    "Runtime input-binding script in acceptance is TEST_ONLY, not created by the editor API; form approval is MOCK",
+    "Windows/Godot 4.7.2 isolated-fixture proof only; default registry recovery defect remains for T31",
+    "T20-T35 and G3-G6 remain pending; production NOT_QUALIFIED, no release or publish"
+  ]
+}

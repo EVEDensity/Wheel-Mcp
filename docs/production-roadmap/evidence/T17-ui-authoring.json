@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T17",
+  "createdAt": "2026-09-26T11:27:20Z",
+  "status": "AWAITING_HUMAN_VISUAL_REVIEW",
+  "source": "MIXED",
+  "sourceHash": "51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "rawRun": "runs/production-roadmap/T00/2026-09-26T11-18-09-203Z-39360",
+  "rawManifestSha256": "0f23662c5a8c699d5fd743272ce5b3d7a1ab25f1f4a6fd941b98ce1e2750d4e0",
+  "rawResultsSha256": "d7a105eb29ce70a790c1fc89a454ed309be0365b9c441258429a181a9989bf09",
+  "baseline": {
+    "status": "PASS",
+    "command": "npm.cmd run verify:production -- --baseline",
+    "startedAt": "2026-09-26T11:18:09.201Z",
+    "finishedAt": "2026-09-26T11:25:50.049Z",
+    "sourceUnchanged": true,
+    "commands": [
+      {
+        "name": "build",
+        "status": "PASS",
+        "exitCode": 0,
+        "durationMs": 3573,
+        "outputHash": "af92a40e1bdf15b281de59a2a2d0215e1bb9da505b4246978e1956dace929f65"
+      },
+      {
+        "name": "format:check",
+        "status": "PASS",
+        "exitCode": 0,
+        "durationMs": 2371,
+        "outputHash": "277ac102780151cca232f146c67579d2705007467f0eda1a342138fec1ceba94"
+      },
+      {
+        "name": "lint",
+        "status": "PASS",
+        "exitCode": 0,
+        "durationMs": 2824,
+        "outputHash": "a790ddaf33b639ed6c29e311a99d4424390f1ae2b06aa31d806e5223d5d956c5"
+      },
+      {
+        "name": "full-tests",
+        "status": "PASS",
+        "exitCode": 0,
+        "durationMs": 346101,
+        "outputHash": "8a8fa7e054ae215aaa63791fa91e32101d43832d01389173aedb1acc83bb4c07",
+        "tests": {
+          "tests": 283,
+          "passed": 283,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        }
+      },
+      {
+        "name": "godot-smoke",
+        "status": "PASS",
+        "exitCode": 0,
+        "durationMs": 104878,
+        "outputHash": "7bc3636aaff499f0d8c613234879804bb385e56100830fcd35f3aa6dcacef9cf",
+        "tests": {
+          "tests": 88,
+          "passed": 88,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        }
+      }
+    ]
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "os": "win32 10.0.26200 x64",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "real headless EditorPlugin + rendered runtime fixtures; human desktop editor UI NOT_RUN",
+    "project": "NOT_RUN"
+  },
+  "verifiedReal": [
+    "Official MCP settings/inventory creation from an empty saved Control scene; strict bounded UI schema and Container-owned geometry rejection",
+    "Exact preview and one native Undo/Redo for batches including Theme assignment and persistent signal connection",
+    "Same-project save, editor close and reopen preserve all authored UI properties, native resource storage, owners and persistent signals",
+    "Actual ResourceSaver stage bytes reload refuses grow preset default loss before target file mutation; explicit corrected grow properties save successfully",
+    "Three fixed native rendered viewports with long localized German text, 18px bundled Latin font, positive bounds and viewport-responsive widths",
+    "Real keyboard Enter input activates GUI Button and persisted pressed callback, hides inventory; native state and greater-than-1000-pixel screenshot difference agree",
+    "Theme/StyleBoxFlat native export and exact external .tres save/reopen; foreign handle, undeclared Theme slot, unsupported signal and invalid UI batch fail without mutation",
+    "Resource roundtrip retains all 14 declared kinds; StyleBoxFlat has no direct node material property, composed Theme reopen tested separately"
+  ],
+  "explicitMock": [
+    "Official SDK form acceptance and exact test approval receipts; no human approval UX qualification"
+  ],
+  "nativeCycles": {
+    "status": "PASS",
+    "count": 20,
+    "sameSource": true,
+    "summary": "runs/production-roadmap/T15/2026-09-26T11-18-20-097Z/summary.json",
+    "summarySha256": "d3609e6024a9c8c33d311104116418308ce3e037c2999b8260ae4e8dd756ce1f",
+    "artifactHashChecks": 40,
+    "issues": []
+  },
+  "uiArtifacts": [
+    {
+      "directory": "runs\\production-roadmap\\T17\\2026-09-26T11-21-17-431Z",
+      "callsSha256": "0f98ad3e918e01be7193530a26085e0cb1c29ce9fcb086d5e396c5b787a534f6",
+      "views": [
+        {
+          "viewport": "800x600",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-21-17-431Z\\800x600.json",
+          "reportSha256": "fbd3ad11f918d20486074a1282271d2b07585e6aa49b5a716d60b76ea5f87968",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-800x600\\settings.png",
+          "pngSha256": "50673f9a03dee562d2dfd383e9327257e4229f5a1f072907c6b29c73581e0b18",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-800x600\\hidden.png",
+          "hiddenSha256": "a9c23d8e586c68d9e7afc0f7b53d950455e5d1355b197d9f05c06ac433336e40"
+        },
+        {
+          "viewport": "1280x720",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-21-17-431Z\\1280x720.json",
+          "reportSha256": "c6eee3ab618d593645c5cfc64c2cadb954ed4ae3b26a1042463030acfc657554",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1280x720\\settings.png",
+          "pngSha256": "5ec39b4020e7eace4ecb35abca764ccefa2aa0bf07c167a6818d310c750565fa",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1280x720\\hidden.png",
+          "hiddenSha256": "bd6b4c8926939c14f35b89bf5c64c8769fecb61faa87077902a23ac815bb691e"
+        },
+        {
+          "viewport": "1600x900",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-21-17-431Z\\1600x900.json",
+          "reportSha256": "59c1a77aea583f581a1fe79ced4cbd582d42821025a8f111d1661239c0058eee",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1600x900\\settings.png",
+          "pngSha256": "4e1842586234f31c8c2b2c6e0ead58a5f50dc07b889073e070f47f0ff043ecee",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-omBJtJ\\.harness\\ui-1600x900\\hidden.png",
+          "hiddenSha256": "978153e222b84efe8e3014231bd637693e725fa99cc4a7ed0fd13afe834516af"
+        }
+      ]
+    },
+    {
+      "directory": "runs\\production-roadmap\\T17\\2026-09-26T11-25-13-552Z",
+      "callsSha256": "cb80e543bf4a75e533e83e7873879c90a15c324dccdecfd8a99cab8c3417195a",
+      "views": [
+        {
+          "viewport": "800x600",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-25-13-552Z\\800x600.json",
+          "reportSha256": "932e1f04b75f981f80b293235f40cfffc9edfebbeef25bc7071378894a50a3eb",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-800x600\\settings.png",
+          "pngSha256": "50673f9a03dee562d2dfd383e9327257e4229f5a1f072907c6b29c73581e0b18",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-800x600\\hidden.png",
+          "hiddenSha256": "a9c23d8e586c68d9e7afc0f7b53d950455e5d1355b197d9f05c06ac433336e40"
+        },
+        {
+          "viewport": "1280x720",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-25-13-552Z\\1280x720.json",
+          "reportSha256": "a2f555439423f526c90c392cf90331e5447deb656ca27e6746fdb7f6acc91d09",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-1280x720\\settings.png",
+          "pngSha256": "5ec39b4020e7eace4ecb35abca764ccefa2aa0bf07c167a6818d310c750565fa",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-1280x720\\hidden.png",
+          "hiddenSha256": "bd6b4c8926939c14f35b89bf5c64c8769fecb61faa87077902a23ac815bb691e"
+        },
+        {
+          "viewport": "1600x900",
+          "status": "PASS",
+          "report": "runs\\production-roadmap\\T17\\2026-09-26T11-25-13-552Z\\1600x900.json",
+          "reportSha256": "00949a08e09c45c1b012a6cb5116f5aa6dccc8b0f260bf1df201f3caa5f496dc",
+          "png": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-1600x900\\settings.png",
+          "pngSha256": "4e1842586234f31c8c2b2c6e0ead58a5f50dc07b889073e070f47f0ff043ecee",
+          "hidden": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-SbPaxE\\.harness\\ui-1600x900\\hidden.png",
+          "hiddenSha256": "978153e222b84efe8e3014231bd637693e725fa99cc4a7ed0fd13afe834516af"
+        }
+      ]
+    }
+  ],
+  "visualReview": {
+    "agent": {
+      "status": "PASS",
+      "scope": "Agent viewed actual three PNGs, found no obvious clipping or overlap; not a human review"
+    },
+    "human": {
+      "status": "NOT_RUN",
+      "required": true,
+      "requestedThisTurn": true,
+      "receipt": null,
+      "reviewedAssets": [
+        {
+          "viewport": "800x600",
+          "pngSha256": "50673f9a03dee562d2dfd383e9327257e4229f5a1f072907c6b29c73581e0b18"
+        },
+        {
+          "viewport": "1280x720",
+          "pngSha256": "5ec39b4020e7eace4ecb35abca764ccefa2aa0bf07c167a6818d310c750565fa"
+        },
+        {
+          "viewport": "1600x900",
+          "pngSha256": "4e1842586234f31c8c2b2c6e0ead58a5f50dc07b889073e070f47f0ff043ecee"
+        }
+      ],
+      "note": "Question delivered to user with three actual PNGs. No human response received; older displayed images and current full/smoke images have identical SHA-256."
+    }
+  },
+  "cleanup": {
+    "ownedGodotProcessesRemaining": 0,
+    "verification": "Read-only Win32_Process inventory after baseline completion found no Godot processes; no user process terminated"
+  },
+  "intermediateFailures": [
+    {
+      "run": "runs/production-roadmap/T17/2026-09-26T10-55-46-362Z",
+      "reason": "Initial no-clipping PASS missed constant-width layout; strengthened viewport width assertion failed 364 != 752",
+      "resolution": "Explicit Control root anchors; refuse Node2D-parent nonzero responsive anchors"
+    },
+    {
+      "run": "runs/production-roadmap/T17/2026-09-26T11-01-22-039Z",
+      "reason": "Authored save/reopen comparison detected grow defaults 1 -> 2",
+      "resolution": "Declare grow fields, compare signature, reload actual staged bytes and refuse lossy save"
+    },
+    {
+      "reason": "Rect2 get_global_rect response is outside Variant codec",
+      "resolution": "Use actual global_position/size only with verified identity transform; no fake Rect2 support"
+    },
+    {
+      "reason": "Old 3D resource mapping assigned Theme/StyleBoxFlat as material_override; corrected test then misread type from top-level instead of ref.resourceType",
+      "resolution": "Keep type checks; correct test to declared response/property contracts; final targeted 13/13 and full baseline pass"
+    }
+  ],
+  "releaseRefusal": {
+    "path": "docs/production-roadmap/evidence/T17-release-refusal.json",
+    "exitCode": 1,
+    "interpretation": "Expected refusal, not production PASS; historical gates/matrices bind older sources"
+  },
+  "limitations": [
+    "Human visual review pending: T17 cannot be done and strict sequential T18 cannot start",
+    "Windows/Godot 4.7.2 trusted local, fixed bundled Latin font only; CJK/imported fonts, other platforms/renderers and actual screen-reader behavior not qualified",
+    "Only declared native UI classes/fields and immediate local pressed/visibility_changed -> hide/show; arbitrary script callbacks, deferred/one-shot and external UI dependencies unsupported",
+    "No arbitrary fonts/textures/opaque resource graphs in Theme; StyleBoxFlat only, bounded storage",
+    "Historical G0/G1/G2 do not qualify this source; G3-G6 NOT_RUN; T18-T35 todo; production NOT_QUALIFIED",
+    "No commit, push, publication, deployment or user project plugin enable performed"
+  ],
+  "evidenceRetention": "runs/ and temporary projects are ignored. Retain actual reports/PNGs and hashes or rerun; summary alone does not replace missing artifacts."
+}

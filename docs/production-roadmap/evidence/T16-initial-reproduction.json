@@ -1,0 +1,15 @@
+{
+  "taskId": "T16",
+  "status": "EXPECTED_DEFECT",
+  "source": "MIXED",
+  "baselineSourceHash": "27b5608d19ddfc123ade59e5960fad382e5f221f3a08f905346b1705d7d2b610",
+  "command": "npm.cmd run build; node --test build/tests/scene-resource-graph.test.js",
+  "exitCode": 1,
+  "tests": { "passed": 0, "failed": 3, "skipped": 0 },
+  "observed": [
+    "TypeScript reports missing analysisLevel/editableChildren fields; emitted test files also run and fail",
+    "Ordinary child instance is incorrectly returned as inheritedScene",
+    "Static graph has no explicit heuristic classification or editable-children metadata"
+  ],
+  "qualification": "Not completion evidence; reproduction recorded before implementation"
+}

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T20",
+  "createdAt": "2026-09-28T08:25:34Z",
+  "status": "PASS_DECLARED_SUBSET",
+  "source": "MIXED",
+  "head": "663f9208e95b8b14207220a2c7df6bbf10999d08",
+  "sourceHash": "4570a16011239abd454111c6806e5cec3ea852c5b3a861b44fccd01ac14cdb04",
+  "environment": {
+    "os": "Windows x64",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "renderer": "Vulkan Forward+",
+    "project": "isolated native editor/runtime fixtures only"
+  },
+  "rawRun": "runs/production-roadmap/T00/2026-09-28T08-03-23-044Z-36260",
+  "rawManifestSha256": "1f8622ffcf13093923628789cd281df57c0e24f3017891e8ab10c8c1f73657cb",
+  "rawResultsSha256": "ca8ab88331830f874d92da351e383f6433832dfd3085722ff371c12e6a3faac4",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "sourceUnchanged": true,
+    "build": "PASS/0",
+    "format": "PASS/0",
+    "lint": "PASS/0",
+    "fullTests": { "passed": 293, "total": 293, "failed": 0, "skipped": 0 },
+    "requiredGodot": { "passed": 98, "total": 98, "failed": 0, "skipped": 0 }
+  },
+  "nativeCycles": {
+    "summary": "runs/production-roadmap/T15/2026-09-28T08-04-09-501Z/summary.json",
+    "sha256": "cf9a98f7fb56af5cd9ab42f752e71bdea19a74b015d2a01fc4a24968fe5efa29",
+    "status": "PASS",
+    "count": 20,
+    "sceneAndPngHashChecks": 40
+  },
+  "renderEvidence": {
+    "report": "runs/production-roadmap/T20/2026-09-28T08-17-14-104Z/render-report.json",
+    "reportSha256": "7194df74e2ed706fc02503250a7d3d407b887f8c4ab17c07c54254232045ce60",
+    "screenshots": [
+      { "path": "runs/production-roadmap/T20/2026-09-28T08-17-14-104Z/authored.png", "sha256": "d15b9475033069622f85987e7833f7426bd41b7e8b52f2d22a88a9bbbffb03d9" },
+      { "path": "runs/production-roadmap/T20/2026-09-28T08-17-14-104Z/shader.tres.png", "sha256": "0fba48daf9972205431e32f2cca9ce6e126d2496e66629af4a2a6785ce312b35" },
+      { "path": "runs/production-roadmap/T20/2026-09-28T08-17-14-104Z/texture-blend.tres.png", "sha256": "9b822b8bcb68c78f80c5995c8b06027039b5d6ec2508244fd4fab24919a92207" },
+      { "path": "runs/production-roadmap/T20/2026-09-28T08-17-14-104Z/visual.tres.png", "sha256": "b18b3e7488276fd0c8bc7a253e0f0bb422ee5689987737e66b13e512cba2d3aa" }
+    ],
+    "centerPixels": {
+      "authoredBlend1": [0, 255, 0],
+      "textTint": [64, 127, 191],
+      "visualMix": [195, 27, 195],
+      "textureBlend05": [188, 188, 0]
+    },
+    "renderLog": "Actual Godot 4.7.2 Vulkan Forward+ runtime; no SCRIPT ERROR, ERROR or shader compilation failure in four runs"
+  },
+  "verifiedReal": [
+    "Official MCP discovers bounded shader capabilities and native renderer separately from render validation",
+    "Exact tint and texture-blend text shaders, native 2x2 ImageTexture samplers and bounded VisualShader Color/Mix ports are created, ResourceSaver-exported and loaded again",
+    "Wrong source and wrong graph edge fail with explicit shader-preflight diagnostics without changing the previously saved .tres bytes",
+    "Scene-assigned texture blend uniform 1, Undo to 0.5, Redo to 1 and safe native scene save/reopen; actual fixed-scene screenshot changes from mixed yellow-green to green",
+    "Four Vulkan screenshots have real center-pixel color assertions and error-free engine logs, not merely file-existence checks"
+  ],
+  "approval": "MOCK form acceptance in isolated fixture, not human approval",
+  "failedChecksRetained": [
+    "Before implementation: official MCP returned UNSUPPORTED for shader action; recorded in the first T20 native test run output",
+    "Earlier concurrency-4 full baseline runs T00/2026-09-28T06-20-50-669Z-37120 and T00/2026-09-28T06-36-28-135Z-23036 failed in separate existing process/editor tests; raw results retained. Same assertions at concurrency 2 passed in final frozen-source baseline"
+  ],
+  "limitations": [
+    "Only two exact spatial text templates and VisualShader Color/Mix fragment graph, no arbitrary shader text, imported textures or other node families",
+    "Failure diagnostics are preflight diagnostics; renderer-driver compiler internals are not available through this protocol",
+    "Only Vulkan Forward+ on Windows Godot 4.7.2 has automated visual proof; mobile and compatibility listed as source range, not separately qualified",
+    "Fixed camera/light and 2x2 texture colors in acceptance are TEST_ONLY; form approval is MOCK",
+    "T21-T35 and G3-G6 remain pending; T31 default registry recovery defect remains; production NOT_QUALIFIED, no release or publish"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T18",
+  "status": "EXPECTED_DEFECT",
+  "source": "MIXED",
+  "createdAt": "2026-09-27T11:51:29Z",
+  "engineEvidence": "REAL",
+  "formApproval": "MOCK",
+  "scope": "Historical pre-fix reproductions; not completion or release qualification.",
+  "sourceIdentity": {
+    "status": "NOT_CAPTURED_FOR_EARLY_PROBES",
+    "priorProductBaseline": "51506880daeedff2e336855b46fc3b8001f0f0bb489cdf97f6f748f6b42c8d43",
+    "note": "Early harness source changed; do not claim the prior baseline identifies the exact reproduction harness."
+  },
+  "records": [
+    {
+      "createdAt": "2026-09-27T11:19:30.3250247Z",
+      "calls": 4,
+      "path": "runs/production-roadmap/T18/2026-09-27T11-19-29.387Z/runtime-3d.json",
+      "fixtureRoot": "C:\\Users\\TEMP-A~1\\AppData\\Local\\Temp\\wheel-physics3d-CmQCsL",
+      "sha256": "b0649eee4673e4424c7832aaeca5796e9bfcc99d2fa229cead79f4511d147d1b",
+      "defect": "RayCast3D UNSUPPORTED"
+    },
+    {
+      "createdAt": "2026-09-27T11:26:11.6320814Z",
+      "calls": 2,
+      "path": "runs/production-roadmap/T18/2026-09-27T11-26-11.569Z/physics-authoring.json",
+      "fixtureRoot": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-z6m4Mh",
+      "sha256": "2f3c5a314cd8f4d75621781d77b4f38942e2ae0dfa7aa2a8fa0bfcfed2fb51f1",
+      "defect": "Missing physics_set/Area3D/RayCast3D authoring schema"
+    },
+    {
+      "createdAt": "2026-09-27T11:29:46.3727417Z",
+      "calls": 0,
+      "path": "runs/production-roadmap/T18/2026-09-27T11-29-46.364Z/physics-authoring.json",
+      "fixtureRoot": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-uRlPM6",
+      "sha256": "e454360dd5f3599ee8c88f6fdaa0767e7ca56f5eeb1940e72617d8f1345b6b7a",
+      "defect": "Physics helper Basis inference parse error"
+    },
+    {
+      "createdAt": "2026-09-27T11:32:29.1107315Z",
+      "calls": 14,
+      "path": "runs/production-roadmap/T18/2026-09-27T11-32-18.167Z/physics-authoring.json",
+      "fixtureRoot": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-editor-B62yA5",
+      "sha256": "2ea500b1425509b3314081186ebf11e8f6d18064668ea052232b7a18ce2aeb75",
+      "defect": "Non-monitorable Area native cache misses a geometrically intersecting static body"
+    }
+  ],
+  "parserLog": {
+    "path": "C:/Users/temp-admin/AppData/Local/Temp/wheel-editor-uRlPM6/.harness/editor.log",
+    "sha256": "ccea0021febadf00c248e546700bef77aaf9dba5f136acfe42947f07ff8e913c"
+  },
+  "independentBoundaryProbe": {
+    "path": "runs/production-roadmap/T18/tiny-scale-1790509843616.json",
+    "sourceHash": "729d5fe36a0b8624e46431bbf6d071f10319137c5f042a164d657917f9501f9d",
+    "status": "FAIL",
+    "exitCode": 1,
+    "note": "Native SDK accepted nonuniform 1:2:1 scale at tiny magnitude; disqualifies T18 despite the contemporaneous 287/287 baseline pass."
+  }
+}
