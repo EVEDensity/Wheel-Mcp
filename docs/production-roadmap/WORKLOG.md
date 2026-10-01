@@ -397,3 +397,89 @@ Gate：本次实际执行结果 / 尚未执行项 / 证据是否失效
 - **起因和失败自查**：反复运行造成共享系统 Temp 中上千个旧 `wheel-editor-*`/`wheel-validate-*` 目录。首次尝试在各测试文件的 `after` 钩子里删除编辑器夹具，Windows 对仍被子进程锁定的可执行文件返回 `EBUSY`/`EPERM`，完整门禁失败；已撤回这个过早清理钩子，未掩盖失败。旧目录仍未由本任务追溯删除。
 - **收敛实现**：`validateCandidateFiles` 在所有完成路径清理其精确 `wheel-validate-*` 隔离目录；成功/失败原生用例分别确认目录消失、原项目仍正确。`verify-production` 给每轮测试分配独立 `wheel-gate-*` Temp 根，子进程退出、结果收集后核对归属并清理；清理失败令该命令和总门禁 FAIL，记录精确路径。正式 `manifest/results` 与原始 stdout/stderr 保留，保留边界见 `LOG-RETENTION-CONTRACT.md`。
 - **同源验收**：源码 `7aa8a47a6ae89009bf15edef5aa1bc504e9eb1d5dce0762cd883fc466e98ec95`，`runs/production-roadmap/T00/2026-09-28T17-03-09-616Z-15904` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过；两轮 `tempCleanup:PASS`，结束后新 `wheel-gate-*` 根数为 0。manifest/results SHA-256 为 `f04f71ab8b692a01231154c77cd0625a0a59a33f878268d23433b9ffac9c9ca5` / `87fb2dec12389a3c98ecfd82764cf73ab4daaf763acedf88d218d675c77f06232`。这是当前源码的基线，不改变 T22 `in_progress`、G4–G6 NOT_RUN、生产 `NOT_QUALIFIED`。
+
+## 2026-09-29：T22 原始 LSP rename 的只读逐项审阅
+
+- **小步及自查**：新增 `reviewGodotRenameEdit`，校验项目内脚本、文件 SHA、完整旧标识符、合法新标识符、范围/重叠/预算；把代码位置列为候选，把字符串与注释误定位列为人工审阅，固定 `refactorSafe:false`，不产生事务内容。纯非代码和项目外路径拒绝。真实 Godot 夹具复核类名与局部变量的误定位，旧 `preflightGodotRename` 仍整体拒绝，原文件未改。只读审阅不证明候选间语义归属，也不能过滤后自动提交。
+- **同源门禁**：源码 `cdd7e31d8b92669c755b01820d86ecb23583462622c04481bb94bd48c6ca2022`；`runs/production-roadmap/T00/2026-09-29T02-48-30-455Z-20340` exit 0。build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过，两阶段 `tempCleanup:PASS`。manifest/results SHA-256 分别为 `b2ad97ad55bb1e1d2bbb097e86cbe54548c283c253b152e5296360f58c2008a7` / `621ce1c0b00aeb8938bfdff5edf1abc7a34708f7a10383067bc6c1f61225320a`；路线图 36/7 结构检查与 diff 空白检查通过。
+- **边界**：动态引用、场景脚本路径/NodePath、逐位置可靠语义、公开 rename 写入及完整 T22 验收仍缺。T22 保持 `in_progress`，T23–T35/G4–G6 未越过依赖，生产 `NOT_QUALIFIED`。未提交、推送、部署、发布或编辑用户真实 Godot 项目。
+
+## 2026-09-29：T22 已授权会话接入只读重命名审阅
+
+- **小步及自查**：`GodotLspClient.reviewRename` 复用原 `previewRename` 的已授权本地会话、光标标识符核验、请求前后源脚本 SHA 检查，返回词法审阅而不形成可提交事务。真实 Godot 测试覆盖跨文件类名及局部变量的字符串/注释误定位、严格预览继续拒绝、源码变化拒绝。定向原生测试 1/1，build/format/lint 和 diff 空白检查通过。其他文件只有逐文件读取 SHA；没有原子全项目快照或语义写入授权。
+- **当前同源门禁**：源码 `306dae6a5c470afdf84127807247091025f8c284461d047fb6d4aa7bb7c5b1c4`，`runs/production-roadmap/T00/2026-09-29T03-15-19-463Z-41376` exit 0；全量 302/302、独立 Godot 106/106，零失败/跳过，build/format/lint 与两阶段 `tempCleanup` 均 PASS。manifest/results SHA-256 为 `dbdca10fbea168982b79c34e3c5721360628878af89c938c408ace5acad74cc6` / `3fdf7d7fe6fa94a75eee102fb0fb81814f89ce40eed9dde8f296b8d295b4bdd7`。
+- **仍未完成**：可信逐位置语义、动态引用、场景/NodePath 验证、公开 rename 写入与回滚端到端仍缺；因此 T22 保持 `in_progress`，T23 不启动，G4–G6 未运行，生产 `NOT_QUALIFIED`。本轮未触碰用户真实 Godot 项目，未提交、推送或发布。
+
+## 2026-09-29：T22 只读全项目重命名影响清单
+
+- **小步及回头自查**：新增 `reviewRenameImpact`，对不超过 1000 文件 / 64 MiB 的项目作前后两次快照，逐文件核对 LSP 审阅所依赖的 SHA；扫描 `.gd/.tscn/.tres` 中完整同名词。LSP 未列出的代码、字符串/注释以及场景/资源文本均进入人工检查清单，绝不转成额外编辑。伪造旧文件哈希、扫描中变化、超限均拒绝。随后 `GodotLspClient.reviewRenameImpact` 将扫描串接到已授权、核验光标与源文件新鲜度的 LSP 会话；会话若在扫描中关闭则拒绝。真实 Godot 定向测试覆盖类名、场景文本、局部变量遗漏与旧哈希拒绝，1/1 PASS。此清单不是 NodePath/场景脚本路径的充分验证，更不能批准写入。
+- **同源完整门禁**：源码 `1ac1cdc50ff2b986c1045f21354b5bac77346eff794d882d108cc08741764419`，`runs/production-roadmap/T00/2026-09-29T04-59-13-855Z-26872` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过，两阶段 `tempCleanup:PASS`。manifest/results SHA-256 为 `3f96a234d0bc2aa4c8e7c6d821fd4ae091d3c0810317900c137395346fed3e01` / `91b05d350af86076bc5a9243ed60b1a1a8e07e8bff29eab01d39d815afe239f1`。
+- **门禁边界**：T22 仍 `in_progress`；可靠逐位置语义、跨文件重构后的真实验证、场景脚本路径/NodePath、正式写入和回滚仍缺。T23–T35/G4–G6 未完成，生产 `NOT_QUALIFIED`。未编辑用户真实 Godot 项目，也未提交、推送或发布。
+
+## 2026-09-29：T22 有限场景脚本路径核验
+
+- **小步及回头自查**：在只读影响扫描里识别 `.tscn/.tres` 的 `ext_resource type="Script"` 明确外部声明，逐项核验 `res://...gd` 指向项目内现存脚本；返回已核验路径，缺失或不支持的路径直接拒绝。真实 Godot 夹具中的合法场景列出 `semantic_probe.gd`，临时替换为缺失脚本后拒绝，恢复原场景后定向测试 1/1 PASS。仅此声明形态受支持；UID、内嵌脚本、动态加载、NodePath 与语义关联不在范围内，不能凭此批准重构写入。
+- **当前同源门禁**：源码 `a0b512c7f49b395ade13fd8d279f5e9b539d3531b0cda7cdf53c5b8b82f9a844`，`runs/production-roadmap/T00/2026-09-29T05-18-39-747Z-35048` exit 0；build/format/lint PASS、全量 302/302、独立 Godot 106/106，零失败/跳过，两阶段 `tempCleanup:PASS`。manifest/results SHA-256 为 `07c7ea7266b4db5c435f4887563214ee3c254289b9151e6a4239db5a1788b7eb` / `bdb905883ba444b9f27a5434171c5ab047417855f825183a3e55674d833ecb75`。
+- **状态**：T22 仍 `in_progress`，T23–T35/G4–G6 未完成，生产 `NOT_QUALIFIED`。未触碰用户真实 Godot 项目，也未提交、推送或发布。
+
+## 2026-10-01：T22 跨文件重构运行验证与逐位置定义检查
+
+- **纵向切片**：新增 `script-refactor-e2e.test.ts` 并列入独立 Godot smoke。固定 `class_name`、继承和类型声明三处候选，保留多行函数及命名 enum；在隔离项目检查引擎导入、实例化场景、调用结果 42 和显式 NodePath("Marker")。拒绝 TEST-ONLY MOCK 审批时不写入；错误运行预期使双文件事务 ROLLED_BACK，原字节恢复且场景再运行通过；正确运行预期 COMMITTED，旧 SHA 重放拒绝。没有使用用户真实项目。
+- **第一检查点**：源码 `5a3c220068b8598a1a6b0402a9f042173d925e32a34a168e7c907bfb8d0bb7bf`，`T00/2026-10-01T14-06-01-238Z-38104` exit 0；全量 303/303、独立 Godot 107/107、零失败/跳过，build/format/lint 和两阶段 tempCleanup PASS。manifest/results SHA 为 `0b4d70ebe518ce82e8320ac312ef372dbec35fcfa1d58925b6e11a2c3610cb52` / `bbdb8270a999c49209250fd234b9b783c78e6b565e980ca0068ae9f40cc1585e`。
+- **逐位置检查**：新增 `previewDefinitionCheckedRename`，先整体拒绝原始非代码编辑，再要求每个代码位置的唯一后端定义一致，全项目前后快照及影响扫描哈希一致；迟到取消、超时或断线拒绝。定义一致仅为候选证据，不把 LSP 假阳性变为写入授权，返回 refactorSafe:false。
+- **第二检查点**：源码 `0a9351f7e6697c1ac792899b388b3495db25166a15515412b528ceb4bb9dc178`，`T00/2026-10-01T14-24-31-028Z-36528` exit 0；全量 303/303、独立 Godot 107/107、零失败/跳过，静态检查及两阶段清理 PASS。manifest/results SHA 为 `7f5cfffb32aa2a876ba578f833669a20012dbc8ce7919c4944684f7a7620683e` / `b05dcd26ffcdd30087014bbd60bb878a94418b1304ea25b69b44a00776387c57`。
+- **未越界**：以上是检查点，不是最终资格。一般动态引用、完整 NodePath/场景路径重构及正式写入安全闭环尚未完成；T22 保持 in_progress，T23 不提前启动，生产 NOT_QUALIFIED。手动递归临时目录包装命令被策略拒绝，未执行；沿用项目门禁已有的独立暂存和归属清理机制。开发注册表锁导致随后定向发现测试在导入阶段失败，未抢占或删除锁；改用正式门禁独立注册表验收新只读 MCP 工具。
+- **MCP 接入及最终自查**：`preview_script_rename` 注册为 read 工具，项目路径策略与目录同步至 70 工具。官方 SDK 在只读权限下取得 compact 候选，逐字段核对 operations、projectSha256、definitionCheck、impact；项目外路径、旧名称不匹配拒绝，原文件不变。源码 `168e2b04e8a84e6f24aed535db89665679060f35f8f82b699367d7302cc7b95b` 的 `T00/2026-10-01T14-42-31-351Z-28516` exit 0：build/format/lint PASS、全量 303/303、独立 Godot 107/107、零失败/跳过，两阶段 tempCleanup PASS。manifest/results SHA 为 `abeb438de68297f3a15b10a27d9769be5620b7f1c80ca14fbd848cafc0bfe63f` / `26b5bb60364c469ea59de9c28ead72a5f22ae325ea064ad6c8753bf650d07cf8`，关键摘要 `evidence/T22-progress.json`。
+- **下一小步**：现有 `assertDocumentsClean` 仅证明脏场景保护，未证明编辑器未保存脚本缓冲区保护；正式重构写入还须绑定精确预览项目哈希、支持范围及审批/引擎/运行验证，不能把只读候选当安全写入。T22 继续 in_progress；本轮未提交、推送、部署或发布。
+
+## 2026-10-01：T22 未保存脚本保护、预览项目绑定及官方 MCP 写入链路
+
+- **保留与范围**：保留本轮开始时全部已有改动，不提交/推送/发布，不修改用户真实 Godot 项目。可用引擎仍为隔离 Godot 4.7.2，Node v24.18.0。
+- **先失败再修复（脚本脏状态）**：新增真实编辑器测试，TEST-ONLY 控制器用公开 CodeEdit 接口制造未保存修改。`T22/2026-10-01T15-07-02-923Z-52900` 两阶段均 5/6，失败为 Missing expected rejection：旧保护只检查脏场景。插件新增公开 `ScriptEditor.get_unsaved_files()` 查询与有界 scriptsStatus/scripts；未知、旧桥接缺字段或超限均不视为干净。验证写入在审批前/事务落盘前检查所有未保存脚本，原生脏场景豁免不绕过脚本保护。`T22/2026-10-01T15-11-32-613Z-39276` 两阶段 6/6，覆盖审批期间的编辑拒绝、磁盘原字节和缓冲区保留、undo 后清洁及未知状态拒绝。
+- **先失败再修复（快照与预览）**：`T22/2026-10-01T15-15-33-973Z-15936` 两阶段 5/7，旧项目快照未拒绝且脏缓冲区下仍生成预览。修复为 expectedProjectSha256 在审批前比对并写入精确审批 intent，验证后的项目快照仍在 beforeApply 检查；受检查预览在前后读取已授权编辑器脏状态。`T22/2026-10-01T15-18-44-943Z-14248` 两阶段 7/7，旧依赖 hash 拒绝且零审批，fresh hash 被审批绑定并提交；脏脚本预览拒绝。
+- **官方 MCP 纵向验收**：将 E2E 最后的成功提交改为官方 SDK `write_validated_project_files`，files 直接来自 LSP 候选，expectedProjectSha256 来自预览。错误哈希零审批拒绝，正确哈希实际出现在 TEST-ONLY MOCK 申请中；引擎校验后 COMMITTED，再运行场景得到 42、显式 NodePath Marker 可解析、场景字节保持。失败运行的双文件回滚仍由相同 ProjectTransactions 实现和真实 oracle 验证。`T22/2026-10-01T15-22-11-408Z-12680` 两阶段 7/7，源码 ba59561e。此类定向结果明确标 focused，不能冒充完整 baseline/Gate。
+- **路线自查**：T22 要求声明支持的 NodePath 验证与动态引用人工清单，不要求任意 NodePath 重写。当前支持纯 GDScript 标识符候选、显式外部 Script 路径检查、场景字节保持与固定运行场景的显式路径读回；UID 重写、Node 名称/路径改名、内嵌脚本、任意动态反射不自动升级为安全编辑。候选继续 refactorSafe:false；文件工具仅声明引擎导入/解析/加载，不宣称自动玩法验收。完整回归正在进行，T22 完成判定等待同源结果及逐项验收，不提前启动 T23。
+- **同源完成检查点**：`T00/2026-10-01T15-27-14-315Z-2528` exit 0，源码 `ba59561e1d7fc2ad539af36b534085b454f5c9f926ea2e6378beaf19c8e4c749`；build/format/lint、全量 305/305、独立 Godot 109/109 PASS，零失败/跳过，两阶段 tempCleanup PASS。manifest/results SHA 为 `2729ac677ebfa8f4a745fe1604a9e095ce49bb73e46f34f62e60991dd0924221` / `3ac354807f2a4eaa4e5b54b20aad34e7f7ec501949864e620825e2bc215d46be`。逐项 T22-1..5 映射及 REAL/MOCK 边界见 `evidence/T22-semantic-service.json`。在上述有限范围将 T22 置 done，开始 T23；不改路线要求，不把有限 NodePath 保持提升为路径重写，也不把 baseline 置为 G4 PASS，生产 NOT_QUALIFIED。
+
+## 2026-10-02：T23 增量索引、并发/取消和词法资源关联
+
+- **先失败后修复**：二进制与 runs 混入文本检索，在 `T23/2026-10-01T15-58-50-725Z-41344` 两阶段均 5/6；同项目并发查询误报 active refresh，在 `T23/2026-10-01T16-14-17-320Z-31712` 两阶段均 8/9。保留原始失败，不删断言。
+- **实现与小步自查**：新 `src/index/` 内存缓存固定项目/schema/hash/stale；只重新读取改变文件，冻结文件和词法元数据，二进制只做哈希；目录前后核对、可选 watcher/关闭/不可用状态、强制哈希重扫。并发按根串行、32 队列绝对限额，预取消/排队取消/扫描取消均不提交不完整快照；队列取消不影响邻居。公开 search/info 复用索引并显式返回缓存统计；glob 不再执行可能指数回溯的正则。未增加公共工具、写权限或数据库。
+- **关联自查**：声明、场景节点、ext/subresource、脚本/场景 UID 和反向来源为词法辅助；缺失、重复 UID、路径或资源 ID 不明确不猜测。字符串/注释/三引号假声明排除；超长行明确 omittedFromLine。生成 202 文件/3 MiB 二进制夹具、增删改名、断 watcher 后重扫、真实 junction 路径规则均有测试。10k/50k 性能及内存结论等 T26，不从小夹具推断。
+- **最新定向证据**：`T23/2026-10-01T16-30-28-331Z-44864` 源码 `56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4`；两轮 22/22、零失败/跳过，build/format/lint/tempCleanup PASS。manifest/results SHA 为 `30ba854607978ab41518bf9ba8a0c98e02e3c0e0aa85851aeee29a602df46823` / `c013d7a4b432675b955eba2dbe1b050ebe9cbb75f4f5d416753f2b22440bd5a3`。契约和关键摘要见 PROJECT-INDEX-CONTRACT.md、evidence/T23-progress.json；定向不是 native/full/G4。
+- **完成判定等待**：完整同源 `T00/2026-10-01T16-35-35-046Z-55220` 已启动，源码冻结，未取得最终总结果/清理前 T23 仍 in_progress。后续 T24 确认缺任务定向、真正字节预算和 active_run 的真实/不可用状态，但不跨过 T23；本轮不提交/推送/发布，不删关键原始证据，不触碰用户真实项目。
+- **同源最终验收**：上述 baseline exit 0；全量 318/318、独立 Godot 109/109，零失败/跳过，build/format/lint 与两轮 tempCleanup PASS。manifest/results SHA 为 `58454979fcc8d932c4727389530a3003d6c6dc5b840f7412b16b716ee0b009c7` / `8cdf5c18290937a9b5b79180b5a9d3bdb5b0fa156a6b67c99f096fba67734810`。逐项摘要 `evidence/T23-project-index.json`；在声明的词法辅助范围将 T23 置 done，开始 T24；36任务/7门禁结构检查 PASS。G4–G6 仍 NOT_RUN，生产 NOT_QUALIFIED。
+
+## 2026-10-02：T24 目标/硬字节预算第一闭环
+
+- **失败自查**：`T24/2026-10-01T16-57-29-536Z-52012` 两轮7/8，确认旧 Context Pack 忽略 1 KiB 中文 JSON 预算；`T24/2026-10-01T17-03-41-261Z-48508` CLI JSON 泛型/unknown 类型导致 build FAIL，修复为运行时数组/值校验并通过构建。失败记录保留。
+- **已实现**：最多32目标、0–8依赖深度、64选中文件/循环保护、文件SHA/行号/UTF-8片段裁剪、前后源哈希一致；日志共享硬字节尾读，不整段加载，带偏移/段hash/裁剪，非普通或链接文件拒绝、读中变化冲突。默认active_run明确unavailable，不假装无实例；无tokenizer时只承诺字节。
+- **协议与生命周期自查**：共享response-budget每页包含envelope后的JSON也遵守原maxBytes；多字节/转义字符/失败分页保留FAIL/code且可还原完整错误，跨调用者引用守卫保留。官方SDK逐页实测1KiB；CLI compact打印小结果，需要进程内分页时明确UNSUPPORTED并指导持续MCP，不输出死亡进程内不可兑现UUID。CLI/MCP参数矩阵同步；现有全量目录需求转get_project_info，Context Pack的files是选中上下文。详见CONTEXT-PACK-CONTRACT.md。
+- **定向验收**：`T24/2026-10-01T17-11-56-861Z-8584`，源码 `9dd69e013739fb7fa444daffb28eeb27b32f4cfed15846064440aa78be888c29`；两轮12/12，build/format/lint/两轮清理PASS，零失败/跳过，工具70/契约7映射无问题。manifest/results SHA为 `ee9df499980c30fa5c04063087b516dfc58be8275c66af6433d996614aa67709` / `ea46a901c703b7ea599b76ced08013c5072b5af36a5be3102dcac781695eb7c2`。这是Context/response定向、部分真实版本查询，不冒充完整原生回归。
+- **未完成边界**：完整同源 `T00/2026-10-01T17-12-42-298Z-3196` 进行中；即使通过，taskIntent、节点/符号定位、字段/token分支、错误/最近修改排序与完整分布仍须补齐。T24保持in_progress，T25–T35/G4–G6不越级；不提交/推送/发布。
+- **完整回归发现并修复兼容退化**：上述完整baseline最终FAIL：321/323、2失败、零跳过；独立Godot109/109、两轮清理PASS。两个失败是旧CLI/MCP一致性用例；新realpath(evidenceDir)把尚不存在的可选日志目录报NOT_FOUND，CLI无JSON正文连带解析失败。manifest/results SHA为 `03968643f05ab8d5f75712968f9cf989d7c741d06e74044f89b14740d58d1afe` / `fb035ba9dea0b5034f50c39707cb1bd0e421c8bb284d09a5a8409995e21935d8`。不把独立原生通过当整个baseline通过。
+- **再做反向自查**：`T24/2026-10-01T17-33-49-844Z-47844` 两轮13/15，重现缺目录和UTF-8字符中间游标仍被接受。修复仅将ENOENT目录转明确missing且不创建；非普通/链接日志继续FORBIDDEN；中间游标拒绝INVALID_ARGUMENT。把full-cli-mcp-matrix/real-cli-mcp-consistency纳入focused-context，`T24/2026-10-01T17-35-26-944Z-19504` 源码 `4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874` 两轮17/17、build/format/lint/两轮清理PASS，零失败/跳过。manifest/results SHA为 `9986483274273f162e9e14bab600e53a282556fabbfe2468c330d99b1b8cd14d` / `d13054beca7704c69cf71049994cf25b619ec6acea94811977ed2fea9e421e5a`。新完整同源 `T00/2026-10-01T17-37-57-161Z-55040` 正在重跑；细节见evidence/T24-compatibility-followup.json，T24仍in_progress。
+- **当前源码最终检查点**：上述新baseline exit0：全量326/326、独立Godot109/109、零失败/跳过，build/format/lint和两轮tempCleanup均PASS，源码仍为 `4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874`。manifest/results SHA为 `12929b0b62839356057b27584fdea469b44ab5021200d1054db532eca268cbbd` / `a8af1675c16a7048513466f9d7d191ab0196edc85231c7d2edc879df7a752576`。关键摘要evidence/T24-budget-checkpoint.json；预算/兼容闭环验收成立，但taskIntent、节点/符号/字段/token分支、排序和完整分布仍缺，T24不标done。下一安全小步补任务起点和定位测试，然后实现字段/预算分支，继续同源验收。没有提交、推送、部署或公开发布；G4–G6 NOT_RUN、生产NOT_QUALIFIED。
+
+## 2026-10-02：T24 任务定位、字段选择、排序与未知 tokenizer 预算
+
+- **实现与逐步自查**：taskIntent作为调用者数据，32个受限项目内符号/节点锚点词法精确定位，局部前后8行与16KiB UTF-8片段；同名歧义/缺失明确insufficient，不补无关前缀。长前置注释不能挤走目标行。fields控制五个可选字段，错误/选中项目/预算不受省略；官方SDK和CLI参数矩阵同步。
+- **失败后修复**：`T24/2026-10-01T18-06-23-013Z-5508` 两轮18/19，发现undefined属性没有真正省略，改为条件展开，不改断言；`T24/2026-10-01T18-08-17-360Z-18644` 两轮20/20。排序用显式目标、真实字面错误位置、依赖深度、文件系统mtime，而非扫描时间；unknown tokenizer接受maxTokens但明确不实施token上限，完整JSON bytes/4仅estimate，超请求显式标记；`T24/2026-10-01T18-12-10-207Z-44540` 两轮21/21。
+- **权限与分布检查**：增加1000无关文件前后，同任务每页1KiB、相同片段且不混入无关目录；官方权限客户端项目外拒绝。新测试policy包装类型错误造成`T24/2026-10-01T18-13-41-211Z-33756` build FAIL；修正后`T24/2026-10-01T18-14-07-803Z-30756` 两轮22/23，暴露无引擎字段仍被引擎路径审批误拒绝。仅在fields明确排除godot/main_scene时不执行原引擎路径检查；项目授权不变，引擎字段仍FORBIDDEN测试通过。
+- **当前定向验收**：源码`2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15`，`T24/2026-10-01T18-15-51-700Z-22968` 两轮23/23、零失败/跳过，build/format/lint/两阶段tempCleanup PASS，tools70/CLI契约7映射无问题。manifest/results SHA为`298a03fda7df1f10c0c84f9a7c5510826be47b493b0da20bc0835e7e36c6cab5` / `dde77891f2d66d7459b471378da6d33129447aefbe04e06c53ddddcdd932ff67`，摘要evidence/T24-targeting-focused.json。完整新源码baseline正在运行，冻结源码，不借旧326/326越级；T24仍in_progress，G4–G6 NOT_RUN、生产NOT_QUALIFIED。没有提交/推送/部署/发布，不删关键失败证据，临时夹具依归属自动清理。
+- **最终同源验收**：`T00/2026-10-01T18-16-58-292Z-40556` exit0，源码仍25042497；全量332/332、独立Godot109/109、零失败/跳过、build/format/lint/两阶段tempCleanup PASS。manifest/results SHA为`945f766bb6eaa5d644225ac4fa149808da2812d8eb3271082e9644dc789c7197` / `dbc16933f14894a45e020c8f7fd1843239c53e14879483f4224a2e175b705397`，逐项映射见evidence/T24-context-pack.json。在当前词法辅助、未知tokenizer只保证字节和active_run明确unavailable的路线允许范围完成T24；不把未知估算升级为模型token预算。execution.nextTask推进T25，Resources/Prompts/profile仍须后续实现与独立验收；G4–G6 NOT_RUN、生产NOT_QUALIFIED，没有提交/推送/部署/公开发布。
+
+## 2026-10-02：T25 标准 Resources、Prompts 与发现配置
+
+- **小步及自查**：五个有界词法视图、会话不透明项目ID、真实路径与read权限重新校验、32项标准目录页/会话游标、原JSON资源续读与外层32KiB响应预算；只在已配置project.godot根上读取，不扫描任意路径。注册四类纯模板prompt，原验收条件与外部证据独立数据身份，不执行/批准操作。all/read profile复用70工具，不复制工具；所有工具权限分组和注解仍不是授权。
+- **逐轮验收**：标准SDK内存/真实认证HTTP验证list/read/templates/list和prompts/list/get；五视图、源hash更新、跨会话拒绝、read和项目根撤销、关闭排空拒绝、目录和内容分页通过。构建阶段SDK测试类型、重复注解等错误保留在T25-discovery-focused.json；先补控制字符反向测试，`T25/2026-10-01T18-52-35-678Z-17236` 两轮27/28重现prompt转义超预算未拒绝，按完整GetPromptResult字节拒绝修复，不删断言。
+- **最新定向检查点**：源码`83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672`，`T25/2026-10-01T18-54-39-544Z-51660` 两轮28/28、零失败/跳过、build/format/lint/两阶段tempCleanup PASS，tools70/CLI契约7映射无问题；manifest/results SHA为`9938a950c59a5d5c6cb3c5e8ffc002f5638728d09dd65899447e66d973230a6e` / `28a239e437017797f8d8088dac9b9bf035ff0c3c67613755e58b09f57f031134`。完整同源baseline运行中，冻结源码，T25仍in_progress；订阅和listChanged均不宣称支持，诊断为词法NOT_RUN引擎；边界见MCP-DISCOVERY-CONTRACT.md，G4–G6/生产资格不提前通过。未提交/推送/部署/发布，正式失败证据保留，测试暂存按归属自动清理。
+- **最终同源自查**：`T00/2026-10-01T18-55-44-052Z-35724` exit0，源码仍83e37878；全量338/338、独立Godot109/109、零失败/跳过，build/format/lint/两阶段tempCleanup PASS。manifest/results SHA为`752c88a73a4ec8f5ce5a5940201c9ca52695141fc35db5a94e5cc14c3c5c60e6` / `e1513cb08e71c7776198871bb63cf5e5b9a55404485277c40cefa6e7a7195be0`；逐项证据evidence/T25-mcp-discovery.json。声明范围内完成T25，下一步T26冻结语料/题目/阈值再测，不能从当前小夹具推断10k/50k性能。G4–G6 NOT_RUN、生产NOT_QUALIFIED，无提交/推送/部署/公开发布。
+
+## 2026-10-02：T26 冻结语料、测量流程及首个性能失败闭环
+
+- **先冻结再运行**：tests/helpers/context-corpus.ts、tests/index-scale.test.ts和scripts/benchmark-context.mjs，seed260925/revision1，精确1k/10k/50k、32/256/2048节点、12k事件与长日志；30个文件/符号/节点标识符定位题、top5，答案只在测量后核对，不能注入生产检索。正式5次重复、10k至少200查询/100修改、冷/热/增量/取消/完整字节/RSS/内容和题目hash入报告；OS缓存不清空、不强制GC。小样本smoke/probe不等于正式资格。
+- **失败不隐藏**：生成器seed推断为字面量导致TS build FAIL，显式number修复；直接测试遇开发注册表锁TIMEOUT，使用正式隔离registry，不删除用户锁。`T26/2026-10-01T19-19-04-887Z-51736` lint FAIL且35/40（五个既有context用例缺Godot路径）；修复转义并显式GODOT_PATH后`T26/2026-10-01T19-20-19-648Z-22168`两轮40/40、构建/格式/lint/清理PASS，源码c8f15ab9。
+- **规模实测暴露问题**：1k smoke `T26/2026-10-01T19-21-22-975Z-36940` PASS，30/30、冷3699.47ms、热p95=472.36ms，结果SHA45865149108bdd52f4772fd34659e425e9e55ec36923e8a4493f94fec0f35792。10k probe `T26/2026-10-01T19-22-15-795Z-28932` FAIL，30/30、冷35889.63ms但热p95=3929.80ms、增量p95=3860.11ms，结果SHA303ff8a0765a6f09d9f8050a82c87e0a598d9e0710702fe43ebd4b4f45efec8d。两个延迟目标失败，不修改阈值或删样本。两次均sourceUnchanged和归属临时语料清理PASS。
+- **实现优化与自查**：每目录lstat改为32上限批处理并完整allSettled排空；仍前后两次扫描，不使用无期限缓存、不跳过变更/路径/权限校验。源码e8607b12，`T26/2026-10-01T19-27-46-595Z-54848`两轮40/40，构建/格式/lint/清理PASS；manifest/results SHA64ee3b924e847ae6a87f865ee19a6482c19677378c8e31015f17ecec69091950 / 5f89d36b0eae5b9bed11fe34195082b02b9f45c8ec03708e58c9ebae4c48755a。相同10k语料复测中，未取得最终结果前不宣称改善达标。T26仍in_progress，50k/正式5轮/树与事件压力/G4未完成，G4–G6 NOT_RUN、生产NOT_QUALIFIED。
+- **复测最终自查**：`T26/2026-10-01T19-28-34-310Z-27808`仍FAIL：同seed/语料hash/题目hash，30/30；冷32660.36ms、热p95=1155.16ms、增量p95=1136.13ms。热查询改善但仍超过500ms，增量已在2000ms内；仅12查询/5修改的probe，不满足正式200/100和5重复。Context80页、每页最多815字节且可还原、取消0.91ms、源码未变/归属清理PASS。结果SHAd3bb13fad2e25872ba62ee7fe0a73ab2db81d7ed76c550e2423c9169a9464643，摘要evidence/T26-scale-checkpoint.json。保留性能失败，下一步拆分元数据IO/CPU耗时后继续优化并跑正式规模与G4；不更改门槛、不以probe宣称路线完成，当前最新源码只有定向回归，完整同源回归仍待后续。

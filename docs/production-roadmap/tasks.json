@@ -4,7 +4,7 @@
   "createdAt": "2026-09-14T16:05:02.6315047+08:00",
   "execution": {
     "mode": "strict-sequential",
-    "nextTask": "T22",
+    "nextTask": "T26",
     "allowedStatuses": ["todo", "in_progress", "blocked", "done"],
     "maxInProgress": 1,
     "autoCommit": false,
@@ -1167,12 +1167,48 @@
         "min": 3,
         "max": 5
       },
-      "status": "in_progress",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T22-PARTIAL-PREVIEW",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T22-progress.json",
+          "sha256": "b920e25f20a5c205f3ef666d90f4c8927464c40c6c3b62fc5ea135e85b4b981a",
+          "sourceHash": "168e2b04e8a84e6f24aed535db89665679060f35f8f82b699367d7302cc7b95b",
+          "createdAt": "2026-10-01T15:00:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T22-SEMANTIC-SERVICE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T22-semantic-service.json",
+          "sha256": "b0d414227d2f57dc178bc6b9c1e1a1a6d4deef2d3087ce8d68d31b4fed832c06",
+          "sourceHash": "ba59561e1d7fc2ad539af36b534085b454f5c9f926ea2e6378beaf19c8e4c749",
+          "createdAt": "2026-10-01T15:50:41Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T22 partial read-only rename preview and isolated native rollback baseline",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T22-PARTIAL-PREVIEW"
+        },
+        {
+          "name": "T22 declared-scope native acceptance, official SDK and complete baseline",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "required": true,
+          "kind": "real_engine",
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T22-SEMANTIC-SERVICE"
+        }
+      ],
       "blocker": null,
-      "notes": "2026-09-29：已授权 Godot LSP 只读语义查询与内部 previewRename 候选预检，均非写入授权；真实 Godot 证明 references/rename/definition 会误含字符串/注释，保守预检整体拒绝。不同函数同名局部变量只取目标作用域；TEST-ONLY 候选经 MOCK 审批、隔离引擎及 SHA 事务成功，非法候选不改原件。先前源码 ab9cea41 的全量因系统 Temp ENOSPC 失败；现每轮门禁使用独立 Temp 根并在子进程退出后清理，隔离资源验证暂存亦在结束后清理，正式审计证据保留。当前源码 7aa8a47a 全量 302/302、独立 Godot 106/106、零失败/跳过，两轮 tempCleanup PASS，详情见 LOG-RETENTION-CONTRACT.md；旧共享 Temp 目录未追溯删除。动态引用、场景/NodePath、可靠语义及公开 rename 写入仍缺，T22 未完成，T23 不启动，生产 NOT_QUALIFIED。",
-      "completedAt": null
+      "notes": "2026-10-01：T22 在声明的 Windows/Godot 4.7.2 本地可信项目范围完成。已授权 LSP symbols/references/definition/diagnostics；保守 WorkspaceEdit 候选、逐代码位置定义一致性、项目快照与人工影响清单；字符串/注释原始误编辑整体拒绝。未保存脚本和未知脏状态保护覆盖预览及审批前/落盘前写入；expectedProjectSha256 在审批前核对且绑定精确审批意图。官方 SDK 预览→获准候选写入→真实场景结果42、外部Script路径与显式NodePath保持通过；真实运行失败的双文件事务回滚、旧SHA拒绝通过，审批MOCK已明示。源码 ba59561e 全量305/305、Godot109/109，零失败/跳过，两阶段清理PASS，逐项证据 T22-semantic-service.json。Node/NodePath改名、UID/内嵌脚本重写、任意动态反射不自动支持；refactorSafe:false 不是批准，文件引擎校验不承诺自动玩法验收。T23开始，G4–G6未通过，生产NOT_QUALIFIED，未提交/推送/发布。",
+      "completedAt": "2026-10-01T23:50:41+08:00"
     },
     {
       "id": "T23",
@@ -1183,12 +1219,42 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [{
+        "id": "T23-FOCUSED-PROGRESS",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T23-progress.json",
+        "sha256": "728812c55e1c4dc0bbc352a3c99013188c6b1d42c666d0629d8fea1b9fb81f6f",
+        "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+        "createdAt": "2026-10-01T16:39:10Z",
+        "source": "REAL"
+      }, {
+        "id": "T23-FINAL-BASELINE",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T23-project-index.json",
+        "sha256": "c3fe7e854f3b2ec905065c812bbde236f2a254356ea75dbd258a7df54fe92996",
+        "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+        "createdAt": "2026-10-01T16:53:54Z",
+        "source": "MIXED"
+      }],
+      "verification": [{
+        "name": "T23 focused index/path regression",
+        "command": "npm.cmd run verify:production -- --focused-index",
+        "kind": "focused-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T23-FOCUSED-PROGRESS"
+      }, {
+        "name": "T23 same-source full baseline and independent Godot regression",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "full-baseline-native-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T23-FINAL-BASELINE"
+      }],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-10-02：有界项目隔离内存索引、增量文件/词法元数据复用、可选 watcher、强制重哈希重扫、UID/资源/节点/反向关联及公共 search/info 已实现。二进制检索和并发冲突先复现失败再修复，定向两轮 22/22；同源完整 baseline 全量318/318、独立Godot109/109、构建/格式/lint/两轮清理PASS，零失败/跳过。词法辅助不是语义授权，10k/50k性能属T26；G4仍NOT_RUN。见 PROJECT-INDEX-CONTRACT.md、T23-project-index.json。",
+      "completedAt": "2026-10-02T00:53:54+08:00"
     },
     {
       "id": "T24",
@@ -1199,12 +1265,95 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [{
+        "id": "T24-FOCUSED-PROGRESS",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-progress.json",
+        "sha256": "ad84b26a66d7bb840becaa7c4d4099a6fe1ce851258183ba598c2535dd729037",
+        "sourceHash": "9dd69e013739fb7fa444daffb28eeb27b32f4cfed15846064440aa78be888c29",
+        "createdAt": "2026-10-01T17:13:10Z",
+        "source": "REAL"
+      }, {
+        "id": "T24-COMPATIBILITY-FOLLOWUP",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-compatibility-followup.json",
+        "sha256": "6ab823ce4095ea822dd82efd1d552b89494dab049a63edc2d31237d637dbfa6f",
+        "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
+        "createdAt": "2026-10-01T17:43:35Z",
+        "source": "REAL"
+      }, {
+        "id": "T24-BUDGET-FULL-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-budget-checkpoint.json",
+        "sha256": "f19c27b1bba6c0e39e6fcfb158c04984602449f3eb211d0e6ed67c201b6fd7eb",
+        "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
+        "createdAt": "2026-10-01T17:54:33Z",
+        "source": "MIXED"
+      }, {
+        "id": "T24-TARGETING-FOCUSED",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-targeting-focused.json",
+        "sha256": "d4ea64ef850bbebe9edf58e172dbf91c5c9a33d299f54afe7d8e5d878687c636",
+        "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
+        "createdAt": "2026-10-01T18:16:10Z",
+        "source": "REAL"
+      }, {
+        "id": "T24-CONTEXT-PACK-FINAL",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-context-pack.json",
+        "sha256": "caaef120a8da87e59d57a72d8587b9bc2274a16a07779c191dad300d6fd574f5",
+        "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
+        "createdAt": "2026-10-01T18:33:33Z",
+        "source": "MIXED"
+      }],
+      "verification": [{
+        "name": "T24 initial target/byte-budget/CLI/SDK regression",
+        "command": "npm.cmd run verify:production -- --focused-context",
+        "kind": "focused-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T24-FOCUSED-PROGRESS"
+      }, {
+        "name": "T24 historical full baseline compatibility failure retained",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "historical-full-baseline",
+        "required": false,
+        "status": "FAIL",
+        "exitCode": 1,
+        "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
+      }, {
+        "name": "T24 missing evidence/UTF-8 cursor and actual CLI/MCP compatibility recheck",
+        "command": "npm.cmd run verify:production -- --focused-context",
+        "kind": "focused-native-compatibility-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
+      }, {
+        "name": "T24 byte-budget closed-loop same-source full baseline",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "full-baseline-native-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T24-BUDGET-FULL-CHECKPOINT"
+      }, {
+        "name": "T24 lexical anchors, fields, ranking, unknown-tokenizer and 1000-file permission acceptance",
+        "command": "npm.cmd run verify:production -- --focused-context",
+        "kind": "focused-native-compatibility-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T24-TARGETING-FOCUSED"
+      }, {
+        "name": "T24 declared-scope acceptance with same-source complete baseline and independent Godot",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "full-baseline-native-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T24-CONTEXT-PACK-FINAL"
+      }],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-10-02：taskIntent、受限文件/词法符号/节点锚点、局部片段/字段选择、错误栈/真实mtime排序、每页UTF-8硬字节预算及未知tokenizer的请求/估算均接入官方SDK和CLI。1000无关文件前后同任务1KiB、长行锚点、缺失/歧义、循环/日志/权限/预取消覆盖；undefined属性伪省略和无引擎字段误要求引擎路径先失败后修复，历史证据保留。新源码25042497两轮23/23、完整332/332、独立Godot109/109、构建/格式/lint/两阶段清理PASS，零失败/跳过。按路线允许的未知tokenizer仅字节保证和active_run明确unavailable范围完成T24，不宣称模型token精确限制、语义安全、live注册查询或CLI持久引用。见CONTEXT-PACK-CONTRACT.md、T24-context-pack.json。下一项T25；G4-G6未通过，生产NOT_QUALIFIED，未提交/推送/发布。",
+      "completedAt": "2026-10-02T02:33:33+08:00"
     },
     {
       "id": "T25",
@@ -1215,12 +1364,42 @@
         "min": 2,
         "max": 4
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [{
+        "id": "T25-DISCOVERY-FOCUSED",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T25-discovery-focused.json",
+        "sha256": "4065a0c098a3f2d95b4473e106b7b4dc86fc1e056a1b97a92196bbf16e51f292",
+        "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+        "createdAt": "2026-10-01T18:55:53Z",
+        "source": "REAL"
+      }, {
+        "id": "T25-DISCOVERY-FINAL",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T25-mcp-discovery.json",
+        "sha256": "f305ed3a48508d7c673ac42cc59d496c3e6677d70d52ac34c9c3f507b28a677d",
+        "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+        "createdAt": "2026-10-01T19:12:00Z",
+        "source": "MIXED"
+      }],
+      "verification": [{
+        "name": "T25 standard SDK/HTTP resources, prompts, profiles, permissions, pagination and escaped JSON budget",
+        "command": "npm.cmd run verify:production -- --focused-discovery",
+        "kind": "focused-discovery-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T25-DISCOVERY-FOCUSED"
+      }, {
+        "name": "T25 same-source complete baseline and independent Godot regression",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "complete-baseline",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T25-DISCOVERY-FINAL"
+      }],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-10-02：受限不透明项目资源、会话内续读、标准32项目录分页、四类约束prompt、all/read配置与权限分组注解接入；官方SDK内存/真实HTTP、跨会话/撤销read与项目根权限/更新/关闭拒绝/预算均覆盖。控制字符JSON转义先失败27/28后按完整响应预算修复，源码83e37878定向两轮28/28，同源完整基线338/338+独立Godot109/109、build/format/lint/两阶段清理PASS；tools70/CLI契约7映射无问题，历史失败保留。声明范围内验收完成，见T25-mcp-discovery.json逐项映射。订阅/listChanged推送不支持，词法诊断engineValidation NOT_RUN；大项目性能待T26，G4-G6仍NOT_RUN，生产NOT_QUALIFIED。",
+      "completedAt": "2026-10-01T19:12:00Z"
     },
     {
       "id": "T26",
@@ -1231,11 +1410,34 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "in_progress",
+      "evidence": [{
+        "id": "T26-SCALE-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-checkpoint.json",
+        "sha256": "8f89070e65a7f666eecedf71d470e714327c934932758c5807ff2077de1cb6eb",
+        "sourceHash": "e8607b1276af6c1d58b5f752e43ea692b651e9d18771d404b811ffe1b0061225",
+        "createdAt": "2026-10-01T19:32:20Z",
+        "source": "REAL"
+      }],
+      "verification": [{
+        "name": "T26 scale/index/context/budget/path focused regression, two 40/40 rounds",
+        "command": "npm.cmd run verify:production -- --focused-scale",
+        "kind": "focused-scale-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T26-SCALE-CHECKPOINT"
+      }, {
+        "name": "T26 unchanged-seed 10k latency diagnostic probe, warm p95 remains over threshold",
+        "command": "node scripts/benchmark-context.mjs --probe-10k",
+        "kind": "diagnostic-performance-probe-not-full-workload",
+        "required": true,
+        "status": "FAIL",
+        "exitCode": 1,
+        "evidenceId": "T26-SCALE-CHECKPOINT"
+      }],
       "blocker": null,
-      "notes": "",
+      "notes": "2026-10-02：T25完成同源338/338+Godot109/109后开始T26。seed260925/revision1、1k/10k/50k文件、30标识符题/top5、12k事件/长日志、5次重复和路线阈值先冻结。源码e8607b12定向两轮40/40通过；首次10k探测热3929.80ms/增量3860.11ms均FAIL，32上限lstat批处理、allSettled排空且保留双扫描后复测热1155.16ms仍FAIL（目标500ms），增量1136.13ms在2000ms内，冷32660.36ms、30/30命中。所有probe仅12查询/5修改，不是正式200/100或5重复，源码未变/归属临时语料清理PASS，关键失败保留；见T26-scale-checkpoint.json。后续拆分IO/CPU继续优化、正式50k容量/五轮、树事件压力、完整同源与G4仍须执行；不从smoke/probe宣称完成，不删用户注册表锁，不降门槛。T26 in_progress，G4-G6 NOT_RUN、生产NOT_QUALIFIED。",
       "completedAt": null
     },
     {
