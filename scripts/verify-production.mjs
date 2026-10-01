@@ -42,11 +42,15 @@ if (args.includes('--check-report')) {
     process.exitCode = 1;
   }
 } else {
-  const gateId = option('--gate') ?? (args.length === 1 && args[0] === '--baseline' ? 'G0' : null);
-  const baselineOnly = args.length === 1 && args[0] === '--baseline';
+  const focused =
+    args.length === 1
+      ? ({ '--focused-script-safety': 'T22', '--focused-index': 'T23', '--focused-context': 'T24', '--focused-discovery': 'T25', '--focused-scale': 'T26' }[args[0]] ?? null)
+      : null;
+  const gateId = option('--gate') ?? (focused || (args.length === 1 && args[0] === '--baseline') ? 'G0' : null);
+  const baselineOnly = focused || (args.length === 1 && args[0] === '--baseline');
   if (!/^G[0-6]$/.test(gateId ?? '') || (!baselineOnly && (args.length !== 2 || args[0] !== '--gate'))) {
     console.error(
-      'usage: verify-production.mjs --baseline | --gate G0..G6 | --check-report file | --check-manifest file',
+      'usage: verify-production.mjs --baseline | --focused-script-safety | --focused-index | --focused-context | --focused-discovery | --focused-scale (partial regression only) | --gate G0..G6 | --check-report file | --check-manifest file',
     );
     process.exit(2);
   }
@@ -54,15 +58,25 @@ if (args.includes('--check-report')) {
     console.error(`${gateId} suite is NOT_RUN: owner tasks and Gate-specific tests are not implemented yet`);
     process.exit(2);
   }
-  await runBaseline({ gateId, baselineOnly });
+  await runBaseline({ gateId, baselineOnly, focused });
 }
 
-async function runBaseline({ gateId, baselineOnly }) {
+async function runBaseline({ gateId, baselineOnly, focused = null }) {
+  const focusedNames =
+    focused === 'T26'
+      ? ['index-scale', 'project-index', 'index-invalidation', 'context-budget-e2e', 'response-budget', 'project-path-policy']
+      : focused === 'T25'
+      ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
+      : focused === 'T22'
+      ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
+      : focused === 'T24'
+        ? ['context-pack', 'context-budget-e2e', 'response-budget', 'full-cli-mcp-matrix', 'real-cli-mcp-consistency']
+        : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
   const started = Date.now();
   const state = JSON.parse(await readFile(path.join(root, 'docs/production-roadmap/tasks.json'), 'utf8'));
   const gate = state.gates.find((item) => item.id === gateId);
   const runId = new Date().toISOString().replace(/[:.]/g, '-') + '-' + process.pid;
-  const runDir = path.join(root, `runs/production-roadmap/${gateId === 'G0' ? 'T00' : gateId}`, runId);
+  const runDir = path.join(root, `runs/production-roadmap/${focused ?? (gateId === 'G0' ? 'T00' : gateId)}`, runId);
   await mkdir(runDir, { recursive: true });
   // Qualification processes share a fresh TEST-ONLY registry. Never let a
   // developer's interrupted local runs or PID reuse contaminate test fixtures,
@@ -164,11 +178,12 @@ async function runBaseline({ gateId, baselineOnly }) {
     execute('lint', npm, ['run', 'lint']);
     const files = (await readdir(path.join(root, 'build/tests')))
       .filter((name) => name.endsWith('.test.js'))
+      .filter((name) => !focused || focusedNames.some((item) => name === item + '.test.js'))
       .map((name) => `build/tests/${name}`);
     let fullTestRun;
     if (files.length)
       fullTestRun = execute(
-        'full-tests',
+        focused ? 'focused-tests' : 'full-tests',
         process.execPath,
         ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...files],
         true,
@@ -186,39 +201,44 @@ async function runBaseline({ gateId, baselineOnly }) {
         outputHash: sha256('missing test files'),
       });
     if (godotVersion !== 'NOT_RUN') {
-      const smokeFiles = [
-        'editor-fixture-isolation',
-        'process-evidence',
-        'validated-project-write',
-        'editor-scene-save',
-        'editor-scene-rpc',
-        'editor-instance-rpc',
-        'inherited-scene-roundtrip',
-        'scene-move',
-        'ui-authoring-e2e',
-        'runtime-3d-e2e',
-        'physics-authoring-e2e',
-        'animation-authoring-e2e',
-        'shader-authoring-e2e',
-        'content-workflows-e2e',
-        'script-semantic-service',
-        'resource-roundtrip',
-        'resource-sharing',
-        'editor-bridge-e2e',
-        'editor-scene-operations',
-        'readme-smoke',
-        'runtime-behavior-e2e',
-        'runtime-error-contract',
-        'runtime-property-roundtrip',
-        'persistent-events-e2e',
-        'bridge-handshake',
-        'fresh-validation',
-        'session-isolation',
-        'reload-scene',
-        'shutdown',
-      ].map((name) => `build/tests/${name}.test.js`);
+      const smokeFiles = (
+        focused
+          ? focusedNames
+          : [
+              'editor-fixture-isolation',
+              'process-evidence',
+              'validated-project-write',
+              'editor-scene-save',
+              'editor-scene-rpc',
+              'editor-instance-rpc',
+              'inherited-scene-roundtrip',
+              'scene-move',
+              'ui-authoring-e2e',
+              'runtime-3d-e2e',
+              'physics-authoring-e2e',
+              'animation-authoring-e2e',
+              'shader-authoring-e2e',
+              'content-workflows-e2e',
+              'script-semantic-service',
+              'script-refactor-e2e',
+              'resource-roundtrip',
+              'resource-sharing',
+              'editor-bridge-e2e',
+              'editor-scene-operations',
+              'readme-smoke',
+              'runtime-behavior-e2e',
+              'runtime-error-contract',
+              'runtime-property-roundtrip',
+              'persistent-events-e2e',
+              'bridge-handshake',
+              'fresh-validation',
+              'session-isolation',
+              'reload-scene',
+              'shutdown',
+            ]
+      ).map((name) => `build/tests/${name}.test.js`);
       const smokeRun = execute(
-        'godot-smoke',
+        ['T23', 'T25'].includes(focused) ? 'focused-recheck' : focused ? 'godot-focused' : 'godot-smoke',
         process.execPath,
         ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...smokeFiles],
         true,
@@ -495,6 +515,7 @@ async function runBaseline({ gateId, baselineOnly }) {
     schemaVersion: 1,
     gateId,
     baselineOnly,
+    scope: focused ? focused + ' focused regression only; NOT a complete baseline or qualification gate' : 'complete',
     status,
     commands,
     toolsCount: tools.length,
@@ -522,8 +543,8 @@ async function runBaseline({ gateId, baselineOnly }) {
   const finished = Date.now();
   const manifest = {
     schemaVersion: 1,
-    caseId: gateId === 'G0' ? 'T00-baseline' : `${gateId}-gate`,
-    taskId: gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : 'T21',
+    caseId: focused ? focused + '-focused-regression' : gateId === 'G0' ? 'T00-baseline' : `${gateId}-gate`,
+    taskId: focused ?? (gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : 'T21'),
     gateId,
     source,
     environment,

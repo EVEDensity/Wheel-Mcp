@@ -237,6 +237,14 @@ func _snapshot(limit: int) -> Dictionary:
 				selected.append({"path": str(root.get_path_to(node)), "type": node.get_class()})
 	var fs := EditorInterface.get_resource_filesystem()
 	var dirty := {"status": "KNOWN", "scenes": Array(EditorInterface.call("get_unsaved_scenes"))}
+	dirty["scriptsStatus"] = "UNKNOWN"
+	dirty["scripts"] = []
+	var script_editor := EditorInterface.get_script_editor()
+	if script_editor != null and script_editor.has_method("get_unsaved_files"):
+		var unsaved: Array = Array(script_editor.call("get_unsaved_files"))
+		if unsaved.size() <= 100:
+			dirty["scriptsStatus"] = "KNOWN"
+			dirty["scripts"] = unsaved
 	var conflicts: Array[String] = _scene_save.dirty_conflicts(root)
 	if not conflicts.is_empty():
 		dirty["nativeSaveConflicts"] = conflicts
