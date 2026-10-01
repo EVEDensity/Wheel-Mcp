@@ -10,6 +10,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
 import {
   preflightGodotRename,
+  reviewGodotRenameEdit,
+  reviewRenameImpact,
   verifyEditorLspBinding,
   type GodotWorkspaceEdit,
   type SemanticRenamePreview,
@@ -164,6 +166,8 @@ test(
         'ambiguous.gd':
           'extends Node\nfunc first() -> void:\n    var score: int = 1\n    score += 1\nfunc second() -> void:\n    var score: int = 2\n    score += 1\n',
         'broken.gd': 'extends Node\n',
+        'probe_scene.tscn':
+          '[gd_scene load_steps=2 format=3]\n[ext_resource type="Script" path="res://semantic_probe.gd" id="1_probe"]\n[node name="SemanticProbe" type="Node"]\nscript = ExtResource("1_probe")\n',
       },
     });
     let socket: Socket | undefined;
@@ -223,6 +227,36 @@ test(
         assert.equal(localPreview.refactorSafe, false);
         assert.equal(localPreview.editCount, 2);
         assert.deepEqual(localPreview.editedFiles, ['semantic_probe.gd']);
+        const authenticatedReview = await verifiedClient.reviewRename(
+          'semantic_probe.gd',
+          { line: 1, character: 11 },
+          'SemanticProbe',
+          'NewProbe',
+        );
+        assert.equal(authenticatedReview.refactorSafe, false);
+        assert.equal(authenticatedReview.analysisLevel, 'lexical-review');
+        assert.equal(authenticatedReview.godotVersion, verifiedClient.godotVersion);
+        assert.deepEqual(authenticatedReview.manualReview.map((item) => item.reason).sort(), ['comment', 'string']);
+        const authenticatedImpact = await verifiedClient.reviewRenameImpact(
+          'semantic_probe.gd',
+          { line: 1, character: 11 },
+          'SemanticProbe',
+          'NewProbe',
+        );
+        assert.equal(authenticatedImpact.refactorSafe, false);
+        assert.ok(
+          authenticatedImpact.impact.manualReview.some(
+            (item) => item.path === 'probe_scene.tscn' && item.reason === 'serialized_scene_or_resource',
+          ),
+        );
+        const authenticatedDecoy = await verifiedClient.reviewRename(
+          'local_decoy.gd',
+          { line: 1, character: 4 },
+          'score',
+          'points',
+        );
+        assert.equal(authenticatedDecoy.codeLocations.length, 2);
+        assert.equal(authenticatedDecoy.manualReview.length, 2);
         await assert.rejects(
           verifiedClient.previewRename('semantic_probe.gd', { line: 1, character: 11 }, 'SemanticProbe', 'NewProbe'),
           /string or comment/,
@@ -244,6 +278,10 @@ test(
         await assert.rejects(verifiedClient.query('semantic_probe.gd', 'symbols'), /Script changed/);
         await assert.rejects(
           verifiedClient.previewRename('semantic_probe.gd', { line: 3, character: 4 }, 'score', 'points'),
+          /Script changed/,
+        );
+        await assert.rejects(
+          verifiedClient.reviewRename('semantic_probe.gd', { line: 3, character: 4 }, 'score', 'points'),
           /Script changed/,
         );
         await writeFile(path.join(fixture.root, 'semantic_probe.gd'), source);
@@ -366,6 +404,85 @@ test(
       assert.ok(!rename.error, JSON.stringify(rename.error));
       assert.ok(rename.result && typeof rename.result === 'object');
       assert.ok('changes' in rename.result || 'documentChanges' in rename.result);
+      const classReview = await reviewGodotRenameEdit(
+        fixture.root,
+        rename.result as GodotWorkspaceEdit,
+        'SemanticProbe',
+        'SemanticProbeNew',
+      );
+      assert.equal(classReview.refactorSafe, false);
+      assert.equal(classReview.analysisLevel, 'lexical-review');
+      assert.ok(classReview.codeLocations.length >= 2);
+      assert.deepEqual(classReview.manualReview.map((item) => item.reason).sort(), ['comment', 'string']);
+      assert.equal(classReview.editCount, classReview.codeLocations.length + classReview.manualReview.length);
+      assert.equal(classReview.fileSnapshots.length, 2);
+      assert.ok(classReview.fileSnapshots.every((item) => /^[a-f0-9]{64}$/.test(item.sha256)));
+      const classImpact = await reviewRenameImpact(fixture.root, 'SemanticProbe', classReview);
+      assert.equal(classImpact.analysisLevel, 'lexical-impact-review');
+      assert.equal(classImpact.refactorSafe, false);
+      assert.equal(classImpact.matchedCodeLocations, classReview.codeLocations.length);
+      assert.deepEqual(classImpact.sceneScriptPaths, [
+        { scenePath: 'probe_scene.tscn', scriptPath: 'res://semantic_probe.gd', line: 2 },
+      ]);
+      assert.ok(
+        classImpact.manualReview.some(
+          (item) => item.path === 'probe_scene.tscn' && item.reason === 'serialized_scene_or_resource',
+        ),
+      );
+      assert.ok(classImpact.manualReview.some((item) => item.reason === 'string'));
+      assert.ok(classImpact.manualReview.some((item) => item.reason === 'comment'));
+      const scenePath = path.join(fixture.root, 'probe_scene.tscn');
+      const originalScene = await readFile(scenePath, 'utf8');
+      await writeFile(scenePath, originalScene.replace('res://semantic_probe.gd', 'res://missing_script.gd'));
+      try {
+        await assert.rejects(
+          reviewRenameImpact(fixture.root, 'SemanticProbe', classReview),
+          /script path cannot be verified/,
+        );
+      } finally {
+        await writeFile(scenePath, originalScene);
+      }
+      await assert.rejects(
+        reviewRenameImpact(fixture.root, 'SemanticProbe', {
+          ...classReview,
+          fileSnapshots: classReview.fileSnapshots.map((item, index) =>
+            index === 0 ? { ...item, sha256: '0'.repeat(64) } : item,
+          ),
+        }),
+        /source changed/,
+      );
+      const stringLocation = classReview.manualReview.find((item) => item.reason === 'string');
+      assert.ok(stringLocation);
+      await assert.rejects(
+        reviewGodotRenameEdit(
+          fixture.root,
+          {
+            changes: {
+              [pathToFileURL(path.join(fixture.root, stringLocation.path)).href]: [
+                { range: stringLocation.range, newText: 'SemanticProbeNew' },
+              ],
+            },
+          },
+          'SemanticProbe',
+          'SemanticProbeNew',
+        ),
+        /no code candidates/,
+      );
+      await assert.rejects(
+        reviewGodotRenameEdit(
+          fixture.root,
+          {
+            changes: {
+              [pathToFileURL(path.join(path.dirname(fixture.root), 'outside.gd')).href]: [
+                { range: stringLocation.range, newText: 'SemanticProbeNew' },
+              ],
+            },
+          },
+          'SemanticProbe',
+          'SemanticProbeNew',
+        ),
+        /inside projectPath/,
+      );
       await assert.rejects(
         preflightGodotRename(fixture.root, rename.result as GodotWorkspaceEdit, 'SemanticProbe', 'SemanticProbeNew'),
         /string or comment/,
@@ -407,6 +524,12 @@ test(
         'Godot unexpectedly stopped including local string/comment decoys in rename',
       );
       await assert.rejects(preflightGodotRename(fixture.root, decoyEdit, 'score', 'points'), /string or comment/);
+      const decoyReview = await reviewGodotRenameEdit(fixture.root, decoyEdit, 'score', 'points');
+      assert.equal(decoyReview.codeLocations.length, 2);
+      assert.deepEqual(decoyReview.manualReview.map((item) => item.reason).sort(), ['comment', 'string']);
+      assert.equal(decoyReview.refactorSafe, false);
+      const decoyImpact = await reviewRenameImpact(fixture.root, 'score', decoyReview);
+      assert.ok(decoyImpact.manualReview.some((item) => item.reason === 'unmapped_code'));
       assert.equal(await readFile(path.join(fixture.root, 'local_decoy.gd'), 'utf8'), decoySource);
       const ambiguousUri = pathToFileURL(path.join(fixture.root, 'ambiguous.gd')).href;
       const ambiguousSource = await readFile(path.join(fixture.root, 'ambiguous.gd'), 'utf8');

@@ -98,6 +98,33 @@ test('invalid and expired response references fail explicitly', () => {
   assert.throws(() => readResponsePage(next.ref, -1), /outside the stored snapshot/);
   assert.throws(() => runWithResponseOwner('other-client', () => readResponsePage(next.ref, 0)), /another client/);
 });
+test('response byte cursor cannot start inside a UTF-8 code point', () => {
+  const original = { content: '世界🌏'.repeat(2000) };
+  const page = budgetResponse(original, 1024);
+  const next = page.continuation as { ref: string };
+  const middle = Buffer.from(JSON.stringify(original)).indexOf(Buffer.from('世界')) + 1;
+  assert.throws(() => readResponsePage(next.ref, middle), { code: 'INVALID_ARGUMENT' });
+});
+test('small failure pages keep the error visible and fit escaped UTF-8 JSON envelopes', () => {
+  const original = {
+    status: 'FAIL',
+    code: 'NOT_FOUND',
+    message: '\u0000'.repeat(2000),
+    payload: '世界🌏'.repeat(1000),
+  };
+  let page = budgetResponse(original, 1024);
+  let assembled = '';
+  for (;;) {
+    assert.equal(page.status, 'FAIL');
+    assert.equal(page.code, 'NOT_FOUND');
+    assert.ok(Buffer.byteLength(JSON.stringify(page)) <= 1024);
+    assembled += String(page.chunk);
+    const next = page.continuation as { ref: string; cursor: number } | null;
+    if (!next) break;
+    page = readResponsePage(next.ref, next.cursor);
+  }
+  assert.deepEqual(JSON.parse(assembled), original);
+});
 
 test('process logs page by UTF-8 byte cursor and expose archived segment references', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'wheel-log-page-'));

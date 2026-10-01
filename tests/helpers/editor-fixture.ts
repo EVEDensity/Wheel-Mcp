@@ -33,6 +33,15 @@ func _process(_delta: float) -> void:
 \t\telse: history.redo()
 \telif command.action == "enable":
 \t\tEditorInterface.set_plugin_enabled("wheel_mcp", true)
+\telif command.action in ["open-script", "dirty-script", "undo-script"]:
+\t\tEditorInterface.edit_script(load("res://probe.gd"))
+\t\tawait get_tree().process_frame
+\t\tvar code := EditorInterface.get_script_editor().get_current_editor().get_base_editor() as CodeEdit
+\t\tif command.action == "dirty-script":
+\t\t\tcode.set_caret_line(code.get_line_count() - 1)
+\t\t\tcode.insert_text_at_caret("# human unsaved change")
+\t\telif command.action == "undo-script": code.undo()
+\t\tcommand["buffer"] = code.text
 \tvar file := FileAccess.open("res://.harness/fixture-result.json", FileAccess.WRITE)
 \tfile.store_string(JSON.stringify(command))
 \tfile.close()

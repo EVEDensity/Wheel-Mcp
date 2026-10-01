@@ -21,7 +21,7 @@ test('context pack contains project, godot, scene and git sections', async (t) =
     evidenceDir: root,
   });
   assert.equal(result.source, 'REAL');
-  assert.equal(result.project.name, 'Context');
-  assert.equal((result.main_scene.scene_tree as { runtime: boolean }).runtime, false);
-  assert.equal(result.active_run, null);
+  assert.equal((result.project as { name: string }).name, 'Context');
+  assert.equal((result.main_scene as { scene_tree: { runtime: boolean } }).scene_tree.runtime, false);
+  assert.equal((result.active_run as { status: string }).status, 'unavailable');
 });

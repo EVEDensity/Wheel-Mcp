@@ -56,6 +56,7 @@ const expected = [
   'open_runtime_bridge',
   'pause_event_subscription',
   'poll_event_subscription',
+  'preview_script_rename',
   'query_runtime_collisions',
   'query_script_semantics',
   'read_project_file',
@@ -77,6 +78,35 @@ const expected = [
   'write_scene_file',
   'write_validated_project_files',
 ];
+test('read discovery profile reduces tool surface without granting permissions or cloning tools', async () => {
+  const server = createMcpServer(undefined, { toolProfile: 'read' });
+  const client = new Client({ name: 'read-profile', version: '1' });
+  const [a, b] = InMemoryTransport.createLinkedPair();
+  try {
+    await server.connect(a);
+    await client.connect(b);
+    const tools = (await client.listTools()).tools;
+    assert.deepEqual(
+      tools.map((tool) => tool.name).sort(),
+      expected.filter((name) => toolPermissions[name] === 'read'),
+    );
+    assert.ok(tools.length < expected.length);
+    for (const tool of tools) {
+      assert.equal(tool.annotations?.readOnlyHint, true);
+      assert.equal(tool.annotations?.destructiveHint, false);
+      assert.ok(tool.description?.startsWith('[read]'));
+    }
+    const unavailable = await client.callTool({
+      name: 'write_project_file',
+      arguments: { projectPath: '.', filePath: 'x.gd', content: 'bad' },
+    });
+    assert.equal(unavailable.isError, true);
+  } finally {
+    await client.close();
+    await server.close();
+  }
+  assert.throws(() => createMcpServer(undefined, { toolProfile: 'invalid' as never }), /must be all or read/);
+});
 test('official client discovers every unique domain tool; composition root contains no declarations', async () => {
   const server = createMcpServer();
   const client = new Client({ name: 'registry-test', version: '1' });
