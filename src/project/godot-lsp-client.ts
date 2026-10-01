@@ -4,8 +4,18 @@ import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { WheelError } from '../error-schema.js';
+import { snapshotProject } from '../project-snapshot.js';
+import { createTimeoutContext } from '../timeout.js';
 import { resolveProjectPath } from './paths.js';
-import { preflightGodotRename, verifyEditorLspBinding, type GodotWorkspaceEdit } from './script-service.js';
+import { readEditorState } from '../editor/editor-bridge.js';
+import { assertEditorStateDocumentsClean } from './validated-write.js';
+import {
+  preflightGodotRename,
+  reviewGodotRenameEdit,
+  reviewRenameImpact as scanRenameImpact,
+  verifyEditorLspBinding,
+  type GodotWorkspaceEdit,
+} from './script-service.js';
 
 const MAX_FRAME = 1024 * 1024;
 const MAX_SCRIPT = 1024 * 1024;
@@ -40,6 +50,7 @@ export class GodotLspClient {
     readonly projectPath: string,
     readonly godotVersion: string,
     private readonly timeoutMs: number,
+    private readonly ownerId: string,
   ) {
     socket.on('data', (chunk: Buffer) => this.receive(chunk));
     socket.on('error', () => this.close());
@@ -85,7 +96,7 @@ export class GodotLspClient {
       options.signal?.addEventListener('abort', onAbort, { once: true });
       if (options.signal?.aborted) onAbort();
     });
-    const client = new GodotLspClient(socket, binding.projectPath, binding.godotVersion, timeoutMs);
+    const client = new GodotLspClient(socket, binding.projectPath, binding.godotVersion, timeoutMs, options.ownerId);
     try {
       const rootUri = pathToFileURL(`${binding.projectPath}${path.sep}`).href;
       const initialized = await client.request('initialize', {
@@ -329,14 +340,14 @@ export class GodotLspClient {
     }
   }
 
-  /** Internal preview only. Godot's WorkspaceEdit is not trusted semantic proof or write authority. */
-  async previewRename(
+  private async withRenameEdit<T>(
     scriptPath: string,
     position: { line: number; character: number },
     oldName: string,
     newName: string,
+    inspect: (edit: GodotWorkspaceEdit) => Promise<T>,
     signal?: AbortSignal,
-  ) {
+  ): Promise<{ opened: OpenScript; result: T }> {
     if (
       !Number.isSafeInteger(position.line) ||
       !Number.isSafeInteger(position.character) ||
@@ -368,17 +379,175 @@ export class GodotLspClient {
       await this.assertFresh(opened);
       if (!raw || typeof raw !== 'object')
         throw new WheelError('PROTOCOL_MISMATCH', 'Godot LSP returned no rename edit');
-      const preview = await preflightGodotRename(this.projectPath, raw as GodotWorkspaceEdit, oldName, newName);
+      const result = await inspect(raw as GodotWorkspaceEdit);
       await this.assertFresh(opened);
+      if (signal?.aborted) throw new WheelError('CANCELLED', 'Godot LSP rename preview cancelled');
+      if (this.closed) throw new WheelError('ENGINE_UNAVAILABLE', 'Godot LSP session closed during rename preview');
+      return { opened, result };
+    } finally {
+      signal?.removeEventListener('abort', onAbort);
+    }
+  }
+
+  /** Internal preview only. Godot's WorkspaceEdit is not trusted semantic proof or write authority. */
+  async previewRename(
+    scriptPath: string,
+    position: { line: number; character: number },
+    oldName: string,
+    newName: string,
+    signal?: AbortSignal,
+  ) {
+    const { opened, result } = await this.withRenameEdit(
+      scriptPath,
+      position,
+      oldName,
+      newName,
+      (edit) => preflightGodotRename(this.projectPath, edit, oldName, newName),
+      signal,
+    );
+    return {
+      analysisLevel: 'godot-lsp' as const,
+      refactorSafe: false as const,
+      godotVersion: this.godotVersion,
+      scriptSha256: opened.sha256,
+      ...result,
+    };
+  }
+
+  /** Read-only lexical triage of an authenticated rename result; never authorizes a write. */
+  async reviewRename(
+    scriptPath: string,
+    position: { line: number; character: number },
+    oldName: string,
+    newName: string,
+    signal?: AbortSignal,
+  ) {
+    const { opened, result } = await this.withRenameEdit(
+      scriptPath,
+      position,
+      oldName,
+      newName,
+      (edit) => reviewGodotRenameEdit(this.projectPath, edit, oldName, newName),
+      signal,
+    );
+    return {
+      ...result,
+      godotVersion: this.godotVersion,
+      scriptSha256: opened.sha256,
+    };
+  }
+
+  /** Read-only project-wide impact review; all unmapped occurrences require manual assessment. */
+  async reviewRenameImpact(
+    scriptPath: string,
+    position: { line: number; character: number },
+    oldName: string,
+    newName: string,
+    signal?: AbortSignal,
+  ) {
+    const review = await this.reviewRename(scriptPath, position, oldName, newName, signal);
+    const impact = await scanRenameImpact(this.projectPath, oldName, review, signal);
+    if (this.closed) throw new WheelError('ENGINE_UNAVAILABLE', 'Godot LSP session closed during impact review');
+    return { ...review, impact };
+  }
+
+  /** Code-only candidate with per-location backend definition agreement and a stable project snapshot. */
+  async previewDefinitionCheckedRename(
+    scriptPath: string,
+    position: { line: number; character: number },
+    oldName: string,
+    newName: string,
+    signal?: AbortSignal,
+  ) {
+    const timeout = createTimeoutContext(60000, signal);
+    try {
+      assertEditorStateDocumentsClean(
+        await readEditorState(this.projectPath, this.ownerId, { signal: timeout.signal }),
+        [scriptPath],
+      );
+      const before = await snapshotProject(this.projectPath, timeout);
+      const { opened, result } = await this.withRenameEdit(
+        scriptPath,
+        position,
+        oldName,
+        newName,
+        async (edit) => ({
+          preview: await preflightGodotRename(this.projectPath, edit, oldName, newName),
+          review: await reviewGodotRenameEdit(this.projectPath, edit, oldName, newName),
+        }),
+        timeout.signal,
+      );
+      const definitionAt = async (file: string, cursor: { line: number; character: number }) => {
+        timeout.throwIfCancelled();
+        timeout.throwIfExpired();
+        const queried = await this.query(file, 'definition', cursor, timeout.signal);
+        const locations = Array.isArray(queried.result) ? queried.result : queried.result ? [queried.result] : [];
+        if (locations.length !== 1)
+          throw new WheelError('UNSUPPORTED', 'Rename requires exactly one backend definition for each code location');
+        const location = locations[0] as {
+          uri?: string;
+          range?: { start?: { line?: number; character?: number }; end?: { line?: number; character?: number } };
+        };
+        const start = location?.range?.start;
+        const end = location?.range?.end;
+        if (
+          typeof location?.uri !== 'string' ||
+          !start ||
+          !end ||
+          ![start.line, start.character, end.line, end.character].every(
+            (value) => Number.isSafeInteger(value) && value! >= 0,
+          ) ||
+          end.line! < start.line! ||
+          (end.line === start.line && end.character! < start.character!)
+        )
+          throw new WheelError('PROTOCOL_MISMATCH', 'Godot LSP definition range is malformed');
+        const resolved = await resolveProjectPath(this.projectPath, fileURLToPath(location.uri), {
+          mode: 'read',
+          allowAbsolute: true,
+        });
+        return {
+          path: resolved.relativePath,
+          range: {
+            start: { line: start.line!, character: start.character! },
+            end: { line: end.line!, character: end.character! },
+          },
+        };
+      };
+      const definition = await definitionAt(opened.path, position);
+      const target = JSON.stringify(definition);
+      for (const location of result.review.codeLocations) {
+        if (JSON.stringify(await definitionAt(location.path, location.range.start)) !== target)
+          throw new WheelError('CONFLICT', 'Rename code location resolves to a different declaration', {
+            path: location.path,
+          });
+      }
+      const impact = await scanRenameImpact(this.projectPath, oldName, result.review, timeout.signal);
+      if (
+        impact.projectSha256 !== before.sha256 ||
+        (await snapshotProject(this.projectPath, timeout)).sha256 !== before.sha256
+      )
+        throw new WheelError('CONFLICT', 'Project changed during definition-checked rename preview');
+      timeout.throwIfCancelled();
+      timeout.throwIfExpired();
+      assertEditorStateDocumentsClean(
+        await readEditorState(this.projectPath, this.ownerId, { signal: timeout.signal }),
+        result.preview.editedFiles,
+      );
+      if (this.closed) throw new WheelError('ENGINE_UNAVAILABLE', 'Godot LSP session closed during rename preview');
       return {
         analysisLevel: 'godot-lsp' as const,
         refactorSafe: false as const,
+        definitionCheck: 'PASS' as const,
+        checkedCodeLocations: result.review.codeLocations.length,
+        definition,
+        projectSha256: before.sha256,
         godotVersion: this.godotVersion,
         scriptSha256: opened.sha256,
-        ...preview,
+        ...result.preview,
+        impact,
       };
     } finally {
-      signal?.removeEventListener('abort', onAbort);
+      timeout.dispose();
     }
   }
 

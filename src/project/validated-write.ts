@@ -7,12 +7,14 @@ import { WheelError } from '../error-schema.js';
 import { snapshotProject } from '../project-snapshot.js';
 import { createTimeoutContext } from '../timeout.js';
 import { runProcess, resolveGodotPath } from '../godot-runtime.js';
-import { readEditorState } from '../editor/editor-bridge.js';
+import { readEditorState, type EditorState } from '../editor/editor-bridge.js';
 import { resolveProjectPath } from './paths.js';
 import { ProjectTransactions } from './transactions.js';
 import type { ProjectWriteOptions } from './write-file.js';
 const sha = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 export type ValidatedWriteOptions = ProjectWriteOptions & {
+  /** Optional client preview binding; exact hash is also included in host approval intent. */
+  expectedProjectSha256?: string;
   godotPath?: string;
   timeoutMs?: number;
   validationMode?: 'engine' | 'raw';
@@ -51,21 +53,36 @@ async function cleanupValidationStage(stageRoot: string): Promise<void> {
   await rm(exactStage, { recursive: true, force: false });
 }
 
+/** Pure fail-closed guard. Script dependencies may affect any candidate, not only the edited path. */
+export function assertEditorStateDocumentsClean(state: EditorState, paths: string[], allowDirtyScene = false): void {
+  if (state.dirty.scriptsStatus !== 'KNOWN' || !state.dirty.scripts)
+    throw new WheelError(
+      'UNSUPPORTED',
+      'Editor cannot reliably report unsaved scripts; upgrade the opted-in bridge before writing',
+    );
+  if (state.dirty.scripts.length)
+    throw new WheelError(
+      'CONFLICT',
+      'Editor has unsaved scripts; preserve and resolve them before writing project files',
+    );
+  if (!allowDirtyScene && paths.some((p) => state.dirty.scenes.includes('res://' + p)))
+    throw new WheelError(
+      'CONFLICT',
+      'File write would overwrite an unsaved editor scene; use approved native save or resolve it in the editor',
+    );
+}
+
 /** Do not replace a dirty document with a file tool. Absence of an enabled editor is not emulated. */
 export async function assertDocumentsClean(
   projectPath: string,
   ownerId: string,
   paths: string[],
   signal?: AbortSignal,
+  allowDirtyScene = false,
 ) {
   if (!(await lstat(path.join(projectPath, '.harness/editor-endpoint.json')).catch(() => undefined))) return;
   const state = await readEditorState(projectPath, ownerId, { signal });
-  const dirty = new Set(state.dirty.scenes);
-  if (paths.some((p) => dirty.has('res://' + p)))
-    throw new WheelError(
-      'CONFLICT',
-      'File write would overwrite an unsaved editor scene; use approved native save or resolve it in the editor',
-    );
+  assertEditorStateDocumentsClean(state, paths, allowDirtyScene);
 }
 
 export async function validateCandidateFiles(
@@ -257,17 +274,21 @@ export async function writeValidatedProjectFiles(
     normalized.push({ ...file, path: resolved.relativePath });
   }
   const owner = options.ownerId ?? 'local-library';
-  if (!options.allowDirtyScene)
-    await assertDocumentsClean(
-      projectPath,
-      owner,
-      normalized.map((f) => f.path),
-      options.signal,
-    );
+  await assertDocumentsClean(
+    projectPath,
+    owner,
+    normalized.map((f) => f.path),
+    options.signal,
+    options.allowDirtyScene,
+  );
   const raw = options.validationMode === 'raw';
+  if (options.expectedProjectSha256 !== undefined && (raw || !/^[a-f0-9]{64}$/.test(options.expectedProjectSha256)))
+    throw new WheelError('INVALID_ARGUMENT', 'Preview project hash requires engine validation and a SHA-256 digest');
   if (normalized.some((f) => Buffer.isBuffer(f.content) && (raw || !/\.png$/.test(f.path))))
     throw new WheelError('UNSUPPORTED', 'Binary candidates require native PNG import validation');
   const beforeApproval = raw ? undefined : await snapshotProject(projectPath);
+  if (options.expectedProjectSha256 && beforeApproval?.sha256 !== options.expectedProjectSha256)
+    throw new WheelError('CONFLICT', 'Project changed since the preview; obtain and review a fresh candidate');
   if (
     !raw &&
     normalized.some((f) => !/\.(tscn|tres|gd)$/.test(f.path) && !(Buffer.isBuffer(f.content) && /\.png$/.test(f.path)))
@@ -280,6 +301,7 @@ export async function writeValidatedProjectFiles(
     (raw
       ? 'RAW TEXT: validation NOT_RUN; may break project; exact risk approval required'
       : 'ENGINE: isolated correct-res:// candidate import/parse/load; no gameplay or render guarantee') +
+    (options.expectedProjectSha256 ? '\nPREVIEW PROJECT SHA-256: ' + options.expectedProjectSha256 : '') +
     (options.intent ? '\n' + options.intent : '');
   const service = new ProjectTransactions({
     projectPath,
@@ -287,13 +309,13 @@ export async function writeValidatedProjectFiles(
     intent,
     verifyApproval: options.verifyApproval,
     beforeApply: async () => {
-      if (!options.allowDirtyScene)
-        await assertDocumentsClean(
-          projectPath,
-          owner,
-          normalized.map((f) => f.path),
-          options.signal,
-        );
+      await assertDocumentsClean(
+        projectPath,
+        owner,
+        normalized.map((f) => f.path),
+        options.signal,
+        options.allowDirtyScene,
+      );
       if (validation && (await snapshotProject(projectPath)).sha256 !== validation.inputHash)
         throw new WheelError('CONFLICT', 'Project dependencies changed after validation/approval', {
           evidenceDir: validation.evidenceDir,
@@ -343,6 +365,7 @@ export async function writeValidatedProjectFiles(
     operationId: plan.operationId,
     planHash: plan.planHash,
     transactionState: state,
+    projectInputSha256: validation?.inputHash,
     paths: normalized.map((f) => f.path),
   };
 }
