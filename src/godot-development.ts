@@ -4,6 +4,9 @@ import { createHash } from 'node:crypto';
 import { deflateSync, inflateSync } from 'node:zlib';
 import { projectRelativePath, resolveProjectPath } from './project/paths.js';
 import { writeValidatedProjectText, type ValidatedWriteOptions } from './project/validated-write.js';
+import { getProjectIndex } from './index/project-index.js';
+import { compileProjectGlob } from './index/glob.js';
+import type { TimeoutContext } from './timeout.js';
 function readU32(b: Buffer, o: number) {
   return b.readUInt32BE(o);
 }
@@ -477,35 +480,48 @@ export async function writeProjectFile(
 export async function searchProject(
   projectPath: string,
   query: string,
-  options: { glob?: string; maxResults?: number } = {},
+  options: { glob?: string; maxResults?: number; timeout?: TimeoutContext } = {},
 ) {
   const root = path.resolve(projectPath),
     max = options.maxResults ?? 100,
     results: any[] = [];
-  async function walk(dir: string): Promise<void> {
-    if (results.length >= max) return;
-    for (const e of await readdir(dir, { withFileTypes: true })) {
-      if (e.name.startsWith('.') || ['.godot', 'node_modules', '.harness'].includes(e.name)) continue;
-      const f = path.join(dir, e.name);
-      if (e.isDirectory()) await walk(f);
-      else if (
-        e.isFile() &&
-        (!options.glob || new RegExp(options.glob.replace('.', '\\.').replace('*', '.*')).test(e.name))
-      ) {
-        const safe = await resolveProjectPath(root, path.relative(root, f).split(path.sep).join('/'), {
-          mode: 'read',
-        }).catch(() => null);
-        if (!safe) continue;
-        const t = await readFile(safe.absolutePath, 'utf8').catch(() => '');
-        t.split(/\r?\n/).forEach((l, i) => {
-          if (results.length < max && l.toLowerCase().includes(query.toLowerCase()))
-            results.push({ path: path.relative(root, f), line: i + 1, text: l.trim() });
-        });
+  if (!Number.isInteger(max) || max < 1 || max > 1000) throw new Error('Invalid search result budget');
+  const glob = options.glob ? compileProjectGlob(options.glob) : null;
+  const indexed = await (await getProjectIndex(root)).refresh(options.timeout);
+  const needle = query.toLowerCase();
+  let truncated = false;
+  for (const file of indexed.files) {
+    options.timeout?.throwIfCancelled();
+    options.timeout?.throwIfExpired();
+    if (file.text === null || (glob && !glob(file.path) && !glob(path.basename(file.path)))) continue;
+    for (const [i, line] of file.text.split(/\r?\n/).entries()) {
+      if (!line.toLowerCase().includes(needle)) continue;
+      if (results.length >= max) {
+        truncated = true;
+        break;
       }
+      results.push({ path: file.path, line: i + 1, text: line.trim() });
     }
   }
-  await walk(root);
-  return { schema_version: '0.1', source: 'REAL', query, results };
+  return {
+    schema_version: '0.1',
+    source: 'REAL',
+    query,
+    results,
+    truncated,
+    index: {
+      schemaVersion: indexed.schemaVersion,
+      projectId: indexed.projectId,
+      sourceHash: indexed.sourceHash,
+      stale: indexed.stale,
+      watcher: indexed.watcher,
+      stats: indexed.stats,
+    },
+    omittedTextFiles: indexed.files
+      .filter((file) => file.textOmitted)
+      .map((file) => ({ path: file.path, reason: file.textOmitted })),
+    excludedLinks: indexed.excludedLinks,
+  };
 }
 export async function compareScreenshots(
   firstPath: string,

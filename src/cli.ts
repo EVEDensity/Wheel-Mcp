@@ -14,8 +14,8 @@ import {
   resolveGodotPath,
 } from './godot-runtime.js';
 import { executeScenario, loadScenario } from './scenario-executor.js';
-import { buildContextPack } from './context-pack.js';
-import { classifyError } from './error-schema.js';
+import { buildContextPack, type ContextAnchor, type ContextField } from './context-pack.js';
+import { classifyError, WheelError } from './error-schema.js';
 import { createTimeoutContext } from './timeout.js';
 import { DEFAULT_COMMAND_TIMEOUT_MS, DEFAULT_SCENARIO_TIMEOUT_MS } from './timeouts.js';
 import type { CliOptions } from './tool-types.js';
@@ -177,19 +177,32 @@ try {
       ),
     );
   } else if (command === 'context-pack') {
-    console.log(
-      JSON.stringify(
-        await buildContextPack({
-          projectPath: required(options.project, '--project'),
-          godotPath: options.godot || process.env.GODOT_PATH,
-          evidenceDir: options.evidence,
-          scenePath: options.scene,
-          timeout: commandContext,
-        }),
-        null,
-        2,
-      ),
-    );
+    const pack = await buildContextPack({
+      projectPath: required(options.project, '--project'),
+      godotPath: options.godot || process.env.GODOT_PATH,
+      evidenceDir: options.evidence,
+      scenePath: options.scene,
+      targets: options.targets ? (parseCliJson(options.targets, '--targets') as string[]) : undefined,
+      taskIntent: options['task-intent'],
+      errorStack: options['error-stack'],
+      maxTokens: options['max-tokens'] ? parseCliNumber(options['max-tokens'], '--max-tokens', 16000) : undefined,
+      anchors: options.anchors ? (parseCliJson(options.anchors, '--anchors') as ContextAnchor[]) : undefined,
+      fields: options.fields ? (parseCliJson(options.fields, '--fields') as ContextField[]) : undefined,
+      dependencyDepth: options['dependency-depth']
+        ? parseCliNumber(options['dependency-depth'], '--dependency-depth', 1)
+        : undefined,
+      maxBytes: options['max-bytes'] ? parseCliNumber(options['max-bytes'], '--max-bytes', 32768) : undefined,
+      maxErrorBytes: options['max-error-bytes']
+        ? parseCliNumber(options['max-error-bytes'], '--max-error-bytes', 12000)
+        : undefined,
+      timeout: commandContext,
+    });
+    if (pack.encoding === 'json')
+      throw new WheelError(
+        'UNSUPPORTED',
+        'Context requires continuation; use the persistent MCP get_context_pack/get_response_page pair. One-shot CLI cannot retain memory page references.',
+      );
+    console.log(JSON.stringify(pack));
   } else if (command === 'stop') {
     console.log(
       JSON.stringify(await runRegistry.stopByPid(Number(required(options.pid, '--pid')), commandContext), null, 2),

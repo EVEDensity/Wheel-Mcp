@@ -41,6 +41,8 @@ export const editorStateSchema = z.object({
   dirty: z.object({
     status: z.literal('KNOWN'),
     scenes: z.array(z.string()).max(100),
+    scriptsStatus: z.enum(['KNOWN', 'UNKNOWN']).optional(),
+    scripts: z.array(z.string()).max(100).optional(),
     nativeSaveConflicts: z.array(z.string()).max(32).optional(),
   }),
   selection: z.array(z.object({ path: z.string(), type: z.string() })).max(100),

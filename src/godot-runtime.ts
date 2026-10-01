@@ -16,6 +16,7 @@ import { resolveGodotPathSync } from './godot-path.js';
 import { BridgeRpcError, validateBridgeResult } from './bridge-protocol.js';
 import { isStableErrorCode } from './error-schema.js';
 import { WheelError } from './error-schema.js';
+import { getProjectIndex } from './index/project-index.js';
 import { validateVariantInput } from './protocol/variant.js';
 import { readProcessIdentity, type ProcessIdentity } from './process-identity.js';
 import { resolveProjectPath } from './project/paths.js';
@@ -143,21 +144,13 @@ export async function getProjectInfo(projectPath: string, timeout?: TimeoutConte
   checkTimeout(timeout);
   const root = path.resolve(projectPath);
   const projectFile = (await resolveProjectPath(root, 'project.godot', { mode: 'read' })).absolutePath;
-  const projectText = await readFile(projectFile, 'utf8');
+  const indexed = await (await getProjectIndex(root)).refresh(timeout);
+  const projectText = indexed.files.find((file) => file.path === 'project.godot')?.text;
+  if (projectText === undefined || projectText === null)
+    throw new WheelError('UNSUPPORTED', 'Project configuration is not bounded UTF-8 text');
   const name = projectText.match(/^config\/name\s*=\s*"([^"]*)"/m)?.[1] || null;
   const mainScene = projectText.match(/^run\/main_scene\s*=\s*"([^"]*)"/m)?.[1] || null;
-  const files: string[] = [];
-  async function collect(current: string): Promise<void> {
-    checkTimeout(timeout);
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
-      const target = path.join(current, entry.name);
-      if (entry.isDirectory()) await collect(target);
-      else if (entry.isFile()) files.push(path.relative(root, target).split(path.sep).join('/'));
-    }
-  }
-  await stat(root);
-  await collect(root);
+  const files = indexed.files.map((file) => file.path);
   return {
     schema_version: '0.1',
     source: 'REAL',
@@ -166,6 +159,14 @@ export async function getProjectInfo(projectPath: string, timeout?: TimeoutConte
     name,
     mainScene,
     files: files.sort(),
+    index: {
+      schemaVersion: indexed.schemaVersion,
+      projectId: indexed.projectId,
+      sourceHash: indexed.sourceHash,
+      stale: indexed.stale,
+      watcher: indexed.watcher,
+      stats: indexed.stats,
+    },
   };
 }
 

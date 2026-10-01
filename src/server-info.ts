@@ -5,4 +5,4 @@ const require = createRequire(import.meta.url);
 const packageMetadata = require('../../package.json') as PackageMetadata;
 
 export const serverInfo = { name: packageMetadata.name, version: packageMetadata.version } as const;
-export const serverCapabilities = { tools: {}, logging: {} } as const;
+export const serverCapabilities = { tools: {}, logging: {}, resources: {}, prompts: {} } as const;
