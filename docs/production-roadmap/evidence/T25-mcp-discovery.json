@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T25",
+  "createdAt": "2026-10-01T19:12:00Z",
+  "status": "PASS",
+  "source": "MIXED",
+  "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T18-55-44-052Z-35724",
+  "rawManifestSha256": "752c88a73a4ec8f5ce5a5940201c9ca52695141fc35db5a94e5cc14c3c5c60e6",
+  "rawResultsSha256": "e1513cb08e71c7776198871bb63cf5e5b9a55404485277c40cefa6e7a7195be0",
+  "focusedEvidence": "docs/production-roadmap/evidence/T25-discovery-focused.json",
+  "baseline": {"status": "PASS", "build": "PASS", "format": "PASS", "lint": "PASS", "tests": {"passed": 338, "total": 338, "failed": 0, "skipped": 0, "tempCleanup": "PASS"}, "independentGodot": {"passed": 109, "total": 109, "failed": 0, "skipped": 0, "tempCleanup": "PASS"}, "sourceIdentityUnchanged": true, "tools": 70, "cliContracts": 7, "mappingIssues": []},
+  "requirements": [
+    {"id": "T25-1", "status": "PASS", "evidence": "Five read-only lexical views, configured project roots, opaque session project IDs; real path/read authorization on reads and continuation; cross-session and revocation negative tests"},
+    {"id": "T25-2", "status": "PASS", "evidence": "Four constrained prompts preserve acceptance and external evidence as untrusted data; no tool invocation, approval grant or scope mutation; UTF-8 and escaped complete JSON limits"},
+    {"id": "T25-3", "status": "PASS", "evidence": "Standard resources/list nextCursor, 32-item pages, session snapshots/expiry; six templates and four prompts fit single pages; source-hash refresh on read; subscriptions absent and listChanged false"},
+    {"id": "T25-4", "status": "PASS", "evidence": "all/read registration profiles, permission descriptions and annotations, default 70 unique existing tools; unsupported profile rejected; profile is not authorization"},
+    {"id": "T25-5", "status": "PASS", "evidence": "Installed official SDK 1.30.0 actual in-memory and authenticated Streamable HTTP list/read/templates/get calls; official 2025-11-25 resource/prompt contract"}
+  ],
+  "boundaries": ["Generated fixtures are not real customer project benefit evidence", "Full suite includes MOCK approval fixtures, not real human production approval", "Lexical diagnostics are not engine diagnostics; engineValidation remains NOT_RUN", "No subscriptions or listChanged notifications", "Prompt data separation is not a model-level injection immunity guarantee", "No large-project performance claim until T26", "This baseline does not qualify G4-G6 or production release"],
+  "contract": "docs/production-roadmap/MCP-DISCOVERY-CONTRACT.md",
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED; no commit/push/deploy/public release"
+}

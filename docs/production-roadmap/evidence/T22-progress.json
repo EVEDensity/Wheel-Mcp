@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T22",
+  "createdAt": "2026-10-01T15:00:00Z",
+  "status": "PASS_PARTIAL_TASK",
+  "source": "MIXED",
+  "sourceHash": "168e2b04e8a84e6f24aed535db89665679060f35f8f82b699367d7302cc7b95b",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T14-42-31-351Z-28516",
+  "rawManifestSha256": "abeb438de68297f3a15b10a27d9769be5620b7f1c80ca14fbd848cafc0bfe63f",
+  "rawResultsSha256": "26b5bb60364c469ea59de9c28ead72a5f22ae325ea064ad6c8753bf650d07cf8",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 303, "total": 303, "failed": 0, "skipped": 0 },
+    "requiredGodot": { "passed": 107, "total": 107, "failed": 0, "skipped": 0 },
+    "fullTestsTempCleanup": "PASS",
+    "requiredGodotTempCleanup": "PASS"
+  },
+  "verified": [
+    "Code-only backend rename preview requires per-location unique definition agreement and unchanged project snapshot",
+    "Official SDK discovers preview_script_rename under read scope; compact preserves operations, hashes, definitionCheck and impact",
+    "Outside project paths and mismatched old symbol names are rejected without file writes",
+    "Native class_name, inheritance and type declaration rename candidates validate, run a scene with result 42 and preserve explicit NodePath Marker",
+    "Denied test approval does not write; failed runtime oracle rolls back both files; successful runtime oracle commits; stale SHA replay is rejected"
+  ],
+  "approval": "MOCK only in isolated transaction tests; read-only MCP preview does not request approval",
+  "limitations": [
+    "Backend definition agreement is not sufficient proof of semantic safety; strict string/comment rejection remains",
+    "No production rename write tool; refactorSafe remains false",
+    "Unsaved script buffer protection is not yet verified; existing live document guard covers scenes only",
+    "Explicit NodePath fixture preservation is not general NodePath rewriting or dynamic-reference validation",
+    "Windows Godot 4.7.2 only; T22 remains in_progress and production remains NOT_QUALIFIED"
+  ],
+  "nextSteps": [
+    "Protect unsaved script buffers before allowing formal refactor writes",
+    "Bind final write approval and validation to exact preview project hash and supported reference scope",
+    "Finish T22 required acceptance before starting dependent T23 and later gates"
+  ]
+}

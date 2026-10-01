@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T25",
+  "createdAt": "2026-10-01T18:55:53Z",
+  "status": "IMPLEMENTATION_FOCUSED_PASS_FULL_BASELINE_PENDING",
+  "source": "REAL",
+  "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+  "rawRun": "runs/production-roadmap/T25/2026-10-01T18-54-39-544Z-51660",
+  "rawManifestSha256": "9938a950c59a5d5c6cb3c5e8ffc002f5638728d09dd65899447e66d973230a6e",
+  "rawResultsSha256": "28a239e437017797f8d8088dac9b9bf035ff0c3c67613755e58b09f57f031134",
+  "focused": { "build": "PASS", "format": "PASS", "lint": "PASS", "rounds": [{ "passed": 28, "total": 28, "failed": 0, "skipped": 0, "tempCleanup": "PASS" }, { "passed": 28, "total": 28, "failed": 0, "skipped": 0, "tempCleanup": "PASS" }], "tools": 70, "cliContracts": 7, "mappingIssues": [] },
+  "verified": ["official SDK resources/list/read and templates/list", "opaque session project IDs and authorization on each content/continuation read", "five lexical resource views refreshed by source hash", "resource outer JSON wrapper <=32768 bytes and exact continuation reconstruction", "standard directory nextCursor with 32-item pages, session isolation and validation", "official authenticated Streamable HTTP resource and prompt requests", "four bounded prompts preserving original acceptance and untrusted evidence data", "prompt retrieval does not grant approval, modify scopes or invoke tools", "all/read profile, unique tools, permission descriptions and annotations", "read permission/root revocation and closed session refusal", "control-character escaped prompt response rejection"],
+  "historicalFailures": [
+    { "run": "runs/production-roadmap/T25/2026-10-01T18-41-24-336Z-3468", "result": "build FAIL", "cause": "new SDK test content unions were not narrowed" },
+    { "run": "runs/production-roadmap/T25/2026-10-01T18-42-05-404Z-21048", "result": "build FAIL", "cause": "resource union weak type in test helper" },
+    { "run": "runs/production-roadmap/T25/2026-10-01T18-44-52-161Z-49880", "result": "build FAIL", "cause": "old and new tool annotations duplicated" },
+    { "run": "runs/production-roadmap/T25/2026-10-01T18-50-36-544Z-51432", "result": "build FAIL", "cause": "new catalog roots test lacked explicit array type" },
+    { "run": "runs/production-roadmap/T25/2026-10-01T18-52-35-678Z-17236", "result": "27/28 both rounds", "cause": "raw input bytes did not bound escaped prompt JSON; missing expected rejection" }
+  ],
+  "boundaries": ["No subscriptions or listChanged notifications", "Lexical diagnostics report engineValidation NOT_RUN", "Resource pages have distinct session-only owners; not generic arbitrary file access", "Prompt data identity is not a claim of model-level injection immunity", "Finite host-configured catalog, no automatic arbitrary filesystem enumeration", "Focused regression is not a complete baseline or qualification gate"],
+  "contract": "docs/production-roadmap/MCP-DISCOVERY-CONTRACT.md",
+  "taskStatus": "in_progress",
+  "gates": "G4-G6 NOT_RUN",
+  "qualification": "NOT_QUALIFIED",
+  "release": "Not requested; no commit/push/deploy/public release"
+}

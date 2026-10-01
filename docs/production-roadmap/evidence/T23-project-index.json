@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T23",
+  "createdAt": "2026-10-01T16:53:54Z",
+  "status": "PASS_DECLARED_LEXICAL_SCOPE",
+  "source": "MIXED",
+  "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T16-35-35-046Z-55220",
+  "rawManifestSha256": "58454979fcc8d932c4727389530a3003d6c6dc5b840f7412b16b716ee0b009c7",
+  "rawResultsSha256": "8cdf5c18290937a9b5b79180b5a9d3bdb5b0fa156a6b67c99f096fba67734810",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "fullTests": { "passed": 318, "total": 318, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "godot": { "passed": 109, "total": 109, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "approval": "Some native transactional fixtures use explicitly TEST-ONLY MOCK acceptance; not human approval UX evidence"
+  },
+  "requirements": [
+    { "id": "T23-1", "status": "PASS", "evidence": "Canonical project identity/schema/file SHA/update/stale, excludes hidden/generated directories and binary text" },
+    { "id": "T23-2", "status": "PASS", "evidence": "Unchanged-file and metadata reuse; optional nonpersistent watcher; explicit rescan/forceHash recovers create/change/delete/rename and missed events" },
+    { "id": "T23-3", "status": "PASS", "evidence": "Lexical declarations/nodes/ext-subresources/UID and reverse graph; ambiguous UID/missing or unsafe references remain unresolved; binary never decoded" },
+    { "id": "T23-4", "status": "PASS", "evidence": "Bounded memory-only four-entry LRU, no database or new dependency" },
+    { "id": "T23-5", "status": "PASS", "evidence": "File/directory/byte/text/metadata/graph/queue bounds; pre/queued/active cancellation atomicity; public search/info cache and stale metadata" }
+  ],
+  "focusedEvidence": "docs/production-roadmap/evidence/T23-progress.json",
+  "contract": "docs/production-roadmap/PROJECT-INDEX-CONTRACT.md",
+  "limitations": [
+    "Lexical context, safeRefactor:false; not complete dynamic/escaped/complex script-resource semantics",
+    "Overlong lexical lines stop extraction explicitly at omittedFromLine",
+    "Public queries rescan by default; watcher optional, not correctness authority",
+    "202-file generated fixture is not 10k/50k performance evidence; T26 remains pending",
+    "Full baseline is not G4 or production qualification; G4-G6 NOT_RUN, NOT_QUALIFIED"
+  ]
+}

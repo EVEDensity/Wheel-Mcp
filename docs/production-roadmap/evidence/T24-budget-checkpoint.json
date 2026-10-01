@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T24",
+  "createdAt": "2026-10-01T17:54:33Z",
+  "status": "PARTIAL_IMPLEMENTATION_FULL_BASELINE_PASS",
+  "source": "MIXED",
+  "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T17-37-57-161Z-55040",
+  "rawManifestSha256": "12929b0b62839356057b27584fdea469b44ab5021200d1054db532eca268cbbd",
+  "rawResultsSha256": "a8af1675c16a7048513466f9d7d191ab0196edc85231c7d2edc879df7a752576",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS", "build": "PASS", "format": "PASS", "lint": "PASS",
+    "fullTests": { "passed": 326, "total": 326, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "godot": { "passed": 109, "total": 109, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "approval": "Some transactional native fixtures have explicitly TEST-ONLY MOCK approval; not real human approval UX"
+  },
+  "focusedEvidence": "docs/production-roadmap/evidence/T24-compatibility-followup.json",
+  "contract": "docs/production-roadmap/CONTEXT-PACK-CONTRACT.md",
+  "verifiedClosedLoop": [
+    "Selected target/dependency context, cycles and insufficient missing targets",
+    "UTF-8 JSON whole-page byte budgets, exact continuation reconstruction and source SHA/line/clipping metadata",
+    "Aggregate bounded log-tail reads and explicit absent optional directory, no directory creation",
+    "Non-file/link log rejection and invalid UTF-8 cursor refusal",
+    "Failure retained on each page with complete original error reconstructable",
+    "Official SDK consumption and actual existing CLI/MCP consistency cases",
+    "One-shot CLI refuses unavailable memory references rather than reporting usable continuation",
+    "Run lookup explicitly unavailable and tokenizer not pretended to be exact"
+  ],
+  "historicalFailure": "T24-compatibility-followup.json retains 321/323 full failure and 13/15 regression before repair",
+  "remaining": ["task intent", "node/symbol anchors and local excerpts", "field selection", "token budget branch/estimates", "error/recent-change ranking", "full acceptance distribution", "caller-scoped live registry lookup"],
+  "taskStatus": "in_progress",
+  "gates": "G4-G6 NOT_RUN",
+  "qualification": "NOT_QUALIFIED",
+  "release": "Not requested; no commit/push/deploy/public release"
+}

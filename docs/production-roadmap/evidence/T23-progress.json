@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T23",
+  "createdAt": "2026-10-01T16:39:10Z",
+  "status": "FOCUSED_PASS_FULL_BASELINE_PENDING",
+  "source": "REAL",
+  "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+  "rawRun": "runs/production-roadmap/T23/2026-10-01T16-30-28-331Z-44864",
+  "rawManifestSha256": "30ba854607978ab41518bf9ba8a0c98e02e3c0e0aa85851aeee29a602df46823",
+  "rawResultsSha256": "c013d7a4b432675b955eba2dbe1b050ebe9cbb75f4f5d416753f2b22440bd5a3",
+  "focused": {
+    "command": "npm.cmd run verify:production -- --focused-index",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "first": { "passed": 22, "total": 22, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "repeat": { "passed": 22, "total": 22, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "scope": "Index/project/path-policy only; not a full baseline, native Godot suite or qualification gate"
+  },
+  "delivered": [
+    "Project-local canonical identity, schema/hash/update/stale, bounded memory-only LRU",
+    "Incremental file reads and metadata reuse, explicit rescan/forced hash, optional watcher with close/unavailable",
+    "Binary text exclusion and generated runs exclusion; links/junctions not followed",
+    "Lexical declarations, scene nodes, external/internal resources, UID conflicts and reverse associations",
+    "Atomic incomplete-scan refusal, active/queued/pre-cancel tests, absolute queue bound",
+    "Existing search/project info integration, cancellation propagation, bounded non-regex glob"
+  ],
+  "failedChecksRetained": [
+    "runs/production-roadmap/T23/2026-10-01T15-58-50-725Z-41344: old search decoded binary and included runs",
+    "runs/production-roadmap/T23/2026-10-01T16-14-17-320Z-31712: same-project concurrent search conflicted"
+  ],
+  "pendingBaseline": "runs/production-roadmap/T00/2026-10-01T16-35-35-046Z-55220",
+  "limitations": [
+    "Lexical graph is context assistance only, safeRefactor:false; dynamic or complex syntax not semantic completeness",
+    "Metadata long lines explicitly stop extraction at omittedFromLine",
+    "Public queries rescan; watchers are optional hints, not a hot-query performance claim",
+    "Large-directory generated fixture is 202 files; 10k/50k timing and memory qualification belongs to T26",
+    "T24-T35 and G4-G6 not completed; NOT_QUALIFIED; no commit/push/public release"
+  ]
+}

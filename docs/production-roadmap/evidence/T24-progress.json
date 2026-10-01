@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T24",
+  "createdAt": "2026-10-01T17:13:10Z",
+  "status": "PARTIAL_FOCUSED_PASS_FULL_BASELINE_PENDING",
+  "source": "REAL",
+  "sourceHash": "9dd69e013739fb7fa444daffb28eeb27b32f4cfed15846064440aa78be888c29",
+  "rawRun": "runs/production-roadmap/T24/2026-10-01T17-11-56-861Z-8584",
+  "rawManifestSha256": "ee9df499980c30fa5c04063087b516dfc58be8275c66af6433d996614aa67709",
+  "rawResultsSha256": "ea46a901c703b7ea599b76ced08013c5072b5af36a5be3102dcac781695eb7c2",
+  "focused": {
+    "command": "npm.cmd run verify:production -- --focused-context",
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "first": { "passed": 12, "total": 12, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "repeat": { "passed": 12, "total": 12, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "scope": "Context/response-budget regression with native version query, not complete Godot or full baseline"
+  },
+  "failedChecksRetained": [
+    "runs/production-roadmap/T24/2026-10-01T16-57-29-536Z-52012: context ignored requested UTF-8 byte budget",
+    "runs/production-roadmap/T24/2026-10-01T17-03-41-261Z-48508: CLI JSON parse type integration failed build; corrected with runtime validation"
+  ],
+  "delivered": [
+    "Selected targets/depth with bounded dependency expansion, cycles and missing target insufficient context",
+    "UTF-8 snippets with file SHA/line/source/completeness/trimming; 1 KiB JSON continuation pages",
+    "Aggregate bounded log tail reads with offsets/segment hashes; no full oversized log read",
+    "Every failure page keeps failure visible and exact original JSON can be reassembled",
+    "Official SDK target/budget inputs and page consumption; caller ownership guard retained",
+    "CLI compact output and explicit refusal of unredeemable process-local continuation references",
+    "Run state explicitly unavailable rather than false null; tokenizer unavailable, bytes-only promise"
+  ],
+  "pendingBaseline": "runs/production-roadmap/T00/2026-10-01T17-12-42-298Z-3196",
+  "remaining": ["task intent", "node/symbol anchors", "field selection", "token budget branch/estimates", "error/recent-change ranking", "full acceptance distribution", "caller-scoped live registry lookup"],
+  "qualification": "NOT_QUALIFIED",
+  "contract": "docs/production-roadmap/CONTEXT-PACK-CONTRACT.md"
+}

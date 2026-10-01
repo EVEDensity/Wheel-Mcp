@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T24",
+  "createdAt": "2026-10-01T18:33:33Z",
+  "status": "DECLARED_SCOPE_ACCEPTANCE_PASS",
+  "source": "MIXED",
+  "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T18-16-58-292Z-40556",
+  "rawManifestSha256": "945f766bb6eaa5d644225ac4fa149808da2812d8eb3271082e9644dc789c7197",
+  "rawResultsSha256": "dbc16933f14894a45e020c8f7fd1843239c53e14879483f4224a2e175b705397",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS", "build": "PASS", "format": "PASS", "lint": "PASS",
+    "fullTests": { "passed": 332, "total": 332, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "godot": { "passed": 109, "total": 109, "failed": 0, "skipped": 0, "tempCleanup": "PASS" },
+    "tools": 70, "cliContracts": 7, "mappingIssues": [],
+    "approval": "Some unrelated transaction/editor fixtures use explicit TEST-ONLY MOCK approval, not real human UX"
+  },
+  "acceptance": [
+    { "requirement": "T24-1", "result": "PASS", "scope": "Bounded caller taskIntent, target files/UIDs, explicit symbol/node anchors, dependency depth, fields, maxBytes and requested maxTokens through CLI and official SDK; not server task planning" },
+    { "requirement": "T24-2", "result": "PASS", "scope": "Explicit goals then literal error resource locations, dependency depth, actual filesystem mtime; source hash, lines, clipping and incomplete excerpt metadata" },
+    { "requirement": "T24-3", "result": "PASS_UNKNOWN_TOKENIZER_SCOPE", "scope": "No model tokenizer installed or selected; only hard byte guarantee. UTF-8 JSON bytes/4 estimate, requested token limit retained and tokenLimitEnforced:false; no exact tokenization claim" },
+    { "requirement": "T24-4", "result": "PASS", "scope": "Each continuation including envelope respects requested byte limit; failures remain visible and original JSON reconstructs; CLI refuses dead one-shot memory references" },
+    { "requirement": "T24-5", "result": "PASS_UNAVAILABLE_SCOPE", "scope": "active_run explicitly unavailable rather than fabricated null; no caller-scoped live lookup claimed" },
+    { "requirement": "T24-acceptance", "result": "PASS", "scope": "Same task before/after 1000 unrelated files, 1KiB whole-page budget; missing/ambiguous targets insufficient; Chinese/multibyte/long lines, cyclic dependencies, large logs, pre-cancellation and caller project boundary" }
+  ],
+  "contract": "docs/production-roadmap/CONTEXT-PACK-CONTRACT.md",
+  "focusedEvidence": "docs/production-roadmap/evidence/T24-targeting-focused.json",
+  "historicalFailures": "T24-targeting-focused.json and T24-compatibility-followup.json retain failures before repairs",
+  "unsupportedExtensions": ["Selected-model exact tokenizer budget", "Semantic task inference or semantic symbol safety", "Complex node-path disambiguation", "Caller-scoped live registry lookup", "One-shot CLI persistent continuation"],
+  "remainingRoadmap": "T25-T35; G4-G6 NOT_RUN; T26 must separately measure 10k/50k performance",
+  "taskStatus": "done",
+  "qualification": "NOT_QUALIFIED",
+  "release": "Not requested; no commit/push/deploy/public release"
+}

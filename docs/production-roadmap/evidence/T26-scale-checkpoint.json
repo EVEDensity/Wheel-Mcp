@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T26",
+  "createdAt": "2026-10-01T19:32:20Z",
+  "status": "IN_PROGRESS_PERFORMANCE_GAP",
+  "source": "REAL",
+  "sourceHash": "e8607b1276af6c1d58b5f752e43ea692b651e9d18771d404b811ffe1b0061225",
+  "contract": "docs/production-roadmap/CONTEXT-BENCHMARK-CONTRACT.md",
+  "focused": {
+    "run": "runs/production-roadmap/T26/2026-10-01T19-27-46-595Z-54848",
+    "manifestSha256": "64ee3b924e847ae6a87f865ee19a6482c19677378c8e31015f17ecec69091950",
+    "resultsSha256": "5f89d36b0eae5b9bed11fe34195082b02b9f45c8ec03708e58c9ebae4c48755a",
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "rounds": [{"passed": 40, "total": 40, "failed": 0, "skipped": 0, "tempCleanup": "PASS"}, {"passed": 40, "total": 40, "failed": 0, "skipped": 0, "tempCleanup": "PASS"}],
+    "scope": "Scale/index/context/budget/path regressions; second round is not the independent 109-case native baseline"
+  },
+  "smoke": {
+    "sourceHash": "c8f15ab96f9c2b4b75e4644c2f92ba59cafed7fc745903597057ef6776630429",
+    "run": "runs/production-roadmap/T26/2026-10-01T19-21-22-975Z-36940",
+    "resultsSha256": "45865149108bdd52f4772fd34659e425e9e55ec36923e8a4493f94fec0f35792",
+    "status": "SMOKE_PASS", "size": 1000, "hits": 30, "questions": 30,
+    "sourceUnchanged": true, "ownedCorpusCleanup": "PASS"
+  },
+  "before": {
+    "sourceHash": "c8f15ab96f9c2b4b75e4644c2f92ba59cafed7fc745903597057ef6776630429",
+    "run": "runs/production-roadmap/T26/2026-10-01T19-22-15-795Z-28932",
+    "resultsSha256": "303ff8a0765a6f09d9f8050a82c87e0a598d9e0710702fe43ebd4b4f45efec8d",
+    "status": "FAIL", "size": 10000, "coldMs": 35889.6302,
+    "warmP95Ms": 3929.8013, "incrementalP95Ms": 3860.1149,
+    "hits": 30, "questions": 30, "sourceUnchanged": true, "ownedCorpusCleanup": "PASS"
+  },
+  "after": {
+    "run": "runs/production-roadmap/T26/2026-10-01T19-28-34-310Z-27808",
+    "resultsSha256": "d3bb13fad2e25872ba62ee7fe0a73ab2db81d7ed76c550e2423c9169a9464643",
+    "status": "FAIL", "size": 10000, "seed": 260925,
+    "coldMs": 32660.3572, "warmP95Ms": 1155.1568, "incrementalP95Ms": 1136.1307,
+    "hits": 30, "questions": 30, "warmSamples": 12, "incrementalSamples": 5,
+    "contextPages": 80, "largestContextPageBytes": 815, "contextReconstructed": true,
+    "cancelMs": 0.9119, "sampledPeakRssBytes": 286498816,
+    "sourceUnchanged": true, "ownedCorpusCleanup": "PASS"
+  },
+  "change": "Bound directory lstat batches to 32 and drain all settled operations. Preserve both inventories, real path checks, cancellation and last committed snapshot semantics.",
+  "thresholds": {"warm10kP95Ms": 500, "incremental10kP95Ms": 2000, "cold10kMs": 60000, "cold50kMs": 300000, "hitRate": 0.95},
+  "historicalFailures": [
+    "Generator default seed literal inferred too narrowly: build FAIL; explicit number fixed",
+    "Direct test import failed on developer registry lock; no user lock deleted; isolated formal registry used",
+    "T26/2026-10-01T19-19-04-887Z-51736 lint FAIL and 35/40 due to missing GODOT_PATH; escaped string fixed and environment supplied before passing rerun"
+  ],
+  "remaining": [
+    "Hot query 10k p95 remains above 500ms; retain failure and profile further before claiming performance qualification",
+    "Full five-repeat 1k/10k/50k workload including 200 queries/100 updates has NOT_RUN",
+    "Large node/event pagination pressure is NOT_RUN; generating events alone is not event API coverage",
+    "50k metadata capacity and byte/memory bounds must be measured, not assumed",
+    "Latest index optimization has focused regression only; full same-source and G4 suite still required",
+    "G4 integration and later T27-T35 remain; 8h qualification is not inferred from short RSS sampling"
+  ],
+  "taskStatus": "in_progress", "gates": "G4-G6 NOT_RUN",
+  "qualification": "NOT_QUALIFIED", "release": "NOT_REQUESTED; no commit/push/deploy/public release"
+}

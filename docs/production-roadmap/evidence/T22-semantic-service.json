@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T22",
+  "createdAt": "2026-10-01T15:50:41Z",
+  "status": "PASS_DECLARED_SUBSET",
+  "source": "MIXED",
+  "head": "52414b04aa6ef113b4dc9a020bdaf09372f8c8eb",
+  "sourceHash": "ba59561e1d7fc2ad539af36b534085b454f5c9f926ea2e6378beaf19c8e4c749",
+  "rawRun": "runs/production-roadmap/T00/2026-10-01T15-27-14-315Z-2528",
+  "rawManifestSha256": "2729ac677ebfa8f4a745fe1604a9e095ce49bb73e46f34f62e60991dd0924221",
+  "rawResultsSha256": "3ac354807f2a4eaa4e5b54b20aad34e7f7ec501949864e620825e2bc215d46be",
+  "baseline": {
+    "command": "npm.cmd run verify:production -- --baseline",
+    "status": "PASS",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "fullTests": { "passed": 305, "total": 305, "failed": 0, "skipped": 0 },
+    "requiredGodot": { "passed": 109, "total": 109, "failed": 0, "skipped": 0 },
+    "fullTestsTempCleanup": "PASS",
+    "requiredGodotTempCleanup": "PASS"
+  },
+  "requirements": [
+    { "id": "T22-1", "status": "PASS", "source": "REAL", "evidence": "Regex summary remains heuristic/safeRefactor:false; authorized Windows Godot 4.7.2 LSP is a separate backend" },
+    { "id": "T22-2", "status": "PASS", "source": "REAL", "evidence": "Native symbols/references/definitions/diagnostics, project/version/PID/loopback owner binding, timeout/cancel/closed/source-change refusal" },
+    { "id": "T22-3", "status": "PASS", "source": "MIXED", "evidence": "Backend WorkspaceEdit becomes code-only SHA candidates after per-location definition agreement and stable project snapshots; official SDK exact write approval binds preview project SHA; approval is MOCK in tests" },
+    { "id": "T22-4", "status": "PASS", "source": "REAL", "evidence": "Native cross-file class_name/extends/type rename runs to 42, explicit external Script exists, scene bytes remain unchanged and NodePath Marker resolves; unmapped/dynamic text is a manual-review list" },
+    { "id": "T22-5", "status": "PASS", "source": "REAL", "evidence": "Unavailable/unbound/closed backend never promotes heuristic output into successful safe refactor" }
+  ],
+  "safety": [
+    "Raw same-named string/comment edits are rejected as a whole, not filtered then committed",
+    "Unsaved script buffers reject both checked previews and validated writes; unknown/legacy state refuses writes",
+    "Editing during approval blocks before disk commit and preserves disk bytes and the human buffer",
+    "Stale project dependencies reject before approval; fresh project hash appears in approval intent and final validation report",
+    "Native failed runtime oracle rolls back both files through ProjectTransactions, then original scene runs successfully; successful SDK write runs successfully; old file SHA replay is refused"
+  ],
+  "scope": {
+    "platform": "Windows, trusted local projects, Godot 4.7.2, authorized opted-in editor LSP and official SDK fixtures",
+    "nodePath": "Preservation for pure .gd identifier candidates with unchanged scene bytes and explicit path resolution in the native fixture; NOT Node/NodePath renaming",
+    "approval": "Explicit TEST-ONLY MOCK form acceptance; not human UX evidence",
+    "write": "Existing exact-candidate write tool validates import/parse/load; runtime oracle and transaction rollback tested separately, not advertised as automatic gameplay evaluation",
+    "unsupported": ["arbitrary dynamic reflection", "UID rewriting", "embedded script rewriting", "Node/NodePath renaming", "unverified platforms/engine versions"],
+    "refactorSafe": false,
+    "qualification": "NOT_QUALIFIED"
+  },
+  "failedChecksRetained": [
+    "runs/production-roadmap/T22/2026-10-01T15-07-02-923Z-52900: unsaved script write was not rejected",
+    "runs/production-roadmap/T22/2026-10-01T15-15-33-973Z-15936: stale preview hash and dirty-buffer preview were not rejected"
+  ]
+}
