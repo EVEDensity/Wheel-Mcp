@@ -88,4 +88,47 @@ export function registerDiagnosticsTools(context: ToolRegistrationContext): void
         responseMode,
       ),
   );
+  server.tool(
+    'preview_script_rename',
+    'Read-only Godot LSP rename candidate with code-only checks, per-location definition agreement, project hash and manual impact review. Not approval or safe-refactor authorization; never writes files.',
+    {
+      projectPath,
+      scriptPath: z.string(),
+      lspPort: z.number().int().min(1024).max(65535),
+      line: z.number().int().nonnegative(),
+      character: z.number().int().nonnegative(),
+      oldName: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+      newName: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
+      responseMode,
+      timeoutMs,
+    },
+    async ({ projectPath, scriptPath, lspPort, line, character, oldName, newName, responseMode, timeoutMs }, extra) =>
+      invoke(
+        async (run) => {
+          run.throwIfCancelled();
+          const client = await GodotLspClient.connect({
+            projectPath,
+            ownerId: context.transactionOwnerId,
+            lspPort,
+            timeoutMs: Math.min(run.remaining(), 30000),
+            signal: run.signal,
+          });
+          try {
+            const result = await client.previewDefinitionCheckedRename(
+              scriptPath,
+              { line, character },
+              oldName,
+              newName,
+              run.signal,
+            );
+            return { schema_version: '0.1', source: 'REAL', status: 'PASS', ...result };
+          } finally {
+            client.close();
+          }
+        },
+        timeoutMs,
+        extra.signal,
+        responseMode,
+      ),
+  );
 }

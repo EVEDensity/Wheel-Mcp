@@ -2,12 +2,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { pathToFileURL } from 'node:url';
-import { authorizeToolCall, recordToolOwnership, type McpClientPolicy } from './mcp/access-policy.js';
+import { authorizeToolCall, recordToolOwnership, toolPermissions, type McpClientPolicy } from './mcp/access-policy.js';
 import { z } from 'zod';
 import { serverCapabilities, serverInfo } from './server-info.js';
 import { registerAllTools } from './mcp/tool-registry.js';
 import { createMergedAbortSignal, getHttpRequestLifecycle, getHttpRequestSignal } from './transports/http-lifecycle.js';
-import { classifyError } from './error-schema.js';
+import { classifyError, WheelError } from './error-schema.js';
 import { runWithResponseOwner } from './response-budget.js';
 import { runRegistry } from './run-registry.js';
 import { stopRuntimeBridge } from './persistent-runtime-bridge.js';
@@ -15,8 +15,15 @@ import { createTimeoutContext } from './timeout.js';
 import { DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { createStdioPolicy } from './mcp/stdio-policy.js';
 import { registerOperationLifecycle, drainMcpOperations } from './mcp/operation-lifecycle.js';
+import { registerDiscovery } from './mcp/discovery.js';
 
-export function createMcpServer(policy?: McpClientPolicy): McpServer {
+export function createMcpServer(
+  policy?: McpClientPolicy,
+  options: { resourceProjects?: readonly string[]; toolProfile?: 'all' | 'read' } = {},
+): McpServer {
+  const profile = options.toolProfile ?? process.env.MCP_TOOL_PROFILE ?? 'all';
+  if (!['all', 'read'].includes(profile))
+    throw new WheelError('INVALID_ARGUMENT', 'MCP_TOOL_PROFILE must be all or read');
   const server = new McpServer(serverInfo, { capabilities: serverCapabilities });
   const operations = registerOperationLifecycle(server);
   const originalRegisterTool = server.registerTool.bind(server);
@@ -26,26 +33,22 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
       description: string,
       schema: Record<string, z.ZodTypeAny>,
       callback: (args: any, extra: any) => any,
-    ) =>
-      originalRegisterTool(
+    ) => {
+      const permission = toolPermissions[name];
+      if (!permission) throw new WheelError('FORBIDDEN', 'Tool lacks permission classification');
+      if (profile === 'read' && permission !== 'read') return;
+      return originalRegisterTool(
         name,
         {
-          description,
+          description: `[${permission}] ${description}`,
+          title: name.replaceAll('_', ' '),
+          annotations: {
+            readOnlyHint: permission === 'read',
+            destructiveHint: permission !== 'read',
+            idempotentHint: permission === 'read',
+            openWorldHint: false,
+          },
           inputSchema: name === 'query_runtime_collisions' ? z.object(schema).strict() : schema,
-          ...(['get_editor_state', 'get_editor_scene_operation'].includes(name)
-            ? {
-                annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-              }
-            : name === 'apply_editor_scene'
-              ? {
-                  annotations: {
-                    readOnlyHint: false,
-                    destructiveHint: true,
-                    idempotentHint: false,
-                    openWorldHint: false,
-                  },
-                }
-              : {}),
         },
         async (args: any, extra: any) =>
           operations.run(async (closingSignal) => {
@@ -89,9 +92,11 @@ export function createMcpServer(policy?: McpClientPolicy): McpServer {
               throw error;
             }
           }),
-      ),
+      );
+    },
   });
   registerAllTools({ server, policy });
+  registerDiscovery(server, policy, operations, options.resourceProjects ?? policy?.projectRoots ?? []);
   return server;
 }
 

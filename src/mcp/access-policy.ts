@@ -54,6 +54,7 @@ export const toolPermissions: Readonly<Record<string, McpPermission>> = {
   get_debug_output: 'read',
   analyze_script_semantics: 'read',
   query_script_semantics: 'read',
+  preview_script_rename: 'read',
   get_response_page: 'read',
   get_recent_evidence: 'read',
   compare_screenshots: 'write',
@@ -235,7 +236,12 @@ export async function authorizeToolCall(
     !policy.scopes.has('admin')
   )
     throw new McpAccessError('dev_loop requires run and write permissions');
-  if (godotExecutingTools.has(toolName)) {
+  const contextWithoutEngine =
+    toolName === 'get_context_pack' &&
+    Array.isArray(args.fields) &&
+    !args.fields.includes('godot') &&
+    !args.fields.includes('main_scene');
+  if (godotExecutingTools.has(toolName) && !contextWithoutEngine) {
     assertApprovedPath(args.godotPath ?? process.env.GODOT_PATH, policy.approvedGodotPaths, 'godotPath');
   }
   if (args.bridgePath !== undefined) assertApprovedBridge(args.bridgePath, policy);
@@ -268,7 +274,7 @@ export async function authorizeToolCall(
   if (typeof projectRoot === 'string') {
     const fileInput = ['read_project_file', 'write_project_file'].includes(toolName)
       ? args.filePath
-      : ['analyze_script_semantics', 'query_script_semantics'].includes(toolName)
+      : ['analyze_script_semantics', 'query_script_semantics', 'preview_script_rename'].includes(toolName)
         ? args.scriptPath
         : [
               'read_scene_file',

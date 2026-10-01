@@ -1,6 +1,6 @@
 ﻿import { z } from 'zod';
 import { getGodotVersion, getProjectInfo, getSceneTree, listProjects, resolveGodotPath } from '../../godot-runtime.js';
-import { buildContextPack } from '../../context-pack.js';
+import { buildContextPack, CONTEXT_FIELDS } from '../../context-pack.js';
 import { gitCheckpoint, gitRecovery } from '../../git-recovery.js';
 import {
   readSceneFile,
@@ -126,7 +126,7 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
   );
   server.tool(
     'write_validated_project_files',
-    'Exact host-approved multi-file .tscn/.tres/.gd candidates. Stage/import/load in isolated correct project context BEFORE touching originals; dirty scene and dependency CAS conflicts reject; transactional recovery.',
+    'Exact host-approved multi-file .tscn/.tres/.gd candidates. Stage/import/load in isolated correct project context BEFORE touching originals; unsaved scripts/scenes and dependency CAS conflicts reject; optional preview project hash is bound into exact approval. Transactional recovery; not gameplay validation.',
     {
       projectPath,
       godotPath,
@@ -148,6 +148,10 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
       operationId: z
         .string()
         .regex(/^[a-zA-Z0-9_-]{1,80}$/)
+        .optional(),
+      expectedProjectSha256: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
         .optional(),
       timeoutMs,
       responseMode,
@@ -397,7 +401,7 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
       invoke(
         (context) => {
           context.throwIfCancelled();
-          return searchProject(projectPath, query, { glob, maxResults });
+          return searchProject(projectPath, query, { glob, maxResults, timeout: context });
         },
         timeoutMs,
         extra.signal,
@@ -448,8 +452,34 @@ export function registerProjectTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'get_context_pack',
-    'Build a read-only context pack.',
-    { godotPath, projectPath, evidenceDir, scenePath: z.string().optional(), timeoutMs },
+    'Read-only task-targeted lexical context. Bounded UTF-8 JSON/continuation pages; capped dependency expansion, source hashes/line ranges and explicit clipping. Run state is unavailable unless caller-scoped lookup exists; not semantic validation.',
+    {
+      godotPath,
+      projectPath,
+      evidenceDir,
+      scenePath: z.string().optional(),
+      timeoutMs,
+      targets: z.array(z.string().min(1).max(512)).max(32).optional(),
+      taskIntent: z.string().trim().min(1).max(2048).optional(),
+      errorStack: z.string().max(8192).optional(),
+      maxTokens: z.number().int().min(1).max(1000000).optional(),
+      anchors: z
+        .array(
+          z
+            .object({
+              file: z.string().min(1).max(512),
+              kind: z.enum(['symbol', 'node']),
+              name: z.string().min(1).max(512),
+            })
+            .strict(),
+        )
+        .max(32)
+        .optional(),
+      fields: z.array(z.enum(CONTEXT_FIELDS)).max(CONTEXT_FIELDS.length).optional(),
+      dependencyDepth: z.number().int().min(0).max(8).optional(),
+      maxBytes: z.number().int().min(1024).max(131072).optional(),
+      maxErrorBytes: z.number().int().min(1).max(131072).optional(),
+    },
     async (args, extra) =>
       invoke(
         (context) =>
