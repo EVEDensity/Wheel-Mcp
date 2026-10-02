@@ -489,11 +489,16 @@ export async function searchProject(
   const glob = options.glob ? compileProjectGlob(options.glob) : null;
   const indexed = await (await getProjectIndex(root)).refresh(options.timeout);
   const needle = query.toLowerCase();
+  // A needle without line breaks matches a whole text exactly when some line
+  // matches it; the whole-text precheck skips splitting every cached file and
+  // falls back to the identical per-line scan whenever it cannot be applied.
+  const multiline = query.includes('\n') || query.includes('\r');
   let truncated = false;
   for (const file of indexed.files) {
     options.timeout?.throwIfCancelled();
     options.timeout?.throwIfExpired();
     if (file.text === null || (glob && !glob(file.path) && !glob(path.basename(file.path)))) continue;
+    if (!multiline && !file.text.toLowerCase().includes(needle)) continue;
     for (const [i, line] of file.text.split(/\r?\n/).entries()) {
       if (!line.toLowerCase().includes(needle)) continue;
       if (results.length >= max) {
