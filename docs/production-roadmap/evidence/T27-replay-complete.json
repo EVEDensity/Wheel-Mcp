@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T27",
+  "createdAt": "2026-10-02T15:25:27Z",
+  "status": "PASS",
+  "source": "MIXED",
+  "sourceHash": "b70805dc122042f6ed98e5f21ea889d991e44ec91f79fcfe4fa50be7b1adc131",
+  "run": "runs/production-roadmap/T00/2026-10-02T15-07-18-644Z-24148",
+  "manifestSha256": "363261d916ef41f9951fc61fbe37fa4722a68c94208f5b4b8fe7a523563cb3db",
+  "resultsSha256": "35bdffb89589f6e5bfb86747f6fb8ddd5afe9ff16242720583f3a07605c11d42",
+  "replayIndexSha256": "7c0de172a7fd20aa744bfeeb92672f4d5f9a9e7ad9a33abb63f8b08bdffae921",
+  "verification": {
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "fullTests": {"tests": 352, "passed": 352, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"},
+    "independentGodot": {"tests": 109, "passed": 109, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"},
+    "sourceUnchanged": true
+  },
+  "coverage": [
+    {"source": "REAL", "case": "30 consecutive frozen fixture replays", "result": "30/30 PASS; input before/after equal; all stopped"},
+    {"source": "REAL", "case": "Seed, actual renderer/display/viewport/physics and Godot identity recorded; physics-frame responses retained; immutable plan SHA", "result": "PASS"},
+    {"source": "REAL", "case": "Input press/release, state, collision, diagnostics, scene switch, independent windowed visual baseline", "result": "PASS"},
+    {"source": "REAL", "case": "Consumed event, step timeout, cancel after event barrier, missing baseline, mismatched viewport", "result": "Expected FAIL with TIMEOUT/CANCELLED/INVALID_ARGUMENT/CONFLICT; stopped"},
+    {"source": "MOCK", "case": "Stop failure after successful launch and after failed post-launch binding; no retry/continue after failed binding", "result": "FAIL retained; cleanup failure cannot become PASS"},
+    {"source": "MOCK", "case": "Caller mutation cannot change cloned plan", "result": "PASS"},
+    {"source": "REAL", "case": "Legacy complete JSONL record cursor cannot consume same event twice", "result": "First PASS, second TIMEOUT"}
+  ],
+  "retained": {"summaries": 36, "index": "replay-evidence-index.json", "hashesBoundIntoManifest": true},
+  "historicalFailures": [
+    {"run": "runs/production-roadmap/T27/2026-10-02T14-58-01-296Z-51984", "result": "21/22 twice, exit 1", "cause": "Actual headless viewport was 64x64, not configured window 320x240; JSON key ordering was not a valid object equality test"}
+  ],
+  "boundaries": [
+    "Seed applies to Godot global RNG before scene instantiation; project-owned RNG or reseeding is not forcibly controlled",
+    "Declared conditions checked, undeclared fields observed only; no cross-platform bitwise determinism claim",
+    "Cancellation does not claim an unavailable final input snapshot is unchanged",
+    "Full baseline is not G4/G5/G6 qualification; old-source benchmark PASS is not inherited"
+  ],
+  "contract": "docs/production-roadmap/REPLAY-CONTRACT.md",
+  "qualification": "NOT_QUALIFIED",
+  "release": "No commit/push/deploy/public release"
+}

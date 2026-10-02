@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T27",
+  "createdAt": "2026-10-02T14:09:40Z",
+  "status": "FOCUSED_PASS_TASK_IN_PROGRESS",
+  "source": "REAL",
+  "sourceHash": "eb077bfd91e7324ee0fdeaf4fd4441dc88393d52f9b59a35ca41d2570da374cb",
+  "run": "runs/production-roadmap/T27/2026-10-02T14-06-22-689Z-33140",
+  "manifestSha256": "dc3eeb6cbe98cac7ea31c1550332b883fc2428e3f8468434c09c043b5e04f17a",
+  "resultsSha256": "a6e86f47b8f5d6864123acb9602daab9608a4e8e9b93d34631398f2d42906b2b",
+  "verification": {"build": "PASS", "format": "PASS", "lint": "PASS", "rounds": [{"tests": 18, "passed": 18, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"}, {"tests": 18, "passed": 18, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"}], "sourceUnchanged": true},
+  "verified": [
+    "Fixed fixture 30 consecutive real Godot replays per round; input release, physics-frame barrier, state/collision assertions and scene switch",
+    "Persistent bridge consumed event cannot satisfy next wait; timeout/cancellation fail and stop runtime",
+    "Visual assertion requires independent bounded ordinary baseline; missing baseline rejected, SHA recorded and mutation checked",
+    "Visual names reject traversal; baseline confined to approved project/evidence roots",
+    "256 steps, one operation per step, retries 0..3, timeouts 1..600000ms, physics frames 1..120, finite nonnegative tolerances, visual ratio 0..1",
+    "State RPC restricted to get_property/get_properties/call_method, not arbitrary capture_screenshot paths",
+    "Executor and authorization resolve relative project/step project against the same scenario-file directory",
+    "Failed subscribe setup attempts bridge stop before propagating error",
+    "Actual command exit codes and scratch cleanup checked; pasted progress or test counts alone are not PASS evidence"
+  ],
+  "historicalFailures": [{"run": "runs/production-roadmap/T27/2026-10-02T13-58-41-607Z-39788", "result": "16/18 twice, exit 1", "causes": ["new authorization fixture lacked approved engine path", "relative YAML project resolved against repository; snapshot consumed deadline"]}],
+  "remaining": [
+    "Bind engine/renderer/viewport and declared seed; fixture seed assertion is not full binding",
+    "Retain per-replay summaries and immutable assertion-plan identity after successful scratch cleanup",
+    "Legacy non-persistent file-event cursor negative coverage",
+    "Deterministic cancellation-at-barrier and cleanup-failure negative evidence",
+    "Complete current-source regression and G4 requalification not run",
+    "Current focused link-policy cleanup passes; historical G4 blocker still requires actual gate rerun"
+  ],
+  "taskStatus": "in_progress",
+  "qualification": "NOT_QUALIFIED",
+  "release": "No commit/push/deploy/public release in this checkpoint"
+}

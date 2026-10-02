@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T28",
+  "createdAt": "2026-10-02T17:18:32Z",
+  "status": "FOCUSED_PASS_FULL_REGRESSION_PENDING",
+  "source": "MIXED",
+  "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+  "run": "runs/production-roadmap/T28/2026-10-02T17-08-46-262Z-19140",
+  "manifestSha256": "f73a1746be5e53b0419d1086a44546db23312c494bb991655e35d5dfc3c8920f",
+  "resultsSha256": "e869b8231aae1476b15f899b898419a023661263e90770f0e073903cad242bf9",
+  "verification": {
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "rounds": [
+      {"tests": 52, "passed": 52, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"},
+      {"tests": 52, "passed": 52, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"}
+    ],
+    "sourceUnchanged": true,
+    "manifestEvidenceHashesChecked": 6,
+    "manifestEvidenceHashMismatches": 0
+  },
+  "coverage": [
+    {"source": "MOCK", "case": "Approval binds frozen oracle and baseline bytes; stale receipts and changed baseline reject before write/engine start", "status": "PASS"},
+    {"source": "MIXED", "case": "Native Godot script/scene/resource fixed wrong candidate restores exact originals; different correct candidate commits under unchanged oracle", "status": "PASS"},
+    {"source": "MIXED", "case": "Identical candidate ID or edit content rejects; absent/new IDs, reordered files and changed source/rationale do not consume another budget or write", "status": "PASS"},
+    {"source": "MIXED", "case": "Same-session status, cancellation before write, and real COMMITTED result survive explicit delivery failure; source snapshots released on close", "status": "PASS"},
+    {"source": "MOCK", "case": "Lost client submit response produces UNKNOWN with IDs and retryable=false; no automatic resubmission", "status": "PASS"},
+    {"source": "MIXED", "case": "Existing semantic rename/native validation and strict editor LSP listener ownership; malformed owner data fail closed", "status": "PASS"}
+  ],
+  "proofBoundary": "Official MCP SDK fixtures and native Godot are real. Approval, transport loss and delivery faults are explicitly controlled test doubles, not installed Codex/Cursor or human approval UX.",
+  "priorFullRegression": {
+    "sourceHash": "dfb028169989cbaf0ec65f325fa0e0e3cea2fa91cfd5be9e51892e5e92a99eb0",
+    "run": "runs/production-roadmap/T00/2026-10-02T16-41-52-536Z-27324",
+    "status": "PASS", "fullTests": 360, "nativeTests": 110,
+    "manifestSha256": "65f21f4914bd77defd12d8dfcd46b945c8de63c0d9f05cac3a7fd53753e8b48e",
+    "resultsSha256": "454067cb23b224af1d63d2ee96fa99a3d0a33864f545fdb8ee1f3f8e53fa1fdf",
+    "notCurrentSourceProof": true
+  },
+  "currentFullRegression": {
+    "run": "runs/production-roadmap/T00/2026-10-02T17-13-54-769Z-34340",
+    "status": "RUNNING"
+  },
+  "remaining": ["Latest-source complete baseline must finish and its evidence hashes must verify before closing T28"],
+  "taskStatus": "in_progress",
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED"
+}

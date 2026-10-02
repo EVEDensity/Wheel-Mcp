@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T28",
+  "createdAt": "2026-10-02T15:33:06Z",
+  "status": "FOCUSED_PASS_TASK_IN_PROGRESS",
+  "source": "MIXED",
+  "sourceHash": "b7b1931abd4c3ec2f2d29699354c79d23beadf037725044e18ee766cd1d231c8",
+  "run": "runs/production-roadmap/T28/2026-10-02T15-29-45-924Z-38752",
+  "manifestSha256": "ba6dbf3d50e916531b2a8241242f7f8b57ec41353454391de9a2e7a0a0294a13",
+  "resultsSha256": "02fe4691852fd2617fb6a871c8ffbde7eac54b7202a58827e11948b34c47a249",
+  "verification": {
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "rounds": [
+      {"tests": 40, "passed": 40, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"},
+      {"tests": 40, "passed": 40, "failed": 0, "skipped": 0, "exitCode": 0, "tempCleanup": "PASS"}
+    ],
+    "sourceUnchanged": true
+  },
+  "coverage": [
+    {"source": "MOCK", "case": "Same candidate and changed tolerance produce a different exact transaction approval hash; stale receipt rejected before writes or validation callback", "status": "PASS"},
+    {"source": "MOCK", "case": "Caller-owned expected object mutation cannot alter frozen validation definition; output directory does not change oracle hash", "status": "PASS"},
+    {"source": "MIXED", "case": "Official SDK stdio fixture, fixed external candidates, real Godot failures/fix/reverification and two-file rollback; confirmation is explicit fixture MOCK, not human or live installed client", "status": "PASS"},
+    {"source": "MIXED", "case": "Existing transaction permission, conflict, recovery, denial, expiry, cross-session and candidate-budget controls; tests include explicit fault injection", "status": "PASS"}
+  ],
+  "remaining": [
+    "Bind independent visual baseline contents, not only path",
+    "Candidate status query, repeat/cancellation and unknown-result boundaries",
+    "Verified multi-file/scene/resource operation scope and semantic integration",
+    "Current-source full regression; b708 T27 full PASS is prior-source evidence, not b7b1931 full PASS",
+    "G4/G5/G6 qualification and T30 real installed client evidence still outstanding"
+  ],
+  "taskStatus": "in_progress",
+  "qualification": "NOT_QUALIFIED",
+  "release": "No commit/push/deploy/public release"
+}

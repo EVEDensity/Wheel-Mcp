@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T28",
+  "createdAt": "2026-10-02T17:33:38Z",
+  "status": "PASS",
+  "source": "MIXED",
+  "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+  "run": "runs/production-roadmap/T00/2026-10-02T17-13-54-769Z-34340",
+  "manifestSha256": "a0ddb1283595ecaddf5db9a913b02d61ed0e1432a4afec7bdb42a5a113d13bb2",
+  "resultsSha256": "7bfd589b919747d842b7c2d3252f2000d693a24c3a9c2b95f5e84a0bc44b69b8",
+  "verification": {
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "full": {"tests": 360, "passed": 360, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"},
+    "independentGodot": {"tests": 110, "passed": 110, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"},
+    "sourceUnchanged": true,
+    "manifestEvidenceHashesChecked": 43,
+    "manifestEvidenceHashMismatches": 0
+  },
+  "focusedProof": {
+    "path": "docs/production-roadmap/evidence/T28-safe-repair-checkpoint.json",
+    "sha256": "a0c7b0ca8ecc14b1fd2f2fedb65dcd85746c18baadb040a1b5741c1190385fb8",
+    "sameSource": true, "rounds": [52, 52]
+  },
+  "acceptance": {
+    "externalFixedCandidatesOnly": "PASS",
+    "exactApprovalAndFrozenOracle": "PASS",
+    "independentBaselineContentBinding": "PASS",
+    "nativeScriptsScenesResourcesAndExactRollbackReadback": "PASS",
+    "declinedApprovalNoWrite": "PASS",
+    "duplicateIdAndLegacyDuplicateEditContentRejected": "PASS",
+    "sameSessionQueryAndUnknownPersistenceBoundaries": "PASS",
+    "noAutomaticNonIdempotentResubmission": "PASS"
+  },
+  "proofBoundary": "Native Godot and official SDK fixtures are real; human approval, transport loss and delivery faults use explicitly labeled controlled test doubles. Not installed Codex/Cursor client UX evidence. Structural rename/import remain separately validated APIs, not arbitrary textual repair edits.",
+  "failureHistory": {
+    "run": "runs/production-roadmap/T00/2026-10-02T16-09-31-301Z-31136",
+    "status": "FAIL",
+    "fullTests": "358/359",
+    "nativeTests": "109/109",
+    "reason": "Existing isolated LSP owner query failed; strict JSON owner parsing and bounded readiness/error diagnostics were fixed, then focused and complete regressions rerun. Original report preserved."
+  },
+  "taskStatus": "done",
+  "remainingRoadmap": ["T29", "T30", "T31", "T32", "T33", "T34", "T35", "G4 current-source requalification", "G5", "G6"],
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED"
+}

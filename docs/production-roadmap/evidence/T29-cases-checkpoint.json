@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T29",
+  "createdAt": "2026-10-02T18:10:53Z",
+  "status": "PARTIAL_PASS_TASK_IN_PROGRESS",
+  "source": "MIXED",
+  "sourceHash": "4c1564121517087d30826ef5667c4210d7c579f100a7ed6b1f55a7ae0b8c4eb4",
+  "run": "runs/production-roadmap/T29/2026-10-02T18-05-59-916Z-5896",
+  "manifestSha256": "4042bdbc70f485b4501d72d7a6e747b15d245c2ad7c454ec1c91c29293a57e47",
+  "resultsSha256": "9a3fe07fe58c8cd5665e915586c11a1a9159d5fa5ec2ac229f65731ce9dcf46a",
+  "caseIndexSha256": "087eba2f15e1e50f0c8e075e5c436c5c5e751e4f843bebaa36a20af71a8e8434",
+  "verification": {
+    "build": "PASS", "format": "PASS", "lint": "PASS",
+    "rounds": [
+      {"tests": 11, "passed": 11, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"},
+      {"tests": 11, "passed": 11, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"}
+    ],
+    "sourceUnchanged": true,
+    "manifestEvidenceHashesChecked": 21,
+    "manifestEvidenceHashMismatches": 0,
+    "caseReports": 14,
+    "oracleHashesIdenticalBetweenRounds": true
+  },
+  "coreCases": {"requiredMinimum": 30, "passed": 6, "ids": ["N01", "N02", "N03", "N04", "N05", "N06"], "familiesExecuted": ["nodes"], "complete": false},
+  "supplementalCases": [{"id": "X01", "status": "PASS", "countsTowardCoreThirty": false, "case": "Pinned external player script, incorrect baseline rejection without write/budget consumption, exact external candidate runtime validation and byte readback; unmodified dependency scene and MIT notice"}],
+  "coverage": [
+    "Fixed schema-checked bounded create/set, rename, reparent, instantiate, signal connect and atomic batch requests",
+    "Per-case read-only authorization denial, exact illegal-input error code, unchanged live document and original scene bytes",
+    "One native Undo/Redo restores exact normalized properties, ownership and signal graph",
+    "Native save validation, same-project reopen, fixed node paths/file fragments and exact authored document readback",
+    "Partial catalogs, duplicate IDs, mismatched families, extra fields and arbitrary operations fail qualification/contract checks"
+  ],
+  "externalSlice": {
+    "upstream": "https://github.com/godotengine/godot-demo-projects",
+    "revision": "3e08537616661a5883831628decab4c526260289",
+    "localPath": "vendor/godot-demo-slice",
+    "license": "MIT",
+    "scriptSha256": "87f4fcf7481dba031f74a363475cee75b81c3d42eb1347b318f6b824e37329a6",
+    "licenseSha256": "0339177149b474f7ff676d32218ecb3a8f2538955610023c3769763720d09e4c",
+    "scope": "Exact upstream script and license bytes only; the dependency scene, four InputMap actions and speed candidate are local fixed fixtures, not the complete game"
+  },
+  "failureHistory": [
+    {"run": "runs/production-roadmap/T29/2026-10-02T17-44-49-900Z-25012", "status": "FAIL", "reason": "Unsafe throw in test finally; force-killed fixture left stale editor endpoint; signal error code assumed rather than verified"},
+    {"run": "runs/production-roadmap/T29/2026-10-02T17-47-33-553Z-4292", "status": "FAIL", "reason": "Visibility signal legitimately hides target on scene entry; revised fixed persistence scenario to Button.pressed without weakening exact property readback"},
+    {"run": "runs/production-roadmap/T29/2026-10-02T18-01-10-130Z-756", "status": "FAIL", "reason": "External source verification callback returned object rather than Promise<void>; fixed test wrapper"},
+    {"run": "runs/production-roadmap/T29/2026-10-02T18-01-38-224Z-3744", "status": "FAIL", "reason": "External speed check passed but four missing InputMap actions correctly failed zero-error diagnostics and rolled back; completed local dependency configuration, not upstream script or oracle relaxation"}
+  ],
+  "proofBoundary": "Official SDK in-memory protocol and Godot engine are real; host confirmation is an explicit fixture MOCK. Native Undo/Redo uses a test-only editor controller, not an exposed MCP tool or a human desktop UX claim. X01 is supplemental, not completed S01 two-file core coverage. Current-source focused regression only, not full baseline or G5 qualification.",
+  "remaining": ["U01-U06", "P01-P06", "A01-A06", "S01-S06", "Complete frozen catalog and case-result assessment", "Current-source full regression and G4/G5/G6 qualification", "T30 real installed clients and T31 duration/loop requirements"],
+  "taskStatus": "in_progress",
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED"
+}
