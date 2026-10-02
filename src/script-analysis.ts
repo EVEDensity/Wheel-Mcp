@@ -77,6 +77,16 @@ export function analyzeScriptSemantics(content: string, scriptPath?: string): Sc
   let currentFunction: (typeof result.functions)[number] | undefined;
   let stateVariable: string | undefined;
   let currentState: string | undefined;
+  // Heuristic enum table: enum name (or '' for anonymous) -> declared members.
+  // Lexical only: matching a name never proves a type relation or authorizes edits.
+  const enums = new Map<string, Set<string>>();
+  const resolveEnumMember = (value: string): string => {
+    const segments = value.split('.');
+    if (segments.length === 1) return segments[0];
+    const owner = enums.get(segments[0]);
+    if (owner?.has(segments[1])) return segments[1];
+    return segments[segments.length - 1];
+  };
 
   lines.forEach((raw, index) => {
     const line = raw.trim();
@@ -92,25 +102,42 @@ export function analyzeScriptSemantics(content: string, scriptPath?: string): Sc
     if (signalMatch)
       result.signals.push({ name: signalMatch[1], line: lineNo, parameters: parseParameters(signalMatch[2] ?? '') });
 
-    const variableMatch = line.match(/^(?:@export\s+)?(?:@onready\s+)?var\s+([A-Za-z_]\w*)(?:\s*:\s*([^=]+))?/);
+    const variableMatch = line.match(/^(?:@export\s+)?(?:@onready\s+)?var\s+([A-Za-z_]\w*)(?:\s*:\s*([^=\s]+))?/);
     if (variableMatch) {
+      const declaredType = variableMatch[2]?.trim();
       result.variables.push({
         name: variableMatch[1],
-        type: variableMatch[2]?.trim(),
+        type: declaredType,
         line: lineNo,
         export: line.includes('@export'),
         onready: line.includes('@onready'),
       });
-      if (/state/i.test(variableMatch[1])) stateVariable = variableMatch[1];
+      // A declared enum type is the stronger state-machine signal; a state-like
+      // name is the fallback heuristic when no enum table matches yet.
+      if (declaredType && enums.has(declaredType)) stateVariable = variableMatch[1];
+      else if (/state/i.test(variableMatch[1])) stateVariable ??= variableMatch[1];
+      // An enum-typed declaration with an initializer supplies the heuristic
+      // initial state, e.g. `var state: Mode = Mode.IDLE` starts at IDLE.
+      const initializer = line.match(/=\s*([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*$/);
+      if (stateVariable === variableMatch[1] && initializer) {
+        const initial = resolveEnumMember(initializer[1]);
+        const known = [...enums.values()].some((members) => members.has(initial));
+        if (known) currentState ??= initial;
+      }
     }
 
-    const enumMatch = line.match(/^enum\s*\{([^}]*)\}/);
+    const enumMatch = line.match(/^enum\s*(?:([A-Za-z_]\w*)\s*)?\{([^}]*)\}/);
     if (enumMatch) {
-      enumMatch[1]
+      const members = new Set<string>();
+      enumMatch[2]
         .split(',')
-        .map(cleanIdentifier)
+        .map((part) => cleanIdentifier(part.split('=')[0]))
         .filter(Boolean)
-        .forEach((name) => result.states.push({ name, line: lineNo, source: 'enum' }));
+        .forEach((name) => {
+          members.add(name);
+          result.states.push({ name, line: lineNo, source: 'enum' });
+        });
+      if (members.size) enums.set(enumMatch[1] ?? '', members);
     }
     const constantMatch = line.match(/^const\s+([A-Za-z_]\w*)\s*[:=]\s*([A-Za-z_]\w*)/);
     if (constantMatch && /state/i.test(constantMatch[1]))
@@ -134,10 +161,13 @@ export function analyzeScriptSemantics(content: string, scriptPath?: string): Sc
       result.states.push({ name: matchState[1], line: lineNo, source: 'match' });
     }
 
-    const assignment = line.match(/^(?:self\.)?([A-Za-z_]\w*)\s*([+]?=)\s*([A-Za-z_]\w*)/);
+    const assignment = line.match(/^(?:self\.)?([A-Za-z_]\w*)\s*([+]?=)\s*([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)/);
     if (assignment && /state/i.test(assignment[1])) {
       stateVariable ??= assignment[1];
-      const to = assignment[3];
+      // Resolve qualified members like `Mode.RUNNING` to the enum member so
+      // transitions reference declared states; unknown qualifiers fall back
+      // to the last identifier segment.
+      const to = resolveEnumMember(assignment[3]);
       currentFunction?.inferredStates.push(to);
       result.states.push({ name: to, line: lineNo, source: 'assignment' });
       result.transitions.push({

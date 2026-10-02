@@ -32,6 +32,18 @@ test('analyzeScriptSemantics reports state variables without transitions', () =>
   assert.ok(result.diagnostics.some((item) => item.code === 'STATE_MACHINE_NO_TRANSITIONS'));
 });
 
+test('named enums and qualified member assignments resolve to declared states (D09-SEMANTICS)', () => {
+  const result = analyzeScriptSemantics(
+    'extends Node\nenum Mode { IDLE, RUNNING }\nvar state: Mode = Mode.IDLE\nfunc advance():\n\tstate = Mode.RUNNING\n',
+  );
+  assert.equal(result.stateMachine.stateVariable, 'state');
+  assert.deepEqual(result.stateMachine.states, ['IDLE', 'RUNNING']);
+  assert.equal(result.stateMachine.transitions.length, 1);
+  assert.equal(result.stateMachine.transitions[0].from, 'IDLE');
+  assert.equal(result.stateMachine.transitions[0].to, 'RUNNING');
+  assert.equal(result.stateMachine.transitions[0].trigger, 'advance');
+});
+
 test('heuristic summary does not claim Godot syntax diagnostics or safe rename', () => {
   const result = analyzeScriptSemantics('extends Node\nfunc broken(\n    pass\n');
   assert.equal(result.analysisLevel, 'heuristic');
