@@ -44,7 +44,15 @@ If already healthy, no ticket is issued. A failure with completed cleanup return
 - selected `files`: project-relative `path`, UTF-8 `content`, `sha256`;
 - `failure`: complete dev-loop result including attempts, diagnostic mappings,
   checks, shutdown outcome, evidence and screenshot paths when available;
-- `validation`, `instructions`, and `evidenceDir`.
+- `validation`, `validationPlanHash`, `instructions`, and `evidenceDir`.
+
+The validation plan is cloned and hashed independently of candidate bytes and
+per-attempt output directories. Exact transaction approval binds both the patch
+and that validation hash. If a visual baseline is supplied, its bounded ordinary
+file contents (at most 32 MiB), not just its filename, join this binding. A sealed
+copy is used for comparison; source baseline changes during review or verification
+fail closed. A screenshot without a baseline only verifies a decodable framebuffer,
+not visual regression equivalence.
 
 Only explicitly selected source files are loaded into the packet. Screenshots
 are referenced by path, not automatically sent to a model as image attachments.
@@ -88,6 +96,7 @@ Call `submit_repair_candidate` with the actual UUID and hashes returned by begin
 ```json
 {
   "repairId": "<UUID returned by begin>",
+  "candidateId": "<new UUID for this candidate>",
   "approved": true,
   "proposal": {
     "source": "my-client-model-and-version",
@@ -110,23 +119,56 @@ replacement. For multiple regions in one file, submit its complete original
 content as `find` and reviewed new content as `replace`. Multi-file candidates
 are staged as one edit batch before fresh runtime verification.
 
-The server checks all selected files remain unchanged, records the approved
-proposal, runs the original plan through `dev_loop`, and returns:
+`candidateId` is optional for legacy callers; the helper always creates one before
+submitting. Reusing it is explicitly rejected, including while the first request
+is running. This is not a request to execute the candidate again.
+Identical edit content is also rejected even without an ID, or with a new ID,
+different source/rationale or reordered files. The conflict identifies the original
+candidate for status queries and consumes no additional candidate budget.
+
+The server checks all selected files remain unchanged, records candidate intent,
+requests host-mediated approval of the exact transaction and validation binding,
+runs the original plan through `dev_loop`, and returns:
 
 - PASS: patch remains; request closes;
 - FAIL with cleanup and budget remaining: failed patch rolls back; next model
   proposal can use the same original snapshots;
-- exhausted budget, cleanup failure or rollback conflict: request closes;
+- exhausted budget, cancellation, timeout, cleanup failure, rollback conflict or
+  unknown persistence: request closes;
 - stale/expired/cross-session ticket or invalid paths/hashes: reject before edits.
 
 Validation FAIL deliberately sets MCP `isError: true`. The helper distinguishes
 this structured verification result from a schema/permission/transport error;
 it must not discard the failure evidence before proposing the next candidate.
 
+## 4. Query without resubmitting
+
+Call `get_client_repair_status` in the same connected session with `repairId` and,
+optionally, `candidateId`. This read-only tool returns `state` (RUNNING, CLOSED or
+NEEDS_REPAIR), the fixed validation hash, remaining budget and bounded candidate
+metadata: state, content hash, persistence, cleanup and transaction IDs/states.
+It does not return source contents, apply a patch or retry a failed operation.
+
+During execution, `persisted: null` is unknown, not “nothing was written”. If
+execution throws before a definitive result, the candidate is UNKNOWN and the
+request closes. If the underlying transaction committed but final evidence
+delivery failed, status retains `persisted: true`, committed transaction IDs and
+`deliveryFailed: true`. Do not repeat that patch. The helper reports lost submit
+responses with repair/candidate IDs and `retryable: false`; it never generates
+another proposal or automatically resubmits after such a transport failure.
+
+These records are session-local. NOT_FOUND after restart, expiry or bounded cache
+eviction does not prove rollback; inspect the durable project transaction journal
+and verification evidence before further writes. Cancellation recovery follows
+the same rule when a definitive terminal result is unavailable.
+
 ## Bounds and ownership
 
 - 1-3 candidates, default 2; each candidate causes exactly one dev-loop attempt.
 - 15-minute ticket TTL; maximum 8 pending tickets/begins per server session.
+- Closed status records have a separate 15-minute retention window. The cache is
+  bounded (64 records plus at most 8 in-flight begin reservations); completed
+  source snapshots and oracle objects are released, not cached with the status.
 - 1-16 existing UTF-8 files, each at most 256 KiB, total source context 1 MiB.
 - Reject traversal, internal directories, symlinks, duplicate paths, Windows
   alternate data streams and noncanonical paths. No new-file creation here.
@@ -150,6 +192,13 @@ backups and proposals: keep it private and apply your retention policy.
 two-file patch fails and rolls back; a subsequent approved fix passes. Additional
 tests cover declined approval, ticket replay/session isolation, stale context,
 expiry, budget exhaustion, unsafe paths, cancellation, and run/write scopes.
+Fixed native scene/resource candidates additionally test `.tscn`/`.tres` exact
+edits, read-back after rollback and commit, frozen returned context, same-session
+SDK status queries, duplicate candidate IDs and lost-result handling. Confirmation
+and injected failures are explicit test doubles; these are not live Codex/Cursor
+product-client qualification or a claim of arbitrary semantic/binary patch safety.
+Structural rename/import operations remain the separate validated project APIs;
+this candidate endpoint applies only existing, explicitly allowed UTF-8 exact edits.
 
 The historical benchmark supplies recorded upstream candidates through this
 same two-tool flow. It is not evidence of a live model's repair success rate.

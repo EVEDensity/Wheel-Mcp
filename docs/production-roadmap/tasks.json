@@ -4,7 +4,7 @@
   "createdAt": "2026-09-14T16:05:02.6315047+08:00",
   "execution": {
     "mode": "strict-sequential",
-    "nextTask": "T27",
+    "nextTask": "T29",
     "allowedStatuses": ["todo", "in_progress", "blocked", "done"],
     "maxInProgress": 1,
     "autoCommit": false,
@@ -1472,15 +1472,45 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [{
+        "id": "T27-REPLAY-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T27-replay-checkpoint.json",
+        "sha256": "25555cf9adf014c599911a8427df6bad014b2650ef6207932a14c72ee29411ff",
+        "sourceHash": "eb077bfd91e7324ee0fdeaf4fd4441dc88393d52f9b59a35ca41d2570da374cb",
+        "createdAt": "2026-10-02T14:09:40Z",
+          "source": "REAL"
+        }, {
+          "id": "T27-REPLAY-COMPLETE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T27-replay-complete.json",
+          "sha256": "915667eb636d4fc5bf89c6084d7e6057dc2d565e5a84fffef148762137aa6db7",
+          "sourceHash": "b70805dc122042f6ed98e5f21ea889d991e44ec91f79fcfe4fa50be7b1adc131",
+          "createdAt": "2026-10-02T15:25:27Z",
+          "source": "MIXED"
+        }],
+      "verification": [{
+        "name": "T27 replay/native/path/contract focused regression, two 18/18 rounds",
+        "command": "npm.cmd run verify:production -- --focused-replay",
+        "kind": "focused-replay-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+          "evidenceId": "T27-REPLAY-CHECKPOINT"
+        }, {
+          "name": "T27 current-source full 352/352 and independent Godot 109/109; replay evidence hashed and owned scratch cleaned",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "full-real-engine-and-explicit-mock-negative-controls",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T27-REPLAY-COMPLETE"
+        }],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
-    },
-    {
-      "id": "T28",
+      "notes": "2026-10-02开始：T26已done（同源正式基准15/15+定向回归），G4 gate因运行沙箱确定性拦截暂存目录符号链接清理标记BLOCKED（实质检查341/341、109/109、D09-SEMANTICS全PASS，解除条件见gates），T27任务依赖不含G4，按严格顺序继续。计划：扩展executeScenario为客户端提交的有界序列——事件游标推进（旧事件不满足新步骤）、帧/事件屏障（wait_physics_frames/waitForEvent带cursor）、状态/碰撞/诊断/场景切换/视觉断言步骤、输入按下-释放、输入快照前后绑定、容差冻结；新夹具与tests/scenario-replay-e2e.test.ts覆盖固定fixture连续30次重放、输入释放、物理帧、场景切换、超时与取消。不规划任务、不回放AI对话、不触发自主修复循环。",
+      "completedAt": "2026-10-02T15:25:27Z"
+      },
+      {
+        "id": "T28",
       "title": "外部候选补丁的安全应用与验证接口",
       "phase": "P5",
       "dependencies": ["T10", "T14", "T22", "T24", "T27"],
@@ -1488,12 +1518,57 @@
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [{
+        "id": "T28-APPROVAL-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-approval-checkpoint.json",
+        "sha256": "bdfd2697d6591865db074548c9eb2259046a4f1b7a7cdeafe4b80788893b1936",
+        "sourceHash": "b7b1931abd4c3ec2f2d29699354c79d23beadf037725044e18ee766cd1d231c8",
+        "createdAt": "2026-10-02T15:33:06Z",
+        "source": "MIXED"
+      }, {
+        "id": "T28-SAFE-REPAIR-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-checkpoint.json",
+        "sha256": "a0c7b0ca8ecc14b1fd2f2fedb65dcd85746c18baadb040a1b5741c1190385fb8",
+        "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+        "createdAt": "2026-10-02T17:18:32Z",
+        "source": "MIXED"
+      }, {
+        "id": "T28-SAFE-REPAIR-COMPLETE",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-complete.json",
+        "sha256": "0e005f512f8656a3f4a7429fa566e0b1e79f4886b761675891047c0592e83787",
+        "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+        "createdAt": "2026-10-02T17:33:38Z",
+        "source": "MIXED"
+      }],
+      "verification": [{
+        "name": "T28 frozen validation/exact approval focused regression, two 40/40 rounds",
+        "command": "npm.cmd run verify:production -- --focused-repair",
+        "kind": "focused-real-engine-and-explicit-mock-controls",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T28-APPROVAL-CHECKPOINT"
+      }, {
+        "name": "T28 exact oracle/baseline, native recovery, candidate status/content deduplication and LSP regressions, two 52/52 rounds",
+        "command": "npm.cmd run verify:production -- --focused-repair",
+        "kind": "focused-real-engine-and-explicit-mock-controls",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T28-SAFE-REPAIR-CHECKPOINT"
+      }, {
+        "name": "T28 same-source complete 360/360 and independent native 110/110, zero skip/failure and both owned scratch cleanups PASS; all 43 evidence hashes verified",
+        "command": "npm.cmd run verify:production -- --baseline",
+        "kind": "full-real-engine-and-explicit-mock-controls",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T28-SAFE-REPAIR-COMPLETE"
+      }],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-10-03完成：外部固定候选、精确审批/oracle/独立baseline内容SHA、多文件脚本/场景/资源原生失败恢复读回、候选状态与未知交付边界、ID及旧入口内容去重和客户端不自动重提全部闭环。同源32d43f26双轮52/52、完整360/360、独立原生110/110、构建/格式/lint/清理PASS；43项证据SHA核对一致。原a12c2045 LSP失败保留并修复后复验。批准/传输/交付故障为明确替身，不冒充实际客户端或人类UI。G4/G5/G6不自动继承，无提交/推送/发布。",
+      "completedAt": "2026-10-02T17:33:38Z"
     },
     {
       "id": "T29",
@@ -1504,11 +1579,26 @@
         "min": 2,
         "max": 4
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "in_progress",
+      "evidence": [{
+        "id": "T29-CASES-CHECKPOINT",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T29-cases-checkpoint.json",
+        "sha256": "389e217ea2d3f13eebb233da6944619f860c1a473077a1c54afcc371fc0384e1",
+        "sourceHash": "4c1564121517087d30826ef5667c4210d7c579f100a7ed6b1f55a7ae0b8c4eb4",
+        "createdAt": "2026-10-02T18:10:53Z",
+        "source": "MIXED"
+      }],
+      "verification": [{
+        "name": "T29 six core node chains plus one pinned external supplemental control and strict catalog checks; two 11/11 rounds, 21 evidence hashes verified",
+        "command": "npm.cmd run verify:production -- --focused-cases",
+        "kind": "partial-fixed-native-cases-explicit-approval-mock",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T29-CASES-CHECKPOINT"
+      }],
       "blocker": null,
-      "notes": "",
+      "notes": "2026-10-03：源4c156412已实现并双轮验收N01–N06核心节点/场景固定链路、逐例只读权限与非法输入对照、原生Undo/Redo/save/reopen/读回；外部Godot MIT脚本/许可证固定提交与SHA原样锁定，X01补充控制原生通过但不计入30核心例。定向两轮11/11、构建/格式/lint/清理PASS，14记录oracle一致、21证据SHA一致；失败记录保留。仍缺U/P/A/S各6例（24例）、完整冻结清单与结果评估、当前源码全量及G4/G5/G6。SDK in-memory与MOCK批准不冒充T30安装客户端。版本探测成功日志保留策略仍待单独实现和验证。",
       "completedAt": null
     },
     {

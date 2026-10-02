@@ -504,3 +504,49 @@ Gate：本次实际执行结果 / 尚未执行项 / 证据是否失效
 - **唯一失败项**：gate 结束清理测试暂存目录时，rmSync 对 `wheel-gate-WBJRqI\mcp-policy-allowed-*\link`（路径策略测试合法创建的符号链接）报 EPERM——运行沙箱拒绝对该符号链接的任何操作（手动删除同样被拒），tempCleanup FAIL 使 full-tests/godot-smoke 命令级 FAIL，gate 因此不能判 PASS。该拦截是确定性的：沙箱内此检查永远无法通过，无源码修改可绕过（任何进程对同一文件的删除均被拒）。
 - **处置**：不放宽tempCleanup卫生检查、不模拟成功。G4状态记 **BLOCKED**（blocker.reason/since/unblockAction/attempts完整写入tasks.json），解除条件：在允许删除Temp下wheel-gate-*符号链接的环境重跑同一条gate命令（用户批准沙箱外单命令或配置沙箱白名单），预期直接PASS后按validator写入G4证据。TEMP残留4个wheel-gate-*目录（b2s07c/FuRuBd/vLxaQA/WBJRqI）与若干wheel-godot-appdata-*目录，属测试暂存、可在解除后清理，不影响仓库。
 - **T26不受影响**：T26自有required验证（正式五重复基准BENCHMARK_PASS+定向回归40/40×2）均独立于gate完成；P4任务全部done。G5前置于G4，待G4解除后才能评估；T27任务依赖不包含G4，按严格顺序继续执行T27。生产资格NOT_QUALIFIED不变。
+
+## 2026-10-02：T27 回放安全边界与真实回归检查点
+
+- **核对交接**：附件为进度材料，不把其中“测试文本PASS但进程exit1可忽略”等推断作为证据。当前台账T26 done、T27 in_progress，保留既有未提交scenario实现，不退回重复执行已完成任务、不提交/推送/发布。
+- **小步修正**：发现visual无baseline会与自身比较并假通过；改为独立普通文件、32MiB上限、授权项目/证据根、SHA绑定/读中变化拒绝，缺baseline必须FAIL。步骤名防穿越，序列256步、单操作、重试0..3、有限超时/容差、物理帧1..120；state RPC只允许受限状态方法，不可借它指定任意截图路径。subscribe初始化失败尝试回收bridge。YAML/步骤相对项目路径在执行器和MCP授权均以场景文件目录解析，正反向授权用例覆盖。
+- **失败留存**：`T27/2026-10-02T13-58-41-607Z-39788`两轮16/18、exit1；新权限fixture缺approved引擎路径，旧YAML相对目录导致仓库快照耗尽deadline。补齐fixture授权配置并修正相对路径，超时失败保留code/error；不删除失败断言。中间源8020f72c两轮18/18通过，但路径授权对齐后重新验收，不继承旧源结果。
+- **最终定向自查**：源eb077bfd，`T27/2026-10-02T14-06-22-689Z-33140`build/format/lint PASS、两轮18/18、零失败/跳过、实际exit0/两阶段tempCleanup PASS。每轮真实Godot固定fixture连续30次、输入释放、物理帧/状态/碰撞/场景切换、旧事件/超时/取消、独立基准视觉验证覆盖；manifest/results SHA为dc3eeb6cbe98cac7ea31c1550332b883fc2428e3f8468434c09c043b5e04f17a / a6e86f47b8f5d6864123acb9602daab9608a4e8e9b93d34631398f2d42906b2b。摘要evidence/T27-replay-checkpoint.json；本轮只清理归属临时夹具，关键失败原始报告保留，未处理旧共享Temp残留。
+- **尚未完成**：引擎/渲染器/viewport/seed完整绑定、成功清理后逐回放摘要和不可变验收计划留存、legacy非persistent事件游标反向覆盖、确定性取消屏障和清理失败反向证据、完整同源回归及G4重新资格仍待执行。当前定向含符号链接权限用例且清理PASS，不能把历史沙箱限制视为当前必然阻塞，也不能据此把G4自动改PASS；需真正重跑门禁。T27仍in_progress，下一项不越级，生产NOT_QUALIFIED。
+
+## 2026-10-02：T27 运行条件、失败清理与同源完整验收闭环
+
+- **小步实现与自查**：冻结并复制有界计划，摘要保存定义/SHA；引擎报告实际版本、renderer/display/viewport/物理频率/物理帧/seed，声明条件不符拒绝。seed在主场景实例化之前设置，不承诺项目私有RNG或跨平台逐bit一致。physics_frames保留真实帧响应。legacy完整JSONL记录推进游标，消费过的事件不能再次满足等待；取消测试确认事件屏障后取消。每步只覆盖一条progress，正式runner保留逐回放关键摘要并将SHA列表纳入manifest，再清理归属暂存。
+- **真实失败促成修正**：`T27/2026-10-02T14-58-01-296Z-51984`两轮21/22、exit1，实际headless视口64×64与project窗口320×240不一致；另发现JSON字段顺序不应影响对象比较。冻结本机headless profile为64×64，保留声明320×240必须CONFLICT的真实反例，不动态放宽期望。`T27/2026-10-02T15-03-26-544Z-54020`源93a6c217两轮23/23通过。再次复查发现post-launch绑定失败吞stop错误；统一保留实例所有权审计cleanup，禁止这条失败路径重试创建实例/继续后续步骤，增加明确MOCK停止失败控制。
+- **最终完整验收**：`T00/2026-10-02T15-07-18-644Z-24148`源`b70805dc122042f6ed98e5f21ea889d991e44ec91f79fcfe4fa50be7b1adc131`，build/format/lint、full-tests **352/352**、独立Godot **109/109**、两轮归属清理全PASS，exit0、零失败/跳过、sourceUnchanged。36份摘要含30次连续真实回放全部PASS与取消/超时/旧事件/视口冲突/缺baseline预期FAIL；MOCK停止失败与调用者变更控制在测试名称和完成证据逐项标注，不冒充原生实测。manifest/results SHA为363261d916ef41f9951fc61fbe37fa4722a68c94208f5b4b8fe7a523563cb3db / 35bdffb89589f6e5bfb86747f6fb8ddd5afe9ff16242720583f3a07605c11d42，摘要evidence/T27-replay-complete.json。
+- **状态**：T27→done，nextTask→T28，路线台账校验PASS。契约REPLAY-CONTRACT.md。G4仍需当前候选重新资格，G5/G6未执行，生产NOT_QUALIFIED；未提交/推送/部署/公开发布。后续T28改动不得宣称自动继承b708源码完整PASS。
+
+## 2026-10-02：T28 验证计划审批绑定第一步
+
+- **开始**：T28 in_progress；核查既有ClientRepairCoordinator、ProjectEdits与ProjectTransactions，保留外部候选/宿主审批/精确哈希/事务回滚边界。
+- **实现**：结构化复制验收选项，冻结断言、容差、动作、诊断与超时等oracle并计算≤256KiB定义SHA；候选字节仍由精确事务绑定，验证SHA另纳入事务intent和planHash。输出目录不属于oracle。返回的checks/files不共享内部ticket可变对象，request审计保存validationPlanHash。新增MOCK反例：同一补丁更改容差后旧审批拒绝，验证回调未执行、源文件未写；未知字段对象的调用者变更不影响冻结定义。
+- **待验收**：focused-repair两轮（client-repair/development-loop/project-transactions）运行中；T28不标done。仍须补齐baseline内容绑定、候选状态查询/重复请求与取消边界、多文件/场景/资源已验证范围以及本轮新源码完整回归。
+- **定向验收结果**：`T28/2026-10-02T15-29-45-924Z-38752`源b7b1931a，build/format/lint、两轮40/40、零失败/跳过、exit0、sourceUnchanged及两轮归属清理PASS。同补丁不同oracle旧审批拒绝且未写入的控制为明确MOCK；既有官方SDK夹具包含真实Godot验证，但审批为fixture替身，不宣称实际安装客户端实测。完成这一小步后核查未关闭剩余T28条件；关键摘要evidence/T28-approval-checkpoint.json。T28仍in_progress，不继承T27旧源码完整回归，不越级T29–T35，不提交/推送/发布。
+
+## 2026-10-03：T28 基准内容、候选状态和安全恢复逐步闭环
+
+- **基准内容小步**：新增32MiB硬界普通文件读取器，通过单句柄、inode/size/mtime/ctime前后检查及SHA绑定视觉基准。内容hash纳入验证定义与精确事务审批；审批结束、写前、比较后和验证末尾复核。比较使用审批时字节的独立副本，不重新接受原路径的新内容；repair begin/submit共享同一基准绑定。审批时替换基准的明确MOCK控制得到CONFLICT、源未写、引擎未启动；空文件/目录拒绝。`T28/2026-10-02T15-46-46-656Z-24072`源02891049双轮42/42、build/format/lint/清理PASS；manifest/results SHA ada8b6c0da654ac36eb98c4407446a6a43ec7b895f3335e5b894b4ea96bf211b / 7490bb33ce31ac873b514e48d14742b1df66e34342f45395df7ba388910544a8。
+- **候选状态小步**：新增只读同会话get_client_repair_status及可选candidateId，旧begin/submit仍可用。重复ID明确CONFLICT而非重放；运行中/未知persisted=null，不谎报无写入；取消/超时/未知/清理失败关闭请求，保留事务ID/状态。helper生成候选ID，丢失提交响应后只返回UNKNOWN/IDs/retryable=false，不继续请求模型或重提。新handler第一次构建TS2739（同步函数传Promise回调）失败，改为async后再验收，未忽略失败。`T28/2026-10-02T15-55-38-938Z-46472`源0e95c0a2双轮47/47全PASS；manifest/results SHA 53a166bd4a94aa159ac55f0bec29b5e7c2ded0c84480e755fde023e0ec8b70d7 / 053ee8b0ed8dd1b6eef26162986b1252f7f86f18c3eba21a4cd558edf7f1b1dd。
+- **真实范围/未知交付小步**：固定.tscn/.tres两文件候选，错误值1在原冻结断言100下失败并逐字读回恢复，再正确100提交/逐字读回；调用者篡改返回checks/hash不能改变内部ticket。实际Godot提交正确两脚本后，以目录阻塞verification.json注入交付失败，状态仍PASS/persisted=true/COMMITTED/deliveryFailed，重复ID拒绝；故障注入与确认是显式替身，不是实际产品客户端。SDK同会话查询、跨会话拒绝、审批屏障取消/源未写和传输丢响应不重试均覆盖。`T28/2026-10-02T16-04-37-795Z-19436`源a090dbc2双轮49/49、build/format/lint/清理/sourceUnchanged全PASS；manifest/results SHA 4f1c0642a4795fdc57ae831ab1b1f1aed5ea101206d838928929a7538e6a00f6 / e36443e3d3546002723f12334a0237a32102290c78464402183b53e47564c511。
+- **卫生与当前门禁**：关闭请求立即释放源文本/验证对象，只留有界关键状态；关闭状态另保留15分钟，缓存64记录加最多8在飞begin预留；过期重提不能删除仍可查询的关闭状态。CLIENT-REPAIR.md明确同会话/重启丢失边界、不可把NOT_FOUND当回滚、精确UTF-8编辑范围及结构化rename/import仍使用独立验证API。源码冻结运行完整baseline `T00/2026-10-02T16-09-31-301Z-31136`，未结束前T28仍in_progress，不把定向双轮当完整通过。没有提交/推送/发布；G4/G5/G6资格未自动继承。
+- **完整回归失败与反查**：上述源a12c2045完整baseline最终exit1：full-tests 358/359、独立Godot109/109、零跳过、两轮清理PASS，唯一失败是既有T22 LSP隔离/重命名用例的“Cannot verify local LSP listener ownership”。manifest/results SHA 2bf5f23b59bf2fb14c0ede9510bd9feea1ce63f78b4017153657dd23f6a023a1 / 6a89a432cecfd277932c691cc7e8a22348813320861d4eedb037ce57f95aac90。原catch抹掉底层错误，无法诚实区分CIM查询超时、空结果JSON或监听初始化时序，不将失败直接归咎环境并忽略。
+- **LSP稳健性小步**：系统查询输出明确JSON数组；仅空监听者状态有5秒有界就绪等待，系统命令总预算10秒包含CIM冷启动；未知/混杂PID数据严格拒绝，不再过滤异常项生成假单监听者；失败保留有界诊断，取消保留原原因。精确编辑器PID、版本/项目和进程身份前后匹配全部保留，不增加放行后门。focused-repair加入LSP/语义重构回归，`T28/2026-10-02T16-36-21-670Z-27376`源dfb02816双轮52/52、build/format/lint/清理/sourceUnchanged全PASS；manifest/results SHA 53d7bcf418efe3bf75294abca3fea932cbee958c62d3c57e8f3fbd9ba9f2314d / dd8292e0c2a6d1a41042d756b8c5cef0fcd585127fff786f7d025a10e960fe45。随后冻结同源重跑完整baseline，仍未把T28标done。
+
+- **LSP修复完整回查**：`T00/2026-10-02T16-41-52-536Z-27324`源dfb02816完整360/360、独立原生110/110、两轮临时目录清理PASS，exit0。43个manifest证据逐一SHA核对一致；manifest/results SHA 65f21f4914bd77defd12d8dfcd46b945c8de63c0d9f05cac3a7fd53753e8b48e / 454067cb23b224af1d63d2ee96fa99a3d0a33864f545fdb8ee1f3f8e53fa1fdf。前一次真实失败仍保留，不覆盖成成功。
+- **旧入口重复保护**：候选另绑定按精确路径排序的编辑内容SHA；旧调用不传ID或换新ID、source/rationale、编辑顺序均不能重放相同补丁。拒绝返回原candidateId供查询、不消耗预算、不写文件；真正不同的修复候选仍可在预算内继续。真实场景/资源失败恢复测试增加双入口拒绝/原文件读回断言。源32d43f26 `T28/2026-10-02T17-08-46-262Z-19140`双轮52/52及build/format/lint/清理PASS，6个证据SHA核对一致；manifest/results SHA f73a1746be5e53b0419d1086a44546db23312c494bb991655e35d5dfc3c8920f / e869b8231aae1476b15f899b898419a023661263e90770f0e073903cad242bf9。验收程序每阶段覆盖刷新既有stdout/stderr报告，便于即时反查，不生成额外日志副本。该最新源码完整baseline进行中，不继承dfb02816结果。
+- **日志清理**：按用户要求，精确限定仓库.harness/process-UUID下、超过24小时、无符号链接、无活动引用的文件；分批永久删除288个空stdout/stderr及295个无登记引用且内容严格等于Godot版本号的33字节stdout，共583文件/9735内容字节。没有删除源、用户素材、登记文件/锁、正式manifest引用、失败证据。约297MB正式产物主要是285MB JSON而非普通日志；后续应按证据引用和成功/失败分类处理，不能直接清空runs或共享Temp。删除不可恢复但不包含诊断信息。
+- **清理回查**：另外以非递归Remove-Item删除288个已空且无登记引用的process-UUID目录；逐个核对绝对父路径为仓库.harness且无reparse point，未清空.harness根目录。当前源码32d43f26完整baseline `T00/2026-10-02T17-13-54-769Z-34340`运行中；将已通过的定向证据单独登记T28-safe-repair-checkpoint.json，不把前一源码全量结果嫁接到新源码。
+- **T28完成回查**：上述同源完整baseline最终PASS：full 360/360、独立native 110/110、零失败/跳过/取消、build/format/lint及两轮临时目录清理全PASS；43项manifest证据SHA逐一一致。manifest/results SHA a0ddb1283595ecaddf5db9a913b02d61ed0e1432a4afec7bdb42a5a113d13bb2 / 7bfd589b919747d842b7c2d3252f2000d693a24c3a9c2b95f5e84a0bc44b69b8。关键摘要T28-safe-repair-complete.json，旧失败与checkpoint保持原样；T28标done，nextTask=T29。没有在运行中改动源码。
+- **T29启动小步**：仅在T28完成后登记in_progress，核查实际工具schema及现有fixture，建立T29-CASE-PLAN.md的五类30例范围/逐例失败恢复要求。精确JSON请求、固定runner、外部许可项目切片和真实执行仍待完成；不把范围文档或旧360/360当30例已通过。识别版本探测每次写process-UUID日志为堆积来源，自动保留策略仍待单独实现/验证，不谎称已自动清理。
+
+## 2026-10-03：T29 节点短链和外部脚本切片检查点
+
+- 固定 N01–N06 请求及严格 schema：create/set、rename、reparent、固定源SHA实例化、Button.pressed信号、原子批次。每例独立真实编辑器/MCP会话，只读客户端写入先拒绝；非法输入按精确错误码失败，活文档/磁盘不变；原生单步Undo/Redo、save/reopen、所有权/属性/信号与源文件读回均验证。fixture批准为明确MOCK，Undo控制器不冒充公开MCP工具或实际桌面人类操作。
+- 首轮lint拒绝finally显式throw，强杀编辑器后旧端点导致重开失败；改为原生quit并等待退出、清理异常不覆盖首个错误。信号负对照按实现固定UNSUPPORTED；第二轮visibility_changed在入树时合法触发hide，使“全部属性不变”oracle不成立，改为固定pressed持久化场景，未删减属性比较。上述失败完整保留。
+- 从官方Godot演示仓库固定提交读取player.gd及MIT许可证并核对1330/1134字节和SHA，原样纳入vendor/godot-demo-slice。X01用本地最小依赖场景，错误基线拒绝/预算不变、正确speed=800候选原生验证/事务提交/逐字读回。初次测试callback返回类型不符导致构建失败，修正后引擎正确发现缺失4个InputMap动作并回滚；只补本地动作声明，不改上游脚本、不增加允许错误数。X01为补充验收，不计入30核心例。
+- 当前源4c156412，`T29/2026-10-02T18-05-59-916Z-5896`两轮11/11、build/format/lint及归属临时目录清理PASS，exit0、零失败/跳过/取消、sourceUnchanged。14份逐例记录两轮oracleSHA一致；21项manifest证据SHA全部匹配。manifest/results/index SHA 4042bdbc70f485b4501d72d7a6e747b15d245c2ad7c454ec1c91c29293a57e47 / 9a3fe07fe58c8cd5665e915586c11a1a9159d5fa5ec2ac229f65731ce9dcf46a / 087eba2f15e1e50f0c8e075e5c436c5c5e751e4f843bebaa36a20af71a8e8434。
+- 增加focused-cases入口及独立case-evidence/index哈希绑定，不混入回放证据。外部补充报告只记录一次structured结果及完整协议摘要SHA，去除重复text镜像，失败消息上限8192字节。当前6/30核心例、外部补充1例；其余24例、完整清单/结果评估、当前源码全量回归和资格门禁未完成。T29继续in_progress，无提交/推送/部署/公开发布。
