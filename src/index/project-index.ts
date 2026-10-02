@@ -25,6 +25,10 @@ const MAX_BYTES = 1024 * 1024 * 1024;
 const MAX_FILE_BYTES = 256 * 1024 * 1024;
 const MAX_TEXT_BYTES = 2 * 1024 * 1024;
 const MAX_CACHED_TEXT = 64 * 1024 * 1024;
+// The frozen T26 50k corpus alone produces ~102k items (2 symbols per script plus
+// a 2049-node scene), so the metadata budget must bound memory without rejecting
+// the roadmap's declared 50k-file capacity. Oversized projects still fail explicitly.
+const MAX_METADATA_ITEMS = 250000;
 const STAT_BATCH_SIZE = 32;
 const check = (timeout?: TimeoutContext) => {
   timeout?.throwIfCancelled();
@@ -54,9 +58,30 @@ export type IndexSnapshot = {
   stats: { readFiles: number; reusedFiles: number; hashedBytes: number };
 };
 
+type InventoryResult = { files: InventoryEntry[]; excludedLinks: string[] };
+/** Structural equality of both full inventories; replaces JSON.stringify comparison without skipping any field. */
+const sameInventory = (a: InventoryResult, b: InventoryResult): boolean => {
+  if (a.files.length !== b.files.length || a.excludedLinks.length !== b.excludedLinks.length) return false;
+  for (let index = 0; index < a.files.length; index++) {
+    const left = a.files[index],
+      right = b.files[index];
+    if (
+      left.path !== right.path ||
+      left.fingerprint !== right.fingerprint ||
+      left.bytes !== right.bytes ||
+      left.modifiedAtMs !== right.modifiedAtMs
+    )
+      return false;
+  }
+  for (let index = 0; index < a.excludedLinks.length; index++)
+    if (a.excludedLinks[index] !== b.excludedLinks[index]) return false;
+  return true;
+};
+
 /** Read-only memory cache; lexical associations never authorize a refactor. Rescan is the correctness source. */
 export class ProjectIndex {
   private snapshot?: IndexSnapshot;
+  private snapshotMap?: Map<string, IndexedFile>;
   private queue: Promise<void> = Promise.resolve();
   private queued = 0;
   private watcher?: FSWatcher;
@@ -106,36 +131,60 @@ export class ProjectIndex {
       excludedLinks: string[] = [];
     let bytes = 0;
     let directories = 0;
-    const walk = async (dir: string): Promise<void> => {
+    // Bound pending filesystem operations across the whole walk: at most
+    // STAT_BATCH_SIZE lstat/readdir operations are in flight at any moment,
+    // even while sibling directories are walked concurrently.
+    let inFlight = 0;
+    const waiters: Array<() => void> = [];
+    const acquire = async () => {
+      if (inFlight >= STAT_BATCH_SIZE) await new Promise<void>((wake) => waiters.push(wake));
+      inFlight++;
+    };
+    const release = () => {
+      inFlight--;
+      waiters.shift()?.();
+    };
+    const bounded = async <T>(operation: () => Promise<T>): Promise<T> => {
+      await acquire();
+      try {
+        return await operation();
+      } finally {
+        release();
+      }
+    };
+    const walk = async (directory: string, prefix: string): Promise<void> => {
       check(timeout);
       if (++directories > MAX_FILES) throw new WheelError('UNSUPPORTED', 'Project index exceeds directory budget');
-      if ((await lstat(dir)).isSymbolicLink()) throw new WheelError('CONFLICT', 'Index directory became a link');
-      const entries = (await readdir(dir, { withFileTypes: true })).filter(
+      if ((await bounded(() => lstat(directory))).isSymbolicLink())
+        throw new WheelError('CONFLICT', 'Index directory became a link');
+      const entries = (await bounded(() => readdir(directory, { withFileTypes: true }))).filter(
         (entry) => !entry.name.startsWith('.') && !EXCLUDED.has(entry.name),
       );
+      const children: Array<{ absolute: string; prefix: string }> = [];
       for (let offset = 0; offset < entries.length; offset += STAT_BATCH_SIZE) {
         check(timeout);
         const batch = entries.slice(offset, offset + STAT_BATCH_SIZE);
-        // Bound pending filesystem operations and drain the batch even on error/cancel.
-        // Both inventory passes still inspect every file; this is not a stale cache shortcut.
+        // Each batch holds at most 32 pending operations and is fully drained
+        // (allSettled) before its results are processed; the global bound above
+        // still holds while sibling directories walk concurrently. Both
+        // inventory passes inspect every file; this is not a stale cache shortcut.
         const stats = await Promise.allSettled(
           batch.map(async (entry) => {
             check(timeout);
-            return entry.isFile() ? lstat(path.join(dir, entry.name)) : undefined;
+            return entry.isFile() ? bounded(() => lstat(path.join(directory, entry.name))) : undefined;
           }),
         );
         check(timeout);
         for (const result of stats) if (result.status === 'rejected') throw result.reason;
         for (const [position, entry] of batch.entries()) {
           check(timeout);
-          const absolute = path.join(dir, entry.name);
-          const relative = path.relative(this.root, absolute).split(path.sep).join('/');
+          const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
           if (entry.isSymbolicLink()) {
             excludedLinks.push(relative);
             continue;
           }
           if (entry.isDirectory()) {
-            await walk(absolute);
+            children.push({ absolute: path.join(directory, entry.name), prefix: relative });
             continue;
           }
           if (!entry.isFile()) continue;
@@ -155,8 +204,15 @@ export class ProjectIndex {
           });
         }
       }
+      // Recurse into subdirectories with bounded concurrency; their operations
+      // still pass through the same global in-flight bound, and a cancelled or
+      // failed walk never leaves an operation pending without its release.
+      for (let offset = 0; offset < children.length; offset += STAT_BATCH_SIZE) {
+        const group = children.slice(offset, offset + STAT_BATCH_SIZE);
+        await Promise.all(group.map((child) => walk(child.absolute, child.prefix)));
+      }
     };
-    await walk(this.root);
+    await walk(this.root, '');
     files.sort((a, b) => a.path.localeCompare(b.path));
     excludedLinks.sort();
     return { files, excludedLinks };
@@ -204,7 +260,7 @@ export class ProjectIndex {
       this.invalidate();
       const generation = this.generation;
       const inventory = await this.inventory(timeout);
-      const old = new Map(this.snapshot?.files.map((file) => [file.path, file]));
+      const old = this.snapshotMap ?? new Map<string, IndexedFile>();
       const files: IndexedFile[] = [];
       const stats = { readFiles: 0, reusedFiles: 0, hashedBytes: 0 };
       let textBytes = 0;
@@ -225,7 +281,8 @@ export class ProjectIndex {
             meta.resources.length +
             meta.references.length +
             meta.declaredUids.length;
-          if (metadataItems > 100000) throw new WheelError('UNSUPPORTED', 'Project metadata cache exceeds budget');
+          if (metadataItems > MAX_METADATA_ITEMS)
+            throw new WheelError('UNSUPPORTED', 'Project metadata cache exceeds budget');
           continue;
         }
         const resolved = await resolveProjectPath(this.root, entry.path, { mode: 'read' });
@@ -267,7 +324,8 @@ export class ProjectIndex {
           metadata.resources.length +
           metadata.references.length +
           metadata.declaredUids.length;
-        if (metadataItems > 100000) throw new WheelError('UNSUPPORTED', 'Project metadata cache exceeds budget');
+        if (metadataItems > MAX_METADATA_ITEMS)
+          throw new WheelError('UNSUPPORTED', 'Project metadata cache exceeds budget');
         files.push(
           Object.freeze({
             ...entry,
@@ -282,15 +340,22 @@ export class ProjectIndex {
         stats.hashedBytes += readBytes;
       }
       check(timeout);
-      if (JSON.stringify(await this.inventory(timeout)) !== JSON.stringify(inventory))
+      if (!sameInventory(await this.inventory(timeout), inventory))
         throw new WheelError('CONFLICT', 'Project changed during index refresh');
       check(timeout);
-      const graph = buildDependencyGraph(files, timeout);
+      // When every file was reused and none is missing, files holds exactly the
+      // previous snapshot's frozen objects in the same sorted order, so the
+      // recomputed sourceHash and dependency graph would be identical values;
+      // reusing them skips work without any stale-cache shortcut.
+      const unchanged = this.snapshot && stats.readFiles === 0 && old.size === files.length;
+      const graph = unchanged ? this.snapshot!.graph : buildDependencyGraph(files, timeout);
       if (this.generation !== generation) throw new WheelError('CONFLICT', 'Project index invalidated during refresh');
       this.snapshot = {
         schemaVersion: 1,
         projectId: hash(process.platform === 'win32' ? this.root.toLowerCase() : this.root),
-        sourceHash: hash(JSON.stringify(files.map((file) => [file.path, file.sha256, file.bytes]))),
+        sourceHash: unchanged
+          ? this.snapshot!.sourceHash
+          : hash(JSON.stringify(files.map((file) => [file.path, file.sha256, file.bytes]))),
         updatedAt: new Date().toISOString(),
         stale: false,
         analysisLevel: 'metadata-index',
@@ -301,6 +366,8 @@ export class ProjectIndex {
         excludedLinks: Object.freeze(inventory.excludedLinks),
         stats,
       };
+      this.snapshotMap =
+        unchanged && this.snapshotMap ? this.snapshotMap : new Map(files.map((file) => [file.path, file]));
       return this.readSnapshot()!;
     } catch (error) {
       if (entered) this.invalidate();
