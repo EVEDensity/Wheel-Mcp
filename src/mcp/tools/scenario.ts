@@ -14,6 +14,13 @@ export function registerScenarioTools(context: ToolRegistrationContext): void {
     context.transactionOwnerId,
   );
   server.tool(
+    'get_client_repair_status',
+    'Read bounded same-session repair/candidate status without applying or retrying any patch. Unknown results require inspection, not automatic resubmission.',
+    { repairId: z.string().uuid(), candidateId: z.string().uuid().optional() },
+    async ({ repairId, candidateId }, extra) =>
+      invoke(async () => clientRepairs.status(repairId, candidateId), undefined, extra.signal),
+  );
+  server.tool(
     'begin_client_repair',
     'Run strict validation and return failure evidence plus explicitly allowed source files for the client model. Does not apply edits.',
     beginClientRepairSchema.shape,
