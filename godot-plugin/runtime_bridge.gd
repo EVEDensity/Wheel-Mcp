@@ -22,6 +22,9 @@ class PhysicsSampler extends Node:
 		bridge._sample_physics_request()
 
 func _initialize() -> void:
+	var replay_seed := OS.get_environment("GODOT_HARNESS_REPLAY_SEED")
+	if not replay_seed.is_empty():
+		seed(int(replay_seed))
 	persistent_run_id = OS.get_environment("GODOT_HARNESS_RUN_ID")
 	persistent_main_scene = str(ProjectSettings.get_setting("run/main_scene", ProjectSettings.get_setting("application/run/main_scene", "")))
 	var main_scene := OS.get_environment("GODOT_HARNESS_MAIN_SCENE")
@@ -122,6 +125,14 @@ func _process(_delta: float) -> bool:
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
 			"bridgeVersion": "0.3.0",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
+			"runtimeConditions": {
+				"renderer": RenderingServer.get_current_rendering_method(),
+				"displayServer": DisplayServer.get_name(),
+				"viewport": {"width": get_root().size.x, "height": get_root().size.y},
+				"physicsTicksPerSecond": Engine.physics_ticks_per_second,
+				"physicsFrame": Engine.get_physics_frames(),
+				"replaySeed": int(OS.get_environment("GODOT_HARNESS_REPLAY_SEED")) if not OS.get_environment("GODOT_HARNESS_REPLAY_SEED").is_empty() else null,
+			},
 			"plane": "runtime",
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,

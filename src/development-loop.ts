@@ -12,6 +12,7 @@ import { resolveGodotPathSync } from './godot-path.js';
 import { WheelError, classifyError, type ErrorCode } from './error-schema.js';
 import { projectRelativePath, resolveProjectPath } from './project/paths.js';
 import { ProjectTransactions, type ApprovalVerifier, type TransactionState } from './project/transactions.js';
+import { assertVisualBaseline, readVisualBaseline, type VisualBaselineBinding } from './validation-baseline.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -94,6 +95,22 @@ export type DevelopmentLoopInput = z.input<typeof developmentLoopSchema>;
 type Edit = z.infer<typeof editSchema>;
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
+/** Freeze the oracle separately from candidate bytes and per-attempt output paths. */
+export function freezeDevelopmentValidation(input: DevelopmentLoopInput, baseline?: VisualBaselineBinding) {
+  const options = structuredClone(developmentLoopSchema.parse(input));
+  const {
+    edits: _edits,
+    repairs: _repairs,
+    evidenceDir: _evidenceDir,
+    responseMode: _responseMode,
+    ...definition
+  } = options;
+  const boundDefinition = { ...definition, ...(baseline ? { visualBaseline: { ...baseline } } : {}) };
+  const json = JSON.stringify(boundDefinition);
+  if (Buffer.byteLength(json) > 256 * 1024) throw new WheelError('INVALID_ARGUMENT', 'Validation plan exceeds 256KiB');
+  return { options, definition: boundDefinition, sha256: sha(json) };
+}
+
 /** Compose candidate edits in memory. Only validate() may write, using an approved recoverable transaction. */
 export class ProjectEdits {
   private originals = new Map<string, { before: string; after: string }>();
@@ -105,8 +122,16 @@ export class ProjectEdits {
     private evidence: string,
     verifyApproval?: ApprovalVerifier,
     ownerId?: string,
+    validationPlanHash?: string,
+    beforeApply?: (signal?: AbortSignal) => Promise<void>,
   ) {
-    this.service = new ProjectTransactions({ projectPath: root, ownerId, verifyApproval });
+    this.service = new ProjectTransactions({
+      projectPath: root,
+      ownerId,
+      verifyApproval,
+      beforeApply,
+      ...(validationPlanHash ? { intent: `godot-validation:${validationPlanHash}` } : {}),
+    });
   }
   async apply(edits: Edit[]): Promise<string[]> {
     const root = await realpath(this.root);
@@ -218,15 +243,16 @@ export async function executeDevelopmentLoop(
   parent?: TimeoutContext,
   verifyApproval?: ApprovalVerifier,
   ownerId?: string,
+  expectedBaseline?: VisualBaselineBinding,
 ) {
-  const options = developmentLoopSchema.parse(input);
+  const { options } = freezeDevelopmentValidation(input);
   const canonical = await realpath(options.projectPath);
   const key = process.platform === 'win32' ? canonical.toLowerCase() : canonical;
   if (activeProjects.has(key))
     throw Object.assign(new Error('a dev_loop already owns this project'), { code: 'DEV_LOOP_BUSY' });
   activeProjects.add(key);
   try {
-    return await runDevelopmentLoop(options, parent, verifyApproval, ownerId);
+    return await runDevelopmentLoop(options, parent, verifyApproval, ownerId, expectedBaseline);
   } finally {
     activeProjects.delete(key);
   }
@@ -236,12 +262,42 @@ async function runDevelopmentLoop(
   parent?: TimeoutContext,
   verifyApproval?: ApprovalVerifier,
   ownerId?: string,
+  expectedBaseline?: VisualBaselineBinding,
 ) {
-  const options = developmentLoopSchema.parse(input);
-  const timeout = createTimeoutContext(options.timeoutMs, parent?.signal);
+  const frozen = freezeDevelopmentValidation(input);
+  const baseline = frozen.options.baselinePath ? await readVisualBaseline(frozen.options.baselinePath) : undefined;
+  if (
+    expectedBaseline &&
+    (!baseline ||
+      baseline.binding.path !== expectedBaseline.path ||
+      baseline.binding.sha256 !== expectedBaseline.sha256 ||
+      baseline.binding.bytes !== expectedBaseline.bytes)
+  )
+    throw new WheelError('CONFLICT', 'Visual baseline differs from repair request');
+  const validation = freezeDevelopmentValidation(frozen.options, baseline?.binding);
+  const options = validation.options;
   const evidenceDir = path.resolve(options.evidenceDir, 'dev-loop-' + randomUUID());
   await mkdir(evidenceDir, { recursive: true });
-  const editor = new ProjectEdits(options.projectPath, evidenceDir, verifyApproval, ownerId);
+  await writeFile(
+    path.join(evidenceDir, 'validation-plan.json'),
+    JSON.stringify({ sha256: validation.sha256, definition: validation.definition }, null, 2),
+  );
+  const sealedBaseline = baseline ? path.join(evidenceDir, 'approved-baseline.png') : undefined;
+  if (baseline && sealedBaseline) await writeFile(sealedBaseline, baseline.bytes);
+  const checkBaseline = async (signal?: AbortSignal) => {
+    signal?.throwIfAborted();
+    if (baseline) await assertVisualBaseline(baseline.binding);
+    signal?.throwIfAborted();
+  };
+  const editor = new ProjectEdits(
+    options.projectPath,
+    evidenceDir,
+    verifyApproval,
+    ownerId,
+    validation.sha256,
+    checkBaseline,
+  );
+  const timeout = createTimeoutContext(options.timeoutMs, parent?.signal);
   const attempts: DevelopmentAttempt[] = [];
   const changedFiles = new Set<string>();
   const used = new Set<string>();
@@ -265,6 +321,7 @@ async function runDevelopmentLoop(
       timeout.throwIfCancelled();
       timeout.throwIfExpired();
       const passed = await editor.validate(async () => {
+        await checkBaseline(timeout.signal);
         const attemptDir = path.join(evidenceDir, 'attempt-' + index);
         await mkdir(attemptDir, { recursive: true });
         const checks: Array<{ id: string; passed: boolean; actual?: unknown; error?: string }> = [];
@@ -345,12 +402,18 @@ async function runDevelopmentLoop(
               captureTimeout.dispose();
             }
             // Decode even without a baseline: a nonempty filename is not evidence of a valid framebuffer.
-            const diff = await compareScreenshots(requestedPath, options.baselinePath ?? requestedPath, {
+            const diff = await compareScreenshots(requestedPath, sealedBaseline ?? requestedPath, {
               threshold: options.threshold,
               writeDiff: !!options.baselinePath,
               diffPath: path.join(attemptDir, 'diff.png'),
             });
             screenshotPath = requestedPath;
+            if (baseline && sealedBaseline) {
+              await checkBaseline(timeout.signal);
+              const sealed = (await readVisualBaseline(sealedBaseline)).binding;
+              if (sealed.sha256 !== baseline.binding.sha256)
+                throw new WheelError('CONFLICT', 'Sealed visual baseline changed during verification');
+            }
             checks.push({
               id: 'screenshot',
               passed: diff.width > 1 && diff.height > 1 && diff.differenceRatio <= options.maxDifferenceRatio,
@@ -422,6 +485,12 @@ async function runDevelopmentLoop(
           options.diagnosticsScope === 'runtime' && runtimeDiagnostics ? runtimeDiagnostics : allDiagnostics;
         errorCount = diagnostics.diagnostics.filter((d) => d.severity === 'error').length;
         checks.push({ id: 'diagnostics', passed: errorCount <= options.maxErrors, actual: diagnostics });
+        try {
+          await checkBaseline(timeout.signal);
+        } catch (e) {
+          code = classifyError(e).code;
+          checks.push({ id: 'baseline_binding', passed: false, error: String(e) });
+        }
         const passed = checks.every((c) => c.passed) && !timeout.signal.aborted && timeout.remaining() > 0;
         attempts.push({
           index,

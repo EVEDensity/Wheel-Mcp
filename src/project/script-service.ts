@@ -26,6 +26,12 @@ const MAX_FILES = 32;
 const MAX_EDITS = 256;
 const MAX_FILE_BYTES = 1024 * 1024;
 
+export function parseLspListenerOwners(value: unknown): number[] {
+  if (!Array.isArray(value) || value.some((pid) => !Number.isSafeInteger(pid) || pid < 1))
+    throw new WheelError('PROTOCOL_MISMATCH', 'Invalid LSP listener ownership result');
+  return value as number[];
+}
+
 /** Fail closed unless the local LSP listener belongs to the exact authenticated editor. */
 export async function verifyEditorLspBinding(options: {
   projectPath: string;
@@ -33,6 +39,7 @@ export async function verifyEditorLspBinding(options: {
   lspPort: number;
   signal?: AbortSignal;
 }): Promise<{ projectPath: string; editorPid: number; godotVersion: string; lspPort: number }> {
+  options.signal?.throwIfAborted();
   if (process.platform !== 'win32') throw new WheelError('UNSUPPORTED', 'LSP owner verification is Windows-only');
   if (!Number.isSafeInteger(options.lspPort) || options.lspPort < 1024 || options.lspPort > 65535)
     throw new WheelError('INVALID_ARGUMENT', 'LSP port is outside the supported local range');
@@ -54,23 +61,42 @@ export async function verifyEditorLspBinding(options: {
   if (!expected) throw new WheelError('ENGINE_UNAVAILABLE', 'Authenticated editor process is not live');
   const script = `
 $ErrorActionPreference = 'Stop'
-$listeners = @(Get-NetTCPConnection -LocalPort ([int]$env:WHEEL_LSP_PORT) -State Listen |
-  Where-Object { $_.LocalAddress -eq '127.0.0.1' -or $_.LocalAddress -eq '::1' })
-@($listeners | Select-Object -ExpandProperty OwningProcess -Unique) | ConvertTo-Json -Compress
+$timer = [System.Diagnostics.Stopwatch]::StartNew()
+do {
+  $listeners = @(Get-NetTCPConnection -State Listen |
+    Where-Object { $_.LocalPort -eq ([int]$env:WHEEL_LSP_PORT) -and ($_.LocalAddress -eq '127.0.0.1' -or $_.LocalAddress -eq '::1') })
+  $owners = @($listeners | Select-Object -ExpandProperty OwningProcess -Unique)
+  if ($owners.Count -gt 0 -or $timer.ElapsedMilliseconds -ge 5000) { break }
+  Start-Sleep -Milliseconds 50
+} while ($true)
+ConvertTo-Json -InputObject @($owners) -Compress
 `;
   let owners: number[];
   try {
     const { stdout } = await execFileAsync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
       windowsHide: true,
-      timeout: 5000,
+      // Includes Windows CIM/module cold start; the actual readiness poll is bounded at 5s.
+      timeout: 10000,
       maxBuffer: 8192,
       signal: options.signal,
       env: { ...process.env, WHEEL_LSP_PORT: String(options.lspPort) },
     });
     const raw: unknown = JSON.parse(stdout.trim());
-    owners = (Array.isArray(raw) ? raw : [raw]).filter((value): value is number => Number.isSafeInteger(value));
-  } catch {
-    throw new WheelError('ENGINE_UNAVAILABLE', 'Cannot verify local LSP listener ownership');
+    owners = parseLspListenerOwners(raw);
+  } catch (error) {
+    options.signal?.throwIfAborted();
+    if (error instanceof WheelError) throw error;
+    const cause = error as { code?: string | number; killed?: boolean; signal?: string; stderr?: string };
+    const diagnostic =
+      cause.stderr?.trim().slice(0, 512) ||
+      (cause.killed ? 'system query deadline exceeded' : 'system query or JSON decode failed');
+    throw new WheelError('ENGINE_UNAVAILABLE', `Cannot verify local LSP listener ownership: ${diagnostic}`, {
+      phase: 'listener-query',
+      code: cause.code ?? null,
+      killed: cause.killed === true,
+      signal: cause.signal ?? null,
+      diagnostic,
+    });
   }
   if (owners.length !== 1 || owners[0] !== identity.editorPid)
     throw new WheelError('FORBIDDEN', 'LSP listener is not owned by the authorized editor');

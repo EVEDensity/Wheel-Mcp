@@ -1,5 +1,5 @@
 import { spawnSync, execFileSync } from 'node:child_process';
-import { lstatSync, mkdtempSync, rmSync } from 'node:fs';
+import { lstatSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -50,6 +50,9 @@ if (args.includes('--check-report')) {
           '--focused-context': 'T24',
           '--focused-discovery': 'T25',
           '--focused-scale': 'T26',
+          '--focused-replay': 'T27',
+          '--focused-repair': 'T28',
+          '--focused-cases': 'T29',
         }[args[0]] ?? null)
       : null;
   const gateId = option('--gate') ?? (focused || (args.length === 1 && args[0] === '--baseline') ? 'G0' : null);
@@ -69,28 +72,48 @@ if (args.includes('--check-report')) {
 
 async function runBaseline({ gateId, baselineOnly, focused = null }) {
   const focusedNames =
-    focused === 'T26'
+    focused === 'T29'
+      ? ['production-case-contract', 'production-case-e2e', 'production-external-slice']
+      : focused === 'T28'
       ? [
-          'index-scale',
-          'project-index',
-          'index-invalidation',
-          'context-budget-e2e',
-          'response-budget',
-          'project-path-policy',
+          'client-repair',
+          'development-loop',
+          'project-transactions',
+          'tool-registry',
+          'script-semantic-service',
+          'script-refactor-e2e',
         ]
-      : focused === 'T25'
-        ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
-        : focused === 'T22'
-          ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
-          : focused === 'T24'
-            ? [
-                'context-pack',
-                'context-budget-e2e',
-                'response-budget',
-                'full-cli-mcp-matrix',
-                'real-cli-mcp-consistency',
-              ]
-            : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
+      : focused === 'T27'
+        ? [
+            'scenario',
+            'scenario-replay-e2e',
+            'run-test-scene',
+            'method-authorization',
+            'scenario-replay-contract',
+            'bridge-handshake',
+          ]
+        : focused === 'T26'
+          ? [
+              'index-scale',
+              'project-index',
+              'index-invalidation',
+              'context-budget-e2e',
+              'response-budget',
+              'project-path-policy',
+            ]
+          : focused === 'T25'
+            ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
+            : focused === 'T22'
+              ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
+              : focused === 'T24'
+                ? [
+                    'context-pack',
+                    'context-budget-e2e',
+                    'response-budget',
+                    'full-cli-mcp-matrix',
+                    'real-cli-mcp-consistency',
+                  ]
+                : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
   const started = Date.now();
   const state = JSON.parse(await readFile(path.join(root, 'docs/production-roadmap/tasks.json'), 'utf8'));
   const gate = state.gates.find((item) => item.id === gateId);
@@ -134,6 +157,11 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
         ...process.env,
         ...envOverride,
         ...(testTempRoot ? { TEMP: testTempRoot, TMP: testTempRoot } : {}),
+        ...(testReport ? { WHEEL_REPLAY_REPORT_DIR: path.join(runDir, 'replay-evidence', name) } : {}),
+        ...(testReport ? {
+          WHEEL_CASE_REPORT_DIR: path.join(runDir, 'case-evidence', name),
+          WHEEL_CASE_SOURCE_HASH: source.sourceHash,
+        } : {}),
       },
       encoding: 'utf8',
       timeout: testReport && name === 'full-tests' ? 1800000 : 900000,
@@ -144,6 +172,9 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
       stderr = result.stderr ?? result.error?.message ?? '';
     stdoutLog += `\n[${name}]\n${stdout}`;
     stderrLog += `\n[${name}]\n${stderr}`;
+    // Flush the same bounded report files after each stage, without duplicate logs.
+    writeFileSync(path.join(runDir, 'stdout.log'), stdoutLog);
+    writeFileSync(path.join(runDir, 'stderr.log'), stderrLog);
     const assessed = testReport ? assessTestRun(result.status, stdout) : null;
     const status = assessed?.status ?? (result.status === 0 ? 'PASS' : 'FAIL');
     const record = {
@@ -663,6 +694,40 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
   };
   await writeFile(path.join(runDir, 'results.json'), JSON.stringify(results, null, 2));
   const evidence = [];
+  const caseRoot = path.join(runDir, 'case-evidence');
+  const caseEvidence = [];
+  for (const round of (await readdir(caseRoot).catch(() => [])).sort()) {
+    for (const file of (await readdir(path.join(caseRoot, round))).sort()) {
+      if (!file.endsWith('.json')) continue;
+      const name = `case-evidence/${round}/${file}`;
+      caseEvidence.push({ path: name, sha256: sha256(await readFile(path.join(runDir, name))) });
+    }
+  }
+  if (caseEvidence.length) {
+    await writeFile(path.join(runDir, 'case-evidence-index.json'), JSON.stringify(caseEvidence, null, 2));
+    evidence.push(...caseEvidence, {
+      path: 'case-evidence-index.json',
+      sha256: sha256(await readFile(path.join(runDir, 'case-evidence-index.json'))),
+    });
+  }
+  // Retain only replay summaries outside disposable scratch and bind their bytes
+  // into the ordinary qualification manifest, including negative controls.
+  const replayRoot = path.join(runDir, 'replay-evidence');
+  const replayEvidence = [];
+  for (const round of (await readdir(replayRoot).catch(() => [])).sort()) {
+    for (const file of (await readdir(path.join(replayRoot, round))).sort()) {
+      if (!file.endsWith('.json')) continue;
+      const name = `replay-evidence/${round}/${file}`;
+      replayEvidence.push({ path: name, sha256: sha256(await readFile(path.join(runDir, name))) });
+    }
+  }
+  if (replayEvidence.length) {
+    await writeFile(path.join(runDir, 'replay-evidence-index.json'), JSON.stringify(replayEvidence, null, 2));
+    evidence.push(...replayEvidence, {
+      path: 'replay-evidence-index.json',
+      sha256: sha256(await readFile(path.join(runDir, 'replay-evidence-index.json'))),
+    });
+  }
   for (const name of [
     'results.json',
     'tools.json',
