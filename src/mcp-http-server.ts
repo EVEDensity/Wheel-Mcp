@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import './runtime-threads.js';
 import { createMcpServer } from './mcp-server-sdk.js';
 import { readStreamableHttpConfig, startStreamableHttpServer } from './transports/streamable-http.js';
 

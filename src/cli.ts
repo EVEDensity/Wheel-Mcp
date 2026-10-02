@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import './runtime-threads.js';
 import {
   getGodotVersion,
   listProjects,
