@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "upstream": "https://github.com/godotengine/godot-demo-projects",
+  "revision": "3e08537616661a5883831628decab4c526260289",
+  "license": "MIT",
+  "files": [
+    {"path": "player.gd", "upstreamPath": "2d/dodge_the_creeps/player.gd", "bytes": 1330, "sha256": "87f4fcf7481dba031f74a363475cee75b81c3d42eb1347b318f6b824e37329a6"},
+    {"path": "LICENSE.md", "upstreamPath": "LICENSE.md", "bytes": 1134, "sha256": "0339177149b474f7ff676d32218ecb3a8f2538955610023c3769763720d09e4c"}
+  ],
+  "localModifications": "NONE",
+  "scope": "One original player script, not the complete game or its third-party fonts, audio or art. Minimal test scene and input bindings must be separately identified as local fixtures.",
+  "verification": "Local bytes match raw upstream at pinned revision; actual MCP/native execution remains a separate acceptance step.",
+  "maintenance": "Never silently follow master. Upstream changes require a new reviewed revision, hashes and qualification run."
+}
