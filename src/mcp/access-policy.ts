@@ -96,6 +96,7 @@ export const toolPermissions: Readonly<Record<string, McpPermission>> = {
   wait_for_event: 'run',
   dev_loop: 'write',
   begin_client_repair: 'write',
+  get_client_repair_status: 'read',
   submit_repair_candidate: 'write',
   run_test_scene: 'write',
   git_checkpoint: 'write',
@@ -343,11 +344,15 @@ export async function authorizeToolCall(
 
 function authorizeNestedPaths(policy: McpClientPolicy, toolName: string, args: Record<string, unknown>): void {
   if (toolName === 'run_test_scene' || toolName === 'execute_scenario') {
+    const resolveScenarioProject = (value: string) =>
+      typeof args.scenarioPath === 'string' && !path.isAbsolute(value)
+        ? path.resolve(path.dirname(path.resolve(args.scenarioPath)), value)
+        : value;
     const scenario = asRecord(args.scenario);
     if (!scenario || !Array.isArray(scenario.steps)) throw new McpAccessError('scenario must contain steps');
     if (scenario.project !== undefined) {
       if (typeof scenario.project !== 'string') throw new McpAccessError('scenario project must be a path');
-      assertContained(scenario.project, policy.projectRoots, 'scenario project');
+      assertContained(resolveScenarioProject(scenario.project), policy.projectRoots, 'scenario project');
     }
     for (const step of scenario.steps) {
       const entry = asRecord(step);
@@ -357,14 +362,18 @@ function authorizeNestedPaths(policy: McpClientPolicy, toolName: string, args: R
         if (!detail) continue;
         if (detail.project !== undefined) {
           if (typeof detail.project !== 'string') throw new McpAccessError('scenario step project must be a path');
-          assertContained(detail.project, policy.projectRoots, 'scenario step project');
+          assertContained(resolveScenarioProject(detail.project), policy.projectRoots, 'scenario step project');
         }
         if (
-          kind === 'screenshot' &&
+          (kind === 'screenshot' || kind === 'visual') &&
           detail.name !== undefined &&
           (typeof detail.name !== 'string' || !/^[a-zA-Z0-9_-]{1,64}$/.test(detail.name))
         )
           throw new McpAccessError('scenario step name must be a safe basename');
+        if (kind === 'visual' && detail.baselinePath !== undefined) {
+          if (typeof detail.baselinePath !== 'string') throw new McpAccessError('visual baseline must be a path');
+          assertContained(detail.baselinePath, [...policy.projectRoots, ...policy.evidenceRoots], 'visual baseline');
+        }
       }
     }
   }

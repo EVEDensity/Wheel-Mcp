@@ -32,6 +32,7 @@ export type PersistentBridgeOptions = {
   headless?: boolean;
   verbose?: boolean;
   scenePath?: string;
+  replaySeed?: number;
   timeout?: TimeoutContext;
 };
 
@@ -154,6 +155,11 @@ export class PersistentRuntimeBridge {
   }
 
   static async start(options: PersistentBridgeOptions): Promise<PersistentRuntimeBridge> {
+    if (
+      options.replaySeed !== undefined &&
+      (!Number.isInteger(options.replaySeed) || options.replaySeed < 0 || options.replaySeed > 0xffffffff)
+    )
+      throw new BridgeProtocolError('replay seed must be a uint32');
     options.timeout?.throwIfCancelled();
     options.timeout?.throwIfExpired();
     const executable = resolveGodotPathSync(options.godotPath);
@@ -225,6 +231,7 @@ export class PersistentRuntimeBridge {
           GODOT_HARNESS_RUN_ID: sessionId,
           GODOT_HARNESS_MAIN_SCENE: options.scenePath || '',
           GODOT_HARNESS_PORT: String(address.port),
+          GODOT_HARNESS_REPLAY_SEED: options.replaySeed === undefined ? '' : String(options.replaySeed),
         },
       },
     );

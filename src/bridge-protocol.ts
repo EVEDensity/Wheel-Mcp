@@ -14,6 +14,14 @@ export type BridgeHandshake = {
   runId: string;
   capabilities: string[];
   versionVerification: 'VERIFIED' | 'NOT_VERIFIED';
+  runtimeConditions?: {
+    renderer: string;
+    displayServer: string;
+    viewport: { width: number; height: number };
+    physicsTicksPerSecond: number;
+    physicsFrame: number;
+    replaySeed: number | null;
+  };
 };
 
 export class BridgeProtocolError extends Error {
@@ -93,6 +101,28 @@ export function validateBridgeHandshake(
   if (new Set(params.capabilities).size !== params.capabilities.length)
     throw new BridgeProtocolError('bridge ready capabilities contain duplicates');
   const match = /^([0-9]+)\.([0-9]+)\.([0-9]+)/.exec(params.godotVersion as string);
+  if (params.runtimeConditions !== undefined) {
+    const data = params.runtimeConditions;
+    if (
+      !isRecord(data) ||
+      typeof data.renderer !== 'string' ||
+      typeof data.displayServer !== 'string' ||
+      !isRecord(data.viewport) ||
+      !Number.isInteger(data.viewport.width) ||
+      Number(data.viewport.width) < 1 ||
+      !Number.isInteger(data.viewport.height) ||
+      Number(data.viewport.height) < 1 ||
+      !Number.isInteger(data.physicsTicksPerSecond) ||
+      Number(data.physicsTicksPerSecond) < 1 ||
+      !Number.isSafeInteger(data.physicsFrame) ||
+      Number(data.physicsFrame) < 0 ||
+      !(
+        data.replaySeed === null ||
+        (Number.isInteger(data.replaySeed) && Number(data.replaySeed) >= 0 && Number(data.replaySeed) <= 0xffffffff)
+      )
+    )
+      throw new BridgeProtocolError('bridge runtime conditions are invalid');
+  }
   if (match && (Number(match[1]) !== 4 || Number(match[2]) < 3))
     throw new BridgeRpcError('UNSUPPORTED', 'Godot version is outside the supported runtime range', {
       godotVersion: params.godotVersion,

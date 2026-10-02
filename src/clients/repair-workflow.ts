@@ -1,6 +1,7 @@
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { beginClientRepairSchema, submitRepairCandidateSchema, type RepairProposal } from '../client-repair.js';
 import type { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 
 function body(result: Awaited<ReturnType<Client['callTool']>>): Record<string, unknown> {
   const text = (result.content as Array<{ type: string; text?: string }>).find((c) => c.type === 'text')?.text;
@@ -45,8 +46,27 @@ export async function runClientRepair(
     );
     hooks.signal?.throwIfAborted();
     if (!(await hooks.approve(proposal, request))) return { status: 'DECLINED', repairId: request.repairId };
-    const candidate = submitRepairCandidateSchema.parse({ repairId: request.repairId, approved: true, proposal });
-    packet = await call('submit_repair_candidate', candidate);
+    const candidate = submitRepairCandidateSchema.parse({
+      repairId: request.repairId,
+      candidateId: randomUUID(),
+      approved: true,
+      proposal,
+    });
+    try {
+      packet = await call('submit_repair_candidate', candidate);
+    } catch (error) {
+      throw Object.assign(
+        new Error('Candidate result unavailable; query get_client_repair_status before any resubmission', {
+          cause: error,
+        }),
+        {
+          code: 'UNKNOWN',
+          repairId: request.repairId,
+          candidateId: candidate.candidateId,
+          retryable: false,
+        },
+      );
+    }
     if (packet.status === 'PASS' || packet.requestClosed || !packet.remainingCandidates) return packet;
   }
   return packet;
