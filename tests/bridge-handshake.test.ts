@@ -32,6 +32,10 @@ test('engine identity and announced capabilities are validated independently of 
   );
   assert.throws(() => validateBridgeHandshake({ ...valid, capabilities: ['stop', 'stop'] }, expected), /duplicates/);
   assert.throws(() => validateBridgeHandshake({ ...valid, runId: 'foreign' }, expected), /identity/);
+  assert.throws(
+    () => validateBridgeHandshake({ ...valid, runtimeConditions: { renderer: 'gl_compatibility' } }, expected),
+    /conditions/,
+  );
 });
 
 test(

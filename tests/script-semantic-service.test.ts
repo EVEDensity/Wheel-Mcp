@@ -13,6 +13,7 @@ import {
   reviewGodotRenameEdit,
   reviewRenameImpact,
   verifyEditorLspBinding,
+  parseLspListenerOwners,
   type GodotWorkspaceEdit,
   type SemanticRenamePreview,
 } from '../src/project/script-service.js';
@@ -20,6 +21,13 @@ import { writeValidatedProjectFiles } from '../src/project/validated-write.js';
 import { GodotLspClient } from '../src/project/godot-lsp-client.js';
 import { startEditorFixture } from './helpers/editor-fixture.js';
 import { wireEditor } from './helpers/editor-mcp.js';
+
+test('LSP owner parsing does not discard invalid entries to create a false single-owner proof', () => {
+  assert.deepEqual(parseLspListenerOwners([]), []);
+  assert.deepEqual(parseLspListenerOwners([123]), [123]);
+  for (const value of [null, 123, [123, 'foreign'], [123, null], [0], [-1], [1.5]])
+    assert.throws(() => parseLspListenerOwners(value), /ownership result/);
+});
 
 async function freeLoopbackPort(): Promise<number> {
   const server = createServer();

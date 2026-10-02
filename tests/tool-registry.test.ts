@@ -25,6 +25,7 @@ const expected = [
   'delete_runtime_node',
   'dev_loop',
   'execute_scenario',
+  'get_client_repair_status',
   'get_context_pack',
   'get_debug_output',
   'get_editor_scene_operation',

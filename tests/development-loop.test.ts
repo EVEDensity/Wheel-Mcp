@@ -6,10 +6,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { ProjectEdits, evaluateCheck, developmentLoopSchema, executeDevelopmentLoop } from '../src/development-loop.js';
+import {
+  ProjectEdits,
+  evaluateCheck,
+  developmentLoopSchema,
+  executeDevelopmentLoop,
+  freezeDevelopmentValidation,
+} from '../src/development-loop.js';
 import { createTimeoutContext } from '../src/timeout.js';
 import { authorizeToolCall, createClientPolicy } from '../src/mcp/access-policy.js';
 import { fixtureApproval, enableFixtureApproval } from './helpers/project-approval.js';
+import { assertVisualBaseline, readVisualBaseline } from '../src/validation-baseline.js';
 test('exact edits validate the entire batch before writes; rollback preserves concurrent edits', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'loop-edit-'));
   const evidence = path.join(root, 'e');
@@ -70,6 +77,109 @@ test('assertions fail closed and dev_loop requires non-vacuous checks', () => {
     false,
   );
 });
+
+test('MOCK exact candidate approval cannot be reused for a changed frozen validation plan', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'loop-validation-binding-'));
+  await writeFile(path.join(root, 'a.gd'), 'value = 1');
+  const expected = { nested: { value: 1 } };
+  const input = {
+    projectPath: root,
+    bridgePath: 'MOCK',
+    evidenceDir: path.join(root, '.harness'),
+    checks: [{ id: 'oracle', method: 'get_property' as const, op: 'equals' as const, expected }],
+  };
+  const frozen = freezeDevelopmentValidation(input);
+  expected.nested.value = 99;
+  assert.deepEqual(frozen.definition.checks[0].expected, { nested: { value: 1 } });
+  const relocated = freezeDevelopmentValidation({ ...frozen.options, evidenceDir: path.join(root, '.other') });
+  assert.equal(frozen.sha256, relocated.sha256, 'output directory is not an oracle');
+  const changed = freezeDevelopmentValidation({ ...frozen.options, threshold: frozen.options.threshold + 1 });
+  assert.notEqual(frozen.sha256, changed.sha256);
+  let approvedPlanHash = '';
+  const first = new ProjectEdits(
+    root,
+    input.evidenceDir,
+    async (plan) => {
+      assert.equal(plan.intent, `godot-validation:${frozen.sha256}`);
+      approvedPlanHash = plan.planHash;
+      return { actor: 'MOCK reviewer', receipt: 'MOCK first review', planHash: plan.planHash };
+    },
+    'MOCK owner',
+    frozen.sha256,
+  );
+  await first.apply([{ path: 'a.gd', find: '1', replace: '2' }]);
+  assert.equal(await first.validate(async () => false), false);
+  assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 1');
+  let validationRan = false;
+  const second = new ProjectEdits(
+    root,
+    input.evidenceDir,
+    async (plan) => {
+      assert.equal(plan.intent, `godot-validation:${changed.sha256}`);
+      assert.notEqual(plan.planHash, approvedPlanHash);
+      return { actor: 'MOCK reviewer', receipt: 'MOCK stale review', planHash: approvedPlanHash };
+    },
+    'MOCK owner',
+    changed.sha256,
+  );
+  await second.apply([{ path: 'a.gd', find: '1', replace: '2' }]);
+  await assert.rejects(
+    second.validate(async () => {
+      validationRan = true;
+      return true;
+    }),
+    /approval denied or not bound/,
+  );
+  assert.equal(validationRan, false);
+  assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 1');
+});
+test('MOCK approval cannot permit a visual baseline changed during review; no candidate write or engine launch', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'loop-baseline-review-'));
+  const baseline = path.join(root, 'baseline.png');
+  await writeFile(baseline, 'baseline-one');
+  await writeFile(path.join(root, 'a.gd'), 'value = 1');
+  const input = {
+    projectPath: root,
+    bridgePath: 'MUST-NOT-LAUNCH',
+    evidenceDir: path.join(root, '.harness'),
+    baselinePath: baseline,
+    edits: [{ path: 'a.gd', find: '1', replace: '2' }],
+    checks: [{ id: 'oracle', method: 'get_property' as const, op: 'equals' as const, expected: 1 }],
+  };
+  const original = (await readVisualBaseline(baseline)).binding;
+  let reviewed = false;
+  const result = await executeDevelopmentLoop(input, undefined, async (plan) => {
+    reviewed = true;
+    assert.match(plan.intent ?? '', /^godot-validation:[a-f0-9]{64}$/);
+    await writeFile(baseline, 'baseline-two');
+    return { actor: 'MOCK', receipt: 'MOCK review', planHash: plan.planHash };
+  });
+  assert.equal(reviewed, true);
+  assert.equal(result.status, 'FAIL');
+  assert.equal(result.code, 'CONFLICT');
+  assert.equal(result.persisted, false);
+  assert.equal(result.metrics.attemptCount, 0);
+  assert.equal(await readFile(path.join(root, 'a.gd'), 'utf8'), 'value = 1');
+  await assert.rejects(assertVisualBaseline(original), /approved content/);
+  await assert.rejects(
+    executeDevelopmentLoop(input, undefined, fixtureApproval, undefined, original),
+    /repair request/,
+  );
+  const changed = (await readVisualBaseline(baseline)).binding;
+  assert.notEqual(
+    freezeDevelopmentValidation(input, original).sha256,
+    freezeDevelopmentValidation(input, changed).sha256,
+  );
+});
+
+test('visual baseline reader rejects empty files and directories rather than qualifying them', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'loop-baseline-invalid-'));
+  const empty = path.join(root, 'empty.png');
+  await writeFile(empty, '');
+  await assert.rejects(readVisualBaseline(empty), /1..32MiB/);
+  await assert.rejects(readVisualBaseline(root), /ordinary file/);
+});
+
 test('HTTP dev_loop needs both write and run and isolates baseline evidence', async () => {
   const root = path.resolve('runs');
   const bridgePath = path.resolve('godot-plugin/runtime_bridge.gd');
