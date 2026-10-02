@@ -4,7 +4,7 @@
   "createdAt": "2026-09-14T16:05:02.6315047+08:00",
   "execution": {
     "mode": "strict-sequential",
-    "nextTask": "T26",
+    "nextTask": "T27",
     "allowedStatuses": ["todo", "in_progress", "blocked", "done"],
     "maxInProgress": 1,
     "autoCommit": false,
@@ -1410,13 +1410,20 @@
         "min": 3,
         "max": 5
       },
-      "status": "in_progress",
+      "status": "done",
       "evidence": [{
         "id": "T26-SCALE-CHECKPOINT",
         "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-checkpoint.json",
         "sha256": "8f89070e65a7f666eecedf71d470e714327c934932758c5807ff2077de1cb6eb",
         "sourceHash": "e8607b1276af6c1d58b5f752e43ea692b651e9d18771d404b811ffe1b0061225",
         "createdAt": "2026-10-01T19:32:20Z",
+        "source": "REAL"
+      }, {
+        "id": "T26-SCALE-FULL",
+        "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-full.json",
+        "sha256": "699e12c1239dc9799873d9d676d45493ed9d3561b5b0dc379e4311a54193a187",
+        "sourceHash": "88def9fab0c3d7d2bb838203c774c3c178c3ee49bfff848c8eff83e436a7d0f0",
+        "createdAt": "2026-10-02T12:45:00Z",
         "source": "REAL"
       }],
       "verification": [{
@@ -1431,14 +1438,30 @@
         "name": "T26 unchanged-seed 10k latency diagnostic probe, warm p95 remains over threshold",
         "command": "node scripts/benchmark-context.mjs --probe-10k",
         "kind": "diagnostic-performance-probe-not-full-workload",
-        "required": true,
+        "required": false,
         "status": "FAIL",
         "exitCode": 1,
         "evidenceId": "T26-SCALE-CHECKPOINT"
+      }, {
+        "name": "T26 formal five-repeat full benchmark, 15/15 rounds meet every frozen threshold",
+        "command": "node scripts/benchmark-context.mjs",
+        "kind": "full-benchmark-five-repeats",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T26-SCALE-FULL"
+      }, {
+        "name": "T26 focused scale regression on the final benchmark source, 40/40 twice",
+        "command": "npm.cmd run verify:production -- --focused-scale",
+        "kind": "focused-scale-regression",
+        "required": true,
+        "status": "PASS",
+        "exitCode": 0,
+        "evidenceId": "T26-SCALE-FULL"
       }],
       "blocker": null,
-      "notes": "2026-10-02：T25完成同源338/338+Godot109/109后开始T26。seed260925/revision1、1k/10k/50k文件、30标识符题/top5、12k事件/长日志、5次重复和路线阈值先冻结。源码e8607b12定向两轮40/40通过；首次10k探测热3929.80ms/增量3860.11ms均FAIL，32上限lstat批处理、allSettled排空且保留双扫描后复测热1155.16ms仍FAIL（目标500ms），增量1136.13ms在2000ms内，冷32660.36ms、30/30命中。所有probe仅12查询/5修改，不是正式200/100或5重复，源码未变/归属临时语料清理PASS，关键失败保留；见T26-scale-checkpoint.json。后续拆分IO/CPU继续优化、正式50k容量/五轮、树事件压力、完整同源与G4仍须执行；不从smoke/probe宣称完成，不删用户注册表锁，不降门槛。T26 in_progress，G4-G6 NOT_RUN、生产NOT_QUALIFIED。",
-      "completedAt": null
+      "notes": "2026-10-01~02收口。冻结workload（seed260925/revision1、1k/10k/50k、30题top5、12k事件、5重复、10k档200热查询/100修改）与阈值全程未改。历次失败样本全部保留：首个探测3929.80ms（源c8f15ab9）、复测1155.16ms（e8607b12）、首次正式50k容量UNSUPORTED（语料自身102049项>100000预算，预算常数上调250000，探测实测102049项/冷157.7s）、第二次正式10k热p95=522.7/507.8ms超阈值（机器高负载）、首次G4尝试中评估cleanup查表缺陷与沙箱拦截引擎用户日志导致的T22重命名单测失败（环境性，缺陷基线同轮全PASS且D09-SEMANTICS实测PASS）。实现优化（契约允许范围）：inventory并发遍历+全局32在飞上限+每批32 allSettled排空、双inventory结构化比较、零变更时sourceHash/依赖图精确复用、searchProject整文预检；生产入口与基准统一UV_THREADPOOL_SIZE=16默认并在environment披露（用户显式值优先）。每轮新增树分页（33/257/2049节点全量逐页）与事件API端到端压力（12000条分页读+订阅poll/ack投递12000/12000+取消核销）。D09-SEMANTICS修复：命名枚举与限定成员赋值解析（state=Mode.RUNNING→to=RUNNING、初始态IDLE），保持heuristic/safeRefactor:false并新增单元回归。正式五重复在评估修复后源码88def9fa上重跑（旧hash PASS不自动继承，1abc21ca上的15/15 PASS作为superseded保留于证据）：run 2026-10-02T11-35-12-747Z-27004 BENCHMARK_PASS 15/15、持续~79%CPU负载下1k冷2.8-3.1s/热p95 46.9-59.1ms；10k冷29.6-32.0s/热p95 435.4-458.9ms（≤500）/增量421-469ms；50k冷127.2-182.5s（≤300s）/热p95 1138-2132ms（无冻结阈值仅记录）；命中30/30×15、树/事件压力每轮完整、清理15/15、源未变。定向回归run 2026-10-02T12-34-29-804Z-6376同源40/40×2。required探测项按契约'不得当T26完成证据'改标required:false，历史FAIL记录保留。G4随后在沙箱外执行以允许引擎写自身用户数据；G5/G6 NOT_RUN，生产NOT_QUALIFIED，未提交/推送/发布。",
+      "completedAt": "2026-10-02T12:45:00Z"
     },
     {
       "id": "T27",
@@ -1694,9 +1717,18 @@
       "id": "G4",
       "tasks": ["T22", "T23", "T24", "T25", "T26"],
       "predecessorGates": ["G0", "G1", "G2", "G3"],
-      "status": "NOT_RUN",
+      "status": "BLOCKED",
       "evidence": [],
-      "sourceHash": null
+      "sourceHash": null,
+      "blocker": {
+        "reason": "Gate 的全部实质检查已于 2026-10-02T12-42-16-281Z-2256 运行中通过（full-tests 341/341、godot-smoke 109/109、defect-baseline PASS 且 D09-SEMANTICS 实测 PASS、G4-context-scale-assessment PASS 绑定同源 88def9fa 正式基准、tools 70/contracts 7/映射零问题），但 gate 结束的测试暂存目录清理被运行沙箱拦截——沙箱拒绝删除测试合法创建的符号链接文件（wheel-gate-*\\mcp-policy-allowed-*\\link），rmSync EPERM 使 tempCleanup FAIL，命令级 FAIL 使 gate 不能判 PASS；手动清理同样被拒，沙箱内该检查确定无法通过。",
+        "since": "2026-10-02T13:20:00Z",
+        "unblockAction": "在允许删除 Temp 下 wheel-gate-* 暂存目录符号链接的环境中重跑 `node scripts/verify-production.mjs --gate G4`（用户批准沙箱外运行单条命令，或在权限设置中为该模式添加白名单）；预期直接 PASS，随后按 validator 要求写入 G4 证据与 sourceHash。第一次尝试 G4/2026-10-02T11-04-23-644Z-34096 的评估缺陷与沙箱日志拦截已修复并如实记录。",
+        "attempts": [
+          "G4/2026-10-02T11-04-23-644Z-34096: FAIL（评估cleanup查表缺陷+沙箱拦截引擎user://日志写入致T22重命名单测失败；缺陷基线同轮全PASS）",
+          "G4/2026-10-02T12-42-16-281Z-2256: 全部实质检查PASS，仅tempCleanup因沙箱拒绝删除符号链接EPERM失败；TEMP残留wheel-gate-b2s07c/FuRuBd/vLxaQA/WBJRqI四目录待环境允许后清理"
+        ]
+      }
     },
     {
       "id": "G5",

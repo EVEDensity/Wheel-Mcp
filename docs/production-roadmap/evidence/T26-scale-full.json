@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T26",
+  "createdAt": "2026-10-02T12:45:00Z",
+  "status": "PASS",
+  "source": "REAL",
+  "sourceHash": "88def9fab0c3d7d2bb838203c774c3c178c3ee49bfff848c8eff83e436a7d0f0",
+  "contract": "docs/production-roadmap/CONTEXT-BENCHMARK-CONTRACT.md",
+  "formal": {
+    "command": "node scripts/benchmark-context.mjs",
+    "status": "BENCHMARK_PASS",
+    "mode": "full",
+    "run": "runs/production-roadmap/T26/2026-10-02T11-35-12-747Z-27004",
+    "resultsSha256": "86d80fa09526ec9128530dd4aa880a5093700e3c54dad8bcff344886ac576537",
+    "rounds": "15/15 PASS (1k x5, 10k x5, 50k x5); zero failures; sourceUnchanged=true; owned-corpus cleanup 15/15 PASS",
+    "workload": "seed 260925, revision 1, sizes 1000/10000/50000, repeats 5, 10k uses 200 warm queries and 100 modifications, topK 5, eventCount 12000",
+    "aggregates": {
+      "1000": {
+        "coldMs": [2845, 3080],
+        "warmP95Ms": [46.9, 59.1],
+        "incrementalP95Ms": [50, 61],
+        "hits": "30/30 each",
+        "peakRssBytes": [209661952, 303276032]
+      },
+      "10000": {
+        "coldMs": [29572, 31972],
+        "warmP95Ms": [435.4, 458.9],
+        "incrementalP95Ms": [421, 469],
+        "hits": "30/30 each",
+        "peakRssBytes": [517505024, 770887680]
+      },
+      "50000": {
+        "coldMs": [127241, 182462],
+        "warmP95Ms": [1138.3, 2131.7],
+        "incrementalP95Ms": [1176, 2059],
+        "hits": "30/30 each",
+        "peakRssBytes": [1487896576, 2598445056]
+      }
+    },
+    "thresholds": {
+      "cold10kMs": 60000,
+      "warm10kP95Ms": 500,
+      "incremental10kP95Ms": 2000,
+      "cold50kMs": 300000,
+      "hitRate": 0.95
+    },
+    "verdict": "all frozen thresholds met on this pass under sustained ~79% machine CPU load; 50k warm latency is recorded without a frozen threshold; no threshold was modified",
+    "environment": {
+      "node": "v24.18.0",
+      "platform": "win32",
+      "release": "10.0.26200",
+      "arch": "x64",
+      "uvThreadPoolSize": "16",
+      "diskCache": "OS cache not flushed; cold means a new in-process index instance",
+      "forcedGC": false
+    }
+  },
+  "paginationPressure": {
+    "sceneTree": "get_scene_tree limit=500/depth=8 paged reads; 33/257/2049 nodes read completely in every round for 1k/10k/50k",
+    "events": "12000 schema-valid synthetic events per round: full cursor pagination (25 pages of 500) plus persistent-subscription poll/ack delivery of 12000/12000 and CANCELLED verification",
+    "note": "generating the event file alone is not event API coverage; the production event API end to end is exercised"
+  },
+  "focusedRegression": {
+    "command": "npm.cmd run verify:production -- --focused-scale",
+    "status": "PASS",
+    "run": "runs/production-roadmap/T26/2026-10-02T12-34-29-804Z-6376",
+    "resultsSha256": "23f11282d2f5f873211dedc45b32227ed8d28dc3e0e44dae5bb187d1696f5c92",
+    "manifestSha256": "93a93040185572875a6f95393e7e974663dabbcca08fab34b529e99ae008fdc8",
+    "commands": "build PASS; format:check PASS; lint PASS; focused-tests 40/40; godot-focused 40/40; same source 88def9fa"
+  },
+  "superseded": [
+    "runs/production-roadmap/T26/2026-10-02T10-11-29-953Z-51808 was a full BENCHMARK_PASS on source 1abc21ca (warm 10k p95 227.6-233.9ms under light load); it was superseded only because the G4 assessment cleanup-lookup fix changed scripts/, so the formal run was repeated on the new source 88def9fa. Both passes are retained."
+  ],
+  "changes": [
+    "Project index metadata budget raised 100000 -> 250000 items; the frozen 50k corpus itself produces 102049 items and the previous constant rejected the roadmap-declared 50k capacity",
+    "Index inventory walks sibling directories concurrently under a global 32-in-flight bound; per-batch 32-concurrency and allSettled draining, both full inventory passes, structural source-change comparison, cancellation and half-snapshot prohibitions preserved",
+    "sourceHash and dependency graph are reused verbatim when zero files were read and the file set equals the previous snapshot; identical inputs necessarily recompute to identical values",
+    "searchProject whole-text precheck for line-break-free needles; multi-line needles keep the identical per-line scan",
+    "D09-SEMANTICS fix: heuristic analyzer resolves named enums (enum Mode { IDLE, RUNNING }) and qualified member assignments (state = Mode.RUNNING) with the declared initial state; analyze_script_semantics stays line-by-line, heuristic, safeRefactor:false",
+    "Node-tree and runtime-event pagination pressure added to every benchmark round; benchmark and production entrypoints share a disclosed UV_THREADPOOL_SIZE=16 default (explicit user value wins)",
+    "G4 gate assessment added to verify-production (frozen five-repeat benchmark validation bound to the gate source); its first version misread report-level cleanup records as round-level and was fixed before any PASS was claimed"
+  ],
+  "historicalFailures": [
+    "2026-10-01T19-22-15-795Z-28932: first probe cold 35.89s, warm p95 3929.80ms, incremental p95 3860.11ms, both latency targets failed (source c8f15ab9)",
+    "2026-10-02T09-16-12-389Z-45180: first formal run, 50k UNSUPPORTED 'Project metadata cache exceeds budget' (frozen corpus needs 102049 items vs 100000); retained as capacity failure sample",
+    "2026-10-02T09-45-53-246Z-45400: second formal run, 10k warm p95 522.7/507.8ms above the 500ms threshold under machine load; retained as threshold failure sample; manually stopped before the 50k tier with recorded rounds and cleanup complete",
+    "2026-10-02 probe on optimized source with default pool: warm p95 389.4ms; with disclosed pool 16: 225.1ms and 233.3ms",
+    "2026-10-02 G4/2026-10-02T11-04-23-644Z-34096: first G4 gate attempt FAIL from (a) the assessment cleanup-lookup defect and (b) the T22 rename engine test failing inside the run sandbox because Godot could not write its user logs; the defect baseline including D09-SEMANTICS PASSED in the same run"
+  ],
+  "remaining": [
+    "50k warm p95 spans 1138-2132ms under load; no frozen threshold applies, recorded as-is; 8h memory/latency qualification remains T31",
+    "Retrieval quality is identifier-location quality, not natural-language semantic retrieval",
+    "G4 same-source integration runs after this summary; qualification stays NOT_QUALIFIED and release NOT_REQUESTED"
+  ],
+  "taskStatus": "done",
+  "gates": "G4 runs separately after this evidence; G5/G6 NOT_RUN",
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED; no commit/push/deploy/public release within this evidence run"
+}
