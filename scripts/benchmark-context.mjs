@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { sourceIdentity, sha256 } from './lib/production-manifest.mjs';
 
+// Match the production entrypoints' libuv pool default before the first
+// asynchronous filesystem operation; the size is disclosed in the report.
+process.env.UV_THREADPOOL_SIZE ||= '16';
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const args = process.argv.slice(2);
 if (args.length > 1 || (args.length && !['--smoke', '--probe-10k'].includes(args[0])))
@@ -17,9 +20,10 @@ await mkdir(runDir, { recursive: true });
 process.env.GODOT_HARNESS_RUN_REGISTRY_PATH = path.join(runDir, 'test-run-registry.json');
 const report = {
   schemaVersion: 1, taskId: 'T26', mode, startedAt, status: 'RUNNING',
-  scope: 'Synthetic identifier retrieval and index/context performance; not customer benefit or G4 qualification',
+  scope: 'Synthetic identifier retrieval, index/context performance, and node-tree/runtime-event pagination pressure; not customer benefit or G4 qualification',
   environment: { node: process.version, platform: process.platform, release: os.release(), arch: process.arch,
     cpus: os.cpus().length, cpu: os.cpus()[0]?.model, totalMemory: os.totalmem(),
+    uvThreadPoolSize: process.env.UV_THREADPOOL_SIZE ?? '4-default',
     diskCache: 'OS cache not flushed; cold means a new in-process index instance', forcedGC: false },
   thresholds: { warm10kP95Ms: 500, incremental10kP95Ms: 2000, cold10kMs: 60000, cold50kMs: 300000, hitRate: 0.95, maxBytes: 32768 },
   rounds: [], failures: [], cleanup: [], qualification: 'NOT_QUALIFIED',
@@ -38,6 +42,11 @@ try {
   const { buildContextPack } = await import('../build/src/context-pack.js');
   const { createTimeoutContext } = await import('../build/src/timeout.js');
   const { readResponsePage } = await import('../build/src/response-budget.js');
+  const { getSceneTree } = await import('../build/src/godot-runtime.js');
+  const {
+    readRuntimeEventsSince, createEventSubscription, pollEventSubscription,
+    acknowledgeEventSubscription, cancelEventSubscription, listEventSubscriptions,
+  } = await import('../build/src/runtime-events.js');
   const sizes = mode === 'smoke' ? [1000] : mode === 'probe-10k' ? [10000] : [...CONTEXT_CORPUS.sizes];
   report.workload = { ...CONTEXT_CORPUS, sizes, repeats: mode === 'full' ? 5 : 1,
     warmQueries: mode === 'full' ? { '1000': 30, '10000': 200, '50000': 30 } : 12,
@@ -124,6 +133,79 @@ try {
         page = readResponsePage(page.continuation.ref, page.continuation.cursor);
       }
       round.measurements.context = { pages, largestPage, reconstructed: chunks.length > 0 };
+      // Static node-tree pagination pressure: the corpus scene is read page by
+      // page through the production scene API (limit bounded to 500), so large
+      // trees exercise cursor pagination instead of a single unbounded dump.
+      {
+        const treeMs = [];
+        let treeNodes = 0, treeLargest = 0, treeCursor = 0, treePageCount = 0;
+        for (;;) {
+          const begin = performance.now();
+          const treePage = await getSceneTree(scratch, 'res://main.tscn', undefined, { limit: 500, cursor: treeCursor, depth: 8 });
+          treeMs.push(performance.now() - begin);
+          treeLargest = Math.max(treeLargest, Buffer.byteLength(JSON.stringify(treePage)));
+          treePageCount++;
+          treeNodes += treePage.nodes.length;
+          if (!treePage.truncated) break;
+          treeCursor = treePage.next_cursor;
+          if (treePageCount > 500) throw new Error('Scene tree pagination did not terminate');
+        }
+        if (treeNodes !== corpus.nodeCount + 1) fail('sceneTreeNodeCount', `${treeNodes}/${corpus.nodeCount + 1}`);
+        round.measurements.sceneTree = { pages: treePageCount, nodes: treeNodes, largestPageBytes: treeLargest, p95Ms: p95(treeMs) };
+      }
+      // Runtime event pagination pressure: schema-valid synthetic events in an
+      // owned evidence directory exercise the production event API end to end
+      // (paged cursor reads, a persistent subscription with poll/ack, and
+      // cancellation); generating the file alone is not event API coverage.
+      {
+        const eventsDir = path.join(scratch, '.harness', 'event-api');
+        await mkdir(eventsDir, { recursive: true });
+        const base = Date.UTC(2026, 8, 25, 0, 0, 0);
+        const lines = [];
+        for (let i = 1; i <= CONTEXT_CORPUS.eventCount; i++)
+          lines.push(JSON.stringify({
+            schema_version: '0.1', source: 'REAL', run_id: 't26-scale-probe', sequence: i,
+            timestamp: new Date(base + i).toISOString(), event: i % 17 === 0 ? 'frame' : 'input',
+            payload: { detail: '测试事件', value: i % 17 },
+          }));
+        await writeFile(path.join(eventsDir, 'events.jsonl'), lines.join('\n') + '\n');
+        const readMs = [];
+        let eventCount = 0, eventLargest = 0, eventPageCount = 0, eventCursor = 0;
+        for (;;) {
+          const begin = performance.now();
+          const eventPage = await readRuntimeEventsSince(eventsDir, eventCursor, 500);
+          readMs.push(performance.now() - begin);
+          eventLargest = Math.max(eventLargest, Buffer.byteLength(JSON.stringify(eventPage)));
+          eventPageCount++;
+          eventCount += eventPage.events.length;
+          if (!eventPage.events.length) break;
+          eventCursor = eventPage.next_cursor;
+          if (eventPageCount > 200) throw new Error('Event pagination did not terminate');
+        }
+        if (eventCount !== CONTEXT_CORPUS.eventCount) fail('eventPaginationCount', `${eventCount}/${CONTEXT_CORPUS.eventCount}`);
+        const subscription = await createEventSubscription(eventsDir, { cursor: 0, ackTimeoutMs: 30000 });
+        const pollMs = [];
+        let delivered = 0;
+        for (;;) {
+          const begin = performance.now();
+          const pollPage = await pollEventSubscription(eventsDir, subscription.subscription_id, 500);
+          pollMs.push(performance.now() - begin);
+          delivered += pollPage.events.length;
+          if (pollPage.events.length && pollPage.next_cursor !== null)
+            await acknowledgeEventSubscription(eventsDir, subscription.subscription_id, pollPage.next_cursor);
+          else break;
+          if (delivered > CONTEXT_CORPUS.eventCount) throw new Error('Event subscription over-delivered');
+        }
+        await cancelEventSubscription(eventsDir, subscription.subscription_id);
+        const cancelled = (await listEventSubscriptions(eventsDir))
+          .find((item) => item.subscription_id === subscription.subscription_id);
+        if (delivered !== CONTEXT_CORPUS.eventCount) fail('eventSubscriptionDelivery', `${delivered}/${CONTEXT_CORPUS.eventCount}`);
+        if (cancelled?.status !== 'CANCELLED') fail('eventSubscriptionState', cancelled?.status ?? 'missing');
+        round.measurements.events = {
+          pages: eventPageCount, delivered, largestPageBytes: eventLargest,
+          readP95Ms: p95(readMs), pollP95Ms: p95(pollMs),
+        };
+      }
       const timeout = createTimeoutContext(60000);
       const pending = index.refresh(timeout);
       await new Promise(resolve => setTimeout(resolve, 10));
