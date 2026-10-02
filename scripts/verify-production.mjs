@@ -44,7 +44,13 @@ if (args.includes('--check-report')) {
 } else {
   const focused =
     args.length === 1
-      ? ({ '--focused-script-safety': 'T22', '--focused-index': 'T23', '--focused-context': 'T24', '--focused-discovery': 'T25', '--focused-scale': 'T26' }[args[0]] ?? null)
+      ? ({
+          '--focused-script-safety': 'T22',
+          '--focused-index': 'T23',
+          '--focused-context': 'T24',
+          '--focused-discovery': 'T25',
+          '--focused-scale': 'T26',
+        }[args[0]] ?? null)
       : null;
   const gateId = option('--gate') ?? (focused || (args.length === 1 && args[0] === '--baseline') ? 'G0' : null);
   const baselineOnly = focused || (args.length === 1 && args[0] === '--baseline');
@@ -54,7 +60,7 @@ if (args.includes('--check-report')) {
     );
     process.exit(2);
   }
-  if (!['G0', 'G1', 'G2', 'G3'].includes(gateId)) {
+  if (!['G0', 'G1', 'G2', 'G3', 'G4'].includes(gateId)) {
     console.error(`${gateId} suite is NOT_RUN: owner tasks and Gate-specific tests are not implemented yet`);
     process.exit(2);
   }
@@ -64,14 +70,27 @@ if (args.includes('--check-report')) {
 async function runBaseline({ gateId, baselineOnly, focused = null }) {
   const focusedNames =
     focused === 'T26'
-      ? ['index-scale', 'project-index', 'index-invalidation', 'context-budget-e2e', 'response-budget', 'project-path-policy']
+      ? [
+          'index-scale',
+          'project-index',
+          'index-invalidation',
+          'context-budget-e2e',
+          'response-budget',
+          'project-path-policy',
+        ]
       : focused === 'T25'
-      ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
-      : focused === 'T22'
-      ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
-      : focused === 'T24'
-        ? ['context-pack', 'context-budget-e2e', 'response-budget', 'full-cli-mcp-matrix', 'real-cli-mcp-consistency']
-        : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
+        ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
+        : focused === 'T22'
+          ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
+          : focused === 'T24'
+            ? [
+                'context-pack',
+                'context-budget-e2e',
+                'response-budget',
+                'full-cli-mcp-matrix',
+                'real-cli-mcp-consistency',
+              ]
+            : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
   const started = Date.now();
   const state = JSON.parse(await readFile(path.join(root, 'docs/production-roadmap/tasks.json'), 'utf8'));
   const gate = state.gates.find((item) => item.id === gateId);
@@ -390,6 +409,118 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
         });
         console.log(`G2-native-authoring-20-cycles: ${commands.at(-1).status}`);
       }
+      if (gateId === 'G4') {
+        let benchmark,
+          benchmarkPath,
+          issues = [];
+        try {
+          const directory = path.join(root, 'runs/production-roadmap/T26');
+          for (const name of (await readdir(directory)).sort().reverse()) {
+            const candidate = path.join(directory, name, 'results.json');
+            const value = await readFile(candidate, 'utf8')
+              .then(JSON.parse)
+              .catch(() => null);
+            if (value?.mode === 'full' && value?.source?.sourceHash === source.sourceHash) {
+              benchmark = value;
+              benchmarkPath = candidate;
+              break;
+            }
+          }
+          if (!benchmark) {
+            issues.push('no full-mode T26 benchmark matches the current source hash');
+          } else {
+            const frozenThresholds = {
+              warm10kP95Ms: 500,
+              incremental10kP95Ms: 2000,
+              cold10kMs: 60000,
+              cold50kMs: 300000,
+              hitRate: 0.95,
+              maxBytes: 32768,
+            };
+            const { CONTEXT_CORPUS } = await import('../build/tests/helpers/context-corpus.js');
+            if (benchmark.status !== 'BENCHMARK_PASS') issues.push(`benchmark status is ${benchmark.status}`);
+            if (benchmark.sourceUnchanged !== true) issues.push('benchmark source changed during its run');
+            if (JSON.stringify(benchmark.thresholds) !== JSON.stringify(frozenThresholds))
+              issues.push('benchmark thresholds are not the frozen T26 set');
+            if (
+              JSON.stringify(benchmark.workload?.sizes) !== JSON.stringify([...CONTEXT_CORPUS.sizes]) ||
+              benchmark.workload?.repeats !== 5 ||
+              benchmark.workload?.seed !== CONTEXT_CORPUS.seed ||
+              benchmark.workload?.revision !== CONTEXT_CORPUS.revision ||
+              benchmark.workload?.eventCount !== CONTEXT_CORPUS.eventCount
+            )
+              issues.push('benchmark workload is not the frozen five-repeat corpus');
+            if (benchmark.workload?.warmQueries?.[10000] !== 200 || benchmark.workload?.modifications?.[10000] !== 100)
+              issues.push('10k rounds must use 200 warm queries and 100 modifications');
+            if (benchmark.rounds?.length !== 15) issues.push('expected 15 rounds (3 sizes x 5 repeats)');
+            for (const round of benchmark.rounds ?? []) {
+              const label = `${round.size}/${round.repeat}`;
+              // Cleanup records live on the report, one entry per round.
+              const cleanup = (benchmark.cleanup ?? []).find(
+                (item) => item.size === round.size && item.repeat === round.repeat,
+              );
+              if (round.status !== 'PASS' || cleanup?.status !== 'PASS') {
+                issues.push(`round ${label}: not PASS`);
+                continue;
+              }
+              const measurements = round.measurements ?? {};
+              if (round.quality?.hitRate == null || round.quality.hitRate < frozenThresholds.hitRate)
+                issues.push(`round ${label}: retrieval hit rate below threshold`);
+              if (round.size === 10000) {
+                if (measurements.warm?.p95Ms == null || measurements.warm.p95Ms > frozenThresholds.warm10kP95Ms)
+                  issues.push(`round ${label}: warm p95 above threshold`);
+                if (
+                  measurements.incremental?.p95Ms == null ||
+                  measurements.incremental.p95Ms > frozenThresholds.incremental10kP95Ms
+                )
+                  issues.push(`round ${label}: incremental p95 above threshold`);
+                if (measurements.coldMs == null || measurements.coldMs > frozenThresholds.cold10kMs)
+                  issues.push(`round ${label}: cold index above threshold`);
+              }
+              if (
+                round.size === 50000 &&
+                (measurements.coldMs == null || measurements.coldMs > frozenThresholds.cold50kMs)
+              )
+                issues.push(`round ${label}: cold index above threshold`);
+              if (measurements.sceneTree?.nodes !== round.corpus?.nodeCount + 1)
+                issues.push(`round ${label}: scene tree pagination did not read the whole node tree`);
+              if (measurements.events?.delivered !== round.corpus?.eventCount)
+                issues.push(`round ${label}: event subscription did not deliver the whole event log`);
+            }
+          }
+        } catch (error) {
+          issues.push(error.message);
+        }
+        const relative = benchmarkPath ? path.relative(root, benchmarkPath) : null;
+        await writeFile(
+          path.join(runDir, 'G4-assessment.json'),
+          JSON.stringify(
+            {
+              status: issues.length ? 'FAIL' : 'PASS',
+              sourceHash: source.sourceHash,
+              benchmark: relative,
+              benchmarkSha256: benchmarkPath ? sha256(await readFile(benchmarkPath)) : null,
+              benchmarkEnvironment: benchmark?.environment ?? null,
+              gateEnvironment: environment,
+              issues,
+            },
+            null,
+            2,
+          ),
+        );
+        commands.push({
+          name: 'G4-context-scale-assessment',
+          argv: ['assess-frozen-five-repeat-benchmark', relative ?? 'NOT_RUN'],
+          required: true,
+          status: issues.length ? 'FAIL' : 'PASS',
+          exitCode: issues.length ? 1 : 0,
+          signal: null,
+          durationMs: 0,
+          outputHash: sha256(JSON.stringify({ relative, issues })),
+          issues,
+        });
+        console.log(`G4-context-scale-assessment: ${commands.at(-1).status}`);
+      }
     } else
       commands.push({
         name: 'godot-smoke',
@@ -427,6 +558,12 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
             for (const id of ['D07', 'D08'])
               if (defectSummary.cases?.find((item) => item.id === id)?.status !== 'PASS')
                 issues.push(`${id} must be PASS for G2`);
+          if (gateId === 'G4') {
+            const semantic = defectSummary.cases
+              ?.find((item) => item.id === 'D09')
+              ?.subchecks?.find((part) => part.id === 'D09-SEMANTICS');
+            if (semantic?.status !== 'PASS') issues.push('D09-SEMANTICS must be PASS for G4');
+          }
           if (defectSummary.sourceHash !== source.sourceHash) issues.push('candidate source hash mismatch');
           if (defectSummary.errors?.length) issues.push(...defectSummary.errors);
         } catch (error) {
@@ -504,7 +641,7 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
     (id) => state.gates.find((item) => item.id === id)?.status === 'PASS',
   );
   const status =
-    ['G2', 'G3'].includes(gateId) && godotVersion === 'NOT_RUN'
+    ['G2', 'G3', 'G4'].includes(gateId) && godotVersion === 'NOT_RUN'
       ? 'NOT_RUN'
       : complete && (baselineOnly || (gateTasksDone && predecessorsPassed))
         ? 'PASS'
@@ -538,13 +675,16 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
       : []),
     ...((await stat(path.join(runDir, 'T15-assessment.json')).catch(() => null)) ? ['T15-assessment.json'] : []),
     ...((await stat(path.join(runDir, 'G3-assessment.json')).catch(() => null)) ? ['G3-assessment.json'] : []),
+    ...((await stat(path.join(runDir, 'G4-assessment.json')).catch(() => null)) ? ['G4-assessment.json'] : []),
   ])
     evidence.push({ path: name, sha256: sha256(await readFile(path.join(runDir, name))) });
   const finished = Date.now();
   const manifest = {
     schemaVersion: 1,
     caseId: focused ? focused + '-focused-regression' : gateId === 'G0' ? 'T00-baseline' : `${gateId}-gate`,
-    taskId: focused ?? (gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : 'T21'),
+    taskId:
+      focused ??
+      (gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : gateId === 'G3' ? 'T21' : 'T26'),
     gateId,
     source,
     environment,
