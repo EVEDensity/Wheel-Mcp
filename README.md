@@ -51,7 +51,7 @@ With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three altern
 Version: `0.2.0`, targeting a **Windows-only local stable release profile for
 Godot 4.7.2 and trusted projects over stdio**. Stable acceptance requires a passing
 current-source `npm run release:gate` and `npm run release:check`; version alone
-does not grant acceptance. The [revision 2 acceptance receipt](docs/releases/0.2.0-windows-local-v2.json)
+does not grant acceptance. The [final acceptance receipt](docs/releases/0.2.0-windows-local-final.json)
 records its exact source and outcome. Earlier source-sync failures remain historical.
 See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
 Long-session/high-load performance, public HTTP, other platforms/clients and

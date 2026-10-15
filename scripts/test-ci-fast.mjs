@@ -10,6 +10,7 @@ const files = [
   'response-types',
   'response-budget',
   'method-authorization',
+  'process-identity',
   'project-path-policy',
   'tool-registry',
   'mcp-prompts',

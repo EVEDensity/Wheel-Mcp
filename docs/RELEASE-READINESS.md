@@ -2,7 +2,7 @@
 
 ## Local stable release revision 2
 
-Current acceptance is recorded in the [revision 2 receipt](releases/0.2.0-windows-local-v2.json).
+Current acceptance is recorded in the [final receipt](releases/0.2.0-windows-local-final.json).
 It requires separate build/style/lint budgets, all core/native/runtime/package
 suites with zero skips and owned cleanup, fresh audit, SBOM and artifact
 integrity. Suite receipts must match the current run and meet minimum coverage.
@@ -10,6 +10,14 @@ The operator budget is ten minutes; no product safety threshold is relaxed.
 The maintainer authorized public distribution and bounded push/PR CI after
 acceptance. Full production and remote deployment remain `NOT_QUALIFIED`.
 Earlier failed synchronization and successful checkpoint sections are historical.
+
+An initial revision 2 local pass was followed by independent GitHub Windows CI
+failures: process identity probes could time out during PowerShell module cold
+startup, before the approval form. Identity queries/stops now use module-free
+.NET process APIs, retaining generation/executable checks and a pinned kill
+handle. Native process-identity tests are mandatory in the fast suite. The
+initial receipt and failed CI runs remain historical; final acceptance requires
+fresh local and GitHub CI checks of this fix.
 
 ## Historical source synchronization on October 15 2026
 

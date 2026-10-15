@@ -31,6 +31,11 @@ test(
       assert.ok(identity);
       assert.equal(await stopIdentifiedProcess(child.pid, { ...identity, startToken: 'wrong' }), 'MISMATCH');
       assert.equal(getProcessStatus(child.pid).running, true);
+      assert.equal(
+        await stopIdentifiedProcess(child.pid, { ...identity, executablePath: identity.executablePath + '.wrong' }),
+        'MISMATCH',
+      );
+      assert.equal(getProcessStatus(child.pid).running, true);
       assert.equal(await stopIdentifiedProcess(child.pid, identity), 'STOPPED');
       assert.equal(getProcessStatus(child.pid).running, false);
     } finally {

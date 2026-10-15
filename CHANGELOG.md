@@ -2,6 +2,11 @@
 
 ## 0.2.0 Windows local release
 
+- Fix cold Windows process identity probes with module-free .NET process APIs;
+  preserve process-generation/executable binding and pinned-handle termination.
+  Include native identity checks in short CI. Unexpected pre-approval failures
+  now report their real tool error rather than appearing as client rejection.
+
 - Revision 2 splits build/style/lint from the core runner, fixes conflicting
   parent/child budgets and requires current-run receipts with minimum coverage.
   The ten-minute operator budget does not change product request deadlines or

@@ -1,6 +1,6 @@
 # Windows local stable release
 
-The [revision 2 receipt](releases/0.2.0-windows-local-v2.json) records acceptance
+The [final receipt](releases/0.2.0-windows-local-final.json) records acceptance
 for the exact source being distributed. The earlier
 [source synchronization snapshot](releases/0.2.0-source-push.json) timed out and
 remains historical, not a replacement for fresh checks.

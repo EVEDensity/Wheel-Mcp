@@ -41,7 +41,7 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 版本：`0.2.0`，采用 **Windows + Godot 4.7.2、可信本地项目、stdio 的限域稳定版范围**。
 当前源码必须实际通过 `npm run release:gate` 和 `npm run release:check` 才能接受发布，
-版本号本身不是验收结果。[修订版 2 验收记录](docs/releases/0.2.0-windows-local-v2.json)
+版本号本身不是验收结果。[最终验收记录](docs/releases/0.2.0-windows-local-final.json)
 记录对应源码和实际结果；此前源码同步时的超时记录保留，不改写为通过。
 详见[本机稳定版范围](docs/LOCAL-STABLE-RELEASE.md)。
 长时间与高负载性能、线上 HTTP、其他平台/客户端及高级创作能力不属于此次稳定承诺。

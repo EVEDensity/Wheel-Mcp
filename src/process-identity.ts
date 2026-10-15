@@ -13,32 +13,37 @@ export type ProcessIdentity = {
 
 const windowsReadScript = `
 $ErrorActionPreference = 'Stop'
-$p = Get-Process -Id ([int]$env:WHEEL_IDENTITY_PID) -ErrorAction SilentlyContinue
-if ($null -ne $p) {
-  $result = [pscustomobject]@{
-    startToken = $p.StartTime.ToUniversalTime().ToString('o')
-    executablePath = $p.Path
-  }
-  $result | ConvertTo-Json -Compress
+$PSModuleAutoLoadingPreference = 'None'
+$p = $null
+try {
+  $p = [System.Diagnostics.Process]::GetProcessById([int]$env:WHEEL_IDENTITY_PID)
+  $null = $p.Handle
+  [Console]::Out.WriteLine($p.StartTime.ToUniversalTime().ToString('o'))
+  [Console]::Out.WriteLine([Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($p.MainModule.FileName)))
+} catch [System.ArgumentException] {
+  # The process has already exited. No identity is safer than guessing.
+} finally {
+  if ($null -ne $p) { $p.Dispose() }
 }
 `;
 
 const windowsStopScript = `
 $ErrorActionPreference = 'Stop'
-$p = Get-Process -Id ([int]$env:WHEEL_IDENTITY_PID) -ErrorAction SilentlyContinue
-if ($null -eq $p) { Write-Output 'NOT_FOUND'; exit 0 }
+$PSModuleAutoLoadingPreference = 'None'
+try { $p = [System.Diagnostics.Process]::GetProcessById([int]$env:WHEEL_IDENTITY_PID) }
+catch [System.ArgumentException] { [Console]::Out.WriteLine('NOT_FOUND'); exit 0 }
 # Pin the process handle before inspecting identity; never reopen a recycled
 # numeric PID between the generation check and Kill.
 $null = $p.Handle
 if ($p.StartTime.ToUniversalTime().ToString('o') -cne $env:WHEEL_IDENTITY_START -or
-    $p.Path -ine $env:WHEEL_IDENTITY_EXE) {
-  Write-Output 'MISMATCH'
+    $p.MainModule.FileName -ine $env:WHEEL_IDENTITY_EXE) {
+  [Console]::Out.WriteLine('MISMATCH')
   exit 0
 }
 # Hold the same Process object/handle through Kill.
 $p.Kill()
-if ($p.WaitForExit(5000)) { Write-Output 'STOPPED' }
-else { Write-Output 'TIMEOUT' }
+if ($p.WaitForExit(5000)) { [Console]::Out.WriteLine('STOPPED') }
+else { [Console]::Out.WriteLine('TIMEOUT') }
 `;
 
 function validPid(pid: number): void {
@@ -60,9 +65,12 @@ export async function readProcessIdentity(pid: number): Promise<ProcessIdentity 
         },
       );
       if (!stdout.trim()) return null;
-      const data = JSON.parse(stdout.trim()) as { startToken?: unknown; executablePath?: unknown };
-      if (typeof data.startToken !== 'string' || typeof data.executablePath !== 'string') return null;
-      return { platform: 'win32', startToken: data.startToken, executablePath: path.resolve(data.executablePath) };
+      const lines = stdout.trim().split(/\r?\n/);
+      if (lines.length !== 2 || !/^\d{4}-\d{2}-\d{2}T.*Z$/.test(lines[0]) || !/^[A-Za-z0-9+/]+={0,2}$/.test(lines[1]))
+        return null;
+      const executablePath = Buffer.from(lines[1], 'base64').toString('utf8');
+      if (!path.isAbsolute(executablePath)) return null;
+      return { platform: 'win32', startToken: lines[0], executablePath: path.resolve(executablePath) };
     } catch {
       return null;
     }
