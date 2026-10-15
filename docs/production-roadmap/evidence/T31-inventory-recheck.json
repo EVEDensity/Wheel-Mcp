@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "createdAt": "2026-10-10T10:04:15.148Z",
+  "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+  "launch": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-10T09-56-01-752Z-8016",
+    "progress": {
+      "schemaVersion": 2,
+      "status": "RUNNING",
+      "mode": "bounded",
+      "qualification": "NOT_QUALIFIED",
+      "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+      "startedAt": "2026-10-10T09:56:30.551Z",
+      "durationMs": 457222,
+      "completedCycles": 72,
+      "requiredCycles": 1000,
+      "requiredDurationMs": 1,
+      "samples": 29,
+      "lastSampleMs": 449468,
+      "ownedRoot": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-soak-smoke-ZRf1Vn",
+      "reportDir": "C:\\Users\\temp-admin\\Desktop\\game\\Wheel-mcp\\runs\\production-roadmap\\T31\\native-workload-2026-10-10T09-56-01-752Z-8016",
+      "workerPid": 8016,
+      "fixtureData": {
+        "bytes": 1269062,
+        "files": 582,
+        "immutableEngineCopies": 2,
+        "atomicSnapshot": false,
+        "inventoryTransients": []
+      }
+    },
+    "birthMatches": true
+  },
+  "live": {
+    "status": "RUNNING",
+    "failed": 0,
+    "unknown": 0,
+    "actors": 6,
+    "warning": false
+  },
+  "qualification": "NOT_QUALIFIED",
+  "scopeDecision": "docs/production-roadmap/ADR-2026-10-10-BOUNDED-ACCEPTANCE.md",
+  "historicalFailure": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-10T09-09-44-413Z-54076",
+    "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+    "status": "FAILED",
+    "completedCycles": 204,
+    "durationMs": 878714,
+    "cause": "Independent inventory readdir/stat race: Godot scene-staging UID rename temporary file disappeared before stat",
+    "failedCycles": 1,
+    "unknownTransactions": 2,
+    "leakedOwnedProcesses": 0,
+    "cleanup": true,
+    "warning": false,
+    "reportSha256": "90bac83eacb515094050c1e89c3026d05aba0508256fd41470439b8ee1df468d",
+    "indexSha256": "b095343c8a3e9fd64f5665951389bdd79a135f05458a1c718f2779292a1e9e3b",
+    "artifactsVerified": 62,
+    "hashMismatches": 0,
+    "noRetriesOrOldCyclesCarriedOver": true
+  },
+  "repair": {
+    "module": "src/soak-inventory.ts",
+    "policy": "Only exact staging <32-64 lowercase hex>.tscn.uidren<digits>.tmp ENOENT, or exact normally-stopped shadow slots after verified durable archive; unknown missing files, permission errors, observed links and quota exhaustion still fail",
+    "counting": "Observed regular entries conservatively remain counted on permitted disappearance; disappeared transient byte size UNKNOWN, not zero; non-atomic sampled inventory, not peak disk capacity proof",
+    "nativeEvidenceChecks": "Critical native logs, scene readback, render contrast, and archive/hash checks unchanged",
+    "unitPreflight": "Initial 4/5 failed because file symlink creation EPERM; changed to actual Windows directory junction for same rejection branch, no skip or system permission change; final 5/5 PASS"
+  },
+  "formal": {
+    "run": "runs/production-roadmap/T31/2026-10-10T09-34-57-975Z-18188",
+    "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+    "manifestSha256": "0149e44b1063ca120eb0360823068b09c1400397f88f9fb7fdad3e00cd3c330c",
+    "resultsSha256": "1a8c6b74def28967b0800bc8ebf794373af18448e1789753cb04187808a8c9ea",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "rounds": [
+      {
+        "passed": 147,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "cleanup": "PASS"
+      },
+      {
+        "passed": 147,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "cleanup": "PASS"
+      }
+    ],
+    "evidenceHashesVerified": 6,
+    "hashMismatches": 0,
+    "measurement": "Mixed real OS/SDK/CLI/Godot, synthetic controls and explicit simulated errors; not full gates"
+  },
+  "nativePreflight": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-10T09-50-20-034Z-12984",
+    "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+    "status": "COMPLETED",
+    "completedCycles": 40,
+    "durationMs": 155925,
+    "samples": 11,
+    "unknownTransactions": 0,
+    "leakedOwnedProcesses": 0,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "artifactsVerified": 62,
+    "reportSha256": "590bc2088783645ae0619e9b7de8ace1548fca5c6350ef98482834d810ba8ccf",
+    "indexSha256": "5804b2571312479d4d11b4827d3ad2352d1fbe2cad0df8914d84a9107c0f11ac",
+    "inventoryKnownRemovalRecords": 0,
+    "scope": "Actual native pressure, approval MOCK; not 1000-cycle completion or independent-machine qualification"
+  },
+  "cleanup": {
+    "additionalRemovedBytes": 724228160,
+    "roots": [
+      {
+        "root": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-5QuUK0",
+        "fixtures": [
+          "wheel-editor-fr0tBR",
+          "wheel-editor-VVcjjk"
+        ]
+      },
+      {
+        "root": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-mvuh3F",
+        "fixtures": [
+          "wheel-editor-BQmL9b",
+          "wheel-editor-Dqxxtu"
+        ]
+      }
+    ],
+    "relativeFiles": [
+      ".harness/engine/Godot_v4.7.2-stable_win64_console.exe",
+      ".harness/engine/Godot_v4.7.2-stable_win64.exe"
+    ],
+    "consoleSha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+    "nativeSha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+    "originalSourceDirectory": "C:/Users/temp-admin/Downloads/Godot_v4.7.2-stable_win64.exe",
+    "cumulativeRemovedBytes": 1810570516,
+    "scope": "Only eight byte-identical engine copies individually removed after exact-path/SHA/process checks; original downloads, native failure logs/scenes/transaction and validation evidence preserved; no recursive deletion",
+    "previousPolicyDeniedTargets": "Not touched or retried"
+  },
+  "userEnvironmentDecision": {
+    "answer": "目前只有本机",
+    "independentWindowsEnvironment": "NOT_AVAILABLE_NOT_VERIFIED",
+    "consequence": "T32 may test isolated local installation; cannot treat Temp directories as independent clean Windows machines or waive T33/T35 production gates"
+  },
+  "continuation": {
+    "required": "Finish fresh 1000 cycles with declared compact configuration, fixed windows, native assertions, hashes, zero errors/unknown/leaks and cleanup before T31 done",
+    "tasks": [
+      "T32 local isolated package installation/upgrade/rollback/uninstall",
+      "T33 truthful platform matrix; independent-machine qualification unavailable until provided",
+      "T34 bilingual operational docs",
+      "T35 final gates/efficiency/qualification; no production release while required evidence missing"
+    ],
+    "publicRelease": "Not requested; no commit/push/publish"
+  }
+}

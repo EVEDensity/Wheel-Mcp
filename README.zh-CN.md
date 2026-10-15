@@ -39,11 +39,25 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 当前状态
 
-版本：`0.1.0-preview.2`，仍处于预览阶段，生产资格为 **NOT_QUALIFIED**。真实引擎验证范围为 **Windows + Godot 4.7.2**；macOS/Linux 尚待验证。T12–T15 已完成声明子集的编辑器持久化、撤销、资源与安全保存验收。T16 补齐有界原生实例/继承覆盖、传递依赖保护和保守引用迁移，边界见 [场景依赖/迁移契约](docs/production-roadmap/SCENE-DEPENDENCY-CONTRACT.md)。T16–T21 的 G3 冻结源码门禁通过：全量 300/300、必需 Godot 105/105、连续原生周期 20/20，以及代表性工作流 18/18；自动化审批为 MOCK。T22–T35/G4–G6 尚待完成，默认 registry 恢复缺陷待 T31 修复。更完整的 Godot 覆盖和生产运维仍在路线图中。
+**当前是源码同步快照，尚未通过稳定版验收。** 最终推送前的门禁因超时未取得完整通过结果。
+维护者已明确允许先同步源码，不创建稳定版 Release。此前通过记录仅属于各自记录的源码
+哈希，不授予当前提交稳定资格。详见[当前源码状态](docs/releases/0.2.0-source-push.json)。
+
+候选版本：`0.2.0`，目标为 **Windows + Godot 4.7.2、可信本地项目、stdio 的限域发布**。
+当前源码必须实际通过 `npm run release:gate` 和 `npm run release:check` 才能接受发布，
+版本号本身不是验收结果。详见[本机稳定版范围](docs/LOCAL-STABLE-RELEASE.md)。
+长时间与高负载性能、线上 HTTP、其他平台/客户端及高级创作能力不属于此次稳定承诺。
+自动化验收的审批为明确的测试替身，不代表真人桌面审批体验已认证。完整生产资格仍为
+**NOT_QUALIFIED**，T31–T35/G4–G6 保留为后续工作，不标记完成。GitHub CI/CD 继续停用，
+不会自动发布。
+
+Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱。应显式限制项目与证据
+目录，仅操作受信任项目。当前 HTTP 禁止非 loopback 监听。应用代码的 MIT 不自动
+覆盖网站视频和复制的 UI 源码，整站再分发前请查看[第三方许可说明](THIRD-PARTY-NOTICES.md)。
 
 可选编辑器通道读取已人工启用、私有授权的编辑器。独立 write opt-in 后，支持精确批准的 `apply_editor_scene`、有界资源、原生 Undo/Redo 和 `save_editor_scene`。文件候选先在隔离项目内经引擎校验再落盘；显式 raw 写入返回 NOT_RUN。原生保存保留脏标志和历史，不自动重载用户文档。T17 新增有界 UI 布局和平面主题，要求显式插件能力 `scene.ui/v1`；用户已于 2026-09-27 确认单独人工视觉验收通过。T18 新增有界 3D 物理查询与编辑。T19 新增有界动画片段、状态机与两源 Blend2，要求 `scene.animation/v1`。T20 新增受控 shader 文本/纹理混合与 VisualShader Color/Mix 图，要求 `scene.shader/v1`，并通过 Vulkan 真实像素验收；不支持任意 shader。T21 新增有界 PNG 导入、二进制精确事务，以及隔离项目中的 2D/3D 内容切片；后续源码改动不能沿用旧资格。支持类型有限，不代表完整创作或线上生产资格。见 [UI 边界](docs/production-roadmap/UI-AUTHORING-CONTRACT.md)、[3D 物理边界](docs/production-roadmap/PHYSICS-3D-CONTRACT.md)、[动画边界](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md)、[Shader 边界](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md)、[内容工作流边界](docs/production-roadmap/CONTENT-WORKFLOWS-CONTRACT.md)、[编辑器连接契约](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) 与 [保存/迁移契约](docs/production-roadmap/SAFE-SAVE-CONTRACT.md)。
 
-T22 仍在进行中。`analyze_script_semantics` 明确为启发式摘要；新增 `query_script_semantics` 仅从已授权本地 Godot 编辑器/LSP 读取有界的符号、引用、定义和诊断。原生 LSP 引用可能包含同名字符串与注释，两个工具都不能授权 rename。见[语义服务边界](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md)。
+`analyze_script_semantics` 明确为启发式摘要；`query_script_semantics` 仅从已授权本地 Godot 编辑器/LSP 读取有界的符号、引用、定义和诊断。原生 LSP 引用可能包含同名字符串与注释，两个工具都不能授权 rename。见[语义服务边界](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md)。
 
 ## 快速开始
 
@@ -126,6 +140,34 @@ GODOT_PATH = "D:/tools/Godot_console.exe"
 先调用 `get_godot_version` 检查连接，再让客户端执行具体操作。安装脚本可能覆盖已有配置，请先备份。
 
 ## 你可以这样使用
+
+### 后台运行，不反复弹出游戏窗口
+
+MCP 的 `launch_project` 和 `open_runtime_bridge` 默认 `headless: true`，逻辑、
+物理、输入和状态检查不显示游戏窗口。只打开一次运行时桥接，后续将返回的
+`session_id` 作为 `sessionId` 传给 `call_runtime_bridge`，完成后再停止；不要每次
+查询都重新打开。编辑器工具只连接已经授权的编辑器，不会自动另开编辑器。
+
+需要试玩或真实渲染截图时，显式设置 `headless: false`。headless 没有可截图的
+帧缓冲；`dev_loop` 在没有截图或截图基线需求时已自动后台运行，旧的一次性截图
+工具仍会启动独立渲染进程。CLI/底层 API 的默认值不变，CLI 后台启动请使用
+`--headless true`。
+
+截至 2026-10-14，按维护者要求暂停 GitHub CI/CD：远端现有三个工作流均为
+`disabled_manually`，暂停检查时没有运行中或排队任务。本地 `ci.yml` 只保留手动
+触发入口，不再因 PR 或推送自动运行。开源后需明确重新启用远端工作流；如需
+自动触发，再单独恢复 PR / push 配置。
+
+保留的 Windows 工作流执行 `npm run check`，
+只构建一次，检查格式/lint、MCP 通信、审批与事务安全以及展示页。依赖清单、
+锁文件变化或无法确定改动范围时才做依赖审计；手动触发时也审计当前漏洞。
+旧的排队运行自动取消。在 Actions 手动勾选 `engine`，才追加小规模后台 Godot
+冒烟检查。没有自动三平台引擎矩阵、发布门禁、全量回归或长负载；失败诊断只
+保留七天。CI 通过不代表发布资格。
+
+日常开发使用 `npm run check`；完整回归显式使用 `npm run check:full` 或
+`npm test`；小规模真实引擎检查使用 `npm run test:godot-ci`。发布准备留在本机，
+`npm run release:gate -- --plan` 可查看去重后的步骤，不执行验证或发布。
 
 - “检查这个场景的节点树，并说明 Camera2D 为什么没有生效。”
 - “运行测试场景，发送输入，收集日志和截图；如果断言失败，给出证据。”

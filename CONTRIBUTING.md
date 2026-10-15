@@ -70,9 +70,11 @@ npm run test:godot-ci
 ```
 
 Godot smoke tests must report **0 skipped** when `GODOT_PATH` is set. Run the
-full local gate with `npm run release:gate`. Hosted workflows live in
-`.github/workflows/godot-smoke.yml` and `.github/workflows/release-gate.yml`
-when Actions minutes are available.
+bounded local stable gate with `npm run release:gate`; long production work is
+separate via `npm run release:gate:full`. GitHub CI/CD is paused as of
+October 14, 2026: remote workflows are manually disabled; local `ci.yml` retains
+only manual dispatch. The separate hosted engine/release workflows are removed
+locally. Re-enable GitHub execution explicitly after opening the source.
 
 Without Godot, tests that require it can be skipped. Report skipped counts;
 a passing Node-only suite is not a real runtime result. Screenshot tests need
@@ -152,18 +154,18 @@ schema-valid and runnable against the included fixture with strict diagnostics.
 
 ## Release-oriented checks
 
-On Windows with a real renderer, after build/lint/tests:
+For the limited Windows local profile:
 
 ```powershell
-npm run matrix:generate
+npm run release:gate
 npm run release:check
-npm run audit:dependencies
-npm run sbom > sbom.json
 ```
 
-`release:check` consumes existing matrix evidence; it does not execute the
-other checks. A fresh checkout has no ignored `runs/matrix`. Generic Node CI
-without Godot must not be presented as a complete runtime release gate.
+`release:check` verifies the local gate receipt, current source and artifact/SBOM
+hashes. It does not execute tests or grant full production qualification. A fresh
+checkout must run the local gate first. The older matrix/roadmap checker remains
+`release:check:production`. Generic Node CI without Godot must not be presented
+as a complete runtime release gate.
 See [release readiness](docs/RELEASE-READINESS.md).
 
 New dependencies should explain why they are needed and include the lockfile

@@ -9,6 +9,7 @@ import {
   unlinkSync,
   writeSync,
   statSync,
+  lstatSync,
 } from 'node:fs';
 import path from 'node:path';
 import { getProcessStatus } from './godot-runtime.js';
@@ -50,6 +51,9 @@ export class RunRegistry {
   private readonly runs = new Map<string, RunRecord>();
   private readonly storagePath: string;
   private readonly lockPath: string;
+  // Always read under the inter-process lock, but do not rebuild thousands of
+  // records when the exact bytes are unchanged. Never trust only mtime/size.
+  private diskText: string | undefined;
   readonly maxConcurrent: number;
 
   constructor(options: RunRegistryOptions = {}) {
@@ -74,10 +78,16 @@ export class RunRegistry {
         throw new Error(`maximum concurrent runs exceeded: ${this.maxConcurrent}`);
       if (this.runs.has(record.runId)) throw new Error(`run already exists: ${record.runId}`);
       const now = new Date().toISOString();
-      const value: RunRecord = { ...record, ownerPid: process.pid, createdAt: now, updatedAt: now, state: 'RUNNING' };
+      const value: RunRecord = {
+        ...structuredClone(record),
+        ownerPid: process.pid,
+        createdAt: now,
+        updatedAt: now,
+        state: 'RUNNING',
+      };
       this.runs.set(value.runId, value);
       this.persistUnsafe();
-      return value;
+      return structuredClone(value);
     });
   }
 
@@ -85,19 +95,20 @@ export class RunRegistry {
     return this.withLock(() => {
       this.syncFromDisk();
       const run = this.require(runId);
-      if (run.state !== 'RUNNING') return run;
-      run.processIdentity = identity;
+      if (run.state !== 'RUNNING') return structuredClone(run);
+      run.processIdentity = structuredClone(identity);
       run.updatedAt = new Date().toISOString();
       this.persistUnsafe();
-      return run;
+      return structuredClone(run);
     });
   }
 
   findByPid(pid: number): RunRecord | undefined {
     this.refreshStates();
-    return [...this.runs.values()]
+    const run = [...this.runs.values()]
       .reverse()
       .find((run) => run.pid === pid && (run.state === 'RUNNING' || run.state === 'ORPHANED'));
+    return run ? structuredClone(run) : undefined;
   }
 
   async stopByPid(pid: number, context?: TimeoutContext): Promise<Record<string, unknown>> {
@@ -143,17 +154,18 @@ export class RunRegistry {
 
   get(runId: string): RunRecord | undefined {
     this.refreshStates();
-    return this.runs.get(runId);
+    const run = this.runs.get(runId);
+    return run ? structuredClone(run) : undefined;
   }
 
   active(): RunRecord[] {
     this.refreshStates();
-    return [...this.runs.values()].filter((run) => run.state === 'RUNNING');
+    return [...this.runs.values()].filter((run) => run.state === 'RUNNING').map((run) => structuredClone(run));
   }
 
   list(): RunRecord[] {
     this.refreshStates();
-    return [...this.runs.values()];
+    return [...this.runs.values()].map((run) => structuredClone(run));
   }
 
   markTerminal(
@@ -164,14 +176,14 @@ export class RunRegistry {
     return this.withLock(() => {
       this.syncFromDisk();
       const run = this.require(runId);
-      if (['STOPPED', 'CANCELLED', 'EXITED', 'FAILED', 'TIMEOUT'].includes(run.state)) return run;
+      if (['STOPPED', 'CANCELLED', 'EXITED', 'FAILED', 'TIMEOUT'].includes(run.state)) return structuredClone(run);
       run.state = state;
       run.exitCode = exitCode;
       run.finishedAt = new Date().toISOString();
       run.updatedAt = run.finishedAt;
       this.persistUnsafe();
       this.writeEvidenceTerminal(run, state, exitCode);
-      return run;
+      return structuredClone(run);
     });
   }
 
@@ -212,7 +224,7 @@ export class RunRegistry {
 
   scanOrphans(): RunRecord[] {
     this.refreshStates();
-    return [...this.runs.values()].filter((run) => run.state === 'ORPHANED');
+    return [...this.runs.values()].filter((run) => run.state === 'ORPHANED').map((run) => structuredClone(run));
   }
 
   async reclaimOrphans(
@@ -341,11 +353,17 @@ export class RunRegistry {
   }
 
   private syncFromDisk(): void {
-    this.runs.clear();
     try {
-      if (!existsSync(this.storagePath)) return;
-      const parsed = JSON.parse(readFileSync(this.storagePath, 'utf8')) as unknown;
-      if (!Array.isArray(parsed)) return;
+      if (!existsSync(this.storagePath)) {
+        this.runs.clear();
+        this.diskText = undefined;
+        return;
+      }
+      const text = readFileSync(this.storagePath, 'utf8');
+      if (text === this.diskText) return;
+      const parsed = JSON.parse(text) as unknown;
+      if (!Array.isArray(parsed)) throw new Error('Registry must be an array');
+      this.runs.clear();
       for (const item of parsed) {
         if (!item || typeof item !== 'object') continue;
         const record = item as RunRecord;
@@ -353,7 +371,9 @@ export class RunRegistry {
           this.runs.set(record.runId, record);
         }
       }
+      this.diskText = text;
     } catch {
+      this.diskText = undefined;
       throw new WheelError('FAILED', 'run registry is unreadable; refusing to overwrite it', {
         storagePath: this.storagePath,
       });
@@ -363,8 +383,11 @@ export class RunRegistry {
   private persistUnsafe(): void {
     mkdirSync(path.dirname(this.storagePath), { recursive: true });
     const temporary = `${this.storagePath}.${process.pid}.tmp`;
-    writeFileSync(temporary, JSON.stringify([...this.runs.values()], null, 2), 'utf8');
+    this.diskText = undefined;
+    const text = JSON.stringify([...this.runs.values()]);
+    writeFileSync(temporary, text, 'utf8');
     renameSync(temporary, this.storagePath);
+    this.diskText = text;
   }
 
   private withLock<T>(action: () => T): T {
@@ -388,6 +411,11 @@ export class RunRegistry {
     try {
       writeSync(descriptor, String(process.pid));
       return action();
+    } catch (error) {
+      // An interrupted mutation may have changed RAM but not disk. Reload on
+      // the next call, including after an evidence-write or persist failure.
+      this.diskText = undefined;
+      throw error;
     } finally {
       closeSync(descriptor);
       this.unlinkTransientlyLockedFile(this.lockPath);
@@ -401,10 +429,15 @@ export class RunRegistry {
       guard = openSync(recoveryPath, 'wx');
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
-      if (code === 'EEXIST' || code === 'EPERM' || code === 'EACCES') return;
+      if (code === 'EEXIST') {
+        this.recoverDeadRecoveryGuard(recoveryPath);
+        return; // Retry exclusive acquisition; never touch the main lock without owning the guard.
+      }
+      if (code === 'EPERM' || code === 'EACCES') return;
       throw error;
     }
     try {
+      writeSync(guard, String(process.pid));
       let ownerText: string;
       let lockAgeMs: number;
       try {
@@ -423,6 +456,38 @@ export class RunRegistry {
     } finally {
       closeSync(guard);
       this.unlinkTransientlyLockedFile(recoveryPath);
+    }
+  }
+
+  /** Recovery itself may crash. Preserve live/unknown owners and fresh empty publication windows. */
+  private recoverDeadRecoveryGuard(filePath: string): void {
+    try {
+      const before = lstatSync(filePath);
+      if (!before.isFile() || before.isSymbolicLink()) return;
+      const owner = readFileSync(filePath, 'utf8').trim();
+      const pid = Number(owner);
+      const isDead = () => Number.isSafeInteger(pid) && pid > 0 && !getProcessStatus(pid).running;
+      const abandonedLegacy = owner === '' && Date.now() - before.mtimeMs > 30_000;
+      if (!isDead() && !abandonedLegacy) return;
+      // Do not remove a replacement or a guard whose owner published its PID meanwhile.
+      const current = lstatSync(filePath);
+      if (
+        !current.isFile() ||
+        current.isSymbolicLink() ||
+        current.dev !== before.dev ||
+        current.ino !== before.ino ||
+        current.mtimeMs !== before.mtimeMs ||
+        current.ctimeMs !== before.ctimeMs ||
+        readFileSync(filePath, 'utf8').trim() !== owner ||
+        (!abandonedLegacy && !isDead())
+      )
+        return;
+      // A single unlink attempt: a retry after replacement could erase another owner's guard.
+      unlinkSync(filePath);
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === 'ENOENT' || code === 'EPERM' || code === 'EACCES') return;
+      throw error;
     }
   }
 

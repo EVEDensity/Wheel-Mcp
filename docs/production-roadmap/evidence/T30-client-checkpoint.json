@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T30",
+  "status": "IN_PROGRESS",
+  "sourceHash": "d6b177d3573590a7b98b0e6d864fc4a3a4b69ba9e367e7e0bc6935099d2e655f",
+  "focusedRegression": {
+    "path": "runs/production-roadmap/T30/2026-10-06T10-14-57-287Z-22508",
+    "status": "PASS",
+    "manifestSha256": "3708df71b0b360583c9479bea6e9b534b0bf6fd56d873fe074e40c1e7af00949",
+    "resultsSha256": "1c52bdddc93713055ea5b8b866e7491f4d1fef2f584074b4c84adfe31e160153",
+    "caseIndexSha256": "1317371f4f6c652609f975944b12194a235841a4905f38934f0350d84967e2ad",
+    "runs": [46, 46],
+    "failures": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "tempCleanup": "PASS",
+    "evidenceHashesVerified": 69,
+    "pairedCaseOraclesVerified": 31,
+    "caseTransport": "official SDK StdioClientTransport",
+    "approval": "MOCK",
+    "fullBaseline": false
+  },
+  "installedCodex": {
+    "client": "codex-cli 0.160.1",
+    "status": "PASS",
+    "path": "runs/production-roadmap/T30/codex-probe-2026-10-06T10-14-43-181Z-26788/report.json",
+    "sha256": "ae48ac45b13ac0695238f26746240d870904189545661617222df515cf42e800",
+    "scope": "app-server representative native operation, not desktop human UX",
+    "approval": "MOCK exact-plan fixture host",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "fixtureDiscarded": true
+  },
+  "cursor": {
+    "client": "Cursor 3.23.23",
+    "status": "AWAITING_USER_EXECUTION_EVIDENCE",
+    "fixture": "C:/Users/temp-admin/AppData/Local/Temp/wheel-t30-cursor-20261006",
+    "sdkProxySelftestCountsAsCursor": false
+  },
+  "remaining": [
+    "Actual Cursor trace, approval, native verification and independent bytes readback",
+    "Timeout, in-flight cancellation/disconnection and declared HTTP compatibility scope",
+    "Frozen supported-client matrix and current-source full regression"
+  ],
+  "qualification": "NOT_QUALIFIED",
+  "historicalCleanup": "Four expired G4 fixture roots identified; deletion blocked by execution policy; none deleted"
+}

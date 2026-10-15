@@ -550,3 +550,164 @@ Gate：本次实际执行结果 / 尚未执行项 / 证据是否失效
 - 从官方Godot演示仓库固定提交读取player.gd及MIT许可证并核对1330/1134字节和SHA，原样纳入vendor/godot-demo-slice。X01用本地最小依赖场景，错误基线拒绝/预算不变、正确speed=800候选原生验证/事务提交/逐字读回。初次测试callback返回类型不符导致构建失败，修正后引擎正确发现缺失4个InputMap动作并回滚；只补本地动作声明，不改上游脚本、不增加允许错误数。X01为补充验收，不计入30核心例。
 - 当前源4c156412，`T29/2026-10-02T18-05-59-916Z-5896`两轮11/11、build/format/lint及归属临时目录清理PASS，exit0、零失败/跳过/取消、sourceUnchanged。14份逐例记录两轮oracleSHA一致；21项manifest证据SHA全部匹配。manifest/results/index SHA 4042bdbc70f485b4501d72d7a6e747b15d245c2ad7c454ec1c91c29293a57e47 / 9a3fe07fe58c8cd5665e915586c11a1a9159d5fa5ec2ac229f65731ce9dcf46a / 087eba2f15e1e50f0c8e075e5c436c5c5e751e4f843bebaa36a20af71a8e8434。
 - 增加focused-cases入口及独立case-evidence/index哈希绑定，不混入回放证据。外部补充报告只记录一次structured结果及完整协议摘要SHA，去除重复text镜像，失败消息上限8192字节。当前6/30核心例、外部补充1例；其余24例、完整清单/结果评估、当前源码全量回归和资格门禁未完成。T29继续in_progress，无提交/推送/部署/公开发布。
+
+## 2026-10-04：T29 五类三十条核心链路闭环
+
+- 按已通过的 N01–N06 边界补齐 U01–U06、P01–P06、A01–A06、S01–S06。每例仍是固定 MCP 请求：只读客户端先拒绝，非法输入按实际错误码失败且场景字节不变，成功路径做原生 Undo/Redo、保存重开或运行读回。批准继续是明确 MOCK。
+- 回查中修正的不是放宽 oracle：U04 主题磁盘字段是 `Label/font_sizes/font_size`；U05 重开比较资源 storage 而不是临时实例号；P03/P05 只断言非默认且实际落盘的碰撞字段；P04 过期缓存用不同 collisionMask 得到 CONFLICT；P05 的 ShapeCast3D 创建被 schema 拒绝，有界重叠使用已声明的 intersect_shape；A01 缺失轨道目标的实际码是 NOT_FOUND；A02 为让 JSON 字符串能调用 AnimationPlayer.play，运行时解码器仅在目标类型是 StringName 时转换，未列入枚举的桥接方法仍直接拒绝。
+- 源 f0878c7f，`T29/2026-10-04T10-23-21-214Z-42152` 两轮 36/36，build/format/lint 与两轮归属临时目录清理 PASS，exit 0。31 份逐例记录两轮 oracle SHA 一致，69 项 manifest 证据 SHA 一致。manifest/results/index SHA f54b20d7d545c16688f6dfc5ac816307f7500ee98a92e815e35f23d51fa809f7 / 406bd100193d397690750c11a8eb670ee09bc29039090b244a992f894ceb835d / bd7eec75258790d04c1bad532217073a0a33e608679ab213a7a854daad01bc9f。摘要 evidence/T29-cases-complete.json。旧失败与 6/30 检查点保持原样。
+- T29 标 done，nextTask=T30。没有跑当前源码全量回归，G4 仍 BLOCKED，G5/G6 未执行，生产 NOT_QUALIFIED。未提交、推送或发布。
+
+## 2026-10-06：T30 stdio 与已安装客户端检查点
+
+- 最新源 d6b177d3，T30/2026-10-06T10-14-57-287Z-22508 定向双轮 46/46，构建/格式/lint及归属临时目录清理 PASS。31份逐例 oracle 两轮一致，均标记实际 SDK StdioClientTransport；69项证据 SHA 回查一致。补充资源/提示词单测仍包含内存/HTTP，不能把全部46项统称 stdio。摘要 evidence/T30-client-checkpoint.json；不是全量回归或资格门禁。
+- 新增4项 stdio 协议测试。TS通用Stream不支持resume，改为消费data；schema错误实际为工具isError与精确MCP -32602文本，按真实返回校验。客户端helper改为懒加载内存server/policy，防止stdio客户端连接前意外触发全局registry锁；这不等于修复T31的旧锁恢复问题。首轮双42的S05标签遗漏已修正并重验。
+- 已安装 Codex CLI 0.160.1 app-server 代表性原生create/save/validation/独立字节读回 PASS，同源报告 codex-probe-2026-10-06T10-14-43-181Z-26788/report.json。两次表单确认由严格限于隔离计划的 MOCK host 返回，不冒充桌面人工操作。approvalPolicy=never 的初测安全拒绝；on-request保留审批后通过。没有模型回合、登录、永久配置或实际项目写入；只清理本次探针新建且已停止的fixture。
+- Cursor 3.23.23隔离目录和10MiB有界字节透传记录器已备好；SDK自测单独标记，不充当Cursor证据。用户已表示现在执行并返回结果，尚无实际client-trace.jsonl，T30保持in_progress，不提前标完成或进入T31。
+- 空间大头是四个旧G4引擎测试目录约40GiB，并非普通文本日志。只读归属/年龄/链接/进程检查已完成，删除被执行策略拒绝，未改用其他程序绕过。四目录未删除，清单 evidence/cleanup-candidates-2026-10-06.json 保留；手工腾空间也不等于G4重新验收通过。
+- 在途取消/断开/超时、HTTP声明范围、支持矩阵、当前源码全量及G4/G5/G6仍待完成。未提交、推送或发布。
+
+## 2026-10-06：T30 传输故障与本机 HTTP 专项回查
+
+- 新增3项真实SDK stdio请求：已观察子进程的精确审批请求后，分别取消、请求超时、断开；延迟审批替身最终拒绝。项目字节不变，取消/超时后旧连接可用，重连后可读。范围仅待审批阶段，不声称提交后取消或任意不合作回调终止。首轮6/7的失败是取消被SDK包装为McpError -32001，而非裸Error；修正为精确码及完整消息，保持文件不变检查，单测7/7复验。
+- 增加 --focused-client-transport 独立入口，明确标记transport-only。新源0ec48114、T30/2026-10-06T10-40-04-572Z-36964 双轮22/22，构建/格式/lint及两轮自有暂存清理PASS，6项证据哈希与当前源回查一致。包含stdio清理及HTTP认证/Origin/会话归属/路径范围/限额/取消传播/真实进程回收；HTTP仍拒绝非loopback绑定。证据 evidence/T30-transport-checkpoint.json。
+- 先前d6b177d3双46/46与Codex探针保留原样，不冒充新源全量回归。Cursor真实记录仍不存在，T30保持in_progress；需要用户实际客户端结果，SDK代测不能补位。旧G4约40GiB目录删除仍被策略拦截，不重复尝试其他删除手段；本轮新增正式暂存清理成功，无提交/推送/发布。
+
+## 2026-10-06：按 Cursor 日志修复全局启动锁故障
+
+- 用户日志锁定 user-wheel-mcp 初始化时 `run registry lock is busy`，不是项目级 wheel_t30 的执行错误。确认原主锁PID41744已不存在，恢复guard为空、mtime为9月26日。原实现guard遇EEXIST永不恢复且创建时不写归属，造成永久启动失败。
+- 修复guard PID发布和死归属/老空guard恢复；新空guard、活PID、未知内容、链接或文件身份/时间/内容变化均保留。删除旧guard只尝试一次，然后重新竞争exclusive guard，不能无guard直接清主锁。可移植文件快照检查不等于OS原子compare-and-unlink，任意文件系统干扰安全仍不在本轮资格内。
+- 新增5项恢复/保护测试，四OS进程并发测试从双过期锁起跑，100条记录不丢。首轮2个快照失败因正常RUNNING→ORPHANED刷新；先冻结刷新后的状态再逐字比较，未放宽保留条件。未设置引擎的单独试跑有1项skip，正式回归显式设置GODOT_PATH后零skip。
+- 源d2fa01e1，T30/2026-10-06T11-11-25-689Z-52504正式双43/43，构建/格式/lint、两轮暂存清理PASS，6项哈希与同源回查一致。摘要 evidence/T30-cursor-startup-lock-fix.json。
+- 修复前原registry精确备份 .harness/run-registry.before-cursor-lock-fix-20261006.json，SHA18f28c96。官方SDK用原registry、read scope、隔离project root只做初始化/listTools，无模型/项目工具调用：71工具发现PASS，3917条记录ID/PID/projectPath保留，两个过期锁已由产品恢复逻辑清除；正常过期生命周期刷新不冒充registry字节不变。未删原registry或历史证据，未改客户端配置，备份可用于追溯。
+- Cursor需重连并验证；wheel_t30项目加载与四步真实操作仍未通过，本次不把SDK代测标为Cursor完成。不继承当前源全量/T31/G4/G5/G6，无提交/推送/发布。
+
+## 2026-10-06：启动修复确认后的同源回查
+
+- 用户确认启动修复成功。只读回查隔离目录无client-trace.jsonl，main.gd仍为初始SHA73b4bf1b，因此不能据此关闭四步真实Cursor验收；已请求实际工具与审批结果，不调用全局真实项目服务替代。
+- 依据官方app-server文档核对边界，同源d2fa01e1已安装Codex CLI0.160.1探针再验PASS：71工具/5资源、原生create/save/validation/独立字节读回，两个精确plan确认仍MOCK，无模型回合/永久配置/真实项目写入，fixtureDiscarded=true。报告 codex-probe-2026-10-06T11-19-46-763Z-52492/report.json，SHA75c5ffc9c9082ae57ab0d68cbd1f10c4ca2568eb5864b4e81344e03e2070eb8b。
+- 新增临时支持矩阵 evidence/T30-client-support-matrix.json，分别限定SDKstdio、loopback HTTP、已安装Codex接口和Cursor的实际证据范围；状态PROVISIONAL_NOT_QUALIFIED，不把平台、传输或人工批准相互替代。
+- 已启动当前源完整baseline T00/2026-10-06T11-17-09-108Z-42504；此条只记录启动，不宣称最终通过。中间20轮原生authoring/Undo/Redo/save/reopen/runtime-render已同源PASS，后续计数、失败与暂存清理待完整结果，G4/G5/G6不自动继承。T30继续in_progress，T31–T35不越过依赖，未提交/推送/发布。
+
+- 完整结果回查：d2fa01e1全量408/408、独立引擎110/110、零失败/跳过/取消，构建/格式/lint及两轮归属清理PASS，75项manifest证据SHA一致。不是G4/G5/G6门禁，且不继承到下面的新源码。
+- 等待期间发现Cursor实际trace：cursor-vscode1.0.0声明form能力、发现71工具、get_project_info/read_project_file通过；dev_loop等待精确审批20秒后失败，发送cancelled通知后才收到decline。原结果code FAILED、McpError -32001包裹本地TimeoutError，persisted=false/cleanup=true/errorCount=0/attemptCount=0，事务PREPARED且applied=0，原脚本SHA73b4bf1b未变。原trace及result/transactions/validation-plan关键文件复制到T30/cursor-attempt-2026-10-06T11-36-19Z保留，不把本次失败写成NOT_RUN或成功。三次.harness项目文件读取FORBIDDEN保留，未开放隐藏路径。
+- 已询问用户是否看到表单、是否主动拒绝或未及时确认；没有自动重提、扩大20秒预算或替代人类批准。公开边界应更新为Cursor发现/读取可用、批准写入/原生验证未通过，临时矩阵旧快照保持哈希原样，由本检查点补充。
+- 修复createProjectApproval SDK拒绝包装丢失本地typed reason：只有可信signal已abort才抛回本地原因，否则原错保留；不按所有远端数字-32001猜TIMEOUT，不改审批/写入规则。实际stdio新增服务器审批期限测试，必须先观察form请求、返回TIMEOUT且字节不变和连接可用。单测8/8；新源ff05b51f专项正式双44/44、构建/格式/lint/两轮归属暂存清理PASS、6项SHA与源一致。摘要evidence/T30-approval-timeout-checkpoint.json。新源全量仍NOT_RUN，不用d2fa的408/110冒充，T30仍in_progress，无提交/推送/发布。
+
+- 用户确认看到了Cursor审批表单但未及时确认，并非主动拒绝。为下一轮单独冻结120000ms人工审阅预算，目标SHA/42→100/health=100/零retry/零error/原生PASS与cleanup要求不变，新evidence-retry-1目录，不修改第一轮20秒失败。准备CURSOR-TEST-RETRY-1.txt，必须先重连隔离wheel_t30加载新构建，由用户本人确认表单；不自动重提或代替批准。第二轮尚未验收，不提前标VERIFIED。
+
+- 当前ff05b51f的已安装Codex原生接口探针再验PASS，report codex-probe-2026-10-06T11-53-51-443Z-15492/report.json，SHA96a70722c431c2b941d85a67ff5908d45f73673d83139937953a05471fe6cd7e，fixtureDiscarded=true、noModelTurn=true。仍是精确计划MOCK host，不代替Cursor真人批准；路线台账将实际Cursor状态更新为发现/读取PASS、固定写入尝试失败待重测。没有后台模型回合或发布动作。
+
+## 2026-10-09：本机 Codex 声明范围完成 T30
+
+- 先回查三天变化：源码仍ff05b51f，Cursor第二轮120秒收到客户端cancel，无accept，结果FAILED包裹CancelledError，PREPARED/applied0、原脚本不变、cleanup=true。没有新initialize不能证明重载新代码；只在隔离记录器增加process-start三模块构建SHA，SDK只读自测单独标记、71工具通过，不冒充Cursor。未开始第三轮写入。
+- 用户明确“暂时不用考虑cursor的，只要codex本机即可”。新增ADR-2026-10-09-LOCAL-CODEX.md及acceptanceScope，收窄本轮required客户端为已安装本机Codex CLI/app-server接口，不改安全/原生验证/重试/8h与1000循环标准；Cursor既有失败保留、范围外且不宣传通过，桌面真人UX未测不宣称支持。
+- 当前ff05b51f SDK核心stdio正式双50/50、零失败/跳过/取消、构建/格式/lint及两轮归属清理PASS。31份oracle一致（30核心+X01），均实际stdio，69项SHA一致。run T30/2026-10-09T09-45-10-384Z-47056，manifest959e1e1b、results2f383d4d、index3036b913。资源/提示词补充单测仍部分memory/HTTP，不把全50项统称stdio。
+- 旧Codex二进制路径因更新不存在（ENOENT、尚未启动probe），只读定位现有安装后验证Codex CLI0.162.0-alpha.2原生接口：71工具/5资源、create/save/native validation/独立字节读回PASS、fixtureDiscarded=true、MOCK exact-plan批准，无模型/登录/永久配置/实际项目写入。run codex-probe-2026-10-09T09-50-45-322Z-41260/report.json，SHAc5adc9b8373effce436e3fd94e9319934e5c51230009b5af7a2bc7b010f66e2b。新版本不继承0.160.1结论。
+- 新矩阵/完成检查点 evidence/T30-local-codex-complete.json。T30只按用户ADR声明范围done，进入T31；当前源完整/G4/G5/G6未重新资格，仍NOT_QUALIFIED。T31不得用短测代替8小时/1000循环。无提交/推送/发布。
+
+## 2026-10-09：T31 合同与两项目原生短测检查点
+
+- 冻结报告合同：8h/1000循环、两项目server/editor/runtime六个独立持久进程PID+OS出生身份、六类操作、10分钟热身/首末稳定小时、RSS p95同时<=20%与128MiB、同类延迟p95<=1.5倍；采样覆盖全时段且间隔<=30秒，错误/跳过/未知事务/遗留进程显式零、源和墙钟/单调时长一致。缺样本、缺角色、PID复用、稀疏采样/缺尾部/坏RSS行等全部拒绝。检查器只PASS_REPORTED_LIMITS_ONLY且仍NOT_QUALIFIED。
+- 26项合成单测与当前源正式双26/26、build/format/lint、两轮自有空测试根清理PASS；generic godot-focused标签不是实际引擎测试。CLI --qualify拒绝exit2/NOT_RUN，非法报告exit1；没有用合成8小时数据当实际运行证据。
+- 新增Windows --smoke原生worker，两私有项目/两SDKstdio/两编辑器/两持久渲染runtime，每项目两轮read/edit/native-save-validation/scene-reload-property-readback/screenshot/shadow-stop、跨根FORBIDDEN。源码由调用前冻结，未加载用户项目、改客户端配置或运行模型；批准仅MOCK fixture精确计划。
+- 首轮native-smoke-2026-10-09T10-23-12-846Z-48428因截图路径不在该runtime会话evidenceDir被FORBIDDEN拒绝；保持FAIL和report/calls/registry，修正worker目录而非权限。后续短测通过，再绑定实际editorPid与runtime所属native子进程（非console启动器RSS）并重新跑；保存6PNG/4落盘场景作为关键内容证明，少量调用摘要有1MiB硬限。
+- 当前源07ad94c7：native-smoke-2026-10-09T10-35-31-881Z-55072四原生循环PASS_NATIVE_SMOKE_NOT_SOAK、六OS身份稳定、cleanup/fixtureDiscarded=true，所有四周期截图SHA对保存字节一致。reportSHA da0ac61c8742198ef35421901587fdbae60d2303de0cec2e79d0ef642ae24272，traceSHA9a022e921868c964e2e02a25bc35fa0dafc3c36095514f1e604e74b559ab8ce3。当前源formal T31/2026-10-09T10-44-53-754Z-53820双26/26，6项SHA验证，manifest98710d39/resultsbc72ecab。摘要evidence/T31-first-checkpoint.json。
+- 失败短测的关键诊断先归档约3.7KiB，再对wheel-soak-smoke-IiqFV7做所有权/Temp父级解析检查；清理命令在执行前被策略拒绝，命令中的新进程/链接复查及删除未执行，目录未删，也未换另一删除机制绕过。成功短测自动清理自己新建且停掉的根与历史失败根是不同目标；旧G4目录仍不触碰。
+- T31继续in_progress：完整连续调度/周期遥测/chaos尚未实现，8小时与1000实际循环未开始，不标soak完成，不进入T32。当前源全量及最终G4/G5/G6资格不继承T30历史结果。无提交/推送/发布。
+
+## 2026-10-09：T31 连续调度、故障回查与正式负载启动
+
+- 报告schema2拆开RSS与延迟：独立15秒OS遥测与每循环六类操作单调起止，按项目/操作分别比较首末稳定小时p95，不复制缓存延迟当样本。冻结8h/1000、两项目/六身份、20%且128MiB、1.5倍、30秒空档标准未降低。
+- 新调度器限双项目并发/每项目一条写链；错误或取消传入SDK并等待并行链settle、不重试未知写。补独立采样/在途失败/兄弟取消/外部取消/硬截止/空档/非法计划单测，先行32/32通过。只是一小段实际Node定时器加合成报告，不是长时引擎证据。
+- 先行原生场景增加Polygon2D导致UNSUPPORTED，保留native-smoke-2026-10-09T11-42-32-035Z-17464失败、0循环及1个兄弟取消未知写、cleanup=true。改为已支持Label，不增加允许节点；c4b561c2的90秒实测96740ms/4循环/7RSS样本/16369ms最大空档通过，21证据SHA匹配，成功scratch回收。
+- 新增TCP半包/断开、实际native编辑器及runtime终止、实际文件日志路径阻塞、显式模拟EACCES。预检3/5中的两处预期错误按现有合同修正：编辑器崩溃保留租约拒绝自动接管，测试由隔离项目所有者确认旧进程退出、核实原endpoint/空lease后只unlink+rmdir两项再重开；旧运行时在新stdio owner上返回FORBIDDEN，不接受旧session。没有放宽产品安全策略，预检未捕获源码hash，不冒充正式证据。
+- 7567fa82先行专项双91/91、build/format/lint及两轮自有scratch清理PASS。随后补实际MCP客户端进程死亡（OS出生身份确认后终止，stdin EOF收敛server/runtime退出，场景字节不变），有界每分钟原子report.live检查点及完整progress/trace/report配额；两引擎fixture只复制一次，首末截图/场景/诊断保留，旧受策略阻塞目录不触碰。
+- 最终参与源04f1c3c9正式专项T31/2026-10-09T11-54-08-787Z-44708双124/124、零失败/跳过/取消、build/format/lint和两轮scratch清理PASS，6项证据SHA匹配，manifest7e5ac5d5/results3b22c18d。真实进程/文件系统故障与ENOSPC/EACCES模拟、MOCK批准及合成报告分开，不把通用godot-focused名称的全124项统称真实引擎。
+- 同源最后原生短测native-smoke-2026-10-09T11-56-27-049Z-25848：96526ms/4循环/7RSS样本/16233ms最大空档，六真实OS身份稳定，sourceUnchanged/cleanup/fixtureDiscarded=true，错误/未知事务/遗留进程0，22项证据SHA全部吻合，约146.5KB关键产物。report5946ae53/indexb7d2ee67。不是8h/1000完成。
+- 同源正式负载已实际启动：native-workload-2026-10-09T11-59-35-541Z-19764，workerPid19764，UTC11:59:56.503开始，首次回查16.831秒/2循环/2样本RUNNING；最早UTC19:59:56.503（北京时间2026-10-10 03:59:56）后才满足8小时。未修改电源/休眠设置；机器休眠、参与源码变化、空档、限值或回收失败均不能通过。运行中不修改参与源码，只更新排除在源hash之外的台账。
+- 新检查点evidence/T31-continuous-checkpoint.json保留精确范围。T31仍in_progress，正式长测末窗/清理/最终hash待验；T32–T35未越过依赖，G4/G5/G6及生产资格不自动提升。没有提交、推送或发布。
+
+## 2026-10-09：T31 留存配额回查、协作停止与新冻结长测
+
+- 继续回查时首轮8h仍RUNNING，原生断言/六OS身份/源码/未知写计数正常；额外统计发现每循环shadow10+事务3+验证3共16文件，1000循环加固定开销必超16000冻结文件上限。没有等到接近8h才失败，没有提高配额或调整性能目标。
+- 在34循环/最后930206ms进度后终端Ctrl-C取消；工具返回exit1且无最终report，六记录进程及引用本轮scratch路径的进程均已退出，但不宣称finally或清理验收PASS。原progress历史RUNNING不篡改，检查点另记ABORTED。两项目所有shadow/事务/验证/场景/日志压缩到stopped-critical-A/B.zip，572原文件逐一解码SHA比对；压缩合计329585字节，排除引擎/设置/授权配置。原rU4J1s删除命令执行前被策略拒绝，其新检查/删除未执行，不换手段绕过，旧根仍在。
+- 新src/soak-retention.ts仅用于本次worker：归属路径/常规单链接/限额/终态sourceREAL+session/pid/正常stop+日志检查后，先持久归档首末原件与每轮终态及10文件SHA，再复验全部文件不变，逐个unlink并rmdir空shadow；不删失败、不碰事务/验证/性能样本，不递归删祖先。档案失败、变化、硬链接/越界/异常停止/原生错误均保留。不是任意OS并发改动下的原子多文件操作。
+- 先行编译发现files隐式any，修正显式类型；单测Temp短别名不满足canonical前置条件，改为realpath创建测试fixture而非削弱路径保护。先行38/38通过；b9a84524实际40循环155897ms/11样本、386可变文件/894798字节、40shadow归档精简、62索引SHA与成功fixture清理PASS。不是终源8h结果。
+- 新--request-stop入口绑定专用目录及worker OS出生身份、源码/进程指纹，原子发布请求；重复、越界、已停/错身份拒绝。独立采样观察请求后取消并收尾，命令本身不声称已停。源码eb6987d4实际负控native-smoke-2026-10-09T12-33-08-983Z-25888在2循环/34293ms输出FAILED/exit1、拒绝资格，正常生成report+index、cleanup=true、unknown0/leaked0，63SHA验证，report9765ec4f；失败策略保留scratch，不假称已删除。
+- 同源formal T31/2026-10-09T12-31-55-964Z-38604双133/133、build/format/lint、零失败/跳过/取消、两轮归属清理及6SHA PASS，manifest846b9abb/results7bd86a3a。合同/留存的合成元数据与实际Node/CLI/OS/Godot及显式故障模拟分开，不将全133项统称真实引擎。
+- 终源实际压力短测native-smoke-2026-10-09T12-34-36-630Z-33176通过40循环/156062ms/11样本/15609ms最大空档，386文件/894598字节（每循环6关键文件+固定开销），40shadow正常归档后精简。62索引、四首末raw shadow原件的逐文件SHA全部吻合，保留655477字节；failed/unknown/leaked0，cleanup/fixtureDiscarded=true，reportc9f68df1/index6bf81ce4。仍不替代8h。
+- 重新从零启动终源8h/1000：native-workload-2026-10-09T12-39-46-710Z-44920，workerPID44920，UTC12:40:26.958开始，首次回查83323ms/4循环/6样本RUNNING。最早北京时间2026-10-10 04:40:27才能收验，不沿用首轮03:59:56或累计34循环。新证据evidence/T31-retention-recheck.json，T31继续in_progress、T32–T35不提前开始；原生最终门限/清理与G4/G5/G6资格待验，未提交/推送/发布。
+
+- 后续UTC13:43:58回查发现第二次临时执行会话已失效（Unknown process id 80050），PID44920已退出、六actors及引用scratch的进程均不存在，最后文件UTC12:43:41.995停在8循环/194570ms/13样本，没有最终report。原因未确定，不猜测休眠/更新，不把静态RUNNING写成在跑，不声称最终cleanup通过；原件保留为中断，旧04:40:27估算失效。
+- 不再依赖临时执行会话：Windows Start-Process -WindowStyle Hidden启动固定--workload，绝对Node入口/仓库cwd、私有stdout和stderr文件，未改系统时间/电源/客户端配置。新workerPID36400、run native-workload-2026-10-09T13-46-39-507Z-36400，UTC13:46:55.381进入负载。新检查确认启动父终端PID41796已退出而worker仍活、OS出生身份和inputs一致，进度继续10循环/19样本，最大空档15527ms、墙钟/单调差339ms、sourceUnchanged=true及全部失败/跳过/未知/遗留计数0。正常停止仍用带出生身份的协作入口，不承诺跨系统重启续跑。
+- 独立启动检查点evidence/T31-independent-launch.json；最早北京时间2026-10-10 05:46:56后收验，不续接任何旧轮数据。参与源仍eb6987d4，专项和原生压力/负控证据一致，台账待最终结果，不进入T32，不提升任何Gate或发布资格。
+
+## 2026-10-10：取消强制时长、分页修复与逐步回查
+
+- 用户明确要求取消完整长时验收，新增 ADR-2026-10-10-BOUNDED-ACCEPTANCE，当前路线/台账/计划移除最低墙钟时长。保留 1000 循环、六持久 OS 身份、双项目并发、权限/故障、RSS 同时 20%/128MiB、延迟 1.5 倍、零未知事务与回收要求；固定循环窗提前声明，新 schema3/bounded 不重解释旧 schema2。长会话、游戏帧时 NOT_VERIFIED。
+- 旧 native-workload-2026-10-09T13-46-39-507Z-36400 实际 FAILED：282 循环、8131245ms。最后 reload/call_runtime_bridge 返回 PARTIAL，旧 worker 未重组直接读 response.value 抛 TypeError；62 项产物逐文件 SHA 全吻合，unknown0/leaked0/cleanup=true。两条 Socket drain 警告缺堆栈，未视为修复或通过；静态中间 RUNNING 不再作为当前状态。
+- 新分页消费仅调用同客户端 get_response_page，不重发写；保护 UTF-8/游标推进、ref/大小一致、预算、失败与完整 JSON；缺失 response 明确断言。先行单测 36/36；补真实原生 stdio 220 次重载验证 PARTIAL 读回且实际 requests 恰为 220、场景不变。最初新增测试类型不兼容造成 build FAIL，修成 unknown 输入的运行时校验；未把失败编译后生成的 JS 测试当正式 PASS。
+- 对工作区旧源9162bffb先行40次真实压力预检 PASS，287482ms、386可变文件、正常scratch回收；后续更正分页工具名并补原生测试后不能继承。新参与源a2062d89在T31/2026-10-10T08-35-35-052Z-40824正式双140/140、零失败/跳过/取消、build/format/lint/两轮自有回收PASS，6项SHA一致；manifest963f6c32/results7125d1ca。不是完整 G4/G5/G6。
+- Node worker 捕获 warning 堆栈并取消，不提高监听器上限；SDK服务器 stderr 按16MiB有界留存，出现drain警告即失败，不再丢弃关键诊断。先行220次原生分页未复现旧警告，仍待完整有界负载。
+- 独立隐藏新轮native-workload-2026-10-10T08-39-35-807Z-53024，worker53024出生身份匹配，UTC08:39:59.012开始，源码冻结不凑时长、不累计旧循环。回查42循环/229183ms/15份RSS，stderr为空，仍非终态。检查点evidence/T31-bounded-checkpoint.json；台账校验PASS，T31 in_progress，T32–T35依赖不提前完成。
+- 永久删除未被证据引用的旧预览日志.harness/site-preview.log（59B）及site-serve.err.log（57B）；核实旧FAILED根EG4lw3无关联活进程，两个确切fixture中的4个引擎EXE与下载原件SHA逐一相同，仅逐文件删副本362114080B（约345MiB），路径逐一不存在复查。原下载、原生日志、场景、事务/验证、报告和失败SHA原件都保留。无递归删除；既有策略拒绝的40GiB等根未触碰，删除副本可由保留原件恢复。
+- 后续严格顺序：收验新1000循环 → T32隔离安装/升级/回滚/取消/卸载 → T33独立Windows支持矩阵 → T34双语文档示例 → T35最终门禁/效率/限定资格。任何缺失或失败不填PASS；提交、推送和公共发布尚未授权。
+
+## 2026-10-09 22:15：继续长测回查与无用文件清理
+
+- 独立长测worker36400出生身份与inputs仍一致，参与源仍eb6987d4；UTC14:15:51.309完整检查点/22:15:59回查为62循环、1735537ms、113份RSS样本，失败/未知写0，循环数与逐例记录一致，最终首末小时及收尾尚待验。不更新T31为done，不越过T32依赖。
+- 确认已归档并精简62个正常停止shadow的620个确切常规文件，当前可变fixture1188907字节/540文件；事务、验证、性能样本和第一/最新原件保留。运行目录及实际在途诊断不作过期删除，不强制GC或改冻结配额。
+- 只读盘点：仓库runs约347136420字节，.harness约10587780字节；既有约40GiB旧Temp占用主要是测试引擎复制，不是文本日志。旧策略拒绝的目录不重试、不换机制绕过，失败证据/主registry/原备份保留。
+- 永久删除本工作区三个明确无用文件：.harness/site-preview-error.log（0字节）、.harness/site-serve.log（0字节）、.harness/run-registry.json.35588.tmp（38995字节）。旧临时写入PID35588不在，内容SHA de544fb8f99f85f6a923a45a427136b58524947c2d589bf02c7489cbe68d0076；90条ID均在3917条主记录内，全部非state/updatedAt字段深比较一致、主时间不早于临时副本；45条FAILED完全一致，44条旧ORPHANED已STOPPED，1条旧ORPHANED已CANCELLED。主记录与修锁前备份均未改动，原空日志无内容，删除后逐路径不存在复查通过。无递归删除、无删除任何源码/项目场景或被任务证据引用的历史报告。
+- 最早北京时间2026-10-10 05:46:56后方可对本轮8h/1000验收；当前生产资格仍NOT_QUALIFIED，未提交、推送或发布。
+
+## 2026-10-10 后续回查：共享取消信号修复与精简配置
+
+- a2062d89 的首轮有界运行在88循环/526515ms协作停止：FAILED、unknown1、leaked0、cleanup=true；正在派发的open_runtime_bridge没有确定返回，不猜测提交成功，也不盲重试。63项产物SHA一致，旧循环不续接。
+- 捕获完整drain警告堆栈到SDK1.30.0 protocol.js:675取消通知及stdio.js:189。源码确认request完成后匿名abort监听器仍留在传入signal；共用长会话signal会让已完成请求在取消时重新发通知。测试客户端改为每请求独立controller并finally解绑父signal，不改node_modules或上限。真实200次完成后父signal监听器0/旧取消通知0，在途批准仍产生恰一次取消、文件字节不变。不是全局SDK修补或桌面真人UX证据。
+- call_runtime_bridge新增可选responseMode，默认normal不变；工作负载事前冻结RPC/reload compact，沿用既有格式化器保留全部业务response/method/operation_id，历史事件不反复附带，而走原生证据/独立游标API。预算与RSS/延迟限值不提高。真实220次normal重载触发分页且实际请求恰220；compact另做属性读回。不同响应配置性能声明分开。
+- 新参与源54090290在T31/2026-10-10T08-53-48-371Z-54956正式双142/142，build/format/lint、零失败/跳过/取消、6SHA与两轮自有回收PASS，manifest1c2fb455/results71032fca。原生压力40循环272399ms/18采样、386文件、62SHA，四循环遥测97282ms/7采样、62SHA，全部无警告/unknown0/leaked0/cleanup与fixtureDiscarded true。
+- 对四循环已正常结束的旧worker尝试stop被出生身份检测拒绝，没有写入请求或终止进程；不当成在途停止通过。另新建准确负控native-smoke-2026-10-10T09-04-12-110Z-20080，观察两循环后在空闲时请求协作停止，最终FAILED/exit1/20185ms符合负控预期，63SHA一致、unknown0/leaked0/cleanuptrue/no warning；正常报告限值检查拒绝资格。
+- 累计额外逐文件删除BE5IcV与wSrg3U两个已经停止/中断根内8个复制引擎EXE，均核对原下载SHA、无相关活进程、确切路径及删除后不存在；释放724228160B，加上先前362114196B共1086342356B（约1.01GiB）。原下载、失败日志/场景/事务/验证与报告未删，无递归删除；既有策略阻塞目标不重试或绕过。
+- 新独立隐藏负载native-workload-2026-10-10T09-09-44-413Z-54076，UTC09:10:09.208开始，worker54076出生身份及源匹配，回查126循环/576523ms/37采样。不是最终1000通过；源码冻结，新检查点evidence/T31-signal-compact-recheck.json，T31继续in_progress，不提升Gate/生产资格或越过T32依赖。
+- 后续T32预查仅为只读npm pack dry-run：645文件，约11.58MB压缩/15.71MB展开，含9.71MB展示视频及测试/展示素材，私有runs/.harness/配置未进包。进一步逐模块核对76个运行模块及相对导入，未发现缺依赖；纠正初步推断，不将其列为已确认故障。之后仍需在隔离实际生产安装中验证postinstall/构建、精简分发、升级/回退/取消/卸载，不能拿dry-run当安装通过。独立干净Windows环境已向用户询问，未取得独立环境证据；无提交、推送、发布。
+
+## 2026-10-10 18:04：盘点竞态修复与后续环境边界
+
+- 54090290负载最终在204循环/878714ms失败：盘点readdir后stat发现Godot自己的staging UID重命名临时文件已删除，触发共享取消，两个在途save保守记unknown2；failed1、leaked0、cleanuptrue、no warning，62项产物SHA一致。最终report90bac83e/indexb095343c，原件留存；不将旧live的failed0或静态RUNNING当终态，不续接204循环。
+- 新src/soak-inventory.ts精确允许staging内hash.tscn.uidren数字.tmp的ENOENT及已验证正常停止、先持久归档/hash的确切shadow槽删除竞态。采用lstat拒绝已观察链接；未知重要文件丢失、权限、未知类型/越界和配额均失败。允许消失的观察条目仍保守计入文件数，已消失字节UNKNOWN，明确atomicSnapshot=false；不承诺抵御任意恶意OS并发改动或证明瞬时峰值。真实临时文件删除与重要文件拒绝、档案槽控制、额度/权限与目录junction5项先行通过。首次4/5失败是本机创建文件symlink权限EPERM，未skip或改权限，改用实际目录junction验证同分支。
+- 新源2772c854正式T31/2026-10-10T09-34-57-975Z-18188双147/147，build/format/lint、零失败/跳过/取消、两轮自有回收、6SHA通过，manifest0149e44b/results1a8c6b74。新原生压力native-smoke-2026-10-10T09-50-20-034Z-12984为40循环/155925ms/11RSS样本/386文件/62SHA、unknown0/leaked0/cleanup与fixtureDiscarded=true；本短测没有实际碰到瞬时消失，不以单测或40次替代全1000。report590bc208/index5804b257。
+- 独立隐藏新轮native-workload-2026-10-10T09-56-01-752Z-8016，UTC09:56:30.551开始；18:04回查worker8016出生身份和源匹配、6actors、72循环/457222ms/29采样，live failed0/unknown0/no warning。源码冻结，终态/末窗/清理待验，T31 in_progress；新证据evidence/T31-inventory-recheck.json，不提升Gate/生产资格。
+- 再逐文件删除已停5QuUK0和mvuh3F根中8个与原下载SHA匹配的复制EXE，原日志、场景、事务/验证、失败报告未动，路径/进程/字节与删除后不存在核对。另释放724228160B；本轮累计20个复制EXE及两旧预览日志1810570516B，约1.69GiB。原下载保留可恢复副本，无递归删除、无碰既有策略拒绝目标。
+- 用户明确回复目前只有本机；后续T32按本机隔离安装重放，不能称独立机器。T33/T35必需的独立干净Windows环境尚无，不删除该门禁、不扩大生产声明；其它平台也不写VERIFIED。路线仍T31→T32→T33→T34→T35，无提交/推送/发布。
+
+## 2026-10-11：T31 结果容量失败、不可变账本与分步复测
+
+- 上轮2772c854最终512/1000循环、2318433ms FAILED：每个编辑会话完成256次场景编辑后达到MAX_RESULTS。不是保存也占同一个额度；failed1/unknown0/leaked0/cleanuptrue、sourceUnchangedtrue，62项索引原件SHA全部匹配，report3b8a4e96/index10014e01。旧72次RUNNING仅代表历史时刻，不继续累计。新增不可变失败证据T31-result-capacity-failure.json。
+- 新scene_outcomes账本以owner/ID哈希独占槽、会话绑定、预留容量、不可变原件和精确字节SHA读回，将终态从内存转到磁盘。32活跃计划不变，新存储合同4096条/16MiB，每在途记录预留64KiB；未知/损坏/阻塞不视为未执行、不自动重试，旧session仍UNKNOWN，不承诺恢复崩溃后未保存的场景。fixture总体文件/字节与RSS/延迟限额不放宽。
+- 原生存储预检4096条及字节容量、pending、owner/session、损坏和实际目录阻塞通过。第一次stdio1000编辑预检完成全部写后断言FAIL：将不含schema_version的原生status.result与含该字段的外层MCP envelope比较；测试还误以为currentScene元数据包含属性。按原生/外层字段边界修正，并用TEST ONLY原生属性读回确认1000编辑后x=1099、重放后Undo为1098/Redo回1099。第二次真实stdio1000预检1/1、旧ID/冲突/损坏无重写、批准期原生存储阻塞使两后续写UNKNOWN且属性不变。预检非正式同源双轮，更不是完整控制链或生产资格，批准是明确MOCK。
+- 探索性旧RSS比较Node A/B均值约91→187MiB/92→155MiB，编辑器/runtime基本稳定；不是正式末窗判定。注册表锁内每次读确切字节、未变时避免重建整表，紧凑序列化保留全部记录，输入/输出深复制、异常失效缓存、非数组/损坏拒绝覆盖。针对别名、等长外部变更和真实写入阻塞回查通过，先行注册表测试22通过/1因未设置Godot跳过，不冒充零跳过正式验收；之后必须用固定Godot路径同源双轮。
+- 本轮试图清理ZRf1Vn中4个重复EXE的整条命令执行前被本机策略拒绝：删除0字节，不换工具/手段重试这些目标。失败原件与原下载继续保留；前轮实际释放1.69GiB不再计作本轮删除。正常新fixture成功后仍按归属/路径/进程验收回收。
+
+- 冻结新源c7e6ec91正式专项T31/2026-10-11T03-05-21-333Z-28472双162/162、零失败/跳过/取消，build/format/lint和两轮自有回收通过；6个产物SHA匹配，manifest5e6efdf6/resultsf0e4a4e1。包括混合合同/安全/真实文件与进程、合成业务记录的原生存储、真实stdio1000编辑和原生Undo/Redo；MOCK批准不冒充真人UX。不是完整Gates。
+- 同源native-smoke-2026-10-11T03-09-27-023Z-38272真实40循环188690ms/13RSS样本/430文件/959342B、62SHA、unknown0/leaked0/cleanup与fixtureDiscarded=true，report259458ab/index9ce720a3。与第二轮专项时间重叠，仅为压力/正确性预检，不据此宣称正式性能通过。
+- 源码冻结，从零独立隐藏启动native-workload-2026-10-11T03-14-03-193Z-42964，worker42964出生身份/hash匹配，UTC03:14:19.715进入负载；首次回查12循环/58730ms/4份RSS、stderr空。新T31-ledger-recheck.json只记录此历史启动快照，不继承旧512循环，也不是完整1000最终结论。ADR记录方案/取舍/容量/兼容边界；T31仍进行中、后续依赖与生产资格未提升，无提交/推送/发布。
+
+## 2026-10-13：补齐上轮停止终态，精简自动 CI 与默认后台 MCP
+
+- 补记10月11日的实际终态：c7e6ec91负载在328循环/1410076ms协作停止，FAILED/unknown2/leaked0/cleanuptrue，63项SHA核验，report04ca5679/index3a3122fc。非管理员数字PID控制改为原owned run绑定与OS代际复验，Windows句柄先固定再检查；17/17先行通过，模拟旧代际不冒充真实OS PID循环复用。后续共享源码运行时变化且格式失败；正式专项176/176、175/176，4096账本子进程失败，6项SHA核验。独立账本1/1通过不擦除失败，80秒子进程截止未放宽，新增有界退出/超时/输出尾部与阶段诊断；用户确认并行预授权功能是授权修改且尚在编辑，因此保留功能、不再启动冻结长负载。
+- 补记实际清理：仅在停止的dHPHxZ两个确切fixture中删除4个与原下载SHA相同的引擎副本362114080B；原件可恢复副本。删除两份与保留JSON完全相同的UTF-16探测日志和一份未引用的旧90/90成功输出共146202B，旧结果/摘要、失败原件、事务、场景与性能证据保留；没有再次触碰之前策略拒绝的目标。10月13日没有将这笔释放重复计入新删除。
+- 按最新用户请求取消常规push/PR中的长耗时流程：默认CI只留Windows单任务、10分钟总截止、90秒正向列表快速合同测试，取消过时运行，保留build/format/lint/依赖审计；移除自动三平台全量测试与SBOM重复生成，Godot集成和发布验收改为workflow_dispatch，不再自动触发。手动入口/本机验收仍可用，不等于引擎、独立平台或发布资格通过。
+- MCP launch_project/open_runtime_bridge默认headless=true；显式false仍供试玩/渲染截图。持久会话后续沿用sessionId，不选用户的最近进程或无权限会话；CLI/底层默认不变，editor plane不自动启动编辑器，dev_loop已有按截图需求选模式。旧一次性截图仍需独立渲染进程，工具描述和中英文说明明确限制，不承诺所有截图也完全无窗口。
+- 快速合同40/40、真实Godot默认后台与同进程10组状态写入读回2/2通过，均零失败/跳过/取消；成功测试fixture已按归属回收，没有跑耗时完整CI或新1000循环。初次编译发现新测试误读RunRecord.arguments，按实际process.json原件字段修正，不改业务类型或放宽断言。已有validated-write.ts仅格式化，格式前构建JS与格式后生成JS有效token一致（af7ecffe），不变更预授权功能；后续构建/格式/lint回查另核对。新不可变T31-ownership-stop-recheck.json保存失败/清理边界；T31仍进行中，无提交、推送或发布。
+- 最终回查：构建、全仓Prettier、ESLint、脚本/工作流格式和git diff --check通过；快速40/40重跑与真实后台2/2重跑通过，路线台账36任务/7门禁校验通过。新增发现断言的局部变量名首次编译错误已修正后重新构建，不以失败编译生成物作通过。仅本机验证配置与实现，没有触发GitHub工作流、推送源码或重新加载用户现有MCP会话；正在运行的旧服务需用户重启后加载新默认值。
+
+## 2026-10-13：按远端实际耗时进一步合并 CI 与开发验证入口
+
+- 通过GitHub只读API重新检查main/76644fef最近一轮：run37046520219的Linux Godot job约6小时后cancelled、Windows job约18分钟FAILED；run37046520217的发布基线阶段耗时30分43秒后FAILED，后续配置还安排重复全量测试。没有猜测失败根因、取消或改写远端记录；当前修改未推送，因此远端仍是原三个active工作流。
+- 本地删除godot-smoke.yml/release-gate.yml两个冗余workflow（Git历史可恢复，不删除历史运行/evidence），仅保留ci.yml一个Windows/Node22/10分钟job。main push/PR执行一次check，旧运行取消；手动engine开关才下载Godot和追加5文件短小headless smoke，3分钟硬截止。取消自动三平台/完整资格基线/矩阵/重复安装配置与全量.harness上传。依赖审计只在manifest/lock/.npmrc变化、基准diff未知或手动触发时执行；浅克隆/零SHA失败保守审计，不把未知范围当没改依赖。失败只上传runs/ci有界诊断、7天留存。
+- 日常check改为单次build/format/lint与核心MCP stdio/HTTP、审批/哈希CAS/回滚、路径隔离和静态展示页；完整回归保留check:full/npm test，test:built避免调用方重复构建。原发布准备保留严格release:check，但只由一次verify:production baseline承担build/style/full tests/隔离安装fixtures/native recheck，不再额外npm test/test:godot-ci或写实际客户端配置；--plan只读展示六步。未降低T31循环/性能合同、T33独立环境要求或发布资格。
+- 原扩大的快速列表先110/110通过，但加固后112案例的一轮遇到90秒截止；没有延長截止或伪造完成，把深层事务全集/进程崩溃恢复移至显式完整回归，日常仍检验真实stdio和关键写入安全。跳过却exit0的合成负控第一次缺少嵌套Node报告，CI正确拒绝，该控制本身断言失败；清除仅属于Node worker内部的NODE_TEST_CONTEXT后6/6控制通过，不删除接收端权限或放宽skip判断。真实engine缺失也必须NOT_RUN/exit1。最终精简83/83、0fail/skip/cancel、29569ms、owned scratch cleanup PASS；summarySHA3005b42e。失败exit/signal/超时与约20KiB原报告独立保留，不用后续PASS覆盖最后失败结论。
+- 为移除未暂存workflow时仍能进行源码审计，sourceIdentity显式记录tracked deleted条目与null SHA，而不是ENOENT或隐式遗漏；独立临时Git fixture验证删除/恢复指纹，不暂存或提交用户仓库。源码删除、CI守卫、缺引擎、skip负控、依赖diff守卫、release计划均被定向检查。历史门禁不借用；新CI不是生产资格。本轮没有触发GitHub工作流、提交、推送或发布。
+- 最终同实现回查：npm run check的build/format/lint与83/83全部通过；后台原生smoke14/14、13593ms、0fail/skip/cancel、owned scratch cleanup PASS；脚本/YAML格式、git diff --check及36任务/7门禁台账校验通过。时间为本机实测而非hosted runner承诺；完整渲染、深层故障全回归、独立Windows平台和生产资格仍未在本轮执行。只留下一个ci.yml，本轮成功scratch自动回收，最后失败小报告保留。

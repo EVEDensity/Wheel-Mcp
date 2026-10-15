@@ -12,13 +12,28 @@ export async function sourceIdentity(root) {
   })
     .split('\0')
     .filter((name) =>
-      /^(src\/|scripts\/|tests\/|godot-plugin\/|\.github\/workflows\/|docs\/production-roadmap\/run-manifest\.schema\.json$|package(?:-lock)?\.json$|tsconfig\.json$|eslint\.config\.mjs$)/.test(
+      /^(src\/|scripts\/|tests\/|godot-plugin\/|\.github\/workflows\/|\.gitattributes$|docs\/production-roadmap\/run-manifest\.schema\.json$|package(?:-lock)?\.json$|tsconfig\.json$|eslint\.config\.mjs$)/.test(
         name,
       ),
     )
     .sort();
   const files = [];
-  for (const name of names) files.push({ path: name, sha256: sha256(await readFile(path.join(root, name))) });
+  // Hash the resulting source tree, not whether a deletion has been staged.
+  // A deleted path is absent both before and after git add/commit; its removal
+  // still changes the previous tree's fingerprint.
+  const deleted = new Set(
+    execFileSync('git', ['ls-files', '-z', '--deleted'], { cwd: root, encoding: 'utf8' }).split('\0'),
+  );
+  for (const name of names) {
+    if (deleted.has(name)) continue;
+    const bytes = await readFile(path.join(root, name));
+    // Match this repository's LF text checkout policy. Never normalize binary
+    // fixtures: equal text under CRLF/LF is not equal image/audio data.
+    const canonical = /\.(?:[cm]?js|tsx?|json|gd|godot|tscn|tres|cfg|ya?ml|gdshader|glsl|txt|md)$/.test(name)
+      ? bytes.toString('utf8').replace(/\r\n/g, '\n')
+      : bytes;
+    files.push({ path: name, sha256: sha256(canonical) });
+  }
   const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   const diff = execFileSync(
     'git',

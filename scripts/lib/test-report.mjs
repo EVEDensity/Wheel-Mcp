@@ -9,7 +9,9 @@ export function summarizeTestEvents(jsonLines) {
   } catch {
     throw new Error('test report is not valid JSON Lines');
   }
-  const summaries = events.filter((event) => event.type === 'test:summary');
+  // Node emits per-file summaries before its cumulative summary. A truncated
+  // stream must not use one successful file as the whole-suite result.
+  const summaries = events.filter((event) => event.type === 'test:summary' && event.data?.file === undefined);
   if (summaries.length === 0) throw new Error('test report has no final summary');
   const final = summaries.at(-1).data?.counts;
   if (
@@ -22,6 +24,9 @@ export function summarizeTestEvents(jsonLines) {
   }
   if (final.tests === 0 || final.tests !== final.passed + final.failed + final.skipped + final.cancelled + final.todo) {
     throw new Error('test report counts are inconsistent or empty');
+  }
+  if (final.failed === 0 && events.some((event) => event.type === 'test:fail' && !event.data?.skip && !event.data?.todo)) {
+    throw new Error('test report summary conceals a failure event');
   }
   const cases = events
     .filter((event) => event.type === 'test:pass' || event.type === 'test:fail')

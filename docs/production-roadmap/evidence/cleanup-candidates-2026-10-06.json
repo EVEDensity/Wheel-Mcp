@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-06T10:15:39Z",
+  "status": "IDENTIFIED_DELETE_BLOCKED_BY_EXECUTION_POLICY",
+  "deleted": false,
+  "estimatedGiB": 40.065,
+  "targets": [
+    {"path": "C:/Users/temp-admin/AppData/Local/Temp/wheel-gate-WBJRqI", "estimatedGiB": 14.274, "files": 7459, "reparsePoints": 8, "actualProcessReferences": 0},
+    {"path": "C:/Users/temp-admin/AppData/Local/Temp/wheel-gate-vLxaQA", "estimatedGiB": 14.274, "files": 7439, "reparsePoints": 8, "actualProcessReferences": 0},
+    {"path": "C:/Users/temp-admin/AppData/Local/Temp/wheel-gate-FuRuBd", "estimatedGiB": 6.360, "files": 2340, "reparsePoints": 1, "actualProcessReferences": 0},
+    {"path": "C:/Users/temp-admin/AppData/Local/Temp/wheel-gate-b2s07c", "estimatedGiB": 5.157, "files": 1951, "reparsePoints": 1, "actualProcessReferences": 0}
+  ],
+  "ownership": "Exact Oct 2 G4 runner-created disposable wheel-gate roots. Most storage is isolated copied Godot binaries, not text logs. Shared Temp and unrelated folders are out of scope.",
+  "originalReportsRetained": [
+    "runs/production-roadmap/G4/2026-10-02T11-04-23-644Z-34096/manifest.json",
+    "runs/production-roadmap/G4/2026-10-02T12-42-16-281Z-2256/manifest.json"
+  ],
+  "safety": "Resolved absolute parent/name/age and process references were checked. The executing audit PowerShell PID was excluded, preventing its literal target strings from creating a false active-reference result. Never follow nested symlink/junction targets during removal.",
+  "policyOutcome": "Execution rejected the cleanup command before it ran. No alternate deletion mechanism or privilege bypass was attempted. User/manual cleanup or an authorized environment-policy change is needed.",
+  "latestProofRechecked": {"run": "runs/production-roadmap/T29/2026-10-04T10-23-21-214Z-42152", "manifestEntries": 69, "sha256Mismatches": 0},
+  "warning": "Manual successful cleanup does not automatically make G4 PASS; its current-source qualification remains separate. Check process activity again before any later deletion."
+}

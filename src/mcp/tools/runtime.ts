@@ -28,6 +28,7 @@ import {
 import { keycodeSchema, pidSchema, pressedSchema } from '../../input-schemas.js';
 import { collisionQuerySchema } from '../../runtime/physics-query.js';
 import type { ToolRegistrationContext } from '../tool-context.js';
+import { inspectOwnedProcess, stopOwnedProcess } from '../owned-process.js';
 export function registerRuntimeTools(context: ToolRegistrationContext): void {
   const { server, invoke, schemas, policy } = context;
   const sessionId = z.string().min(1);
@@ -46,12 +47,15 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
   } = schemas;
   server.tool(
     'launch_project',
-    'Launch a Godot project.',
+    'Launch a Godot project in the background by default. Use headless:false only for a visible game/renderer. For repeated stateful operations, open one persistent runtime bridge instead of repeatedly launching.',
     {
       godotPath,
       projectPath,
       evidenceDir,
-      headless: z.boolean().optional(),
+      headless: z
+        .boolean()
+        .default(true)
+        .describe('Background logic/physics by default. Set false for visible preview or rendered screenshots.'),
       extraArgs: z.array(z.string()).optional(),
       timeoutMs,
     },
@@ -76,7 +80,11 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     'Stop a registered process after OS identity verification.',
     { pid: pidSchema, timeoutMs },
     async ({ pid, timeoutMs }, extra) =>
-      invoke((context) => runRegistry.stopByPid(pid, context), timeoutMs, extra.signal),
+      invoke(
+        (context) => (policy ? stopOwnedProcess(policy, pid, context) : runRegistry.stopByPid(pid, context)),
+        timeoutMs,
+        extra.signal,
+      ),
   );
 
   server.tool(
@@ -84,7 +92,11 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
     'Cancel a registered process after OS identity verification.',
     { pid: pidSchema, timeoutMs },
     async ({ pid, timeoutMs }, extra) =>
-      invoke((context) => runRegistry.cancelByPid(pid, context), timeoutMs, extra.signal),
+      invoke(
+        (context) => (policy ? stopOwnedProcess(policy, pid, context, true) : runRegistry.cancelByPid(pid, context)),
+        timeoutMs,
+        extra.signal,
+      ),
   );
 
   server.tool(
@@ -95,7 +107,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       invoke(
         async (context) => {
           context.throwIfCancelled();
-          return getProcessStatus(pid);
+          return policy ? inspectOwnedProcess(policy, pid, context) : getProcessStatus(pid);
         },
         timeoutMs,
         extra.signal,
@@ -366,7 +378,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'get_runtime_scene_tree',
-    'Query runtime scene tree.',
+    'Legacy one-shot: query the scene tree in a new background Godot process. For repeated queries, use call_runtime_bridge get_scene_tree with one explicit sessionId.',
     { godotPath, projectPath, bridgePath, evidenceDir, ...sceneTreeQuery, timeoutMs },
     async (args, extra) =>
       invoke(
@@ -523,7 +535,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'capture_runtime_screenshot',
-    'Legacy one-shot: capture a PNG from a new Godot process. Use call_runtime_bridge with one sessionId to capture the current shared state.',
+    'Legacy one-shot: capture a PNG from a new rendered Godot process (may show a game window). For the current shared state, use call_runtime_bridge capture_screenshot with a session opened using headless:false. Headless sessions have no screenshot framebuffer.',
     { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
     async (args, extra) =>
       invoke(
@@ -542,7 +554,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'open_runtime_bridge',
-    'Open a persistent Godot runtime bridge session.',
+    'Open one persistent Godot runtime bridge in the background by default. Reuse its sessionId for input, state and reload without restarting Godot. Use headless:false when a visible preview or rendered screenshot is required; never implicitly attach to another session.',
     {
       godotPath,
       projectPath,
@@ -550,7 +562,10 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       evidenceDir,
       sessionId: z.string().min(1).optional(),
       scenePath: z.string().optional(),
-      headless: z.boolean().optional(),
+      headless: z
+        .boolean()
+        .default(true)
+        .describe('Background logic/physics by default. Set false for visible preview or rendered screenshots.'),
       timeoutMs,
     },
     async ({ godotPath, projectPath, bridgePath, evidenceDir, sessionId, scenePath, headless, timeoutMs }, extra) =>
@@ -579,13 +594,15 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
       method: runtimeMethod,
       params: z.record(z.string(), z.unknown()).optional(),
       operationId: z.string().min(1).max(128).optional(),
+      responseMode,
       timeoutMs,
     },
-    async ({ sessionId, method, params, operationId, timeoutMs }, extra) =>
+    async ({ sessionId, method, params, operationId, responseMode, timeoutMs }, extra) =>
       invoke(
         (context) => callRuntimeBridge(sessionId, method, params || {}, context, operationId),
         timeoutMs,
         extra.signal,
+        responseMode,
       ),
   );
 

@@ -56,6 +56,14 @@ test('unclassified tools and bridge methods fail closed even for admin', async (
   );
 });
 
+test('PID-only ownership results are not process-generation grants', async () => {
+  const client = policy(['read', 'run']);
+  recordToolOwnership(client, 'launch_project', { content: [{ text: JSON.stringify({ pid: 1234 }) }] });
+  client.ownedPids.add(1234); // Explicit stale legacy state, without a run binding.
+  for (const name of ['get_process_status', 'stop_project', 'cancel_project'])
+    await assert.rejects(authorizeToolCall(client, name, { pid: 1234 }), /does not own process/);
+});
+
 test("two clients cannot name each other's run, bridge session or subscription", async () => {
   const alice = policy(['read', 'run', 'write']);
   const bob = policy(['read', 'run', 'write']);

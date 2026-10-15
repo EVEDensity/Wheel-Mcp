@@ -7,16 +7,25 @@ import { registerDiagnosticsTools } from './tools/diagnostics.js';
 import { registerScenarioTools } from './tools/scenario.js';
 import { registerEvidenceTools } from './tools/evidence.js';
 import { createProjectApproval } from './project-approval.js';
+import type { PreapprovedWritesConfig } from './preapproved-writes.js';
 export type { ToolRegistrationContext } from './tool-context.js';
 
 /** Composition only. Schemas and handlers belong to the five domain modules. */
-export function registerAllTools({ server, policy }: { server: McpServer; policy?: McpClientPolicy }): void {
+export function registerAllTools({
+  server,
+  policy,
+  preapprovedWrites,
+}: {
+  server: McpServer;
+  policy?: McpClientPolicy;
+  preapprovedWrites?: PreapprovedWritesConfig;
+}): void {
   const context = {
     server,
     invoke: invokeTool,
     schemas: toolSchemas,
     policy,
-    approveProjectTransaction: createProjectApproval(server, policy?.clientId ?? 'local-client'),
+    approveProjectTransaction: createProjectApproval(server, policy?.clientId ?? 'local-client', preapprovedWrites),
     transactionOwnerId: policy?.clientId ?? 'local-client',
   };
   registerProjectTools(context);

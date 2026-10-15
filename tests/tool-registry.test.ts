@@ -133,6 +133,13 @@ test('official client discovers every unique domain tool; composition root conta
       openWorldHint: false,
     });
     // A successful tools/list is insufficient: annotations must not become the callback.
+    for (const name of ['launch_project', 'open_runtime_bridge']) {
+      const launch = result.tools.find((item) => item.name === name)!;
+      const headless = launch.inputSchema.properties?.headless as { type?: string; default?: boolean };
+      assert.equal(headless.type, 'boolean');
+      assert.equal(headless.default, true);
+      assert.match(launch.description!, /headless:false/);
+    }
     const legacy = await client.callTool({ name: 'list_runs', arguments: {} });
     assert.notEqual(legacy.isError, true);
     assert.doesNotThrow(() => JSON.parse((legacy.content as { text: string }[])[0].text));

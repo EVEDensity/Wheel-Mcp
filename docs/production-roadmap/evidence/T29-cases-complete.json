@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T29",
+  "createdAt": "2026-10-04T10:34:03.061Z",
+  "status": "PASS_CASES_NOT_FULL_BASELINE",
+  "source": "MIXED",
+  "sourceHash": "f0878c7f60db8f04b343641ff6e91ea3f216cd0afe966c35ad5f69ec998d9b54",
+  "run": "runs/production-roadmap/T29/2026-10-04T10-23-21-214Z-42152",
+  "manifestSha256": "f54b20d7d545c16688f6dfc5ac816307f7500ee98a92e815e35f23d51fa809f7",
+  "resultsSha256": "406bd100193d397690750c11a8eb670ee09bc29039090b244a992f894ceb835d",
+  "caseIndexSha256": "bd7eec75258790d04c1bad532217073a0a33e608679ab213a7a854daad01bc9f",
+  "verification": {
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "rounds": [
+      {"name": "focused-tests", "tests": 36, "passed": 36, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"},
+      {"name": "godot-focused", "tests": 36, "passed": 36, "failed": 0, "skipped": 0, "cancelled": 0, "exitCode": 0, "tempCleanup": "PASS"}
+    ],
+    "sourceUnchanged": true,
+    "manifestEvidenceHashesChecked": 69,
+    "manifestEvidenceHashMismatches": 0,
+    "caseReports": 31,
+    "oracleHashesIdenticalBetweenRounds": true
+  },
+  "coreCases": {
+    "requiredMinimum": 30,
+    "passed": 30,
+    "ids": ["N01", "N02", "N03", "N04", "N05", "N06", "U01", "U02", "U03", "U04", "U05", "U06", "P01", "P02", "P03", "P04", "P05", "P06", "A01", "A02", "A03", "A04", "A05", "A06", "S01", "S02", "S03", "S04", "S05", "S06"],
+    "familiesExecuted": ["nodes", "ui", "physics", "animation", "scripts"],
+    "complete": true
+  },
+  "supplementalCases": [
+    {"id": "X01", "status": "PASS", "countsTowardCoreThirty": false}
+  ],
+  "capabilityNotes": [
+    "P05 ShapeCast3D creation is rejected by the frozen tool schema; the bounded overlap oracle uses the declared Area3D intersect_shape query, then rejects historyLimit 257 without replacing the cached sample",
+    "A02 AnimationPlayer.play receives JSON strings as StringName only through the existing variant decoder; unclassified bridge methods remain outside the method enum",
+    "S06 blocks verification.json with an explicit fixture directory so delivery failure stays queryable; it is not a product-client fault"
+  ],
+  "proofBoundary": "Official SDK in-memory protocol and Godot 4.7.2 are real. Host confirmation is an explicit fixture MOCK. Native Undo/Redo uses the test-only editor controller. This run is the current-source focused case suite, not a full baseline and not G4, G5, or G6.",
+  "remaining": [
+    "Current-source full regression",
+    "G4 requalification outside the sandbox symlink blocker",
+    "T30 real installed clients",
+    "T31 duration and fault injection",
+    "G5 and G6"
+  ],
+  "qualification": "NOT_QUALIFIED",
+  "release": "NOT_REQUESTED"
+}

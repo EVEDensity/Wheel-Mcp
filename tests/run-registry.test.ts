@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, utimes, access, mkdir, rmdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -27,6 +27,75 @@ test('RunRegistry persists records, enforces concurrency, and marks dead runs or
 test('launch run ids remain unique when evidence directory is reused', () => {
   const ids = new Set(['run-1-100-1', 'run-1-101-2']);
   assert.equal(ids.size, 2);
+});
+
+test('registry compact encoding retains history and cached records never escape as mutable references', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-cache-'));
+  const storagePath = path.join(root, 'registry.json');
+  const registry = new RunRegistry({ storagePath });
+  const input = { runId: 'immutable', pid: process.pid, projectPath: root, evidenceDir: root };
+  const registered = registry.register(input);
+  input.projectPath = 'mutated-input';
+  registered.projectPath = 'mutated-return';
+  const identity = await readProcessIdentity(process.pid);
+  assert.ok(identity);
+  const attached = registry.attachIdentity('immutable', identity);
+  attached.processIdentity!.executablePath = 'mutated-output';
+  identity.executablePath = 'mutated-identity';
+  for (const r of [
+    registry.get('immutable')!,
+    registry.list()[0],
+    registry.active()[0],
+    registry.findByPid(process.pid)!,
+  ]) {
+    r.projectPath = 'mutated-getter';
+    r.state = 'FAILED';
+    r.processIdentity!.executablePath = 'mutated-getter';
+  }
+  assert.equal(registry.get('immutable')?.projectPath, root);
+  assert.equal(registry.get('immutable')?.state, 'RUNNING');
+  assert.notEqual(registry.get('immutable')?.processIdentity?.executablePath, 'mutated-getter');
+  const terminal = registry.markTerminal('immutable', 'STOPPED', 0);
+  terminal.state = 'FAILED';
+  const disk = await readFile(storagePath, 'utf8');
+  assert.doesNotMatch(disk, /\n/);
+  assert.equal(JSON.parse(disk)[0].state, 'STOPPED');
+  assert.equal(new RunRegistry({ storagePath }).get('immutable')?.state, 'STOPPED');
+});
+
+test('registry byte cache observes same-length external changes and invalidates after failed mutation', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-byte-cache-'));
+  const storagePath = path.join(root, 'registry.json');
+  const first = new RunRegistry({ storagePath });
+  first.register({ runId: 'a', pid: process.pid, projectPath: root, evidenceDir: root });
+  first.markTerminal('a', 'STOPPED');
+  const original = await readFile(storagePath, 'utf8');
+  const externallyChanged = original.replace('STOPPED', 'TIMEOUT');
+  assert.equal(Buffer.byteLength(externallyChanged), Buffer.byteLength(original));
+  await writeFile(storagePath, externallyChanged);
+  assert.equal(first.get('a')?.state, 'TIMEOUT');
+  await writeFile(storagePath, '{corrupted');
+  assert.throws(
+    () => first.register({ runId: 'b', pid: process.pid, projectPath: root, evidenceDir: root }),
+    /unreadable; refusing to overwrite/,
+  );
+  assert.equal(await readFile(storagePath, 'utf8'), '{corrupted');
+  await writeFile(storagePath, '{}');
+  assert.throws(
+    () => first.register({ runId: 'b', pid: process.pid, projectPath: root, evidenceDir: root }),
+    /unreadable; refusing to overwrite/,
+  );
+  assert.equal(await readFile(storagePath, 'utf8'), '{}');
+  await writeFile(storagePath, original);
+  assert.equal(first.get('a')?.state, 'STOPPED');
+  assert.equal(first.get('b'), undefined);
+  first.register({ runId: 'b', pid: process.pid, projectPath: root, evidenceDir: root });
+  const blocked = `${storagePath}.${process.pid}.tmp`;
+  await mkdir(blocked);
+  assert.throws(() => first.markTerminal('b', 'FAILED'), /EISDIR|EPERM|EACCES/);
+  assert.equal(first.get('b')?.state, 'RUNNING', 'Failed persistence cannot leave a cached terminal result');
+  await rmdir(blocked);
+  first.markTerminal('b', 'STOPPED');
 });
 
 test('RunRegistry prevents stopping an unknown run', async () => {
@@ -111,6 +180,41 @@ test('registry reclaims a lock left by a dead owner before loading records', asy
   assert.equal(registry.get('after-crash')?.state, 'ORPHANED');
 });
 
+for (const guard of ['legacy-empty', 'dead-pid'] as const) {
+  test(`registry recovers ${guard} recovery guard without losing persisted records`, async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-recovery-guard-'));
+    const storagePath = path.join(root, 'registry.json');
+    const first = new RunRegistry({ storagePath });
+    first.register({ runId: 'retained', pid: 2147483001, projectPath: root, evidenceDir: root });
+    assert.equal(first.get('retained')?.state, 'ORPHANED');
+    const original = await readFile(storagePath, 'utf8');
+    await writeFile(`${storagePath}.lock`, '2147483000');
+    await writeFile(`${storagePath}.lock.recover`, guard === 'legacy-empty' ? '' : '2147483002');
+    const old = new Date(Date.now() - 60_000);
+    await utimes(`${storagePath}.lock.recover`, old, old);
+    const recovered = new RunRegistry({ storagePath });
+    assert.equal(recovered.get('retained')?.state, 'ORPHANED');
+    assert.equal(await readFile(storagePath, 'utf8'), original);
+    await assert.rejects(access(`${storagePath}.lock`));
+    await assert.rejects(access(`${storagePath}.lock.recover`));
+  });
+}
+
+for (const guard of ['live-pid', 'fresh-empty', 'unknown-owner'] as const) {
+  test(`registry does not steal a ${guard} recovery guard`, { timeout: 8000 }, async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-protected-guard-'));
+    const storagePath = path.join(root, 'registry.json');
+    await writeFile(storagePath, '[]');
+    await writeFile(`${storagePath}.lock`, '2147483000');
+    const owner = guard === 'live-pid' ? String(process.pid) : guard === 'fresh-empty' ? '' : 'invalid-owner';
+    await writeFile(`${storagePath}.lock.recover`, owner);
+    assert.throws(() => new RunRegistry({ storagePath }), /run registry lock is busy/);
+    assert.equal(await readFile(storagePath, 'utf8'), '[]');
+    assert.equal(await readFile(`${storagePath}.lock`, 'utf8'), '2147483000');
+    assert.equal(await readFile(`${storagePath}.lock.recover`, 'utf8'), owner);
+  });
+}
+
 test(
   'four OS processes can append registry records without lock races or lost writes',
   { timeout: 20000 },
@@ -118,6 +222,10 @@ test(
     const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-processes-'));
     const storagePath = path.join(root, 'registry.json');
     const moduleUrl = pathToFileURL(path.resolve('build/src/run-registry.js')).href;
+    await writeFile(`${storagePath}.lock`, '2147483000');
+    await writeFile(`${storagePath}.lock.recover`, '');
+    const old = new Date(Date.now() - 60_000);
+    await utimes(`${storagePath}.lock.recover`, old, old);
     const workers = Array.from(
       { length: 4 },
       (_, worker) =>

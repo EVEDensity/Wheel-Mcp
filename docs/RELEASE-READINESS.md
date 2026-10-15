@@ -1,10 +1,193 @@
 # Release readiness (Windows)
 
+## Source synchronization on October 15 2026
+
+**The current commit is not accepted for stable release.** The final gate timed
+out in the core phase after 120 seconds; build, format and lint completed, but
+the parent did not receive a complete passing test result. An earlier attempt
+also exceeded its 180-second native-safety phase budget without a cumulative
+summary. These are incomplete runs, not PASS. Failure diagnostics remain local.
+
+The maintainer explicitly authorized pushing source with this limitation and
+without creating a stable Release. The prepared package version remains `0.2.0`;
+that version string is not an acceptance result. Full production remains
+`NOT_QUALIFIED`, and GitHub CI/CD stays disabled. See the
+[current source status](releases/0.2.0-source-push.json). The earlier successful
+checkpoint below and its receipt remain historical, tied to the original source.
+
+Pre-push repairs also make the source fingerprint independent of Git staging and
+LF/CRLF text checkout, preserve exact evidence/corpus/WebP bytes under Git, and
+allow the approval-timeout test enough request budget to reach the actual form.
+The required form observation, TIMEOUT result and unchanged-file assertions remain.
+
+## Limited local release on October 15 2026
+
+The maintainer removed long-running acceptance from the current release scope.
+The `0.2.0` candidate uses the separate [Windows local stable profile](LOCAL-STABLE-RELEASE.md).
+`release:gate` now runs only short required safety, runtime, installation and
+dependency checks, with a six-minute total bound. `release:check` validates its
+current-source receipt and artifact/SBOM hashes. A failed gate still blocks
+release; merely removing a long test does not repair its failure.
+
+Full production remains `NOT_QUALIFIED`; deferred T31–T35/G4–G6, original
+mixed-load timeout and independent-machine limitations remain recorded.
+The full checker is `release:check:production`, and its long execution route is
+`release:gate:full`. GitHub CI/CD remains disabled. No push or publication occurs
+from either gate. October 14 records below describe the earlier release scope.
+
+The local gate completed **PASS in 195,910 ms** on Windows, Node **24.18.0**
+and Godot **4.7.2.stable.official.ed1daf0bf**. Core **89/89**, native safety
+**60/60**, headless runtime **14/14** and packaged installation **2/2** all
+finished with zero failures/skips/cancellations/todos and owned scratch cleanup
+PASS. Fresh dependency audit reported **0 known vulnerabilities**. The separate
+`release:check` returned PASS against current source, documents and artifact/SBOM
+hashes. The runtime tarball contains **109 files**, **238,116 compressed bytes**
+and **992,949 unpacked bytes**. These numbers apply only to the local profile.
+See the [compact release receipt](releases/0.2.0-windows-local.json).
+
+## Release preparation on October 14 2026
+
+**Stable release and GitHub push are on hold.** The maintainer explicitly chose
+to wait for stable gates before pushing. The version stays `0.1.0-preview.2`,
+qualification stays **NOT_QUALIFIED**, and GitHub CI/CD stays disabled.
+
+The initial package blockers below have been repaired:
+
+- No consumer install lifecycle. `prepack` builds the runtime; explicit setup
+  reuses packaged JavaScript when no development compiler is installed.
+- An explicit runtime allowlist produces **109 files**, **238,045 compressed
+  bytes** and **992,679 unpacked bytes**. Website, video, vendor, tests and local
+  evidence files are excluded. The initial 12 MB package is historical.
+- A real tarball with a dependency graph pinned from the source lockfile passed
+  both distribution tests: normal lifecycle handling, production dependencies
+  only, no TypeScript, no generated host configuration, prebuilt setup, MCP
+  discovery/project read and resolution of every emitted relative module import.
+  This is a controlled local installation, not a cold-network/independent-machine
+  qualification. The first offline attempt lacked cached metadata; failure was
+  not counted as a pass or used to change lifecycle assertions.
+- SDK/TOML and the URI/IP/proxy/brace dependencies were updated. The four manually
+  refreshed lock entries were taken from exact official registry metadata;
+  archives were downloaded from that registry, SHA-512 checked, cached and then
+  installed with `npm ci --offline --ignore-scripts`. A fresh full `npm audit`
+  succeeded with **0 known vulnerabilities**. Intermediate registry connection
+  failures are not clean audit results.
+- Build, format and lint passed; the core suite passed **85/85**, zero skipped.
+  Two new report checks reject a partial per-file summary or a summary hiding a
+  failure. This does not retroactively alter the older full-suite failure.
+
+The complete local regression did **not** pass: its 15-minute operator bound
+ended before a cumulative summary. The original stream has **182 pass events and
+1 fail event**, not an overall test count or a complete passing suite. The failed
+native 4,096-record ledger probe reached 3,584 records before its unchanged
+80-second child cutoff. The initial failure summary incorrectly displayed the
+last four-case file summary; the parser now requires a cumulative summary.
+The original diagnostics remain at
+`runs/ci/release-prep-full-20261014/` (ignored).
+
+An isolated ledger rerun passed **2/2**, zero skipped, with the original
+80-second child cutoff and 4,096 identities/1,000 editor writes unchanged.
+It verifies replay/corruption/ownership/storage controls but does not erase the
+mixed-load failure or complete T31's separate mixed 1,000-cycle acceptance.
+No ledger safety/capacity controls or acceptance deadlines were weakened.
+
+For the incomplete full run, **160 byte-identical engine copies** were removed
+after checking original SHA-256, containment, every parent for reparse points
+and the absence of active fixture Godot processes: **14,484,563,200 bytes** freed.
+Original engines, scenes, journals and key failure evidence remain. This is not
+complete scratch cleanup, and the older policy-denied roots were not retried.
+
+The maintainer subsequently confirmed that the website materials were authored
+or cleared by the maintainer and authorized their public distribution. This is
+recorded as a maintainer declaration, not independently retrieved upstream terms.
+Original ThreeUI provenance and Godot licensing remain; the runtime package
+still excludes the website. See [third-party notices](../THIRD-PARTY-NOTICES.md).
+
+Remaining stable requirements include current-source full regression and gates,
+T31's mixed workload/fault acceptance, T32 installation/upgrade/rollback/uninstall,
+T33's independent Windows environment, T34 documentation/migration and T35 final
+qualification. An isolated folder on this machine is not an independent Windows
+machine. No task or gate has been marked complete by these packaging fixes.
+
+## Initial audit before the October 14 repairs
+
+**Do not publish the current npm artifact or call this a stable/online release.**
+Publishing source as an explicitly limited local Windows Preview is a separate
+decision from production qualification; it does not require silently completing
+every roadmap item, but requires resolving redistribution rights, documenting
+known defects and making the intended distribution/install route reproducible.
+
+Fresh local checks on Node **24.18.0**: build, format and lint PASS; core suite
+**83/83**, headless Godot smoke **14/14**, targeted installation-fixture/HTTP
+security/transaction/crash-recovery suite **44/44**, all zero skipped and with
+owned scratch cleanup PASS. These are not a full frozen-source regression,
+independent Windows-machine test, human approval UX test or stable qualification.
+`verify:roadmap` passed; `release:check` failed with **NOT_QUALIFIED**, incomplete
+T31–T35/G4–G6 and non-current-source historical evidence/matrices.
+
+The actual packed artifact contained **689 files**, **12,231,759 compressed
+bytes**, **16,555,294 unpacked bytes**: 79 `build/src` files, 154 website/docs
+files, 252 source/compiled test files and 21 vendor files. No local `.env`, host
+configuration, `runs/` or `.harness/` paths appeared in that inventory. The video
+alone is 9,707,748 bytes. There is no explicit `files` allowlist.
+
+An isolated extraction of the real tarball plus the current lockfile successfully
+installed 98 production dependency packages offline. Invoking its exact
+`postinstall` lifecycle failed (exit 1): `scripts/setup.mjs` always runs
+`node_modules/typescript/bin/tsc`, while TypeScript is a development dependency
+and absent from production-only installation. The missing local compiler was
+independently confirmed as `MODULE_NOT_FOUND`. With lifecycle scripts skipped,
+the prebuilt stdio MCP initialized, discovered **71 tools** and read an isolated
+project. The earlier online fresh-cache install timed out; it is not PASS, nor is
+this offline reproduction an independent clean-machine npm installation. CLI
+`--help` is unsupported and its exit 1 is not evidence of missing runtime modules.
+
+Fresh `npm audit --omit=dev --json` reported **5 vulnerable dependency packages:
+1 critical, 1 high, 3 moderate**. Full dependency audit additionally flags the
+development-only `brace-expansion` (6 packages total). Do not equate advisory
+severity with a demonstrated exploitable project endpoint: the SDK's
+[OAuth advisory](https://github.com/modelcontextprotocol/typescript-sdk/security/advisories/GHSA-6qxp-vccf-f47h)
+explicitly excludes SDK servers/stdio clients, and the
+[proxy trust advisory](https://github.com/jshttp/proxy-addr/security/advisories/GHSA-jqcg-44mw-7w3h)
+depends on proxy-trust configuration. The product uses Node HTTP rather than
+an Express proxy-trust endpoint; no affected OAuth client setup was found in
+`src/` or `scripts/`. The locked vulnerable dependencies and failing dependency
+gate still need remediation/re-audit before package release, not an invented
+claim of a current account compromise. No `npm audit fix` was run.
+
+Redistribution permission is **NOT_VERIFIED** for copied ThreeUI source
+(`vendor/threeui-predictive-arc/`, `docs/site/threeui/`, Sylva navigation excerpts)
+and the supplied website video/brand assets. Root MIT and source hashes do not
+establish third-party permission. The official ThreeUI terms page was checked,
+but its terms body could not be retrieved by the text browser; no finding of
+infringement is asserted. Preserve the Godot demo slice's existing MIT notice.
+Resolve rights for historical copies too before making the existing repository
+public; removing a current file does not remove it from Git history.
+
+A bounded, high-confidence credential-pattern scan found no matches in 480
+publishable worktree text files and 1,245 reachable historical text blobs from
+2,647 local Git objects. This is not an exhaustive secret scanner: binary data,
+one blob above 4 MiB, arbitrary unprefixed tokens and un-fetched remote history
+are not covered. Twenty-four current text files contain local absolute paths;
+review intended-public evidence and examples for privacy before disclosure.
+
+The requested independent **Bugbot review is NOT_RUN**: this tool environment
+does not expose the required specialized Bugbot subagent. A generic agent was
+not substituted. These findings are the local audit, not Bugbot certification.
+
+GitHub CI/CD was paused remotely: `ci`, `godot-smoke`, `release-gate` all
+`disabled_manually`, with no in-progress/queued runs. Local `ci.yml` is
+manual-dispatch-only. No commit, push, release, public visibility change or
+client configuration mutation was performed. Compact local diagnostic evidence
+lives in ignored `runs/release-audit-2026-10-14/`; a durable report is also saved
+outside the source tree. Core release findings were not silently fixed by this
+audit. The resume procedure appears below.
+
 ## Current roadmap qualification: NOT_QUALIFIED
 
-The current integrated source is **not production-qualified**. T12–T15 passed
-their declared native-subset acceptance. T16–T35 and G3–G6 must finish before
-promotion; final G2 passed on September 26 with 267 full tests, 74 required native checks
+The current integrated source is **not production-qualified**. T00–T30 have
+historical acceptance within their declared subsets. T31–T35 and G4–G6 remain
+incomplete, and every final gate must bind the actual candidate source before
+promotion. Final G2 passed on September 26 with 267 full tests, 74 required native checks
 and 20 consecutive native authoring/save/reopen/render cycles. The exact source
 and mixed real-engine/mock-approval provenance are recorded in
 [G2 evidence](production-roadmap/evidence/G2-final-gate.json). Earlier G0/G1
@@ -72,36 +255,50 @@ green on Node-only matrix jobs as necessary but **insufficient** evidence.
 
 ## CI coverage
 
-| Workflow           | Runner                           | Godot       | Purpose                                                   |
-| ------------------ | -------------------------------- | ----------- | --------------------------------------------------------- |
-| `ci.yml`           | Node 20/22 × Windows/Linux/macOS | No          | build, install smoke, lint, Node tests (Godot tests skip) |
-| `godot-smoke.yml`  | Windows, macOS, Linux            | Yes (4.7.2) | README smoke + E2E subset; **fails on any skip**          |
-| `release-gate.yml` | Windows                          | Yes         | clean-machine full gate (see below)                       |
+Current policy (October 14, 2026): GitHub execution is paused. Remote workflows
+are manually disabled; only `ci.yml` remains locally, on Windows/Node 22, with
+`workflow_dispatch` as its sole trigger. The retained checks, when explicitly
+re-enabled and manually dispatched, are:
 
-Generic matrix CI is intentionally Node-only. Real Godot smoke coverage lives in
-`godot-smoke.yml` across three OS runners; the Windows-only `release-gate.yml`
-still owns matrix generation and `release:check`. A green `ci.yml` alone cannot
-masquerade as a full runtime gate.
+- One `npm run check` builds once, checks format/lint,
+  core MCP stdio/HTTP, write approval/rollback, path isolation and site
+  assets/links. The test runner has a 90-second deadline; the job has a 10-minute
+  deadline and cancels obsolete runs.
+- Audit dependencies when manifests/lockfiles change, when the base diff is
+  unavailable, or during manual dispatch. Plain code changes do not repeat the
+  network audit. This policy does not promise continuous vulnerability monitoring.
+- Manual dispatch with `engine=true`: add five small headless native test files,
+  bounded to three minutes; no editor/renderer matrix or soak. Missing engines,
+  skipped tests or failed process cleanup fail the smoke rather than qualify it.
+- Upload only bounded CI failure diagnostics, retained seven days; do not upload
+  all `.harness`, private client configuration, engine copies or historical runs.
 
-## Clean-machine release gate (CI)
+`godot-smoke.yml` and `release-gate.yml` are removed. Historical results and
+qualification criteria are retained; a green quick CI is not full engine,
+independent-platform or release qualification.
 
-[`.github/workflows/release-gate.yml`](../.github/workflows/release-gate.yml)
-runs on `main`/`master` push and `workflow_dispatch`:
+Deep transaction journals, process-crash recovery, all editor/render cases and
+long workloads stay in explicit full/manual acceptance. They are not silently
+counted as passed by the fast test allowlist.
 
-1. `npm ci`
-2. `npm run build`
-3. `node scripts/install.mjs --skip-npm`
-4. `npm run format:check`
-5. `npm run lint`
-6. Download Godot 4.7.2 console → set `GODOT_PATH`
-7. `npm test`
-8. `npm run matrix:generate`
-9. `npm run release:check`
-10. `npm run audit:dependencies`
-11. `npm run sbom`
+## Explicit local release preparation
 
-Matrix and SBOM artifacts are uploaded from the runner. `runs/` remains
-gitignored; do not commit generated matrix JSON.
+[`scripts/release-gate-local.mjs`](../scripts/release-gate-local.mjs) is manual.
+Use `npm run release:gate -- --plan` to inspect the steps without an engine or
+side effects. Execution requires Godot and still enforces current-source
+qualification:
+
+1. Validate roadmap state.
+2. Run one complete production baseline, which owns build/style/lint, the full
+   test suite (including isolated installation fixtures) and its native recheck.
+3. Generate the actual release matrix.
+4. Run the unchanged strict release qualification check.
+5. Audit dependencies and generate SBOM.
+
+No additional `npm test`, large Godot subset or workspace/client setup is run
+after the baseline. Removing duplicate execution does not waive any release
+criteria or make this local run an independent clean Windows machine.
+`runs/` remains gitignored; do not commit generated matrix JSON.
 
 ## Documentation follow-up
 

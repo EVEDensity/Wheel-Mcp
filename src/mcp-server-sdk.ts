@@ -17,10 +17,16 @@ import { DEFAULT_STOP_TIMEOUT_MS } from './timeouts.js';
 import { createStdioPolicy } from './mcp/stdio-policy.js';
 import { registerOperationLifecycle, drainMcpOperations } from './mcp/operation-lifecycle.js';
 import { registerDiscovery } from './mcp/discovery.js';
+import type { PreapprovedWritesConfig } from './mcp/preapproved-writes.js';
 
 export function createMcpServer(
   policy?: McpClientPolicy,
-  options: { resourceProjects?: readonly string[]; toolProfile?: 'all' | 'read' } = {},
+  options: {
+    resourceProjects?: readonly string[];
+    toolProfile?: 'all' | 'read';
+    /** Trusted host configuration; HTTP and default factories do not inherit stdio grants. */
+    preapprovedWrites?: PreapprovedWritesConfig;
+  } = {},
 ): McpServer {
   const profile = options.toolProfile ?? process.env.MCP_TOOL_PROFILE ?? 'all';
   if (!['all', 'read'].includes(profile))
@@ -96,7 +102,7 @@ export function createMcpServer(
       );
     },
   });
-  registerAllTools({ server, policy });
+  registerAllTools({ server, policy, preapprovedWrites: options.preapprovedWrites });
   registerDiscovery(server, policy, operations, options.resourceProjects ?? policy?.projectRoots ?? []);
   return server;
 }
@@ -106,7 +112,10 @@ async function main(): Promise<void> {
   const policy = createStdioPolicy();
   if (!process.env.GODOT_PATH && policy.approvedGodotPaths.length === 1)
     process.env.GODOT_PATH = policy.approvedGodotPaths[0];
-  const server = createMcpServer(policy);
+  const manifestPath = process.env.MCP_STDIO_PREAPPROVED_WRITES;
+  const server = createMcpServer(policy, {
+    ...(manifestPath !== undefined ? { preapprovedWrites: { manifestPath } } : {}),
+  });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   let cleanupPromise: Promise<void> | undefined;

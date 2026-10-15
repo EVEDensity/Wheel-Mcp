@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0",
+  "profile": "windows-local",
+  "profileRevision": 1,
+  "localReleaseStatus": "PASS",
+  "productionQualification": "NOT_QUALIFIED",
+  "sourceHash": "276fa66963911aa6e892549e4fe435578722c0f6d66955f267be979c227864e4",
+  "baseCommit": "76644fef8f9ff6d8a504da78abac1f92aa818a33",
+  "startedAt": "2026-10-14T16:05:47.047Z",
+  "finishedAt": "2026-10-14T16:09:02.957Z",
+  "durationMs": 195910,
+  "environment": {
+    "platform": "win32",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf",
+    "engine": "REAL",
+    "approval": "MOCK",
+    "consumerInstall": "REAL_LOCKED_LOCAL_CACHE"
+  },
+  "verification": {
+    "buildFormatLint": "PASS",
+    "core": {"passed": 89, "tests": 89, "skipped": 0},
+    "nativeSafety": {"passed": 60, "tests": 60, "skipped": 0},
+    "headlessRuntime": {"passed": 14, "tests": 14, "skipped": 0},
+    "packageInstallation": {"passed": 2, "tests": 2, "skipped": 0},
+    "allSuites": {"failed": 0, "cancelled": 0, "todo": 0, "ownedScratchCleanup": "PASS"},
+    "knownDependencyVulnerabilities": 0,
+    "independentReceiptAndArtifactCheck": "PASS"
+  },
+  "artifact": {
+    "filename": "wheel-mcp-0.2.0.tgz",
+    "files": 109,
+    "compressedBytes": 238116,
+    "unpackedBytes": 992949,
+    "sha256": "ecc7e47d2a15d6809e73e2c637ee30c700c9c555eb54cc70b64f01292be53dea",
+    "excludedWebsiteVendorTestsPrivateEvidence": true
+  },
+  "sbomSha256": "8272813243e69f3fabc34eb0bb0114f89fc5e7f1d3e63fc7f2d24f6206a20e5b",
+  "fullLocalReceiptSha256": "f6fb193b102523fdc69bd9c3f00667e28b7a601f5e4e0858f6d8018c54bddf4e",
+  "deferredNotPassed": [
+    "long-session and mixed 1000-cycle acceptance",
+    "4096-record high-load performance",
+    "full engine rendering and advanced authoring matrices",
+    "independent Windows machine and other platforms",
+    "additional clients and human approval UX",
+    "public-network deployment",
+    "T31-T35 and G4-G6 full production qualification"
+  ],
+  "knownLimitations": [
+    "Previous mixed full-suite ledger probe reached its unchanged 80-second cutoff; isolated PASS does not erase that failure",
+    "Godot runs trusted project code with the user's OS permissions; headless is not a sandbox"
+  ],
+  "publication": {"pushed": false, "tagged": false, "npmPublished": false, "githubCiEnabled": false}
+}

@@ -38,7 +38,8 @@ function run(command, commandArgs, options = {}) {
 }
 
 const nodeMajor = Number(process.versions.node.split('.')[0] ?? 0);
-if (nodeMajor < 20) {
+const nodeMinor = Number(process.versions.node.split('.')[1] ?? 0);
+if (nodeMajor < 20 || (nodeMajor === 20 && nodeMinor < 19)) {
   fail(`需要 Node.js >= 20.19.0，当前为 ${process.version}。请从 https://nodejs.org/ 安装。`);
 }
 

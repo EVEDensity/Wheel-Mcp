@@ -48,11 +48,21 @@ async function writeJson(filePath, value) {
   await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
-function runBuild() {
+async function runBuild() {
+  // Registry packages are prebuilt. Installing/configuring them must not need
+  // TypeScript, execute an install lifecycle, or mutate unrelated host configs.
+  if (!(await fileExists(path.join(projectRoot, 'node_modules/typescript/bin/tsc')))) {
+    const entries = ['cli.js', 'mcp-server-sdk.js', 'mcp-http-server.js'];
+    if ((await Promise.all(entries.map((entry) => fileExists(path.join(projectRoot, 'build/src', entry))))).every(Boolean))
+      return true;
+    warn('wheel-mcp: prebuilt runtime is missing. Install source development dependencies and run `npm run build`.');
+    return false;
+  }
   const result = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc'], {
     cwd: projectRoot,
     stdio: postinstall ? 'pipe' : 'inherit',
     env: process.env,
+    windowsHide: true,
   });
   if (result.status !== 0) {
     if (postinstall) {
@@ -163,7 +173,7 @@ function restartHint(hostId) {
 
 if (buildOnly || !args.has('--skip-build')) {
   log('Building wheel-mcp...');
-  if (!runBuild()) process.exit(1);
+  if (!(await runBuild())) process.exit(1);
 }
 
 if (buildOnly) process.exit(0);

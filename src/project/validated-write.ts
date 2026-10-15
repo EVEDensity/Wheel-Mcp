@@ -291,11 +291,16 @@ export async function writeValidatedProjectFiles(
     throw new WheelError('CONFLICT', 'Project changed since the preview; obtain and review a fresh candidate');
   if (
     !raw &&
-    normalized.some((f) => !/\.(tscn|tres|gd)$/.test(f.path) && !(Buffer.isBuffer(f.content) && /\.png$/.test(f.path)))
+    normalized.some(
+      (f) =>
+        f.path !== 'project.godot' &&
+        !/\.(tscn|tres|gd)$/.test(f.path) &&
+        !(Buffer.isBuffer(f.content) && /\.png$/.test(f.path)),
+    )
   )
     throw new WheelError(
       'UNSUPPORTED',
-      'Engine validation supports .tscn/.tres/.gd text and .png bytes; choose explicit raw with risk approval for other text',
+      'Engine validation supports root project.godot, .tscn/.tres/.gd text and .png bytes; choose explicit raw with risk approval for other text',
     );
   const intent =
     (raw

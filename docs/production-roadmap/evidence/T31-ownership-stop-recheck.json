@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "createdAt": "2026-10-13T07:50:31Z",
+  "source": "MIXED",
+  "sourceHash": "c7e6ec910e42a2531e6b475374cebaee67bf9557292fcebfae29d797ea0d11b9",
+  "qualification": "NOT_QUALIFIED",
+  "nativeTerminal": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-11T03-14-03-193Z-42964",
+    "status": "FAILED",
+    "startedAt": "2026-10-11T03:14:19.715Z",
+    "finishedAt": "2026-10-11T03:37:49.792Z",
+    "completedCycles": 328,
+    "durationMs": 1410076,
+    "failedCycles": 1,
+    "skippedCycles": 0,
+    "unknownTransactions": 2,
+    "leakedOwnedProcesses": 0,
+    "cleanup": true,
+    "sourceUnchanged": true,
+    "artifactHashesVerified": 63,
+    "reportSha256": "04ca5679f58a1774e158368651707188ffcc56359504254d384e82e00aa653e2",
+    "indexSha256": "3a3122fc1edfc742d444ad6c27c4132bae6d6bd9bf7f34e382b6952b97002782",
+    "reason": "Operator-requested cooperative stop to fix PID ownership binding. Two cancelled in-flight writes remain UNKNOWN; no retry or credit toward a new workload. Historical launch snapshot is not a currently running process."
+  },
+  "ownershipRepair": {
+    "scope": "Non-admin legacy PID controls resolve the original owned run ID and verify its OS process generation; Windows process handle is acquired before generation checks. Never choose the newest foreign run sharing a numeric PID.",
+    "preflight": "17/17 targeted process ownership, permission and inventory checks passed on October 11; simulated stale generation plus actual isolated child is not proof of actual OS PID recycling or full gates."
+  },
+  "laterPartialRegression": {
+    "run": "runs/production-roadmap/T31/2026-10-11T03-45-03-965Z-55184",
+    "sourceHashAtStart": "085d2ed1bfbc3b97650f42068b888e8f2c3580506545eed88f0652f6e7110b33",
+    "status": "FAIL",
+    "counts": [{ "passed": 176, "failed": 0 }, { "passed": 175, "failed": 1 }],
+    "skippedCancelledTodoEachRound": 0,
+    "build": "PASS",
+    "format": "FAIL",
+    "lint": "PASS",
+    "ownedScratchCleanupBothRounds": "PASS",
+    "artifactHashesVerified": 6,
+    "manifestSha256": "5fdc93077618132fcec6dd00f597f5d3162c66d57d0b3c38340184e1c65f7f55",
+    "resultsSha256": "0f605068d52181c979a800770214fdb086a98d3d159041f4b6edd37e38ca6edd",
+    "failure": "4096-record Godot probe child failed; original reporter omitted child exit/timeout diagnostics. Subsequent isolated 1/1 probe passed without changing its 80-second child deadline, but does not erase the failure. Bounded child diagnostics and progress markers added for the next failure. Shared source changed during this run; not a frozen-candidate qualification."
+  },
+  "authorizedConcurrentWork": "User authorized the preapproved-write feature and confirmed shared-source edits were still in progress on October 11. Preserve that feature. No new frozen 1000-cycle workload was started after that instruction.",
+  "cleanupObservedOctober11": {
+    "deletedEngineCopyCount": 4,
+    "deletedEngineCopyBytes": 362114080,
+    "ownedFixture": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-dHPHxZ",
+    "children": ["wheel-editor-91HjMn", "wheel-editor-AtnAcz"],
+    "recoverableOriginalDirectory": "C:/Users/temp-admin/Downloads/Godot_v4.7.2-stable_win64.exe",
+    "consoleSha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+    "engineSha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+    "deletedOldLogBytes": 146202,
+    "logs": [
+      { "path": ".harness/code-audit-probe.log", "bytes": 69374, "sha256": "550ee3801258cfd93a1353898ba466f5a36d082583ac737009ca2caecb731582", "retainedDecodedJson": ".harness/code-audit/results.json", "retainedSha256": "424edf18873d6b859e8398b36c2e79b033999a90386f3d0309a49d5336409abe" },
+      { "path": ".harness/code-audit-probe-2.log", "bytes": 42590, "sha256": "0a827ceab47b519e8cc983ef99be45a4557fe634cbc8fc18db43f25b06ab0cb1", "retainedDecodedJson": ".harness/code-audit/results-2.json", "retainedSha256": "445ec46caf49ca791291962bd83837307c1cf6d0fb3606026f6c988a41870eb0" },
+      { "path": ".harness/code-audit-tests.log", "bytes": 34238, "sha256": "26be59904e2ca8820834419bd44097f99dcd0a39fa05ad7da649d9c1a6494633", "summary": "2026-09-14 exploratory 90/90; zero failed/skipped/cancelled/todo. Full successful output permanently deleted, not current-source qualification." }
+    ],
+    "criticalFailureEvidencePreserved": true,
+    "previouslyDeniedTargetsNotRetried": true
+  },
+  "currentScope": "October 13 change removes automatic heavy CI and defaults two MCP launch tools to headless; it does not waive the local T31 1000-cycle contract, independent T33 environment or T35 production qualification."
+}

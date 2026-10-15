@@ -5,7 +5,7 @@ export default async function* jsonTestReporter(source) {
   for await (const event of source) {
     if (['test:pass', 'test:fail', 'test:summary'].includes(event.type)) {
       const data = event.data;
-      if (event.type === 'test:summary') sawSummary = true;
+      if (event.type === 'test:summary') sawSummary ||= data.file === undefined;
       else if (data.type !== 'suite') {
         counts.tests++;
         if (event.type === 'test:fail') counts.failed++;

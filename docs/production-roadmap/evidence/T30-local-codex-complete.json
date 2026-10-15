@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T30",
+  "status": "PASS_DECLARED_LOCAL_CODEX_SCOPE",
+  "sourceHash": "ff05b51fb9c5790f39a1b1c902b8e66f82a5de482fc5d6a89563fc6b0c49092f",
+  "scopeDecision": {
+    "path": "docs/production-roadmap/ADR-2026-10-09-LOCAL-CODEX.md",
+    "sha256": "9d609c8c1d05c3d86ddfb4e27aa17841c9264b98f4972f33d9ae5bcbb363858d",
+    "authority": "Direct user request on 2026-10-09 to consider only local Codex, temporarily exclude Cursor",
+    "requiredProductClient": "Installed local Codex CLI/app-server native interface via stdio",
+    "noSafetyThresholdChanges": true
+  },
+  "sdkReplay": {
+    "run": "runs/production-roadmap/T30/2026-10-09T09-45-10-384Z-47056",
+    "manifestSha256": "959e1e1b205afe0376e0ce1137951c13da4da613c4d432c9b42e03464a3550b6",
+    "resultsSha256": "2f383d4d062aab0394d28053a3b0cb3dead569b77ef24fa04c53a601bc4f13b5",
+    "caseIndexSha256": "3036b913145da2a27f61967e861ef14852764b2d7a3299e6a988a06c6d36fe42",
+    "rounds": [50, 50],
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "tempCleanup": "PASS",
+    "buildFormatLint": "PASS",
+    "coreCases": 30,
+    "supplementalCases": 1,
+    "pairedCaseOraclesVerified": 31,
+    "caseTransport": "Official SDK StdioClientTransport",
+    "allManifestHashesVerified": 69,
+    "sourceUnchanged": true,
+    "approval": "MOCK fixture host",
+    "scope": "30 fixed native core cases + X01, discovery/resources/prompts/errors/reconnect/cancel/deadline/stdio cleanup. Supplemental resources/prompts tests include memory/HTTP; not all 50 are stdio."
+  },
+  "installedCodex": {
+    "status": "VERIFIED_DECLARED_NATIVE_INTERFACE",
+    "version": "codex-cli 0.162.0-alpha.2",
+    "run": "runs/production-roadmap/T30/codex-probe-2026-10-09T09-50-45-322Z-41260/report.json",
+    "sha256": "c5adc9b8373effce436e3fd94e9319934e5c51230009b5af7a2bc7b010f66e2b",
+    "tools": 71,
+    "resources": 5,
+    "operations": ["configured discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene with native validation", "independent saved byte readback"],
+    "approval": "MOCK exact-plan host; human desktop/TUI UX NOT_RUN",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "fixtureDiscarded": true
+  },
+  "supportMatrix": [
+    {"client": "Official SDK 1.30.0", "transport": "local stdio", "status": "VERIFIED_FROZEN_CASES_AND_CONTRACT", "approval": "MOCK"},
+    {"client": "Codex CLI 0.162.0-alpha.2", "transport": "local stdio via installed app-server", "status": "VERIFIED_REPRESENTATIVE_NATIVE_INTERFACE", "approval": "MOCK exact-plan host"},
+    {"client": "Official SDK 1.30.0", "transport": "loopback HTTP", "status": "TARGETED_TRANSPORT_SECURITY_ONLY", "evidence": "T30-approval-timeout-checkpoint.json", "fullRepairWorkflow": "NOT_VERIFIED"},
+    {"client": "Cursor", "transport": "stdio", "status": "OUT_OF_SCOPE_NOT_VERIFIED", "note": "Actual discovery/read worked; 20s timeout and 120s cancellation left PREPARED/applied0, original script intact. Failures retained, not relabeled PASS."},
+    {"client": "Codex desktop human approval UX", "status": "NOT_RUN_NOT_ADVERTISED"},
+    {"client": "public-network HTTP", "status": "DISABLED_NOT_QUALIFIED"}
+  ],
+  "environmentChange": "October 6 Codex binary path no longer existed (ENOENT before probe); discovered installed October 9 binary from Get-Command and reverified actual version. Old client evidence not reused for new version.",
+  "qualification": "NOT_QUALIFIED",
+  "remainingOutsideT30": ["Current-source full baseline and G4/G5/G6", "T31 8h/1000-cycle soak/chaos/security", "T32-T35 installation/platform/docs/final qualification"],
+  "proofBoundary": "Completion only under explicit local Codex ADR. No human desktop UI/model quality/public deployment claim; no commits, pushes or release."
+}

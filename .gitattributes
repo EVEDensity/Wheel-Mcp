@@ -8,8 +8,14 @@
 *.png binary
 *.jpg binary
 *.jpeg binary
+*.webp binary
 *.gif binary
 *.ico binary
 *.woff2 binary
 *.mp4 binary
 *.mp3 binary
+
+# Evidence and the frozen benchmark corpus are byte-hashed. Preserve their
+# original bytes on Windows instead of rewriting CRLF during git add/checkout.
+docs/production-roadmap/evidence/*.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+benchmarks/historical-defects.v1.json -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

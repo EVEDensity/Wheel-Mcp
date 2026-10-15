@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T30",
+  "taskStatus": "IN_PROGRESS",
+  "status": "PASS",
+  "sourceHash": "d2fa01e139300c19b959449fcdd4a95f5d2c2f5599daa702bbf9cd0723cfb1db",
+  "rootCause": "Global user-wheel-mcp exits during module initialization: dead main lock PID 41744 and legacy empty .lock.recover guard from 2026-09-26 prevent exclusive recovery",
+  "changes": [
+    "Recovery guards publish their owning PID",
+    "On EEXIST, recover only a dead-PID guard or legacy empty regular file older than 30 seconds; then retry exclusive guard acquisition before touching main lock",
+    "Refuse links, live/unknown owners, fresh empty guards, changed identity/timestamps/content and denied access; no retry unlink after replacement"
+  ],
+  "formalRegression": {
+    "run": "runs/production-roadmap/T30/2026-10-06T11-11-25-689Z-52504",
+    "command": "node scripts/verify-production.mjs --focused-client-transport",
+    "rounds": [43, 43],
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "tempCleanup": "PASS",
+    "artifactHashesVerified": 6,
+    "sourceUnchanged": true,
+    "manifestSha256": "449de4ecc2de318afde14ab681a52f0990b22da469d17c50404c89cfbee69953",
+    "resultsSha256": "c7a3a273d50e6e4114808cdeb501bde19b3b261dfe635fd3c8546cab47da04f9",
+    "coverage": "Five guard recovery/protection cases, four-process stale-guard recovery with 100 unique records, existing registry/process identity tests and T30 stdio/loopback HTTP tests"
+  },
+  "originalRegistryStartup": {
+    "status": "PASS",
+    "client": "Official SDK, explicitly not Cursor",
+    "toolsDiscovered": 71,
+    "modelTurns": 0,
+    "projectToolCalls": 0,
+    "permanentClientConfigChanges": false,
+    "recordsRetained": 3917,
+    "retainedFieldsChecked": ["runId", "pid", "projectPath"],
+    "mainLockPresentAfterClose": false,
+    "recoveryGuardPresentAfterClose": false,
+    "backup": ".harness/run-registry.before-cursor-lock-fix-20261006.json",
+    "beforeSha256": "18f28c9633012c74366c1c1718d5c86951a185404cc0f34aedbed86a3b154af6",
+    "note": "Expired process lifecycle refresh/reclamation is normal; registry bytes are not claimed unchanged"
+  },
+  "failureHistory": "Initial standalone run: 18 pass, 2 fail, 1 skip without GODOT_PATH. Two new preservation tests compared a RUNNING record before normal ORPHANED refresh; freeze the refreshed state before snapshot. No preservation assertion removed. Formal same-source double43 has no skips.",
+  "limitations": [
+    "Does not diagnose why isolated wheel_t30 was absent from Cursor's project tool namespace",
+    "No actual Cursor client trace, human approval or fixed four-step dev_loop acceptance",
+    "No current-source full baseline, T31 long-run qualification or public deployment qualification",
+    "Portable path identity checks are not OS-level atomic compare-and-unlink; this targeted recovery does not claim arbitrary filesystem interference qualification"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-11",
+  "engine": "4.7.2.stable",
+  "renderer": "gl_compatibility",
+  "characterCount": 6,
+  "engineDiagnostics": 0,
+  "interactionChecks": {
+    "pauseFreezesTime": true,
+    "squishDeformsActualRig": true,
+    "keyboardSelectsOctopus": true,
+    "returnToGallery": true,
+    "plushTogglesActualMesh": true
+  },
+  "wheelApprovalTests": {
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0
+  },
+  "sourceSHA256": {
+    "scripts/plush_creature.gd": "08f6979db43dd79b209fbe525502cbd216cd12942f5319959446eb1d836b0695",
+    "scripts/plush_geometry.gd": "1df92cfbfff3c5c84e51ed26b0c78906e33d6423aa48f0f8d0890464847405c0",
+    "scripts/plush_materials.gd": "f18a974871c04104745857c3d250d6cc49243a9ef6ae94844b730de355169c25",
+    "scripts/showroom.gd": "6a99960ac50ac38d82bac0f52d3ebb6f401a3e50bc2a19b6b0189df2092beef2",
+    "characters/clownfish.tscn": "7056b63ec0e7c1b4fa5a9fe92af88f72e21277aa8db77cf6bd71a23498ce2f0d",
+    "characters/jellyfish.tscn": "9411e622ee24357885c81f77c9296a91df3fb271f5c3ed701984136d043281cc",
+    "characters/octopus.tscn": "1df9733c4fbdda1374420793e896a8e59f098d2a9c46372a4613525bcb2ea998",
+    "characters/pufferfish.tscn": "61eab92bd3acf472b17c1191902fd5dc7592ef4309dbed783a6a4df48ab4eb7e",
+    "characters/shark.tscn": "1f3cf1aa22299cc6803ea68d00c06d0bf70799209c11c9d7df603b9335993d94",
+    "characters/whale.tscn": "f89b5f4c9f5ab42c7f6550568335c99d1ee3ebfbb077fed073735816fe31b63d",
+    "scenes/showroom.tscn": "16c1210b8b61e0a0b7cdab08dadfadce55c243a6a6a4132dfbf55726413ab6dd"
+  }
+}

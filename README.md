@@ -26,7 +26,7 @@ Project-file writes and repair candidates now require the client's separate MCP 
 
 Optional editor channel: `get_editor_state` reads an already-enabled, privately authorized Godot 4.7.2 editor. Independently opted-in write clients can use exact approved `apply_editor_scene`, bounded resources, native Undo/Redo and `save_editor_scene`. File candidates validate in an isolated project before commit; explicit raw writes report `NOT_RUN`. Native save retains the dirty marker/history. T17 adds bounded UI layouts and flat themes behind the explicit `scene.ui/v1` plugin capability; the user approved the separate human visual review on 2026-09-27. T18 adds bounded 3D physics queries and authoring. T19 adds bounded animation clips, state machines and two-source Blend2 behind `scene.animation/v1`. T20 adds exact shader text/texture-blend templates and a bounded Color/Mix VisualShader graph behind `scene.shader/v1`. T21 adds bounded PNG import, byte-exact transactions and isolated 2D/3D content workflows. The G3 frozen-source gate passed 300 full tests, 105 required Godot-suite checks, 20 native cycles and 18 representative workflow checks; automated approvals were mock. See the [UI boundaries](docs/production-roadmap/UI-AUTHORING-CONTRACT.md), [3D physics boundaries](docs/production-roadmap/PHYSICS-3D-CONTRACT.md), [animation boundaries](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md), [shader boundaries](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md), [content workflow boundaries](docs/production-roadmap/CONTENT-WORKFLOWS-CONTRACT.md), [manual editor setup](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) and [safe save/migration](docs/production-roadmap/SAFE-SAVE-CONTRACT.md). These are deliberately limited types, not full authoring or online production qualification.
 
-T22 is in progress. `analyze_script_semantics` is explicitly heuristic; the new `query_script_semantics` reads bounded symbols, references, definitions and diagnostics from an authorized local Godot editor/LSP. Godot's raw references can include matching strings and comments, so neither tool authorizes rename. See the [semantic service boundary](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md).
+`analyze_script_semantics` is explicitly heuristic; `query_script_semantics` reads bounded symbols, references, definitions and diagnostics from an authorized local Godot editor/LSP. Godot's raw references can include matching strings and comments, so neither tool authorizes rename. See the [semantic service boundary](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md).
 
 Seven controlled cases on 2026-09-13; payload tokens estimated as JSON characters / 4, not billable tokens or runtime speedups.
 
@@ -48,7 +48,27 @@ With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three altern
 
 ## Current status
 
-Release: `0.1.0-preview.2`; production qualification is **NOT_QUALIFIED**. The verified subset is **Windows-only with Godot 4.7.2**, for trusted local projects, not online deployment. T12–T15 passed the historical G2 authoring/save/reopen gate. T16 adds bounded native inheritance/instance overrides, dependency guards and conservative approved scene moves; see the [scene dependency/migration contract](docs/production-roadmap/SCENE-DEPENDENCY-CONTRACT.md). T16–T21 passed G3 on the frozen source; T22–T35/G4–G6 remain pending. Linux/macOS real-engine support, default registry recovery and human client compatibility must be separately qualified. Evidence and exact source identity are in the [task ledger](docs/production-roadmap/tasks.json).
+**Current source snapshot is not an accepted stable release.** The final
+pre-push gate timed out without a complete passing result. The maintainer
+authorized source synchronization only, with no stable Release. Earlier passing
+receipts belong to their recorded source hashes and do not qualify this commit.
+See the [current source status](docs/releases/0.2.0-source-push.json).
+
+Candidate version: `0.2.0`, targeting a **Windows-only local release profile for
+Godot 4.7.2 and trusted projects over stdio**. Stable acceptance requires a passing
+current-source `npm run release:gate` and `npm run release:check`; version alone
+does not grant acceptance. See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
+Long-session/high-load performance, public HTTP, other platforms/clients and
+advanced authoring are outside this stable profile. Automated approvals are
+explicit test doubles, not human desktop UX certification. Full production
+qualification remains **NOT_QUALIFIED**; T31–T35/G4–G6 remain future work, not
+completed tasks. GitHub CI/CD remains disabled and no version is auto-published.
+
+Godot runs project code with your OS permissions; headless operation is not a
+sandbox. Configure explicit project/evidence roots and use only trusted local
+projects. HTTP non-loopback binding is disabled. MIT applies to application code,
+not automatically to website media or copied UI sources; see
+[third-party notices](THIRD-PARTY-NOTICES.md) before redistributing the full site.
 
 ## Quick start
 
@@ -129,6 +149,40 @@ GODOT_PATH = "D:/tools/Godot_console.exe"
 Reload your client and ask it to call `get_godot_version`. If Node is not on the client's PATH, use its absolute executable path.
 
 ## Examples
+
+### Background operation without repeated windows
+
+MCP `launch_project` and `open_runtime_bridge` default to `headless: true`: logic,
+physics, input and state checks run without a game window. Open one runtime bridge,
+then reuse its returned `session_id` as `sessionId` for subsequent
+`call_runtime_bridge` requests; stop it when finished. Do not reopen the bridge for
+every query. Existing editor tools connect to an authorized editor; they do not
+launch another editor.
+
+Set `headless: false` explicitly for a visible preview or rendered screenshots.
+Headless mode has no screenshot framebuffer. `dev_loop` already runs headless
+unless screenshots or a screenshot baseline are requested; legacy one-shot
+screenshots still launch a separate rendered process. CLI/core launch defaults
+are unchanged; use `--headless true` for CLI background launches.
+
+GitHub CI/CD is paused at the owner's request as of October 14, 2026.
+All three existing remote workflows are `disabled_manually`; there were no
+running or queued jobs at the pause check. Local `ci.yml` retains only manual
+dispatch, with no PR or push triggers. Re-enable the remote workflow explicitly
+after opening the source; restore automatic triggers separately if wanted.
+
+The retained Windows workflow runs `npm run check`
+(one build, style/lint, core MCP transport, approval/transaction safety and site
+checks). Dependency auditing runs on manifest/lockfile changes, unknown diffs or
+manual dispatch; obsolete runs are cancelled. In Actions, manually enable
+`engine` to add the short headless Godot smoke. No automatic engine matrix,
+release gate, full regression or soak runs; failure diagnostics expire after
+seven days. CI passing is not release qualification.
+
+Use `npm run check` for daily work, `npm run check:full` for full regression,
+and `npm run test:godot-ci` for the small native smoke. `npm test` still runs all
+tests. Release preparation stays local and explicit: `npm run release:gate --
+--plan` previews its deduplicated steps without running them or publishing.
 
 Try asking your connected client:
 

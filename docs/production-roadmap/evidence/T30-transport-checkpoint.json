@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T30",
+  "taskStatus": "IN_PROGRESS",
+  "status": "PASS",
+  "sourceHash": "0ec48114a38538ee04944b3e98c84ba640fbf37e66e80d6c41fb1403c26e41cd",
+  "run": "runs/production-roadmap/T30/2026-10-06T10-40-04-572Z-36964",
+  "manifestSha256": "aa80916868abbca20e3ddd77ec05c719ceaaca816bec6894a78329fdf49f0028",
+  "resultsSha256": "a3e4dbeee0c7aa59c8f20336bafc54ce07dff3d9e98ef7b5f991514cfac77abd",
+  "command": "node scripts/verify-production.mjs --focused-client-transport",
+  "rounds": [22, 22],
+  "failed": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "tempCleanup": "PASS",
+  "artifactHashesVerified": 6,
+  "sourceUnchanged": true,
+  "approval": "MOCK delayed form handler, eventually declines",
+  "scope": [
+    "Official SDK stdio discovers tools/resources/prompts, validates failures, reconnects and rejects stale resource identity",
+    "Pre-dispatch and in-flight client cancellation, request timeout and connection close during a pending exact write approval; original bytes unchanged and fresh connection usable",
+    "Owned real Godot launch and bridge cleanup on stdio close",
+    "Loopback Streamable HTTP authentication, origin, client scopes/path roots and session isolation",
+    "Official SDK HTTP discovery, bounded resumable responses, rate/size limits, abort/shutdown propagation and owned engine process cleanup"
+  ],
+  "failureHistory": [{
+    "stage": "Initial standalone seven-test run",
+    "passed": 6,
+    "failed": 1,
+    "reason": "In-flight abort expected bare Error.message; installed SDK returns McpError -32001 with message MCP error -32001: Error: Fixed in-flight cancellation",
+    "repair": "Assert exact SDK RequestTimeout code and complete wrapped cancellation message; byte-preservation assertions unchanged",
+    "recheck": "Standalone 7/7 and formal transport double 22/22"
+  }],
+  "limitations": [
+    "Pending-approval controls do not prove cancellation after commit or uncooperative work termination",
+    "HTTP binds only localhost/loopback; no public-network deployment qualification",
+    "No actual Cursor client-trace.jsonl yet; SDK selftest is not Cursor acceptance",
+    "Prior 46/46 core replay and installed Codex probe are on earlier source d6b177d3, not inherited as current-source full regression",
+    "No current-source full baseline; G4 remains BLOCKED and G5/G6 NOT_RUN"
+  ]
+}

@@ -1,0 +1,239 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "createdAt": "2026-10-10T09:19:46.850Z",
+  "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+  "rows": [
+    {
+      "run": "runs/production-roadmap/T31/native-smoke-2026-10-10T08-58-59-443Z-49256",
+      "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+      "status": "COMPLETED",
+      "completedCycles": 40,
+      "durationMs": 272399,
+      "failedCycles": 0,
+      "unknownTransactions": 0,
+      "leakedOwnedProcesses": 0,
+      "cleanup": true,
+      "fixtureDiscarded": true,
+      "warning": null,
+      "error": null,
+      "reportSha256": "f8d6f27dfbd0387fc8103379adf0f399d30a71300a63fb0a604a1925f976ba1e",
+      "indexSha256": "280e42ade50fe71e9c29d03757627cecef6f0d597f979efe75e54b6f1d591985",
+      "artifactsVerified": 62,
+      "hashMismatches": 0,
+      "fixtureData": {
+        "bytes": 894838,
+        "files": 386,
+        "immutableEngineCopies": 2
+      },
+      "responseConfiguration": {
+        "runtimeRpc": "compact",
+        "reload": "compact",
+        "eventHistory": "Native event evidence retained; use separate cursor API, not inline replay",
+        "defaultResponseByteBudgetUnchanged": true
+      },
+      "samples": 18
+    },
+    {
+      "run": "runs/production-roadmap/T31/native-smoke-2026-10-10T08-59-09-795Z-47492",
+      "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+      "status": "COMPLETED",
+      "completedCycles": 4,
+      "durationMs": 97282,
+      "failedCycles": 0,
+      "unknownTransactions": 0,
+      "leakedOwnedProcesses": 0,
+      "cleanup": true,
+      "fixtureDiscarded": true,
+      "warning": null,
+      "error": null,
+      "reportSha256": "d570d234fc04a07b1545f91c1b0b266c059709a5a27d43165632613071cd2522",
+      "indexSha256": "3945f55e78fb9ff9b72405171b3fe6279ab272d0efe589c462665d69967277bb",
+      "artifactsVerified": 62,
+      "hashMismatches": 0,
+      "fixtureData": {
+        "bytes": 413325,
+        "files": 134,
+        "immutableEngineCopies": 2
+      },
+      "responseConfiguration": {
+        "runtimeRpc": "compact",
+        "reload": "compact",
+        "eventHistory": "Native event evidence retained; use separate cursor API, not inline replay",
+        "defaultResponseByteBudgetUnchanged": true
+      },
+      "samples": 7
+    },
+    {
+      "run": "runs/production-roadmap/T31/native-smoke-2026-10-10T09-04-12-110Z-20080",
+      "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+      "status": "FAILED",
+      "completedCycles": 2,
+      "durationMs": 20185,
+      "failedCycles": 1,
+      "unknownTransactions": 0,
+      "leakedOwnedProcesses": 0,
+      "cleanup": true,
+      "fixtureDiscarded": false,
+      "warning": null,
+      "error": "Error: Operator requested cooperative stop; partial workload cannot pass",
+      "reportSha256": "7c7a7e95865160366e2c36569c811432e79c94c35a5ec7f9a5d7869f24c23b88",
+      "indexSha256": "67fecc6638bbbdf23fc8b9c170c8823f745e2bb69333f105f6ac48876a417a08",
+      "artifactsVerified": 63,
+      "hashMismatches": 0,
+      "fixtureData": {
+        "bytes": 326899,
+        "files": 96,
+        "immutableEngineCopies": 2
+      },
+      "responseConfiguration": {
+        "runtimeRpc": "compact",
+        "reload": "compact",
+        "eventHistory": "Native event evidence retained; use separate cursor API, not inline replay",
+        "defaultResponseByteBudgetUnchanged": true
+      },
+      "samples": 1
+    },
+    {
+      "run": "runs/production-roadmap/T31/native-workload-2026-10-10T08-39-35-807Z-53024",
+      "sourceHash": "a2062d89b6f86d93a74fdc3f5ffdba30dfd4aad390ebbeb687805347f91e54e8",
+      "status": "FAILED",
+      "completedCycles": 88,
+      "durationMs": 526515,
+      "failedCycles": 1,
+      "unknownTransactions": 1,
+      "leakedOwnedProcesses": 0,
+      "cleanup": true,
+      "fixtureDiscarded": false,
+      "warning": "MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 drain listeners added to [Socket]. MaxListeners is 10. Use emitter.setMaxListeners() to increase limit\n    at genericNodeError (node:internal/errors:985:15)\n    at wrappedFn (node:internal/errors:539:14)\n    at _addListener (node:events:590:17)\n    at Socket.addListener (node:events:608:10)\n    at Readable.on (node:internal/streams/readable:1135:35)\n    at Socket.once (node:events:652:8)\n    at file:///C:/Users/temp-admin/Desktop/game/Wheel-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js:189:37\n    at new Promise (<anonymous>)\n    at StdioClientTransport.send (file:///C:/Users/temp-admin/Desktop/game/Wheel-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js:180:16)\n    at cancel (file:///C:/Users/temp-admin/Desktop/game/Wheel-mcp/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js:675:23)",
+      "error": "Error: Operator requested cooperative stop; partial workload cannot pass",
+      "reportSha256": "49898b913981dd2baf622ee0dd924adf3fea54a7d554e453be109bc4d4737f24",
+      "indexSha256": "f8c3bbb883d8516b4abaa670a1497b9f3300b993418fbf97d64cfa335602367f",
+      "artifactsVerified": 63,
+      "hashMismatches": 0,
+      "fixtureData": {
+        "bytes": 1510275,
+        "files": 708,
+        "immutableEngineCopies": 2
+      },
+      "responseConfiguration": null,
+      "samples": 33
+    }
+  ],
+  "launch": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-10T09-09-44-413Z-54076",
+    "progress": {
+      "schemaVersion": 2,
+      "status": "RUNNING",
+      "mode": "bounded",
+      "qualification": "NOT_QUALIFIED",
+      "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+      "startedAt": "2026-10-10T09:10:09.208Z",
+      "durationMs": 576523,
+      "completedCycles": 126,
+      "requiredCycles": 1000,
+      "requiredDurationMs": 1,
+      "samples": 37,
+      "lastSampleMs": 565118,
+      "ownedRoot": "C:\\Users\\temp-admin\\AppData\\Local\\Temp\\wheel-soak-smoke-mvuh3F",
+      "reportDir": "C:\\Users\\temp-admin\\Desktop\\game\\Wheel-mcp\\runs\\production-roadmap\\T31\\native-workload-2026-10-10T09-09-44-413Z-54076",
+      "workerPid": 54076,
+      "fixtureData": {
+        "bytes": 2008045,
+        "files": 970,
+        "immutableEngineCopies": 2
+      }
+    },
+    "workerBirthMatches": true
+  },
+  "qualification": "NOT_QUALIFIED",
+  "scopeDecision": "docs/production-roadmap/ADR-2026-10-10-BOUNDED-ACCEPTANCE.md",
+  "formal": {
+    "run": "runs/production-roadmap/T31/2026-10-10T08-53-48-371Z-54956",
+    "manifestSha256": "1c2fb4553ecec22ec7ba58c5798f9e298a2eade76b098eae26571c76d2291392",
+    "resultsSha256": "71032fcad1c4aa5e66e484014ef994e709fa6a54dcd5d11948d38466eecc0f0d",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "rounds": [
+      {
+        "passed": 142,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "cleanup": "PASS"
+      },
+      {
+        "passed": 142,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "cleanup": "PASS"
+      }
+    ],
+    "evidenceHashesVerified": 6,
+    "hashMismatches": 0,
+    "scope": "Mixed synthetic controls and actual Node/CLI/SDK/OS/Godot; not full current-source gates"
+  },
+  "signalDiagnosis": {
+    "installedMcpSdk": "1.30.0",
+    "stack": "shared/protocol.js:675 cancel -> client/stdio.js:189 drain listener",
+    "cause": "SDK anonymous abort listeners remain on the provided shared signal after request completion; abort sends stale cancellation notifications in a burst",
+    "repair": "Fixture/test client links a request-local controller and removes the parent listener in finally; no node_modules edits or raised listener limit",
+    "actualRegressions": [
+      "200 completed SDK stdio calls: zero remaining parent listeners and zero stale cancellation notifications on abort",
+      "Real in-flight pending approval: exactly one cancellation, parent listener removed and file bytes unchanged",
+      "Native cooperative stop after two completed cycles: FAILED as expected, unknown0/leaked0/cleanup=true, no warning"
+    ],
+    "notClaimed": "Not a global SDK patch or human desktop UX proof"
+  },
+  "responseConfiguration": {
+    "runtimeRpc": "compact",
+    "reload": "compact",
+    "eventHistory": "Native event evidence retained; use separate cursor API, not inline replay",
+    "defaultResponseByteBudgetUnchanged": true,
+    "normalDefault": "Unchanged; real stdio/native 220 reload calls exercise full-response paging, exactly 220 native requests, independent compact readback"
+  },
+  "cleanup": {
+    "previousCheckpoint": "docs/production-roadmap/evidence/T31-bounded-checkpoint.json: removed 362114196 bytes",
+    "additionalEngineCopiesRemovedBytes": 724228160,
+    "additionalRoots": [
+      {
+        "root": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-BE5IcV",
+        "fixtures": [
+          "wheel-editor-Tzu9uR",
+          "wheel-editor-xjqqxz"
+        ]
+      },
+      {
+        "root": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-wSrg3U",
+        "fixtures": [
+          "wheel-editor-gGc9Mf",
+          "wheel-editor-kE1mYf"
+        ]
+      }
+    ],
+    "relativeFiles": [
+      ".harness/engine/Godot_v4.7.2-stable_win64_console.exe",
+      ".harness/engine/Godot_v4.7.2-stable_win64.exe"
+    ],
+    "consoleSha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+    "nativeSha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+    "originalSourceDirectory": "C:/Users/temp-admin/Downloads/Godot_v4.7.2-stable_win64.exe",
+    "cumulativeRemovedBytes": 1086342356,
+    "method": "Eight exact copied executables, SHA-matched original and confirmed no associated live process, individually removed and absence verified; failure logs/scenes/transactions retained; no recursive delete",
+    "previousPolicyDeniedRoots": "Not retried or touched"
+  },
+  "continuation": {
+    "required": "Finish the new independent 1000-cycle run and evaluate all windows, native assertions, hashes and cleanup; no old cycles carried over",
+    "nextTasks": [
+      "T32 install/upgrade/rollback/uninstall",
+      "T33 independent clean Windows matrix",
+      "T34 bilingual examples/recovery",
+      "T35 final candidate gates and efficiency evidence"
+    ],
+    "independentWindowsEnvironment": "User asked; not yet confirmed",
+    "publicRelease": "Not requested; no commit/push/publish"
+  }
+}

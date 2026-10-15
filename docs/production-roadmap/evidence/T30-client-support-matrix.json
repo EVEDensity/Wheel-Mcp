@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T30",
+  "status": "PROVISIONAL_NOT_QUALIFIED",
+  "sourceHash": "d2fa01e139300c19b959449fcdd4a95f5d2c2f5599daa702bbf9cd0723cfb1db",
+  "scopePolicy": "Freeze only measured operations and versions; missing client execution cannot be promoted by SDK or user-reported startup success",
+  "entries": [
+    {
+      "client": "Official MCP TypeScript SDK 1.30.0",
+      "transport": "stdio",
+      "status": "VERIFIED_TARGETED_CONTRACT_ONLY",
+      "operations": ["discovery/read", "schema/permission failures", "reconnect/stale resource rejection", "pending-approval cancel/timeout/disconnect", "owned engine cleanup"],
+      "approval": "MOCK",
+      "evidence": "T30-cursor-startup-lock-fix.json",
+      "coreThirtyReplay": "Prior source d6b177d3 double46/46; not inherited as current-source stdio thirty-case replay"
+    },
+    {
+      "client": "Official MCP TypeScript SDK 1.30.0",
+      "transport": "Streamable HTTP, localhost/loopback only",
+      "status": "VERIFIED_TARGETED_CONTRACT_ONLY",
+      "operations": ["authenticated discovery", "origin/client scope/session isolation", "bounded responses/rate limits", "abort/shutdown and owned engine cleanup"],
+      "evidence": "T30-cursor-startup-lock-fix.json",
+      "publicNetwork": "DISABLED_NOT_QUALIFIED",
+      "completeRepairWorkflow": "NOT_VERIFIED"
+    },
+    {
+      "client": "codex-cli 0.160.1 installed app-server",
+      "transport": "configured local stdio MCP via app-server RPC",
+      "status": "VERIFIED_REPRESENTATIVE_NATIVE_INTERFACE_ONLY",
+      "operations": ["71 tools / 5 resources discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene with native validation", "independent saved bytes readback"],
+      "approval": "MOCK exact-plan host; human desktop UI NOT_RUN",
+      "noModelTurn": true,
+      "permanentConfigWrites": false,
+      "evidence": "runs/production-roadmap/T30/codex-probe-2026-10-06T11-19-46-763Z-52492/report.json",
+      "sha256": "75c5ffc9c9082ae57ab0d68cbd1f10c4ca2568eb5864b4e81344e03e2070eb8b",
+      "fixtureDiscarded": true
+    },
+    {
+      "client": "Cursor 3.23.23 installed desktop Agent",
+      "transport": "isolated project wheel_t30 stdio",
+      "status": "NOT_RUN_REPRESENTATIVE_OPERATION",
+      "startupRepair": "Global user-wheel-mcp registry lock failure fixed; user reports success",
+      "actualTrace": "Missing isolated client-trace.jsonl",
+      "initialScriptSha256": "73b4bf1bcc40fab582f40f4e23deea0141ffbcac569b8f367aeaf9f5c10510b9",
+      "required": ["actual isolated discovery", "get_project_info", "read original main.gd", "exact approved dev_loop with native validation", "PASS/persisted/cleanup/zero-error result and independent readback"],
+      "approval": "NOT_VERIFIED",
+      "sdkSelftestCounts": false
+    }
+  ],
+  "remaining": ["Current-source complete regression", "Current-source stdio core-case replay", "Actual Cursor fixed operation and approval evidence", "Final matrix review"],
+  "humanApproval": "No SDK/mock approval is presented as human UI acceptance",
+  "officialCodexProtocolReference": "https://learn.chatgpt.com/docs/app-server"
+}

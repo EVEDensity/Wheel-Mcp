@@ -53,6 +53,10 @@ if (args.includes('--check-report')) {
           '--focused-replay': 'T27',
           '--focused-repair': 'T28',
           '--focused-cases': 'T29',
+          '--focused-clients': 'T30',
+          '--focused-client-transport': 'T30',
+          '--focused-soak-contract': 'T31',
+          '--focused-soak-chaos': 'T31',
         }[args[0]] ?? null)
       : null;
   const gateId = option('--gate') ?? (focused || (args.length === 1 && args[0] === '--baseline') ? 'G0' : null);
@@ -72,48 +76,100 @@ if (args.includes('--check-report')) {
 
 async function runBaseline({ gateId, baselineOnly, focused = null }) {
   const focusedNames =
-    focused === 'T29'
-      ? ['production-case-contract', 'production-case-e2e', 'production-external-slice']
-      : focused === 'T28'
+    focused === 'T31' && args.includes('--focused-soak-chaos')
       ? [
-          'client-repair',
-          'development-loop',
+          'soak-contract',
+          'soak-scheduler',
+          'soak-retention',
+          'soak-inventory',
+          'soak-control',
+          'soak-response',
+          'soak-response-e2e',
+          'soak-client-signal',
+          'soak-chaos',
+          'editor-outcome-ledger',
+          'editor-scene-rpc',
+          'editor-scene-save',
+          'stdio-client-contract',
+          'stdio-cleanup',
+          'streamable-http-security',
+          'method-authorization',
+          'owned-process',
+          'full-cli-mcp-matrix',
+          'real-cli-mcp-consistency',
+          'run-registry',
+          'process-identity',
           'project-transactions',
-          'tool-registry',
-          'script-semantic-service',
-          'script-refactor-e2e',
+          'transaction-recovery',
+          'project-operation-lifecycle',
+          'evidence-log',
+          'session-isolation',
+          'project-path-policy',
         ]
-      : focused === 'T27'
-        ? [
-            'scenario',
-            'scenario-replay-e2e',
-            'run-test-scene',
-            'method-authorization',
-            'scenario-replay-contract',
-            'bridge-handshake',
-          ]
-        : focused === 'T26'
-          ? [
-              'index-scale',
-              'project-index',
-              'index-invalidation',
-              'context-budget-e2e',
-              'response-budget',
-              'project-path-policy',
-            ]
-          : focused === 'T25'
-            ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
-            : focused === 'T22'
-              ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
-              : focused === 'T24'
+      : focused === 'T31'
+        ? ['soak-contract', 'soak-scheduler', 'soak-retention', 'soak-control', 'soak-response']
+        : focused === 'T30' && args.includes('--focused-client-transport')
+          ? ['stdio-client-contract', 'stdio-cleanup', 'streamable-http', 'streamable-http-security', 'run-registry']
+          : focused === 'T30'
+            ? [
+                'production-case-contract',
+                'production-case-e2e',
+                'production-case-families',
+                'production-case-repairs',
+                'production-external-slice',
+                'mcp-resources',
+                'mcp-prompts',
+                'stdio-cleanup',
+                'stdio-client-contract',
+              ]
+            : focused === 'T29'
+              ? [
+                  'production-case-contract',
+                  'production-case-e2e',
+                  'production-case-families',
+                  'production-case-repairs',
+                  'production-external-slice',
+                ]
+              : focused === 'T28'
                 ? [
-                    'context-pack',
-                    'context-budget-e2e',
-                    'response-budget',
-                    'full-cli-mcp-matrix',
-                    'real-cli-mcp-consistency',
+                    'client-repair',
+                    'development-loop',
+                    'project-transactions',
+                    'tool-registry',
+                    'script-semantic-service',
+                    'script-refactor-e2e',
                   ]
-                : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
+                : focused === 'T27'
+                  ? [
+                      'scenario',
+                      'scenario-replay-e2e',
+                      'run-test-scene',
+                      'method-authorization',
+                      'scenario-replay-contract',
+                      'bridge-handshake',
+                    ]
+                  : focused === 'T26'
+                    ? [
+                        'index-scale',
+                        'project-index',
+                        'index-invalidation',
+                        'context-budget-e2e',
+                        'response-budget',
+                        'project-path-policy',
+                      ]
+                    : focused === 'T25'
+                      ? ['mcp-resources', 'mcp-prompts', 'tool-registry', 'context-budget-e2e', 'response-budget']
+                      : focused === 'T22'
+                        ? ['validated-project-write', 'script-refactor-e2e', 'script-semantic-service']
+                        : focused === 'T24'
+                          ? [
+                              'context-pack',
+                              'context-budget-e2e',
+                              'response-budget',
+                              'full-cli-mcp-matrix',
+                              'real-cli-mcp-consistency',
+                            ]
+                          : ['project-index', 'index-invalidation', 'project', 'project-path-policy'];
   const started = Date.now();
   const state = JSON.parse(await readFile(path.join(root, 'docs/production-roadmap/tasks.json'), 'utf8'));
   const gate = state.gates.find((item) => item.id === gateId);
@@ -158,10 +214,13 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
         ...envOverride,
         ...(testTempRoot ? { TEMP: testTempRoot, TMP: testTempRoot } : {}),
         ...(testReport ? { WHEEL_REPLAY_REPORT_DIR: path.join(runDir, 'replay-evidence', name) } : {}),
-        ...(testReport ? {
-          WHEEL_CASE_REPORT_DIR: path.join(runDir, 'case-evidence', name),
-          WHEEL_CASE_SOURCE_HASH: source.sourceHash,
-        } : {}),
+        ...(testReport
+          ? {
+              WHEEL_CASE_REPORT_DIR: path.join(runDir, 'case-evidence', name),
+              WHEEL_CASE_SOURCE_HASH: source.sourceHash,
+              WHEEL_CASE_TRANSPORT: focused === 'T30' ? 'stdio' : 'memory',
+            }
+          : {}),
       },
       encoding: 'utf8',
       timeout: testReport && name === 'full-tests' ? 1800000 : 900000,
@@ -683,7 +742,17 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
     schemaVersion: 1,
     gateId,
     baselineOnly,
-    scope: focused ? focused + ' focused regression only; NOT a complete baseline or qualification gate' : 'complete',
+    scope: focused
+      ? focused +
+        (args.includes('--focused-client-transport')
+          ? ' transport-only'
+          : focused === 'T31'
+            ? args.includes('--focused-soak-chaos')
+              ? ' mixed actual process/filesystem faults plus explicit simulations; NOT 8h workload or final qualification'
+              : ' synthetic contract and short real Node scheduler only; NOT actual soak/engine/chaos'
+            : '') +
+        ' focused regression only; NOT a complete baseline or qualification gate'
+      : 'complete',
     status,
     commands,
     toolsCount: tools.length,
@@ -746,7 +815,11 @@ async function runBaseline({ gateId, baselineOnly, focused = null }) {
   const finished = Date.now();
   const manifest = {
     schemaVersion: 1,
-    caseId: focused ? focused + '-focused-regression' : gateId === 'G0' ? 'T00-baseline' : `${gateId}-gate`,
+    caseId: focused
+      ? focused + (args.includes('--focused-client-transport') ? '-transport-only' : '') + '-focused-regression'
+      : gateId === 'G0'
+        ? 'T00-baseline'
+        : `${gateId}-gate`,
     taskId:
       focused ??
       (gateId === 'G0' ? 'T00' : gateId === 'G1' ? 'T08' : gateId === 'G2' ? 'T15' : gateId === 'G3' ? 'T21' : 'T26'),

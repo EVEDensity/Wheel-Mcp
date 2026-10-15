@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "status": "DETACHED_WORKLOAD_RUNNING_AT_CHECKPOINT; FINAL_RESULT_PENDING",
+  "sourceHash": "eb6987d4f47796f3c8788ab054c574d6bc1760baf90c9117c15452487c20edf1",
+  "qualification": "NOT_QUALIFIED",
+  "preflightEvidence": "docs/production-roadmap/evidence/T31-retention-recheck.json: same-source double133/133, native40-cycle retention/cleanup/hash PASS and native cooperative-stop negative control PASS",
+  "interruptedTemporarySessionRun": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T12-39-46-710Z-44920",
+    "status": "INTERRUPTED_UNEXPECTEDLY; NO_FINAL_REPORT; NOT_QUALIFIED",
+    "lastProgressCycles": 8, "lastProgressDurationMs": 194570, "lastProgressSamples": 13,
+    "lastFileUpdateUtc": "2026-10-09T12:43:41.9950154Z",
+    "observedAt": "2026-10-09T13:43:58Z",
+    "workerPid": 44920, "workerAlive": false, "recordedActorsAlive": 0,
+    "ownedExecutableOrCommandLineMatches": 0,
+    "finalReport": "MISSING", "originalToolSession": "Unavailable: Unknown process id 80050",
+    "cause": "UNDETERMINED. Do not infer user sleep, restart, app update or successful final cleanup from process absence.",
+    "oldProgress": "Historical RUNNING JSON preserved unchanged; not evidence that a process is currently live",
+    "scratch": "Retained for interruption forensics, not deleted and not reused"
+  },
+  "launch": {
+    "method": "Windows Start-Process -WindowStyle Hidden; absolute Node executable, fixed workload argv, repository working directory; dedicated output files",
+    "workerPid": 36400, "processStartedAt": "2026-10-09T13:46:39.0799578Z",
+    "parentPid": 41796, "parentAliveAfterLaunch": false, "workerAliveAfterParentExit": true,
+    "workerOsBirthIdentity": "Verified against inputs.json workerIdentityHash by independent readProcessIdentity",
+    "launcherDirectory": ".harness/t31-detached-20261009T214639037",
+    "stdout": ".harness/t31-detached-20261009T214639037/stdout.log",
+    "stderr": ".harness/t31-detached-20261009T214639037/stderr.log",
+    "observedStderr": "Empty at initial launch check",
+    "permanentConfigurationChanges": false, "powerOrClockSettingsChanged": false,
+    "modelsOrAccountUsage": "No model turn/login/purchase; actual local SDK/editor/runtime workload only"
+  },
+  "currentWorkload": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T13-46-39-507Z-36400",
+    "command": "node scripts/soak-production.mjs --workload",
+    "status": "RUNNING_AT_CHECKPOINT; NOT_A_FINAL_RESULT",
+    "startedAt": "2026-10-09T13:46:55.381Z",
+    "minimumFinishAt": "2026-10-09T21:46:55.381Z",
+    "clientLocalMinimumFinish": "2026-10-10 05:46:56 Asia/Shanghai",
+    "requiredCycles": 1000, "requiredDurationMs": 28800000,
+    "liveCheckpoint": "2026-10-09T13:51:04.097Z",
+    "observedProgressCycles": 10, "observedProgressDurationMs": 279324, "observedProgressSamples": 19,
+    "maxLiveSampleGapMs": 15527, "liveWallMinusMonotonicMs": 339,
+    "sourceUnchanged": true, "workerBirthIdentityMatches": true,
+    "liveFailedCycles": 0, "liveSkippedCycles": 0, "liveUnknownTransactions": 0, "liveLeakedOwnedProcesses": 0,
+    "actorCount": 6, "cyclesMatchRecordedCount": true,
+    "oldCyclesOrDurationCarriedOver": false,
+    "cleanup": "PENDING", "performanceLimits": "PENDING: first stable and last hours not yet complete"
+  },
+  "operationalNotes": [
+    "Local machine and Windows session must stay awake; independent launch does not promise survival across OS/app restarts",
+    "Use birth-bound --request-stop on this exact directory for intentional cancellation; forced terminal termination is not a proper completion",
+    "Judge completion by final report, limit assessment, native/index hashes, source, explicit counters and owned cleanup; neither launcher success nor historical RUNNING text qualifies",
+    "T31 in_progress and T32-T35 todo; G4/G5/G6 and production qualification not inherited from partial tests"
+  ],
+  "publicRelease": "NOT_REQUESTED"
+}

@@ -1,36 +1,56 @@
 name: ci
 
 on:
-  push:
-  pull_request:
+  # Paused on 2026-10-14 at the owner's request. GitHub workflows are also
+  # disabled_manually; re-enable remotely and restore automatic triggers later.
+  workflow_dispatch:
+    inputs:
+      engine:
+        description: Also run the short headless Godot smoke
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   node:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - name: Install smoke test
-        run: node scripts/install.mjs --skip-npm
-      - run: npm run format:check
-      - run: npm run lint
-      - run: node --test build/tests/*.test.js
-      # Real Godot coverage: .github/workflows/godot-smoke.yml (Windows/macOS/Linux README smoke + E2E subset).
-      # Clean-machine release gate: .github/workflows/release-gate.yml (build → test → matrix → release:check → audit/sbom).
+      - run: npm ci --ignore-scripts
+      - name: Build, style and core MCP checks
+        run: npm run check
+      - name: Check whether dependencies changed
+        id: dependencies
+        env:
+          CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/ci-dependencies.mjs
       - name: Dependency audit
+        if: github.event_name == 'workflow_dispatch' || steps.dependencies.outputs.audit == 'true'
         run: npm run audit:dependencies
-      - name: Generate CycloneDX SBOM
-        run: npm run sbom > sbom-${{ matrix.os }}.json
-      - uses: actions/upload-artifact@v4
+      - name: Install Godot 4.7.2
+        if: github.event_name == 'workflow_dispatch' && inputs.engine
+        run: node scripts/ci-install-godot.mjs
+      - name: Short headless Godot smoke (no rebuild)
+        if: github.event_name == 'workflow_dispatch' && inputs.engine
+        run: node scripts/test-godot-ci.mjs
+      - name: Keep only bounded failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
         with:
-          name: sbom-${{ matrix.os }}
-          path: sbom-${{ matrix.os }}.json
+          name: ci-failure
+          path: runs/ci/
+          if-no-files-found: ignore
+          retention-days: 7

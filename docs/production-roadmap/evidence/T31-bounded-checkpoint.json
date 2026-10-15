@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "createdAt": "2026-10-10T08:40:45Z",
+  "sourceHash": "a2062d89b6f86d93a74fdc3f5ffdba30dfd4aad390ebbeb687805347f91e54e8",
+  "qualification": "NOT_QUALIFIED",
+  "scopeDecision": "docs/production-roadmap/ADR-2026-10-10-BOUNDED-ACCEPTANCE.md",
+  "scope": {
+    "mode": "bounded",
+    "reportSchemaVersion": 3,
+    "requiredCycles": 1000,
+    "minimumWallDuration": "WAIVED_BY_USER",
+    "longSessionClaims": "NOT_VERIFIED",
+    "windowDefinition": "RSS completedCycles [20,120) vs [900,1000]; latency cycle indexes [20,120) vs [900,1000)",
+    "safetyAndRssLatencyLimitsUnchanged": true
+  },
+  "historicalFailure": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T13-46-39-507Z-36400",
+    "sourceHash": "eb6987d4f47796f3c8788ab054c574d6bc1760baf90c9117c15452487c20edf1",
+    "status": "FAILED",
+    "completedCycles": 282,
+    "durationMs": 8131245,
+    "error": "TypeError: Cannot read properties of undefined (reading 'value')",
+    "lastRuntimeResponses": "PARTIAL; previous worker expected an immediate .response without snapshot consumption",
+    "artifactsVerified": 62,
+    "hashMismatches": 0,
+    "unknownTransactions": 0,
+    "leakedOwnedProcesses": 0,
+    "cleanup": true,
+    "stderr": "Two MaxListenersExceededWarning drain/Socket entries. Old warning stack absent; not resolved by suppressing or raising listener limit."
+  },
+  "repair": {
+    "changes": [
+      "Consume frozen JSON response pages with get_response_page; never repeat original mutating request",
+      "UTF-8/cursor/reference/size/failure guards and explicit missing runtime response assertion",
+      "New native 220-reload stdio regression exercises actual PARTIAL responses; exact 220 native requests and unchanged scene bytes",
+      "Capture bounded server stderr and warning stacks; warnings abort the workload rather than silently pass",
+      "Fresh-clone stop-test parent creation; new bounded report version preserves legacy evaluation"
+    ],
+    "limitations": "Native paging probe has not reproduced old drain warnings; full bounded run and warning diagnosis remain pending. Approval is MOCK, not desktop human UX."
+  },
+  "formal": {
+    "run": "runs/production-roadmap/T31/2026-10-10T08-35-35-052Z-40824",
+    "manifestSha256": "963f6c320baac03e2746cf65399ea72dd3ca2d32f6e47b2eaebbd51d4074b462",
+    "resultsSha256": "7125d1ca6010a498995d491998eb19fd155ea3b231e5b5fc94ee4d5670e3328b",
+    "sourceHash": "a2062d89b6f86d93a74fdc3f5ffdba30dfd4aad390ebbeb687805347f91e54e8",
+    "checks": [
+      {
+        "name": "build",
+        "status": "PASS"
+      },
+      {
+        "name": "format:check",
+        "status": "PASS"
+      },
+      {
+        "name": "lint",
+        "status": "PASS"
+      },
+      {
+        "name": "focused-tests",
+        "status": "PASS",
+        "tests": {
+          "tests": 140,
+          "passed": 140,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        },
+        "cleanup": "PASS"
+      },
+      {
+        "name": "godot-focused",
+        "status": "PASS",
+        "tests": {
+          "tests": 140,
+          "passed": 140,
+          "failed": 0,
+          "skipped": 0,
+          "cancelled": 0,
+          "todo": 0
+        },
+        "cleanup": "PASS"
+      }
+    ],
+    "evidenceHashesVerified": 6,
+    "hashMismatches": 0,
+    "scope": "Mixed synthetic contract, actual Node/CLI/SDK/OS/Godot and explicit failure simulations; not full Gate regression"
+  },
+  "supersededSmoke": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-10T08-11-42-899Z-37384",
+    "sourceHash": "9162bffb56d95817346cfd62c2d7c859c043fde2a3bba021a763998f8e59c0be",
+    "completedCycles": 40,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "notCurrentSource": true
+  },
+  "launch": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-10T08-39-35-807Z-53024",
+    "workerPid": 53024,
+    "workerBirthIdentityMatches": true,
+    "launcher": ".harness/t31-bounded-20261010T163935063",
+    "startedAt": "2026-10-10T08:39:59.012Z",
+    "status": "RUNNING_AT_CHECKPOINT_NOT_FINAL_RESULT",
+    "observedCycles": 6,
+    "observedDurationMs": 34498,
+    "observedSamples": 3,
+    "priorCyclesCarriedOver": false,
+    "finalAssessment": "PENDING",
+    "noLoginPurchaseModelOrPermanentConfigurationChange": true
+  },
+  "cleanup": {
+    "permanentRemovedBytes": 362114196,
+    "logs": [
+      {
+        "path": ".harness/site-preview.log",
+        "bytes": 59,
+        "sha256": "3064b6e09f6531ea74209ab827c879b5424473c4c388df4afba857ab07e3c164"
+      },
+      {
+        "path": ".harness/site-serve.err.log",
+        "bytes": 57,
+        "sha256": "858821d1668555bb01797a439ac2d9d19e004f0f7e85f6645d6b796e42593992"
+      }
+    ],
+    "engineCopies": {
+      "root": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-EG4lw3",
+      "fixtureDirs": [
+        "wheel-editor-2770Xy",
+        "wheel-editor-3BGqDp"
+      ],
+      "relativeFiles": [
+        ".harness/engine/Godot_v4.7.2-stable_win64_console.exe",
+        ".harness/engine/Godot_v4.7.2-stable_win64.exe"
+      ],
+      "eachFixtureBytes": 181057040,
+      "sourceDirectory": "C:/Users/temp-admin/Downloads/Godot_v4.7.2-stable_win64.exe",
+      "consoleSha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+      "nativeSha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "scope": "Only four byte-identical copied executables removed individually; native originals, failure scratch logs/scenes and reports retained; no recursive delete",
+      "osProcessMatchesBeforeRemoval": 0,
+      "allExactFilesAbsentAfterRemoval": true
+    },
+    "previousPolicyDeniedRoots": "NOT_RETRIED_NOT_TOUCHED"
+  },
+  "nextTasks": [
+    "Complete scoped T31 before T32",
+    "T32 clean install/upgrade/rollback/uninstall",
+    "T33 independent Windows support-matrix evidence",
+    "T34 bilingual migration/recovery/smoke examples",
+    "T35 current-candidate gates/efficiency/qualification; publication requires separate authorization"
+  ]
+}

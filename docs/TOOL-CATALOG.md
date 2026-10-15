@@ -15,6 +15,7 @@ Current transaction migration: project text/scene writes, `dev_loop` edits and c
 - Static project tools inspect files without a running game.
 - `get_editor_state` inspects an already-enabled, authenticated editor, not a game process. It reports unsaved scenes and selection without saving or mutating them. See [manual authorization and editor plane contract](production-roadmap/EDITOR-BRIDGE-CONTRACT.md).
 - `open_runtime_bridge` / `call_runtime_bridge` / `stop_runtime_bridge` keep one live game session; use the returned `sessionId` for interactions that must share state.
+- MCP `launch_project` / `open_runtime_bridge` default to `headless: true` (no game window). Explicit `headless: false` is required for a visible preview or rendered framebuffer. Screenshots cannot be captured in headless mode; `dev_loop` selects a rendered process only when a screenshot/baseline is requested.
 - Legacy one-shot runtime tools launch separate work; do not assume a prior call's input or mutation survives.
 - `dev_loop` owns a fresh runtime and cleanup for a bounded validation; `run_test_scene` uses the Scenario schema, not the `dev_loop` schema.
 - Bridge RPC names such as `get_property` are not standalone MCP tool names. They belong in the appropriate bridge/loop method field.
@@ -78,7 +79,7 @@ Registration: [`src/mcp/tools/runtime.ts`](../src/mcp/tools/runtime.ts).
 | `get_runtime_scene_tree`       | Query runtime scene tree.                                             |
 | `get_specialized_state`        | Read bounded native state, including Camera3D and read-only NavigationAgent3D.                                       |
 | `inject_runtime_input`         | Inject a runtime key event.                                           |
-| `launch_project`               | Launch a Godot project.                                               |
+| `launch_project`               | Launch in the background by default; explicit `headless:false` previews. |
 | `list_active_runs`             | List currently active isolated runs.                                  |
 | `list_event_subscriptions`     | List persisted runtime event subscriptions.                           |
 | `list_runs`                    | List isolated runs and detect orphans.                                |

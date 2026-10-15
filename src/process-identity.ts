@@ -27,13 +27,15 @@ const windowsStopScript = `
 $ErrorActionPreference = 'Stop'
 $p = Get-Process -Id ([int]$env:WHEEL_IDENTITY_PID) -ErrorAction SilentlyContinue
 if ($null -eq $p) { Write-Output 'NOT_FOUND'; exit 0 }
+# Pin the process handle before inspecting identity; never reopen a recycled
+# numeric PID between the generation check and Kill.
+$null = $p.Handle
 if ($p.StartTime.ToUniversalTime().ToString('o') -cne $env:WHEEL_IDENTITY_START -or
     $p.Path -ine $env:WHEEL_IDENTITY_EXE) {
   Write-Output 'MISMATCH'
   exit 0
 }
-# Hold the Process object and its handle from identity check through Kill.
-$null = $p.Handle
+# Hold the same Process object/handle through Kill.
 $p.Kill()
 if ($p.WaitForExit(5000)) { Write-Output 'STOPPED' }
 else { Write-Output 'TIMEOUT' }

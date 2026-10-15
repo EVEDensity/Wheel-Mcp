@@ -15,6 +15,7 @@ export type McpClientPolicy = {
   approvedBridgePaths: readonly string[];
   approvedBridgeHashes: readonly string[];
   ownedPids: Set<number>;
+  ownedPidRuns: Map<number, string>;
   ownedRunIds: Set<string>;
   ownedBridgeSessions: Set<string>;
   bridgeEvidenceDirs: Map<string, string>;
@@ -166,6 +167,7 @@ export function createClientPolicy(input: {
     approvedBridgePaths: (input.approvedBridgePaths ?? []).map((candidate) => path.resolve(candidate)),
     approvedBridgeHashes: input.approvedBridgeHashes ?? [],
     ownedPids: new Set(),
+    ownedPidRuns: new Map(),
     ownedRunIds: new Set(),
     ownedBridgeSessions: new Set(),
     bridgeEvidenceDirs: new Map(),
@@ -314,7 +316,8 @@ export async function authorizeToolCall(
     assertApprovedPath(args.godotPath ?? process.env.GODOT_PATH, policy.approvedGodotPaths, 'godotPath');
   }
   if (typeof pid === 'number' && ['stop_project', 'cancel_project', 'get_process_status'].includes(toolName)) {
-    if (!policy.ownedPids.has(pid) && !policy.scopes.has('admin')) {
+    const runId = policy.ownedPidRuns.get(pid);
+    if ((!policy.ownedPids.has(pid) || !runId || !policy.ownedRunIds.has(runId)) && !policy.scopes.has('admin')) {
       throw new McpAccessError(`client ${policy.clientId} does not own process ${pid}`);
     }
   }
@@ -435,8 +438,17 @@ export function recordToolOwnership(policy: McpClientPolicy, toolName: string, r
   if (typeof text !== 'string') return;
   try {
     const value = JSON.parse(text) as Record<string, unknown>;
-    if (toolName === 'launch_project' && typeof value.pid === 'number') policy.ownedPids.add(value.pid);
-    if (toolName === 'launch_project' && typeof value.run_id === 'string') policy.ownedRunIds.add(value.run_id);
+    if (
+      toolName === 'launch_project' &&
+      Number.isSafeInteger(value.pid) &&
+      Number(value.pid) > 0 &&
+      typeof value.run_id === 'string' &&
+      value.run_id.length > 0
+    ) {
+      policy.ownedPids.add(value.pid as number);
+      policy.ownedRunIds.add(value.run_id);
+      policy.ownedPidRuns.set(value.pid as number, value.run_id);
+    }
     if (toolName === 'open_runtime_bridge' && typeof value.session_id === 'string') {
       policy.ownedBridgeSessions.add(value.session_id);
       policy.ownedRunIds.add(value.session_id);

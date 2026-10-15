@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "status": "PASS_RETENTION_AND_STOP_RECHECK; RESTARTED_FULL_WORKLOAD_RUNNING_AT_CHECKPOINT",
+  "sourceHash": "eb6987d4f47796f3c8788ab054c574d6bc1760baf90c9117c15452487c20edf1",
+  "qualification": "NOT_QUALIFIED",
+  "defect": {
+    "kind": "WORKER_RETENTION_BUDGET_MISMATCH_DETECTED_BEFORE_EXHAUSTION",
+    "observedOldFilesPerCycle": 16,
+    "composition": { "shadow": 10, "transactions": 3, "validation": 3 },
+    "frozenMaxFiles": 16000,
+    "reason": "1000 cycles alone consume 16000 files; fixed fixture overhead makes completion impossible under the frozen file quota",
+    "repair": "Archive first/latest successful stopped shadows, retain every native terminal record and file SHA, then remove exactly the ten verified regular shadow files; preserve all performance, transaction and validation records",
+    "limitsNotRelaxed": "8h/1000, 16000 files, 192MiB mutable fixture, 32MiB trace, 16MiB report, RSS20% AND128MiB, latency1.5x and sampling gap30s unchanged"
+  },
+  "originalWorkload": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T11-59-35-541Z-19764",
+    "sourceHash": "04f1c3c9957d21deb5e3f8069dd06bf54e882a38310534352e0f9cf206d7f6c3",
+    "status": "ABORTED_BY_OPERATOR_AFTER_RETENTION_AUDIT; NOT_A_QUALIFIED_RESULT",
+    "lastProgressCycles": 34, "lastProgressDurationMs": 930206,
+    "finalReport": "MISSING: terminal Ctrl-C ended process group before finally completed; do not label cleanup acceptance PASS",
+    "processAudit": "All six recorded actor PIDs and paths/command-lines referring to the stopped scratch were absent after cancellation",
+    "criticalArchives": [
+      { "path": "stopped-critical-A.zip", "bytes": 164755, "sha256": "1c7f76d6f9e0284d65fef3734f556a03c8b7435425489fd0013323e34680a0e1", "verifiedNativeFiles": 286, "decodedBytes": 357388 },
+      { "path": "stopped-critical-B.zip", "bytes": 164830, "sha256": "697f5cc10777012d4e83cf383181fe2da33b0d798f50028d5e55144395e68cab", "verifiedNativeFiles": 286, "decodedBytes": 357369 }
+    ],
+    "archiveVerification": "All 572 ZIP entries individually decoded and SHA-compared with original native files; no engine/profile/editor credential configs included",
+    "scratch": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-rU4J1s",
+    "scratchRemoval": "BLOCKED_BY_EXECUTION_POLICY before command execution. Target remains; command's second checks/removal did not execute. No alternate mechanism attempted."
+  },
+  "focusedRegression": {
+    "run": "runs/production-roadmap/T31/2026-10-09T12-31-55-964Z-38604",
+    "rounds": [133, 133], "failed": 0, "skipped": 0, "cancelled": 0,
+    "buildFormatLint": "PASS", "ownedScratchCleanup": "PASS", "artifactHashesVerified": 6,
+    "manifestSha256": "846b9abbe177cc526541300a9eced5213d20119520d129067f2f3c8903824b66",
+    "resultsSha256": "7bd86a3a90428413ea131f69dc7e7732873183deb629a50e5a5b81a82ee62dfc",
+    "source": "MIXED: synthetic contracts/retention metadata, real Node/CLI/OS/SDK/Godot controls, explicit ENOSPC/EACCES/approval simulations",
+    "newControls": "Archive before removal; failed/live/foreign/incomplete/forced/error/unexpected/changed/hard-linked evidence preserved; exact path guard; CLI OS-birth mismatch/stopped/out-of-run/duplicate request rejection",
+    "note": "Not a full current-source baseline or G4/G5/G6; all 133 cases are not claimed as real engine operations"
+  },
+  "sameSourceStress": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T12-34-36-630Z-33176",
+    "status": "PASS_NATIVE_SMOKE_NOT_SOAK", "completedCycles": 40, "durationMs": 156062,
+    "rssSamples": 11, "maxGapMs": 15609,
+    "fixtureDataBytes": 894598, "fixtureDataFiles": 386,
+    "successfulShadowsArchivedAndPruned": 40,
+    "growth": "Six retained transaction/validation files per cycle plus fixed overhead; old sixteen-file/cycle mismatch removed",
+    "hashVerification": "62 indexed files verified; all four first/latest raw shadow slots match their recorded per-file hashes",
+    "artifactHashesVerified": 62, "retainedBytes": 655477,
+    "reportSha256": "c9f68df14aae8edab57836d9882462ba5d8047a76650b4dc507dd5a3d040a564",
+    "indexSha256": "6bf81ce4cc4ee5ec697ae7ab96dbd3dbe52f31adf3c0133c62d0a30c5c3d3eda",
+    "failedCycles": 0, "unknownTransactions": 0, "leakedOwnedProcesses": 0,
+    "cleanup": true, "fixtureDiscarded": true,
+    "source": "REAL native rendering/validation/OS identity; exact approval MOCK; not eight hours"
+  },
+  "sameSourceCooperativeStop": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T12-33-08-983Z-25888",
+    "status": "PASS_NEGATIVE_CONTROL; WORKER_CORRECTLY_FAILED_AND_REFUSED_QUALIFICATION",
+    "completedCycles": 2, "durationMs": 34293, "workerExitCode": 1,
+    "reportWritten": true, "cleanup": true, "unknownTransactions": 0, "leakedOwnedProcesses": 0,
+    "artifactHashesVerified": 63,
+    "reportSha256": "9765ec4fd5ae7c60a3596ea1b03f37a1323bf87cfac7ccd3202c51e9799d756c",
+    "expected": "STOP_REQUESTED_NOT_YET_STOPPED from birth-bound CLI request, followed by FAILED final report and refused qualification; no forced process kill",
+    "scratch": "Retained by failure policy; not claimed removed"
+  },
+  "restartedWorkload": {
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T12-39-46-710Z-44920",
+    "command": "node scripts/soak-production.mjs --workload",
+    "status": "RUNNING_AT_CHECKPOINT; NOT_A_FINAL_RESULT",
+    "workerPid": 44920, "startedAt": "2026-10-09T12:40:26.958Z",
+    "minimumFinishAt": "2026-10-09T20:40:26.958Z",
+    "clientLocalMinimumFinish": "2026-10-10 04:40:27 Asia/Shanghai",
+    "observedCycles": 4, "observedDurationMs": 83323, "observedSamples": 6,
+    "requiredCycles": 1000, "requiredDurationMs": 28800000,
+    "oldCyclesOrDurationCarriedOver": false,
+    "limitsAndCleanup": "PENDING final report/assessment/artifact hashes; no completed T31 or qualification claim"
+  },
+  "remaining": ["Actual new eight-hour/1000-cycle completion and threshold/cleanup/native evidence acceptance", "T32-T35 after T31 done", "Current-source G4/G5/G6 and production eligibility"],
+  "publicRelease": "NOT_REQUESTED"
+}

@@ -4,11 +4,37 @@
   "createdAt": "2026-09-14T16:05:02.6315047+08:00",
   "execution": {
     "mode": "strict-sequential",
-    "nextTask": "T29",
+    "nextTask": "T31",
     "allowedStatuses": ["todo", "in_progress", "blocked", "done"],
     "maxInProgress": 1,
     "autoCommit": false,
     "autoPublish": false
+  },
+  "acceptanceScope": {
+    "revision": "2026-10-10-local-codex-bounded",
+    "authority": "Direct human request: 暂时不用考虑cursor的，只要codex本机即可",
+    "decision": "docs/production-roadmap/ADR-2026-10-09-LOCAL-CODEX.md",
+    "requiredProductClients": ["installed local Codex CLI/app-server native interface"],
+    "primaryTransport": "stdio",
+    "excludedClientClaims": ["Cursor VERIFIED", "desktop human approval UX", "public-network HTTP"],
+    "safetyAndSoakThresholdsUnchanged": false,
+    "safetyThresholdsUnchanged": true,
+    "durationDecision": "docs/production-roadmap/ADR-2026-10-10-BOUNDED-ACCEPTANCE.md",
+    "durationAuthority": "Direct human request: 完整 8 小时验收可以跳过，并且在文档中删除",
+    "minimumWallDuration": "WAIVED_BY_USER",
+    "requiredNativeCycles": 1000,
+    "longSessionClaims": "NOT_VERIFIED"
+  },
+  "activeReleaseTrack": {
+    "profile": "windows-local",
+    "version": "0.2.0",
+    "currentAcceptance": "NOT_ACCEPTED_FINAL_GATE_TIMEOUT",
+    "sourceSyncAuthority": "Direct human confirmation: 先推送源码，明确验收未通过、不创建 Release",
+    "authority": "Direct human request: 在最短的时间内完成稳定版，目前那些时间过长的内容不需要实现",
+    "decision": "docs/LOCAL-STABLE-RELEASE.md",
+    "longAcceptance": "DEFERRED_BY_USER_NOT_PASS",
+    "fullProductionRoadmapBlocksLocalRelease": false,
+    "productionQualificationUnchanged": true
   },
   "baseline": {
     "version": "0.1.0-preview.2",
@@ -915,12 +941,7 @@
       "id": "T17",
       "title": "UI 布局、主题与信号批量搭建",
       "phase": "P3",
-      "dependencies": [
-        "T12",
-        "T13",
-        "T15",
-        "T16"
-      ],
+      "dependencies": ["T12", "T13", "T15", "T16"],
       "estimatedDays": {
         "min": 3,
         "max": 5
@@ -981,12 +1002,7 @@
       "id": "T18",
       "title": "3D Transform、碰撞与导航可观测性",
       "phase": "P3",
-      "dependencies": [
-        "T03",
-        "T13",
-        "T15",
-        "T16"
-      ],
+      "dependencies": ["T03", "T13", "T15", "T16"],
       "estimatedDays": {
         "min": 3,
         "max": 5
@@ -1220,38 +1236,44 @@
         "max": 5
       },
       "status": "done",
-      "evidence": [{
-        "id": "T23-FOCUSED-PROGRESS",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T23-progress.json",
-        "sha256": "728812c55e1c4dc0bbc352a3c99013188c6b1d42c666d0629d8fea1b9fb81f6f",
-        "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
-        "createdAt": "2026-10-01T16:39:10Z",
-        "source": "REAL"
-      }, {
-        "id": "T23-FINAL-BASELINE",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T23-project-index.json",
-        "sha256": "c3fe7e854f3b2ec905065c812bbde236f2a254356ea75dbd258a7df54fe92996",
-        "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
-        "createdAt": "2026-10-01T16:53:54Z",
-        "source": "MIXED"
-      }],
-      "verification": [{
-        "name": "T23 focused index/path regression",
-        "command": "npm.cmd run verify:production -- --focused-index",
-        "kind": "focused-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T23-FOCUSED-PROGRESS"
-      }, {
-        "name": "T23 same-source full baseline and independent Godot regression",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "full-baseline-native-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T23-FINAL-BASELINE"
-      }],
+      "evidence": [
+        {
+          "id": "T23-FOCUSED-PROGRESS",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T23-progress.json",
+          "sha256": "728812c55e1c4dc0bbc352a3c99013188c6b1d42c666d0629d8fea1b9fb81f6f",
+          "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+          "createdAt": "2026-10-01T16:39:10Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T23-FINAL-BASELINE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T23-project-index.json",
+          "sha256": "c3fe7e854f3b2ec905065c812bbde236f2a254356ea75dbd258a7df54fe92996",
+          "sourceHash": "56debb5072d25cc7577a85d4cf63291328d6974fb12f6b5d07d42331f3892ed4",
+          "createdAt": "2026-10-01T16:53:54Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T23 focused index/path regression",
+          "command": "npm.cmd run verify:production -- --focused-index",
+          "kind": "focused-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T23-FOCUSED-PROGRESS"
+        },
+        {
+          "name": "T23 same-source full baseline and independent Godot regression",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "full-baseline-native-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T23-FINAL-BASELINE"
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-02：有界项目隔离内存索引、增量文件/词法元数据复用、可选 watcher、强制重哈希重扫、UID/资源/节点/反向关联及公共 search/info 已实现。二进制检索和并发冲突先复现失败再修复，定向两轮 22/22；同源完整 baseline 全量318/318、独立Godot109/109、构建/格式/lint/两轮清理PASS，零失败/跳过。词法辅助不是语义授权，10k/50k性能属T26；G4仍NOT_RUN。见 PROJECT-INDEX-CONTRACT.md、T23-project-index.json。",
       "completedAt": "2026-10-02T00:53:54+08:00"
@@ -1266,91 +1288,104 @@
         "max": 5
       },
       "status": "done",
-      "evidence": [{
-        "id": "T24-FOCUSED-PROGRESS",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-progress.json",
-        "sha256": "ad84b26a66d7bb840becaa7c4d4099a6fe1ce851258183ba598c2535dd729037",
-        "sourceHash": "9dd69e013739fb7fa444daffb28eeb27b32f4cfed15846064440aa78be888c29",
-        "createdAt": "2026-10-01T17:13:10Z",
-        "source": "REAL"
-      }, {
-        "id": "T24-COMPATIBILITY-FOLLOWUP",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-compatibility-followup.json",
-        "sha256": "6ab823ce4095ea822dd82efd1d552b89494dab049a63edc2d31237d637dbfa6f",
-        "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
-        "createdAt": "2026-10-01T17:43:35Z",
-        "source": "REAL"
-      }, {
-        "id": "T24-BUDGET-FULL-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-budget-checkpoint.json",
-        "sha256": "f19c27b1bba6c0e39e6fcfb158c04984602449f3eb211d0e6ed67c201b6fd7eb",
-        "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
-        "createdAt": "2026-10-01T17:54:33Z",
-        "source": "MIXED"
-      }, {
-        "id": "T24-TARGETING-FOCUSED",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-targeting-focused.json",
-        "sha256": "d4ea64ef850bbebe9edf58e172dbf91c5c9a33d299f54afe7d8e5d878687c636",
-        "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
-        "createdAt": "2026-10-01T18:16:10Z",
-        "source": "REAL"
-      }, {
-        "id": "T24-CONTEXT-PACK-FINAL",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T24-context-pack.json",
-        "sha256": "caaef120a8da87e59d57a72d8587b9bc2274a16a07779c191dad300d6fd574f5",
-        "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
-        "createdAt": "2026-10-01T18:33:33Z",
-        "source": "MIXED"
-      }],
-      "verification": [{
-        "name": "T24 initial target/byte-budget/CLI/SDK regression",
-        "command": "npm.cmd run verify:production -- --focused-context",
-        "kind": "focused-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T24-FOCUSED-PROGRESS"
-      }, {
-        "name": "T24 historical full baseline compatibility failure retained",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "historical-full-baseline",
-        "required": false,
-        "status": "FAIL",
-        "exitCode": 1,
-        "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
-      }, {
-        "name": "T24 missing evidence/UTF-8 cursor and actual CLI/MCP compatibility recheck",
-        "command": "npm.cmd run verify:production -- --focused-context",
-        "kind": "focused-native-compatibility-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
-      }, {
-        "name": "T24 byte-budget closed-loop same-source full baseline",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "full-baseline-native-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T24-BUDGET-FULL-CHECKPOINT"
-      }, {
-        "name": "T24 lexical anchors, fields, ranking, unknown-tokenizer and 1000-file permission acceptance",
-        "command": "npm.cmd run verify:production -- --focused-context",
-        "kind": "focused-native-compatibility-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T24-TARGETING-FOCUSED"
-      }, {
-        "name": "T24 declared-scope acceptance with same-source complete baseline and independent Godot",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "full-baseline-native-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T24-CONTEXT-PACK-FINAL"
-      }],
+      "evidence": [
+        {
+          "id": "T24-FOCUSED-PROGRESS",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T24-progress.json",
+          "sha256": "ad84b26a66d7bb840becaa7c4d4099a6fe1ce851258183ba598c2535dd729037",
+          "sourceHash": "9dd69e013739fb7fa444daffb28eeb27b32f4cfed15846064440aa78be888c29",
+          "createdAt": "2026-10-01T17:13:10Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T24-COMPATIBILITY-FOLLOWUP",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T24-compatibility-followup.json",
+          "sha256": "6ab823ce4095ea822dd82efd1d552b89494dab049a63edc2d31237d637dbfa6f",
+          "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
+          "createdAt": "2026-10-01T17:43:35Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T24-BUDGET-FULL-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T24-budget-checkpoint.json",
+          "sha256": "f19c27b1bba6c0e39e6fcfb158c04984602449f3eb211d0e6ed67c201b6fd7eb",
+          "sourceHash": "4fa4e5444730a94efe9bc071357b1674ed65d6878f32ec5f04d2e4264f298874",
+          "createdAt": "2026-10-01T17:54:33Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T24-TARGETING-FOCUSED",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T24-targeting-focused.json",
+          "sha256": "d4ea64ef850bbebe9edf58e172dbf91c5c9a33d299f54afe7d8e5d878687c636",
+          "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
+          "createdAt": "2026-10-01T18:16:10Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T24-CONTEXT-PACK-FINAL",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T24-context-pack.json",
+          "sha256": "caaef120a8da87e59d57a72d8587b9bc2274a16a07779c191dad300d6fd574f5",
+          "sourceHash": "2504249750522c2fced01bd51a8e9dfc9a1a89667e16508d4b5a42c5c6478e15",
+          "createdAt": "2026-10-01T18:33:33Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T24 initial target/byte-budget/CLI/SDK regression",
+          "command": "npm.cmd run verify:production -- --focused-context",
+          "kind": "focused-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T24-FOCUSED-PROGRESS"
+        },
+        {
+          "name": "T24 historical full baseline compatibility failure retained",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "historical-full-baseline",
+          "required": false,
+          "status": "FAIL",
+          "exitCode": 1,
+          "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
+        },
+        {
+          "name": "T24 missing evidence/UTF-8 cursor and actual CLI/MCP compatibility recheck",
+          "command": "npm.cmd run verify:production -- --focused-context",
+          "kind": "focused-native-compatibility-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T24-COMPATIBILITY-FOLLOWUP"
+        },
+        {
+          "name": "T24 byte-budget closed-loop same-source full baseline",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "full-baseline-native-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T24-BUDGET-FULL-CHECKPOINT"
+        },
+        {
+          "name": "T24 lexical anchors, fields, ranking, unknown-tokenizer and 1000-file permission acceptance",
+          "command": "npm.cmd run verify:production -- --focused-context",
+          "kind": "focused-native-compatibility-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T24-TARGETING-FOCUSED"
+        },
+        {
+          "name": "T24 declared-scope acceptance with same-source complete baseline and independent Godot",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "full-baseline-native-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T24-CONTEXT-PACK-FINAL"
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-02：taskIntent、受限文件/词法符号/节点锚点、局部片段/字段选择、错误栈/真实mtime排序、每页UTF-8硬字节预算及未知tokenizer的请求/估算均接入官方SDK和CLI。1000无关文件前后同任务1KiB、长行锚点、缺失/歧义、循环/日志/权限/预取消覆盖；undefined属性伪省略和无引擎字段误要求引擎路径先失败后修复，历史证据保留。新源码25042497两轮23/23、完整332/332、独立Godot109/109、构建/格式/lint/两阶段清理PASS，零失败/跳过。按路线允许的未知tokenizer仅字节保证和active_run明确unavailable范围完成T24，不宣称模型token精确限制、语义安全、live注册查询或CLI持久引用。见CONTEXT-PACK-CONTRACT.md、T24-context-pack.json。下一项T25；G4-G6未通过，生产NOT_QUALIFIED，未提交/推送/发布。",
       "completedAt": "2026-10-02T02:33:33+08:00"
@@ -1365,38 +1400,44 @@
         "max": 4
       },
       "status": "done",
-      "evidence": [{
-        "id": "T25-DISCOVERY-FOCUSED",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T25-discovery-focused.json",
-        "sha256": "4065a0c098a3f2d95b4473e106b7b4dc86fc1e056a1b97a92196bbf16e51f292",
-        "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
-        "createdAt": "2026-10-01T18:55:53Z",
-        "source": "REAL"
-      }, {
-        "id": "T25-DISCOVERY-FINAL",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T25-mcp-discovery.json",
-        "sha256": "f305ed3a48508d7c673ac42cc59d496c3e6677d70d52ac34c9c3f507b28a677d",
-        "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
-        "createdAt": "2026-10-01T19:12:00Z",
-        "source": "MIXED"
-      }],
-      "verification": [{
-        "name": "T25 standard SDK/HTTP resources, prompts, profiles, permissions, pagination and escaped JSON budget",
-        "command": "npm.cmd run verify:production -- --focused-discovery",
-        "kind": "focused-discovery-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T25-DISCOVERY-FOCUSED"
-      }, {
-        "name": "T25 same-source complete baseline and independent Godot regression",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "complete-baseline",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T25-DISCOVERY-FINAL"
-      }],
+      "evidence": [
+        {
+          "id": "T25-DISCOVERY-FOCUSED",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T25-discovery-focused.json",
+          "sha256": "4065a0c098a3f2d95b4473e106b7b4dc86fc1e056a1b97a92196bbf16e51f292",
+          "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+          "createdAt": "2026-10-01T18:55:53Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T25-DISCOVERY-FINAL",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T25-mcp-discovery.json",
+          "sha256": "f305ed3a48508d7c673ac42cc59d496c3e6677d70d52ac34c9c3f507b28a677d",
+          "sourceHash": "83e378782da917a177e1875587cc239e2dcc28ff440d7f07dfa8f7a721ff6672",
+          "createdAt": "2026-10-01T19:12:00Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T25 standard SDK/HTTP resources, prompts, profiles, permissions, pagination and escaped JSON budget",
+          "command": "npm.cmd run verify:production -- --focused-discovery",
+          "kind": "focused-discovery-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T25-DISCOVERY-FOCUSED"
+        },
+        {
+          "name": "T25 same-source complete baseline and independent Godot regression",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "complete-baseline",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T25-DISCOVERY-FINAL"
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-02：受限不透明项目资源、会话内续读、标准32项目录分页、四类约束prompt、all/read配置与权限分组注解接入；官方SDK内存/真实HTTP、跨会话/撤销read与项目根权限/更新/关闭拒绝/预算均覆盖。控制字符JSON转义先失败27/28后按完整响应预算修复，源码83e37878定向两轮28/28，同源完整基线338/338+独立Godot109/109、build/format/lint/两阶段清理PASS；tools70/CLI契约7映射无问题，历史失败保留。声明范围内验收完成，见T25-mcp-discovery.json逐项映射。订阅/listChanged推送不支持，词法诊断engineValidation NOT_RUN；大项目性能待T26，G4-G6仍NOT_RUN，生产NOT_QUALIFIED。",
       "completedAt": "2026-10-01T19:12:00Z"
@@ -1411,54 +1452,62 @@
         "max": 5
       },
       "status": "done",
-      "evidence": [{
-        "id": "T26-SCALE-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-checkpoint.json",
-        "sha256": "8f89070e65a7f666eecedf71d470e714327c934932758c5807ff2077de1cb6eb",
-        "sourceHash": "e8607b1276af6c1d58b5f752e43ea692b651e9d18771d404b811ffe1b0061225",
-        "createdAt": "2026-10-01T19:32:20Z",
-        "source": "REAL"
-      }, {
-        "id": "T26-SCALE-FULL",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-full.json",
-        "sha256": "699e12c1239dc9799873d9d676d45493ed9d3561b5b0dc379e4311a54193a187",
-        "sourceHash": "88def9fab0c3d7d2bb838203c774c3c178c3ee49bfff848c8eff83e436a7d0f0",
-        "createdAt": "2026-10-02T12:45:00Z",
-        "source": "REAL"
-      }],
-      "verification": [{
-        "name": "T26 scale/index/context/budget/path focused regression, two 40/40 rounds",
-        "command": "npm.cmd run verify:production -- --focused-scale",
-        "kind": "focused-scale-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T26-SCALE-CHECKPOINT"
-      }, {
-        "name": "T26 unchanged-seed 10k latency diagnostic probe, warm p95 remains over threshold",
-        "command": "node scripts/benchmark-context.mjs --probe-10k",
-        "kind": "diagnostic-performance-probe-not-full-workload",
-        "required": false,
-        "status": "FAIL",
-        "exitCode": 1,
-        "evidenceId": "T26-SCALE-CHECKPOINT"
-      }, {
-        "name": "T26 formal five-repeat full benchmark, 15/15 rounds meet every frozen threshold",
-        "command": "node scripts/benchmark-context.mjs",
-        "kind": "full-benchmark-five-repeats",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T26-SCALE-FULL"
-      }, {
-        "name": "T26 focused scale regression on the final benchmark source, 40/40 twice",
-        "command": "npm.cmd run verify:production -- --focused-scale",
-        "kind": "focused-scale-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T26-SCALE-FULL"
-      }],
+      "evidence": [
+        {
+          "id": "T26-SCALE-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-checkpoint.json",
+          "sha256": "8f89070e65a7f666eecedf71d470e714327c934932758c5807ff2077de1cb6eb",
+          "sourceHash": "e8607b1276af6c1d58b5f752e43ea692b651e9d18771d404b811ffe1b0061225",
+          "createdAt": "2026-10-01T19:32:20Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T26-SCALE-FULL",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T26-scale-full.json",
+          "sha256": "699e12c1239dc9799873d9d676d45493ed9d3561b5b0dc379e4311a54193a187",
+          "sourceHash": "88def9fab0c3d7d2bb838203c774c3c178c3ee49bfff848c8eff83e436a7d0f0",
+          "createdAt": "2026-10-02T12:45:00Z",
+          "source": "REAL"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T26 scale/index/context/budget/path focused regression, two 40/40 rounds",
+          "command": "npm.cmd run verify:production -- --focused-scale",
+          "kind": "focused-scale-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T26-SCALE-CHECKPOINT"
+        },
+        {
+          "name": "T26 unchanged-seed 10k latency diagnostic probe, warm p95 remains over threshold",
+          "command": "node scripts/benchmark-context.mjs --probe-10k",
+          "kind": "diagnostic-performance-probe-not-full-workload",
+          "required": false,
+          "status": "FAIL",
+          "exitCode": 1,
+          "evidenceId": "T26-SCALE-CHECKPOINT"
+        },
+        {
+          "name": "T26 formal five-repeat full benchmark, 15/15 rounds meet every frozen threshold",
+          "command": "node scripts/benchmark-context.mjs",
+          "kind": "full-benchmark-five-repeats",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T26-SCALE-FULL"
+        },
+        {
+          "name": "T26 focused scale regression on the final benchmark source, 40/40 twice",
+          "command": "npm.cmd run verify:production -- --focused-scale",
+          "kind": "focused-scale-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T26-SCALE-FULL"
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-01~02收口。冻结workload（seed260925/revision1、1k/10k/50k、30题top5、12k事件、5重复、10k档200热查询/100修改）与阈值全程未改。历次失败样本全部保留：首个探测3929.80ms（源c8f15ab9）、复测1155.16ms（e8607b12）、首次正式50k容量UNSUPORTED（语料自身102049项>100000预算，预算常数上调250000，探测实测102049项/冷157.7s）、第二次正式10k热p95=522.7/507.8ms超阈值（机器高负载）、首次G4尝试中评估cleanup查表缺陷与沙箱拦截引擎用户日志导致的T22重命名单测失败（环境性，缺陷基线同轮全PASS且D09-SEMANTICS实测PASS）。实现优化（契约允许范围）：inventory并发遍历+全局32在飞上限+每批32 allSettled排空、双inventory结构化比较、零变更时sourceHash/依赖图精确复用、searchProject整文预检；生产入口与基准统一UV_THREADPOOL_SIZE=16默认并在environment披露（用户显式值优先）。每轮新增树分页（33/257/2049节点全量逐页）与事件API端到端压力（12000条分页读+订阅poll/ack投递12000/12000+取消核销）。D09-SEMANTICS修复：命名枚举与限定成员赋值解析（state=Mode.RUNNING→to=RUNNING、初始态IDLE），保持heuristic/safeRefactor:false并新增单元回归。正式五重复在评估修复后源码88def9fa上重跑（旧hash PASS不自动继承，1abc21ca上的15/15 PASS作为superseded保留于证据）：run 2026-10-02T11-35-12-747Z-27004 BENCHMARK_PASS 15/15、持续~79%CPU负载下1k冷2.8-3.1s/热p95 46.9-59.1ms；10k冷29.6-32.0s/热p95 435.4-458.9ms（≤500）/增量421-469ms；50k冷127.2-182.5s（≤300s）/热p95 1138-2132ms（无冻结阈值仅记录）；命中30/30×15、树/事件压力每轮完整、清理15/15、源未变。定向回归run 2026-10-02T12-34-29-804Z-6376同源40/40×2。required探测项按契约'不得当T26完成证据'改标required:false，历史FAIL记录保留。G4随后在沙箱外执行以允许引擎写自身用户数据；G5/G6 NOT_RUN，生产NOT_QUALIFIED，未提交/推送/发布。",
       "completedAt": "2026-10-02T12:45:00Z"
@@ -1473,30 +1522,35 @@
         "max": 5
       },
       "status": "done",
-      "evidence": [{
-        "id": "T27-REPLAY-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T27-replay-checkpoint.json",
-        "sha256": "25555cf9adf014c599911a8427df6bad014b2650ef6207932a14c72ee29411ff",
-        "sourceHash": "eb077bfd91e7324ee0fdeaf4fd4441dc88393d52f9b59a35ca41d2570da374cb",
-        "createdAt": "2026-10-02T14:09:40Z",
+      "evidence": [
+        {
+          "id": "T27-REPLAY-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T27-replay-checkpoint.json",
+          "sha256": "25555cf9adf014c599911a8427df6bad014b2650ef6207932a14c72ee29411ff",
+          "sourceHash": "eb077bfd91e7324ee0fdeaf4fd4441dc88393d52f9b59a35ca41d2570da374cb",
+          "createdAt": "2026-10-02T14:09:40Z",
           "source": "REAL"
-        }, {
+        },
+        {
           "id": "T27-REPLAY-COMPLETE",
           "pathOrArchiveId": "docs/production-roadmap/evidence/T27-replay-complete.json",
           "sha256": "915667eb636d4fc5bf89c6084d7e6057dc2d565e5a84fffef148762137aa6db7",
           "sourceHash": "b70805dc122042f6ed98e5f21ea889d991e44ec91f79fcfe4fa50be7b1adc131",
           "createdAt": "2026-10-02T15:25:27Z",
           "source": "MIXED"
-        }],
-      "verification": [{
-        "name": "T27 replay/native/path/contract focused regression, two 18/18 rounds",
-        "command": "npm.cmd run verify:production -- --focused-replay",
-        "kind": "focused-replay-regression",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
+        }
+      ],
+      "verification": [
+        {
+          "name": "T27 replay/native/path/contract focused regression, two 18/18 rounds",
+          "command": "npm.cmd run verify:production -- --focused-replay",
+          "kind": "focused-replay-regression",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
           "evidenceId": "T27-REPLAY-CHECKPOINT"
-        }, {
+        },
+        {
           "name": "T27 current-source full 352/352 and independent Godot 109/109; replay evidence hashed and owned scratch cleaned",
           "command": "npm.cmd run verify:production -- --baseline",
           "kind": "full-real-engine-and-explicit-mock-negative-controls",
@@ -1504,13 +1558,14 @@
           "status": "PASS",
           "exitCode": 0,
           "evidenceId": "T27-REPLAY-COMPLETE"
-        }],
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-02开始：T26已done（同源正式基准15/15+定向回归），G4 gate因运行沙箱确定性拦截暂存目录符号链接清理标记BLOCKED（实质检查341/341、109/109、D09-SEMANTICS全PASS，解除条件见gates），T27任务依赖不含G4，按严格顺序继续。计划：扩展executeScenario为客户端提交的有界序列——事件游标推进（旧事件不满足新步骤）、帧/事件屏障（wait_physics_frames/waitForEvent带cursor）、状态/碰撞/诊断/场景切换/视觉断言步骤、输入按下-释放、输入快照前后绑定、容差冻结；新夹具与tests/scenario-replay-e2e.test.ts覆盖固定fixture连续30次重放、输入释放、物理帧、场景切换、超时与取消。不规划任务、不回放AI对话、不触发自主修复循环。",
       "completedAt": "2026-10-02T15:25:27Z"
-      },
-      {
-        "id": "T28",
+    },
+    {
+      "id": "T28",
       "title": "外部候选补丁的安全应用与验证接口",
       "phase": "P5",
       "dependencies": ["T10", "T14", "T22", "T24", "T27"],
@@ -1519,53 +1574,61 @@
         "max": 5
       },
       "status": "done",
-      "evidence": [{
-        "id": "T28-APPROVAL-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-approval-checkpoint.json",
-        "sha256": "bdfd2697d6591865db074548c9eb2259046a4f1b7a7cdeafe4b80788893b1936",
-        "sourceHash": "b7b1931abd4c3ec2f2d29699354c79d23beadf037725044e18ee766cd1d231c8",
-        "createdAt": "2026-10-02T15:33:06Z",
-        "source": "MIXED"
-      }, {
-        "id": "T28-SAFE-REPAIR-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-checkpoint.json",
-        "sha256": "a0c7b0ca8ecc14b1fd2f2fedb65dcd85746c18baadb040a1b5741c1190385fb8",
-        "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
-        "createdAt": "2026-10-02T17:18:32Z",
-        "source": "MIXED"
-      }, {
-        "id": "T28-SAFE-REPAIR-COMPLETE",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-complete.json",
-        "sha256": "0e005f512f8656a3f4a7429fa566e0b1e79f4886b761675891047c0592e83787",
-        "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
-        "createdAt": "2026-10-02T17:33:38Z",
-        "source": "MIXED"
-      }],
-      "verification": [{
-        "name": "T28 frozen validation/exact approval focused regression, two 40/40 rounds",
-        "command": "npm.cmd run verify:production -- --focused-repair",
-        "kind": "focused-real-engine-and-explicit-mock-controls",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T28-APPROVAL-CHECKPOINT"
-      }, {
-        "name": "T28 exact oracle/baseline, native recovery, candidate status/content deduplication and LSP regressions, two 52/52 rounds",
-        "command": "npm.cmd run verify:production -- --focused-repair",
-        "kind": "focused-real-engine-and-explicit-mock-controls",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T28-SAFE-REPAIR-CHECKPOINT"
-      }, {
-        "name": "T28 same-source complete 360/360 and independent native 110/110, zero skip/failure and both owned scratch cleanups PASS; all 43 evidence hashes verified",
-        "command": "npm.cmd run verify:production -- --baseline",
-        "kind": "full-real-engine-and-explicit-mock-controls",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T28-SAFE-REPAIR-COMPLETE"
-      }],
+      "evidence": [
+        {
+          "id": "T28-APPROVAL-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T28-approval-checkpoint.json",
+          "sha256": "bdfd2697d6591865db074548c9eb2259046a4f1b7a7cdeafe4b80788893b1936",
+          "sourceHash": "b7b1931abd4c3ec2f2d29699354c79d23beadf037725044e18ee766cd1d231c8",
+          "createdAt": "2026-10-02T15:33:06Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T28-SAFE-REPAIR-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-checkpoint.json",
+          "sha256": "a0c7b0ca8ecc14b1fd2f2fedb65dcd85746c18baadb040a1b5741c1190385fb8",
+          "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+          "createdAt": "2026-10-02T17:18:32Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T28-SAFE-REPAIR-COMPLETE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T28-safe-repair-complete.json",
+          "sha256": "0e005f512f8656a3f4a7429fa566e0b1e79f4886b761675891047c0592e83787",
+          "sourceHash": "32d43f261c211b20ef5bde63b1d50b130b297f51ef0e2186c7c7cd629dbbe73a",
+          "createdAt": "2026-10-02T17:33:38Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T28 frozen validation/exact approval focused regression, two 40/40 rounds",
+          "command": "npm.cmd run verify:production -- --focused-repair",
+          "kind": "focused-real-engine-and-explicit-mock-controls",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T28-APPROVAL-CHECKPOINT"
+        },
+        {
+          "name": "T28 exact oracle/baseline, native recovery, candidate status/content deduplication and LSP regressions, two 52/52 rounds",
+          "command": "npm.cmd run verify:production -- --focused-repair",
+          "kind": "focused-real-engine-and-explicit-mock-controls",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T28-SAFE-REPAIR-CHECKPOINT"
+        },
+        {
+          "name": "T28 same-source complete 360/360 and independent native 110/110, zero skip/failure and both owned scratch cleanups PASS; all 43 evidence hashes verified",
+          "command": "npm.cmd run verify:production -- --baseline",
+          "kind": "full-real-engine-and-explicit-mock-controls",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T28-SAFE-REPAIR-COMPLETE"
+        }
+      ],
       "blocker": null,
       "notes": "2026-10-03完成：外部固定候选、精确审批/oracle/独立baseline内容SHA、多文件脚本/场景/资源原生失败恢复读回、候选状态与未知交付边界、ID及旧入口内容去重和客户端不自动重提全部闭环。同源32d43f26双轮52/52、完整360/360、独立原生110/110、构建/格式/lint/清理PASS；43项证据SHA核对一致。原a12c2045 LSP失败保留并修复后复验。批准/传输/交付故障为明确替身，不冒充实际客户端或人类UI。G4/G5/G6不自动继承，无提交/推送/发布。",
       "completedAt": "2026-10-02T17:33:38Z"
@@ -1579,27 +1642,48 @@
         "min": 2,
         "max": 4
       },
-      "status": "in_progress",
-      "evidence": [{
-        "id": "T29-CASES-CHECKPOINT",
-        "pathOrArchiveId": "docs/production-roadmap/evidence/T29-cases-checkpoint.json",
-        "sha256": "389e217ea2d3f13eebb233da6944619f860c1a473077a1c54afcc371fc0384e1",
-        "sourceHash": "4c1564121517087d30826ef5667c4210d7c579f100a7ed6b1f55a7ae0b8c4eb4",
-        "createdAt": "2026-10-02T18:10:53Z",
-        "source": "MIXED"
-      }],
-      "verification": [{
-        "name": "T29 six core node chains plus one pinned external supplemental control and strict catalog checks; two 11/11 rounds, 21 evidence hashes verified",
-        "command": "npm.cmd run verify:production -- --focused-cases",
-        "kind": "partial-fixed-native-cases-explicit-approval-mock",
-        "required": true,
-        "status": "PASS",
-        "exitCode": 0,
-        "evidenceId": "T29-CASES-CHECKPOINT"
-      }],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T29-CASES-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T29-cases-checkpoint.json",
+          "sha256": "389e217ea2d3f13eebb233da6944619f860c1a473077a1c54afcc371fc0384e1",
+          "sourceHash": "4c1564121517087d30826ef5667c4210d7c579f100a7ed6b1f55a7ae0b8c4eb4",
+          "createdAt": "2026-10-02T18:10:53Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T29-CASES-COMPLETE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T29-cases-complete.json",
+          "sha256": "9e2b8c75b672aef741b08ead84223e44d3475faa77af534ac82b0e959d88080c",
+          "sourceHash": "f0878c7f60db8f04b343641ff6e91ea3f216cd0afe966c35ad5f69ec998d9b54",
+          "createdAt": "2026-10-04T10:34:03.061Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T29 six core node chains plus one pinned external supplemental control and strict catalog checks; two 11/11 rounds, 21 evidence hashes verified",
+          "command": "npm.cmd run verify:production -- --focused-cases",
+          "kind": "partial-fixed-native-cases-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T29-CASES-CHECKPOINT"
+        },
+        {
+          "name": "T29 thirty core chains plus pinned external supplemental control; two 36/36 rounds, 31 case reports and 69 evidence hashes verified",
+          "command": "npm.cmd run verify:production -- --focused-cases",
+          "kind": "fixed-native-cases-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T29-CASES-COMPLETE"
+        }
+      ],
       "blocker": null,
-      "notes": "2026-10-03：源4c156412已实现并双轮验收N01–N06核心节点/场景固定链路、逐例只读权限与非法输入对照、原生Undo/Redo/save/reopen/读回；外部Godot MIT脚本/许可证固定提交与SHA原样锁定，X01补充控制原生通过但不计入30核心例。定向两轮11/11、构建/格式/lint/清理PASS，14记录oracle一致、21证据SHA一致；失败记录保留。仍缺U/P/A/S各6例（24例）、完整冻结清单与结果评估、当前源码全量及G4/G5/G6。SDK in-memory与MOCK批准不冒充T30安装客户端。版本探测成功日志保留策略仍待单独实现和验证。",
-      "completedAt": null
+      "notes": "2026-10-04：源f0878c7f两轮36/36完成N/U/P/A/S各6条核心链路及X01补充控制。构建/格式/lint与两轮临时目录清理PASS，31份逐例记录oracle一致，69项证据SHA一致。P05的ShapeCast3D创建被工具schema拒绝，有界重叠使用已声明的intersect_shape。批准为MOCK。不是当前源码全量回归，不继承G4/G5/G6，不冒充T30安装客户端。未提交/推送/发布。",
+      "completedAt": "2026-10-04T10:34:03.061Z"
     },
     {
       "id": "T30",
@@ -1610,27 +1694,429 @@
         "min": 2,
         "max": 4
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "done",
+      "evidence": [
+        {
+          "id": "T30-CLIENT-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-client-checkpoint.json",
+          "sha256": "10bdb920a84f6ac66c03fe417839c34bf20c00c3668afc1c2d8205bce36a2644",
+          "sourceHash": "d6b177d3573590a7b98b0e6d864fc4a3a4b69ba9e367e7e0bc6935099d2e655f",
+          "createdAt": "2026-10-06T10:27:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-TRANSPORT-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-transport-checkpoint.json",
+          "sha256": "b7f59ec5e69ddcc4f4bb3d64a382e1dbd2e362dfb330bcf14a09ffeb6ebbf20e",
+          "sourceHash": "0ec48114a38538ee04944b3e98c84ba640fbf37e66e80d6c41fb1403c26e41cd",
+          "createdAt": "2026-10-06T10:42:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-CURSOR-STARTUP-LOCK-FIX",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-cursor-startup-lock-fix.json",
+          "sha256": "dbd8cd1d11b625532221e8e8afa51148d0c1b925896a741d155c23d45eebda57",
+          "sourceHash": "d2fa01e139300c19b959449fcdd4a95f5d2c2f5599daa702bbf9cd0723cfb1db",
+          "createdAt": "2026-10-06T11:16:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-CLIENT-SUPPORT-MATRIX-PROVISIONAL",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-client-support-matrix.json",
+          "sha256": "0574e3131b5c865c6f5eda2c045824d1fb347af989e183c438edcc82f7011f81",
+          "sourceHash": "d2fa01e139300c19b959449fcdd4a95f5d2c2f5599daa702bbf9cd0723cfb1db",
+          "createdAt": "2026-10-06T11:23:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-APPROVAL-TIMEOUT-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-approval-timeout-checkpoint.json",
+          "sha256": "8166ee1fc0fa94d4ffb900712d0e545c8fa634b1a488a17136b1c40c227a1cd3",
+          "sourceHash": "ff05b51fb9c5790f39a1b1c902b8e66f82a5de482fc5d6a89563fc6b0c49092f",
+          "createdAt": "2026-10-06T11:48:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-CODEX-CURRENT-NATIVE",
+          "pathOrArchiveId": "runs/production-roadmap/T30/codex-probe-2026-10-06T11-53-51-443Z-15492/report.json",
+          "sha256": "96a70722c431c2b941d85a67ff5908d45f73673d83139937953a05471fe6cd7e",
+          "sourceHash": "ff05b51fb9c5790f39a1b1c902b8e66f82a5de482fc5d6a89563fc6b0c49092f",
+          "createdAt": "2026-10-06T11:54:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T30-LOCAL-CODEX-COMPLETE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T30-local-codex-complete.json",
+          "sha256": "28555dc43419e1b96a4642838a08752ea5ae088980ee28dc57a3cd5e08cf38ff",
+          "sourceHash": "ff05b51fb9c5790f39a1b1c902b8e66f82a5de482fc5d6a89563fc6b0c49092f",
+          "createdAt": "2026-10-09T09:59:07Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T30 focused double 46/46; 31 paired stdio case oracles and 69 artifact hashes verified; Cursor and full baseline pending",
+          "command": "npm.cmd run verify:production -- --focused-clients",
+          "kind": "partial-stdio-native-cases-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-CLIENT-CHECKPOINT"
+        },
+        {
+          "name": "T30 transport-only double 22/22, zero fail/skip/cancel, owned temp cleanup PASS and six hashes verified; not full baseline or Cursor acceptance",
+          "command": "node scripts/verify-production.mjs --focused-client-transport",
+          "kind": "partial-stdio-and-loopback-http-delayed-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-TRANSPORT-CHECKPOINT"
+        },
+        {
+          "name": "Global Cursor startup dead recovery guard fix; transport and registry double43/43, six hashes verified; original-registry SDK71-tool discovery, not actual Cursor acceptance",
+          "command": "node scripts/verify-production.mjs --focused-client-transport",
+          "kind": "targeted-registry-and-client-transport-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-CURSOR-STARTUP-LOCK-FIX"
+        },
+        {
+          "name": "Installed Codex CLI 0.160.1 same-source native create-save-validation and independent readback; exact-plan approvals MOCK, no model turn and owned fixture discarded",
+          "command": "node scripts/probe-codex-client.mjs --codex <installed-codex.exe>",
+          "kind": "installed-client-native-interface-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-CLIENT-SUPPORT-MATRIX-PROVISIONAL"
+        },
+        {
+          "name": "Trusted local approval deadline preserved as TIMEOUT, real stdio bytes/connection control; transport+registry formal double44/44 and six hashes verified; previous-source full408/110 separate",
+          "command": "node scripts/verify-production.mjs --focused-client-transport",
+          "kind": "partial-transport-registry-approval-deadline-explicit-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-APPROVAL-TIMEOUT-CHECKPOINT"
+        },
+        {
+          "name": "Current approval-fix source installed Codex CLI native interface PASS, exact-plan MOCK approvals, native validation/readback and owned fixture discarded; not Cursor acceptance",
+          "command": "node scripts/probe-codex-client.mjs --codex <installed-codex.exe>",
+          "kind": "installed-client-native-interface-explicit-approval-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-CODEX-CURRENT-NATIVE"
+        },
+        {
+          "name": "Explicit local Codex ADR scope: official SDK core replay double50/50, 31 paired case oracles, 69 hashes and native installed Codex 0.162.0-alpha.2 representative operation PASS; Cursor out of scope, human UX not advertised",
+          "command": "node scripts/verify-production.mjs --focused-clients && node scripts/probe-codex-client.mjs --codex <installed-codex.exe>",
+          "kind": "declared-local-product-client-and-sdk-native-cases-explicit-host-mock",
+          "required": true,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T30-LOCAL-CODEX-COMPLETE"
+        }
+      ],
       "blocker": null,
-      "notes": "",
-      "completedAt": null
+      "notes": "2026-10-09完成声明范围T30：用户明确暂不考虑Cursor、只验收本机Codex，ADR限定required产品客户端为已安装CLI/app-server的本机stdio原生接口，不改安全或soak标准。ff05b51f SDK核心重放双50/50、31份oracle一致、69项SHA与归属清理PASS；已安装Codex0.162.0-alpha.2发现/原生create-save-validation/独立读回通过，审批为明确MOCK、无模型回合/永久配置/实际项目改动，不宣传桌面真人UX。Cursor旧20秒失败与120秒取消保留，范围外但不标PASS。不继承旧全量/G4/G5/G6或生产资格，进入T31；无提交/推送/发布。",
+      "completedAt": "2026-10-09T09:59:07Z"
     },
     {
       "id": "T31",
-      "title": "长时间运行、并发、故障注入与安全复测",
+      "title": "有界循环负载、并发、故障注入与安全复测",
       "phase": "P6",
       "dependencies": ["T08", "T10", "T15", "T26", "T27", "T30"],
       "estimatedDays": {
         "min": 3,
         "max": 5
       },
-      "status": "todo",
-      "evidence": [],
-      "verification": [],
+      "status": "in_progress",
+      "evidence": [
+        {
+          "id": "T31-FIRST-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-first-checkpoint.json",
+          "sha256": "a2f08e6f1008e27466bf5143af12ee41cc0b48d5e3353f27cc8e50661a2a1dc0",
+          "sourceHash": "07ad94c785f63c0b7ed9c7a98f61536eb06da6a77b6083b461b45cca30426854",
+          "createdAt": "2026-10-09T10:46:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-CONTINUOUS-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-continuous-checkpoint.json",
+          "sha256": "ba21982e761e87675d434f322eb56c47497555ff429503a03ae538ba856c6673",
+          "sourceHash": "04f1c3c9957d21deb5e3f8069dd06bf54e882a38310534352e0f9cf206d7f6c3",
+          "createdAt": "2026-10-09T12:01:47Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-RETENTION-RECHECK",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-retention-recheck.json",
+          "sha256": "c9850bc907fe0a1e524d52a0e6f4f80ed6fa805c8c19df274c0fcda9d95037aa",
+          "sourceHash": "eb6987d4f47796f3c8788ab054c574d6bc1760baf90c9117c15452487c20edf1",
+          "createdAt": "2026-10-09T12:42:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-INDEPENDENT-LAUNCH",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-independent-launch.json",
+          "sha256": "5f0c987ab62f3ad23b74e9bd31a5d5f08232d9f1b66355f01e13168d48deb308",
+          "sourceHash": "eb6987d4f47796f3c8788ab054c574d6bc1760baf90c9117c15452487c20edf1",
+          "createdAt": "2026-10-09T13:53:00Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-BOUNDED-CHECKPOINT",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-bounded-checkpoint.json",
+          "sha256": "148f6f1620ff1285ea4f28e427034d3eb3cf5c69b07a7b8cff8a71274f657f94",
+          "sourceHash": "a2062d89b6f86d93a74fdc3f5ffdba30dfd4aad390ebbeb687805347f91e54e8",
+          "createdAt": "2026-10-10T08:40:45Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-SIGNAL-COMPACT-RECHECK",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-signal-compact-recheck.json",
+          "sha256": "e2526cf36f690653251fa962d9c20e38a52271d433869eac11e4e89797d17eb3",
+          "sourceHash": "540902900d10dbd67e407f8a97ddac63fb2fa3c637607bd77c2404f2ff4cb9eb",
+          "createdAt": "2026-10-10T09:19:46.850Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-INVENTORY-RECHECK",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-inventory-recheck.json",
+          "sha256": "726107ee2250abe9011e3fdccd690a41caafa9cd3e7c9ed8dd253cb2c5922c08",
+          "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+          "createdAt": "2026-10-10T10:04:15.148Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-RESULT-CAPACITY-FAILURE",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-result-capacity-failure.json",
+          "sha256": "819947e09f11d65be7bed18758da339da0dcaea9229aac5f38211374481b75d3",
+          "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+          "createdAt": "2026-10-11T03:03:05.847Z",
+          "source": "REAL"
+        },
+        {
+          "id": "T31-LEDGER-RECHECK",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-ledger-recheck.json",
+          "sha256": "727c5e1cfb35639bf9d3927445f6cae2e831948f015fdbfa35b5f5981b702105",
+          "sourceHash": "c7e6ec910e42a2531e6b475374cebaee67bf9557292fcebfae29d797ea0d11b9",
+          "createdAt": "2026-10-11T03:15:43Z",
+          "source": "MIXED"
+        },
+        {
+          "id": "T31-OWNERSHIP-STOP-RECHECK",
+          "pathOrArchiveId": "docs/production-roadmap/evidence/T31-ownership-stop-recheck.json",
+          "sha256": "f6d7b2c49f903e2997e6e5047f9f5eaa27c948faf710f231143d024ce8d6249c",
+          "sourceHash": "c7e6ec910e42a2531e6b475374cebaee67bf9557292fcebfae29d797ea0d11b9",
+          "createdAt": "2026-10-13T07:50:31Z",
+          "source": "MIXED"
+        }
+      ],
+      "verification": [
+        {
+          "name": "T31 synthetic report contract double26/26 with six hashes and owned scratch cleanup; NOT actual soak/engine/chaos qualification",
+          "command": "node scripts/verify-production.mjs --focused-soak-contract",
+          "kind": "synthetic-contract-controls-real-node-tooling",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-FIRST-CHECKPOINT"
+        },
+        {
+          "name": "T31 actual Windows two-project four-cycle native smoke, six OS identities, render contrast and owned cleanup; NOT 8h/1000 cycles",
+          "command": "node scripts/soak-native-worker.mjs --smoke",
+          "kind": "partial-native-sdk-mixed-load-explicit-approval-mock",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-FIRST-CHECKPOINT"
+        },
+        {
+          "name": "T31 source-frozen mixed contract/scheduler/native chaos/security double124/124 and owned scratch cleanup; NOT full current-source gates",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-real-os-sdk-engine-faults-with-explicit-simulations",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-CONTINUOUS-CHECKPOINT"
+        },
+        {
+          "name": "T31 same-source 96.5-second native two-project four-cycle paced smoke and continuous OS telemetry; NOT 8h/1000",
+          "command": "node scripts/soak-production.mjs --smoke-paced",
+          "kind": "real-native-short-load-explicit-approval-mock",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-CONTINUOUS-CHECKPOINT"
+        },
+        {
+          "name": "T31 source-frozen mixed contracts/retention/stop/native chaos double133/133 and owned scratch cleanup; not full gates",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-synthetic-and-real-node-cli-os-sdk-engine-fault-controls",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-RETENTION-RECHECK"
+        },
+        {
+          "name": "T31 same-source native40-cycle pressure, bounded shadow retention, all hashes and owned cleanup; not eight hours",
+          "command": "node scripts/soak-production.mjs --smoke-stress",
+          "kind": "real-native-short-load-approval-mock-with-retention-checks",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-RETENTION-RECHECK"
+        },
+        {
+          "name": "T31 birth-bound native cooperative stop negative control: worker correctly fails, refuses qualification and cleans owned actors",
+          "command": "node scripts/soak-production.mjs --request-stop <owned-smoke-run>; independent report/hash/counter audit expects worker FAILED/exit1",
+          "kind": "real-native-negative-control-independent-audit",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-RETENTION-RECHECK"
+        },
+        {
+          "name": "T31 historical independent workload FAILED at 282 cycles; not a current running process or PASS",
+          "command": "node scripts/soak-production.mjs --workload",
+          "kind": "historical-real-native-workload-failure",
+          "required": false,
+          "status": "FAIL",
+          "exitCode": 1,
+          "evidenceId": "T31-BOUNDED-CHECKPOINT"
+        },
+        {
+          "name": "T31 bounded-scope mixed paging/contract/native chaos double140/140 with source/manifest/hash/owned-cleanup audit; not full gates",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-synthetic-and-real-node-cli-sdk-os-engine-with-explicit-simulations",
+          "required": false,
+          "status": "PASS",
+          "exitCode": 0,
+          "evidenceId": "T31-BOUNDED-CHECKPOINT"
+        },
+        {
+          "name": "T31 fixed 1000-cycle native bounded workload; final limits/native/hash/cleanup verdict pending",
+          "command": "node --trace-warnings scripts/soak-production.mjs --workload",
+          "kind": "real-native-bounded-workload",
+          "required": false,
+          "status": "NOT_RUN",
+          "exitCode": null,
+          "evidenceId": "T31-BOUNDED-CHECKPOINT"
+        },
+        {
+          "name": "T31 current-candidate paging/signal/compact/native chaos mixed double142/142 with six hashes and owned cleanup",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-synthetic-and-real-node-cli-sdk-os-engine-with-explicit-simulations",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-SIGNAL-COMPACT-RECHECK"
+        },
+        {
+          "name": "T31 current-candidate native 40-cycle pressure: compact business fields, six OS identities, retention/hash/cleanup audited",
+          "command": "node --trace-warnings scripts/soak-production.mjs --smoke-stress",
+          "kind": "real-native-short-pressure-approval-mock",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-SIGNAL-COMPACT-RECHECK"
+        },
+        {
+          "name": "T31 current-candidate 97-second native four-cycle continuous telemetry preflight; not 1000 cycles",
+          "command": "node --trace-warnings scripts/soak-production.mjs --smoke-paced",
+          "kind": "real-native-short-continuous-approval-mock",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-SIGNAL-COMPACT-RECHECK"
+        },
+        {
+          "name": "T31 current-candidate native cooperative-stop negative control: correctly FAILED/exit1, unknown0/leaked0/cleanup=true and no warning",
+          "command": "--smoke-paced; --request-stop <exact-owned-run> after 2 completed idle cycles; independent terminal/hash/counter review expects worker FAILED",
+          "kind": "real-native-stop-negative-control-independent-audit",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-SIGNAL-COMPACT-RECHECK"
+        },
+        {
+          "name": "T31 fixed 1000-cycle independent native bounded workload, source 54090290; final limits/native/hash/cleanup verdict pending",
+          "command": "node --trace-warnings scripts/soak-production.mjs --workload",
+          "kind": "real-native-bounded-workload-explicit-compact-configuration",
+          "status": "NOT_RUN",
+          "exitCode": null,
+          "required": false,
+          "evidenceId": "T31-SIGNAL-COMPACT-RECHECK"
+        },
+        {
+          "name": "T31 source-frozen inventory/signal/paging/native chaos mixed double147/147, build/format/lint, six evidence hashes and owned cleanup",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-synthetic-and-real-node-cli-sdk-os-engine-with-explicit-simulations",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-INVENTORY-RECHECK"
+        },
+        {
+          "name": "T31 same-source native forty-cycle pressure with fixed compact configuration, six identities, retention/hash/cleanup review; not 1000 cycles",
+          "command": "node --trace-warnings scripts/soak-production.mjs --smoke-stress",
+          "kind": "real-native-short-load-approval-mock-with-inventory-controls",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-INVENTORY-RECHECK"
+        },
+        {
+          "name": "T31 native 1000-cycle bounded workload source 2772c854: FAILED at 512, per-editor result quota; all 62 hashes verified",
+          "command": "node --trace-warnings scripts/soak-production.mjs --workload",
+          "kind": "real-native-bounded-workload-explicit-compact-configuration",
+          "status": "FAIL",
+          "exitCode": 1,
+          "required": false,
+          "evidenceId": "T31-RESULT-CAPACITY-FAILURE"
+        },
+        {
+          "name": "T31 c7e6ec91 ledger/registry/native/chaos mixed double162/162, six hashes and owned cleanup; not full gates",
+          "command": "node scripts/verify-production.mjs --focused-soak-chaos",
+          "kind": "mixed-synthetic-and-real-node-cli-sdk-os-engine-with-explicit-simulations",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-LEDGER-RECHECK"
+        },
+        {
+          "name": "T31 c7e6ec91 native forty-cycle correctness/retention pressure: 62 hashes and owned cleanup; overlaps formal tests, not final performance",
+          "command": "node --trace-warnings scripts/soak-production.mjs --smoke-stress",
+          "kind": "real-native-short-load-approval-mock-with-inventory-controls",
+          "status": "PASS",
+          "exitCode": 0,
+          "required": false,
+          "evidenceId": "T31-LEDGER-RECHECK"
+        },
+        {
+          "name": "T31 c7e6ec91 historical native workload stopped FAILED at 328 cycles, unknown2; not currently RUNNING",
+          "command": "node --trace-warnings scripts/soak-production.mjs --workload",
+          "kind": "real-native-bounded-workload-explicit-compact-configuration",
+          "status": "FAIL",
+          "exitCode": 1,
+          "required": false,
+          "evidenceId": "T31-OWNERSHIP-STOP-RECHECK"
+        },
+        {
+          "name": "T31 latest-source double regression, native pressure and full bounded1000 verdict still required; quick CI is not qualification",
+          "command": "freeze source; --focused-soak-chaos; --smoke-stress; --workload; audit limits/native/hashes/cleanup",
+          "kind": "pending-real-native-and-security-qualification",
+          "status": "NOT_RUN",
+          "exitCode": null,
+          "required": true,
+          "evidenceId": "T31-OWNERSHIP-STOP-RECHECK"
+        }
+      ],
       "blocker": null,
-      "notes": "2026-09-27 T18 恢复复查：默认 registry primary lock 死 owner + legacy 空 .lock.recover 导致永久 TIMEOUT；原件 hash/path 与失败 baseline 在 WORKLOG。必须补回收 guard 的崩溃/PID 复用/活 owner 保留测试及安全迁移/人工恢复，不可将隔离 registry 测试通过冒充产品恢复缺陷已修复。当前仍 todo，未提前执行 T31。",
+      "currentCheckpoint": "2026-10-13补记：c7e6ec91独立负载已328/1000协作停止并FAILED，unknown2/leaked0/cleanuptrue、63SHA匹配；旧启动12循环RUNNING仅为历史，不再在跑、不续接旧次数。非管理员PID控制绑定原owned run和OS代际后先行17/17通过；后续共享源码发生变化的正式专项第一轮176/176、第二轮175/176且格式失败，整体验收FAIL，6SHA核验；4096账本独立1/1通过不擦除该失败或放宽80秒截止。用户授权的并行预授权功能保留。10月11日实际删dHPHxZ四份重复EXE与三份旧日志362260282B约345MiB，保留原件/关键证据；未再次触碰之前拒绝目标。本次仅取消自动长耗时CI，保留手动验证入口；40/40快速检查与默认后台MCP实测不替代T31同源1000合同或T33独立环境。最新候选同源专项/压力/完整循环未取得，required仍NOT_RUN，T31仍in_progress，生产NOT_QUALIFIED。notes和旧证据是历史检查点，无提交/推送/发布。",
+      "notes": "2026-10-10已移除最低墙钟时长；schema3/bounded保留1000循环、双项目/六固定OS身份/并发2、安全故障/20%且128MiB RSS/1.5倍延迟/零未知与回收；长会话/游戏帧时NOT_VERIFIED，RPC/reload事前冻结compact且默认normal兼容与原生事件不删除。旧eb源282循环分页TypeError，a206源88循环停止unknown1/drain警告，540源204循环独立盘点stat碰Godot临时UID文件删除ENOENT并取消两在途save unknown2；原件/62SHA保留，cleanuptrue/leaked0/no warning，均非通过。共享signal旧SDK匿名abort残留已用请求独立controller/finally解绑父信号修复，200完成后无旧通知/在途取消一次字节不变；native负控如实保留。新soak-inventory只容忍确切staging UID rename临时ENOENT和正常停止先归档的shadow删除竞态，lstat拒绝已观察链接；未知缺失/权限/配额仍失败，消失条目保守计入文件数，字节UNKNOWN，盘点非原子不证明瞬时峰值。新2772c854正式双147/147、build/format/lint/6SHA/两轮自有回收PASS；同源40实际循环155925ms/11采样/386文件/62SHA/unknown0/leaked0/cleanup和fixtureDiscarded=true，无本轮瞬时消失记录，不冒充1000。独立隐藏native-workload-2026-10-10T09-56-01-752Z-8016，UTC09:56:30.551起，worker8016出生身份/源匹配，72循环/457222ms/29采样检查点只是当时状态，failed0/unknown0/no warning。源码冻结最终required未取得，NOT_RUN指待终态而非未启动，不续旧循环；T31仍in_progress。累计永久删20个重复EXE与2旧预览日志1810570516B约1.69GiB，原下载/失败关键日志/场景/事务/验证/报告保留，既有策略拒绝根不重试。用户确认目前只有本机，T32可验证本机隔离安装，T33独立干净Windows无环境不得冒充VERIFIED或删门禁，T35生产资格仍NOT_QUALIFIED；T32-T35不越依赖，无提交/推送/发布。",
       "completedAt": null
     },
     {

@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "status": "PASS_CONTRACT_AND_NATIVE_SMOKE_ONLY",
+  "sourceHash": "07ad94c785f63c0b7ed9c7a98f61536eb06da6a77b6083b461b45cca30426854",
+  "contract": {
+    "run": "runs/production-roadmap/T31/2026-10-09T10-44-53-754Z-53820",
+    "rounds": [26, 26],
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "buildFormatLint": "PASS",
+    "tempCleanup": "PASS",
+    "artifactHashesVerified": 6,
+    "manifestSha256": "98710d3958c13f68dc5b362143cac5a9da0c175a1eff715bdaf4560f29c05fa1",
+    "resultsSha256": "bc72ecabc62fbd8e862b523f0d5a953bd89e8f8e1f76444298b7e6da223fa01c",
+    "measurementSource": "SYNTHETIC_UNIT_CONTROLS, not actual engine or eight-hour measurements",
+    "note": "godot-focused is the generic second-command label only; these 26 tests do not execute Godot"
+  },
+  "nativeSmoke": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T10-35-31-881Z-55072",
+    "status": "PASS_NATIVE_SMOKE_NOT_SOAK",
+    "reportSha256": "da0ac61c8742198ef35421901587fdbae60d2303de0cec2e79d0ef642ae24272",
+    "traceSha256": "9a022e921868c964e2e02a25bc35fa0dafc3c36095514f1e604e74b559ab8ce3",
+    "registrySha256": "31f9a24e0335ddbdc655a3e439cab189d6a610f00a90b50b7772633f2a148391",
+    "projectCount": 2,
+    "completedCycles": 4,
+    "persistentActors": 6,
+    "rssSnapshots": 2,
+    "osIdentityStable": true,
+    "binding": "SDK transport PID, authenticated endpoint editorPid, runtime owned-launcher native-child lineage; not console-launcher RSS",
+    "operations": ["editor read", "exact native edit", "save/native validation and disk SHA change", "scene reload/property readback", "rendered label screenshot/hidden contrast", "shadow stop plus owned process dead"],
+    "crossProjectControl": "FORBIDDEN",
+    "approval": "MOCK fixture-only exact plan host",
+    "measurementSource": "REAL local Windows/Godot/SDK processes",
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "retained": "6 PNGs, 4 saved scenes, bounded call hashes/summary, report and registry",
+    "artifactVerification": "Each of four cycle screenshot hashes checked against retained bytes; native assertions and source unchanged",
+    "reloadScope": "Scene properties; script/code freshness NOT_VERIFIED"
+  },
+  "failureHistory": [{
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T10-23-12-846Z-48428",
+    "status": "FAIL",
+    "code": "FORBIDDEN",
+    "reason": "Harness screenshot path outside the runtime session's own evidenceDir",
+    "repair": "Use the same session evidenceDir; no path permission relaxed",
+    "recordsRetained": "report/calls/registry and retained-diagnostics (two saved scenes, editor/runtime logs)",
+    "stoppedScratch": "C:/Users/temp-admin/AppData/Local/Temp/wheel-soak-smoke-IiqFV7",
+    "manualScratchRemoval": "BLOCKED_BY_EXECUTION_POLICY before command execution; target still present; no alternate deletion attempted"
+  }],
+  "entryPointChecks": {
+    "plan": "PLAN_ONLY_NOT_EXECUTED",
+    "assess": "Reported limits only; cannot grant qualification",
+    "qualifyOrRun": "NOT_RUN with exit2; actual full qualification scheduler is not implemented"
+  },
+  "fullSoak": "NOT_RUN",
+  "chaosAndSecurityQualification": "NOT_RUN",
+  "qualification": "NOT_QUALIFIED",
+  "remaining": [
+    "Continuous mixed-load scheduler, periodic OS/latency telemetry and bounded progress/checkpoints",
+    "Real process death/disconnection and explicit simulated ENOSPC/readonly/log-failure controls",
+    "Source-frozen eight hours and at least 1000 actual cycles; no GC or restart to hide growth",
+    "Native manifest, full safety/chaos/threshold/source/cleanup checks; then T31 completion",
+    "T32-T35 and current-source G4/G5/G6, not inherited from this checkpoint"
+  ]
+}

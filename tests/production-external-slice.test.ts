@@ -6,7 +6,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { caseDigest } from './helpers/production-cases.js';
-import { wireEditor } from './helpers/editor-mcp.js';
+import { wireEditor, productionCaseTransportLabel } from './helpers/editor-mcp.js';
 
 const slice = path.resolve('vendor/godot-demo-slice');
 const revision = '3e08537616661a5883831628decab4c526260289';
@@ -67,7 +67,7 @@ test(
       source: 'MIXED',
       engine: 'REAL',
       approval: 'MOCK',
-      transport: 'official SDK InMemoryTransport',
+      transport: productionCaseTransportLabel(),
       oracleHash: caseDigest(JSON.stringify(oracle)),
       sourceHash: process.env.WHEEL_CASE_SOURCE_HASH ?? 'NOT_BOUND',
       upstream: { revision, scriptHash, licenseHash },

@@ -535,6 +535,7 @@ func _decode_variant(value, expected_type: int = TYPE_NIL, depth: int = 0) -> Di
 			return {"error": "non-finite or unsafe JSON number", "errorCode": -32602}
 	if expected_type == TYPE_FLOAT and decoded is int: decoded = float(decoded)
 	if expected_type == TYPE_INT and decoded is float and _valid_number(decoded, true): decoded = int(decoded)
+	if expected_type == TYPE_STRING_NAME and decoded is String: decoded = StringName(decoded)
 	if expected_type != TYPE_NIL and typeof(decoded) != expected_type:
 		if not (expected_type == TYPE_OBJECT and decoded == null):
 			return {"error": "Variant type does not match target metadata", "errorCode": -32602}
@@ -577,6 +578,16 @@ func _call_method_result(request: Dictionary) -> Dictionary:
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_METHOD_CALL", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "method": method_name, "value": value}
 
 func _input_result(request: Dictionary) -> Dictionary:
+	if request.get("type", "key") == "mouse_motion":
+		var relative = request.get("relative", {})
+		if not relative is Dictionary or not _valid_number(relative.get("x")) or not _valid_number(relative.get("y")):
+			return {"error": "mouse_motion relative requires finite x and y numbers"}
+		var motion := InputEventMouseMotion.new()
+		motion.relative = Vector2(float(relative.x), float(relative.y))
+		motion.screen_relative = motion.relative
+		Input.parse_input_event(motion)
+		_emit_notification("input_injected", {"type": "mouse_motion", "relative": relative})
+		return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "type": "mouse_motion", "relative": relative, "accepted": true}
 	var keycode := int(request.get("keycode", 0))
 	if keycode <= 0:
 		return {"error": "keycode must be a positive integer"}

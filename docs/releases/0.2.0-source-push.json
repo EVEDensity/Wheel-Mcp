@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "version": "0.2.0",
+  "distribution": "SOURCE_SNAPSHOT_ONLY",
+  "localStableAcceptance": "NOT_ACCEPTED",
+  "productionQualification": "NOT_QUALIFIED",
+  "candidateSourceHash": "95aeac03b78bd8e7e539c5a7638eecdb8ef1e9ca93bf4f4c989ebdb3222647d1",
+  "authority": "Direct human confirmation: 先推送源码，明确验收未通过、不创建 Release",
+  "finalGate": {
+    "status": "FAIL_INCOMPLETE",
+    "startedAt": "2026-10-15T05:43:26.240Z",
+    "finishedAt": "2026-10-15T05:45:26.940Z",
+    "durationMs": 120700,
+    "phase": "core",
+    "phaseDurationMs": 120017,
+    "exitCode": null,
+    "signal": "SIGTERM",
+    "error": "ETIMEDOUT",
+    "build": "PASS",
+    "format": "PASS",
+    "lint": "PASS",
+    "completePassingResult": false,
+    "laterPhases": "NOT_RUN_IN_FINAL_ATTEMPT"
+  },
+  "earlierNativeAttempt": {
+    "status": "FAIL_INCOMPLETE",
+    "durationMs": 180041,
+    "error": "ETIMEDOUT",
+    "cumulativeSummary": false
+  },
+  "historicalLocalPass": {
+    "receipt": "docs/releases/0.2.0-windows-local.json",
+    "sourceHash": "276fa66963911aa6e892549e4fe435578722c0f6d66955f267be979c227864e4",
+    "reusedForCurrentQualification": false
+  },
+  "publicationRestrictions": {
+    "stableRelease": false,
+    "tag": false,
+    "npmPublish": false,
+    "enableGithubCi": false,
+    "changeRepositoryVisibility": false
+  }
+}

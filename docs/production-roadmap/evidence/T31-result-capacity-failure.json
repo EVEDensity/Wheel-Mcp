@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "createdAt": "2026-10-11T03:03:05.847Z",
+  "source": "REAL",
+  "sourceHash": "2772c85450782582a3d2d85306a2cbd5697f14de38c4cc1dcc345362863da1ec",
+  "qualification": "NOT_QUALIFIED",
+  "run": "runs/production-roadmap/T31/native-workload-2026-10-10T09-56-01-752Z-8016",
+  "status": "FAILED",
+  "startedAt": "2026-10-10T09:56:30.551Z",
+  "finishedAt": "2026-10-10T10:35:08.984Z",
+  "completedCycles": 512,
+  "durationMs": 2318433,
+  "failedCycles": 1,
+  "unknownTransactions": 0,
+  "leakedOwnedProcesses": 0,
+  "cleanup": true,
+  "sourceUnchanged": true,
+  "artifactHashesVerified": 62,
+  "reportSha256": "3b8a4e96240980fb6fe5c7ac9e4e08e91275544c208db0975e7004dc0c4d9042",
+  "indexSha256": "10014e01212f409191dbe1fcd73ba553dd962b14604ae6cbf9a5b2de6660ebf8",
+  "failure": {
+    "code": "CONFLICT",
+    "message": "Editor plan/result quota exhausted; no results are evicted for replay",
+    "cause": "scene_rpc retained every scene-edit result in RAM with MAX_RESULTS=256 per editor session. Each project completed 256 edits; save operations use another service and are not counted in this quota. No write was automatically retried."
+  },
+  "fixtureData": { "bytes": 7011952, "files": 3588, "atomicSnapshot": false },
+  "exploratoryRssOnly": {
+    "notFinalContractWindow": true,
+    "firstCycles": "[20,120)",
+    "lateCycles": "[412,512]",
+    "samples": [32,25],
+    "AserverMeanMiB": [91.1373291015625,187.39859375],
+    "BserverMeanMiB": [92.2073974609375,154.845],
+    "note": "Observed growth motivates allocation work, not a formal 1000-cycle RSS verdict. Editor/runtime means were stable. No GC, actor restart, threshold relaxation or previous-cycle credit."
+  },
+  "cleanupAttempt": {
+    "scope": "Four byte-identical Godot executable copies in the stopped ZRf1Vn fixture, keeping originals and all failure evidence",
+    "status": "REJECTED_BEFORE_EXECUTION_BY_LOCAL_POLICY",
+    "deletedBytesThisAttempt": 0,
+    "noAlternateDeletionMechanism": true
+  }
+}

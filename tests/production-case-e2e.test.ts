@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { startEditorFixture } from './helpers/editor-fixture.js';
-import { wireEditor } from './helpers/editor-mcp.js';
+import { wireEditor, productionCaseTransportLabel } from './helpers/editor-mcp.js';
 import { caseComponent, caseDigest, caseScene, nodeProductionCases } from './helpers/production-cases.js';
 
 const controller = `@tool
@@ -55,7 +55,7 @@ for (const definition of nodeProductionCases()) {
         family: frozen.family,
         source: 'REAL',
         approval: 'MOCK',
-        transport: 'official SDK InMemoryTransport',
+        transport: productionCaseTransportLabel(),
         oracleHash,
         sourceHash: process.env.WHEEL_CASE_SOURCE_HASH ?? 'NOT_BOUND',
         status: 'FAIL',

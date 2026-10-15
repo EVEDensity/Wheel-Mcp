@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "taskId": "T31",
+  "taskStatus": "IN_PROGRESS",
+  "status": "PASS_SHORT_NATIVE_AND_FOCUSED_CHAOS; FULL_WORKLOAD_RUNNING",
+  "sourceHash": "04f1c3c9957d21deb5e3f8069dd06bf54e882a38310534352e0f9cf206d7f6c3",
+  "qualification": "NOT_QUALIFIED",
+  "focusedRegression": {
+    "run": "runs/production-roadmap/T31/2026-10-09T11-54-08-787Z-44708",
+    "rounds": [124, 124],
+    "failed": 0, "skipped": 0, "cancelled": 0,
+    "buildFormatLint": "PASS", "ownedScratchCleanup": "PASS",
+    "artifactHashesVerified": 6,
+    "manifestSha256": "7e5ac5d56296e67b0238bdb26653e0aa1cceaa9c51a89955cbd96e5fa87c73e3",
+    "resultsSha256": "3b22c18d8d0d830b42547663ef99d4f9c1f25519d35e9c97e29a0658d6856a2b",
+    "source": "MIXED: synthetic contract + short Node scheduler + actual OS/engine/SDK faults + explicit filesystem/error injections",
+    "realControls": [
+      "TCP split authentication frame: no early dispatch; partial mutation dropped and saved bytes unchanged",
+      "MCP client process terminated by captured OS identity: stdin EOF converges owned server and runtime cleanup",
+      "Native editor process terminated: ENGINE_UNAVAILABLE and saved bytes unchanged; owner-verified fixture maintenance then new session",
+      "Native runtime process terminated: ENGINE_UNAVAILABLE; restarted stdio server rejects old session with FORBIDDEN",
+      "Actual filesystem log target obstructed by a directory: write failure, earlier evidence preserved",
+      "Killed transaction process recovery, stale/live registry ownership, OS identity mismatch protection",
+      "Existing stdio/HTTP cancellation, exact approval, project path, session isolation, audit redaction and token rotation"
+    ],
+    "explicitSimulations": ["ENOSPC beforeMutation injection", "EACCES read-only beforeMutation injection", "MOCK exact-plan approval", "Synthetic p95 report fixtures"],
+    "limitations": "Not a full current-source regression or G4/G5/G6; no real disk fill, user ACL changes, human approval UX or automatic editor crash takeover. PID reuse protection uses mismatched identity input, not proof of a real OS PID-reuse race."
+  },
+  "nativePacedSmoke": {
+    "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T11-56-27-049Z-25848",
+    "status": "COMPLETED", "result": "PASS_NATIVE_SMOKE_NOT_SOAK",
+    "reportSha256": "5946ae532e6868d176c5470bc25341e178c9867fd9f05af28cf9a74f5e2b6750",
+    "indexSha256": "b7d2ee6745455b0245a9a98613172cdf4779402bba84f53d919743f101c08e66",
+    "durationMs": 96526, "wallMs": 96527, "cycles": 4,
+    "projects": 2, "persistentActors": 6, "rssSamples": 7, "maxSampleGapMs": 16233,
+    "failedCycles": 0, "unknownTransactions": 0, "leakedOwnedProcesses": 0,
+    "sourceUnchanged": true, "cleanup": true, "fixtureDiscarded": true,
+    "artifactHashesVerified": 22, "retainedBytes": 146515,
+    "source": "REAL processes/native validation/rendering; exact approval is MOCK",
+    "reloadScope": "Native scene property readback; script/code freshness NOT_VERIFIED"
+  },
+  "fullWorkload": {
+    "status": "RUNNING_AT_CHECKPOINT; NOT_A_FINAL_RESULT",
+    "run": "runs/production-roadmap/T31/native-workload-2026-10-09T11-59-35-541Z-19764",
+    "command": "node scripts/soak-production.mjs --workload",
+    "workerPid": 19764,
+    "startedAt": "2026-10-09T11:59:56.503Z",
+    "minimumFinishAt": "2026-10-09T19:59:56.503Z",
+    "observedDurationMs": 16831, "observedCycles": 2, "observedSamples": 2,
+    "requiredDurationMs": 28800000, "requiredCycles": 1000,
+    "progress": "progress.json atomically overwritten; report.live.json full checkpoint at least every minute",
+    "finalEvidenceRequired": "report.json + limits-assessment.json + artifact-index.json with checked hashes and cleanup; progress alone never completes T31",
+    "operationalRequirement": "Keep local Windows session and computer awake; telemetry gap, interruption, source change or quota failure invalidates workload. No power settings modified.",
+    "cleanup": "PENDING", "limits": "NOT_YET_ASSESSED"
+  },
+  "retention": {
+    "traceMaxBytes": 33554432, "reportMaxBytes": 16777216,
+    "mutableFixtureMaxBytes": 201326592, "fixtureMaxFiles": 16000,
+    "diagnosticFileMaxBytes": 16777216,
+    "engineCopies": "Two immutable fixture engine/profile copies only; not included in mutable fixture limit",
+    "artifacts": "First/latest/contrast PNGs, first/latest scenes, critical editor/runtime diagnostics, compact call hashes, source and file index",
+    "cleanup": "Successful new owned scratch roots removed; failures retained. Existing policy-blocked historical targets not retried or bypassed."
+  },
+  "failureHistory": [
+    {
+      "run": "runs/production-roadmap/T31/native-smoke-2026-10-09T11-42-32-035Z-17464",
+      "status": "FAILED", "code": "UNSUPPORTED", "completedCycles": 0,
+      "reason": "Polygon2D fixture not in declared editor authoring classes; error text mentions scripted/unique documents generically",
+      "repair": "Use existing supported Label for a visible moving marker; no production policy changed",
+      "cleanup": true, "unknownTransactions": 1,
+      "unknownReason": "Sibling dispatched writer cancelled when other project failed; no commit verdict guessed and no retry",
+      "retained": "report/calls/OS samples/private registry/native diagnostics and stopped scratch forensics"
+    },
+    {
+      "status": "PREFLIGHT_FAILED_3_OF_5; NOT_FORMAL_EVIDENCE",
+      "reason": "Test initially expected automatic editor crash takeover and NOT_FOUND on unauthorized stale runtime; both disagree with existing security contract",
+      "repair": "Keep fail-closed lease policy; explicit verified isolated owner maintenance; require actual FORBIDDEN code, never permit old session",
+      "sourceHash": null,
+      "note": "Preflight source identity not captured; cannot claim a source-bound formal run. Followed by formal double91/91 on 7567fa82 and double124/124 above."
+    }
+  ],
+  "remaining": [
+    "Actual eight-hour/1000-cycle workload completion and first/last-hour RSS/latency thresholds",
+    "Native artifact hashes, safety/counters/source and owned cleanup review before marking T31 done",
+    "T32-T35 and current-source G4/G5/G6; not inherited from this partial checkpoint"
+  ],
+  "publicRelease": "NOT_REQUESTED"
+}

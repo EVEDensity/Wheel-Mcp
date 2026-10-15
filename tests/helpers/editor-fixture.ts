@@ -27,6 +27,9 @@ func _process(_delta: float) -> void:
 \telif command.action == "human-move":
 \t\troot.get_node("Marker").position = Vector2(123, 456)
 \t\tEditorInterface.mark_scene_as_unsaved()
+\telif command.action == "inspect-marker":
+\t\tvar position: Vector2 = root.get_node("Marker").position
+\t\tcommand["position"] = {"x": position.x, "y": position.y}
 \telif command.action in ["undo", "redo"]:
 \t\tvar history := get_undo_redo().get_history_undo_redo(get_undo_redo().get_object_history_id(root))
 \t\tif command.action == "undo": history.undo()

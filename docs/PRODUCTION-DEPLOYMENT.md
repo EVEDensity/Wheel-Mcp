@@ -13,6 +13,12 @@ on-call service.
 
 ## Release scope
 
+The current `0.2.0` local stable profile is Windows/Godot 4.7.2 over stdio with
+trusted projects and short required safety/installation checks. See
+[local release acceptance](LOCAL-STABLE-RELEASE.md). Public-network deployment
+and the complete production roadmap remain unqualified. The broader transport
+plan below is future scope, not a claim of online stability.
+
 The planned public release scope (not current qualification) is limited to:
 
 - Windows 10/11 or Windows Server supported by the deployment owner.
@@ -21,8 +27,20 @@ The planned public release scope (not current qualification) is limited to:
 - MCP stdio and MCP Streamable HTTP. WebSocket is not an MCP standard transport
   in this release.
 
-Linux and macOS have CI build/test coverage, but no real Godot runtime evidence
-is part of this release gate. They are therefore not supported release targets.
+As of October 14, 2026, GitHub CI/CD is paused at the owner's request. The three
+existing remote workflows are `disabled_manually`, and local `ci.yml` retains
+only manual dispatch. No running or queued jobs existed at the pause check.
+Re-enabling remote execution and restoring automatic triggers are separate,
+explicit steps after opening the source; neither happens during this audit.
+
+The one retained bounded Windows-only workflow covers build/style, MCP
+transport, write approval/transaction safety and
+site links; dependency auditing is conditional on dependency changes (or an
+unknown diff) and always runs on manual dispatch. A manual `engine` checkbox adds
+the short headless native smoke. Separate Godot matrix/release workflows are
+removed, not merely hidden behind manual triggers. Full regression and release
+qualification remain explicit local commands. Fast CI does not grant engine,
+platform or production qualification; Linux/macOS are not release targets.
 
 ## Required deployment topology
 
