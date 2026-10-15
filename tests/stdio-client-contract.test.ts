@@ -133,21 +133,25 @@ for (const mode of ['cancel', 'timeout', 'disconnect'] as const) {
     });
     const controller = new AbortController();
     try {
-      const pending = c.client.callTool(
-        {
-          name: 'write_project_file',
-          arguments: {
-            projectPath: root,
-            filePath: 'main.gd',
-            content: 'extends Node\nvar value = 0\n',
-            validationMode: 'raw',
-            operationId: `t30-pending-${mode}`,
-            expectedSha256: createHash('sha256').update(original).digest('hex'),
+      const pending = c.client
+        .callTool(
+          {
+            name: 'write_project_file',
+            arguments: {
+              projectPath: root,
+              filePath: 'main.gd',
+              content: 'extends Node\nvar value = 0\n',
+              validationMode: 'raw',
+              operationId: `t30-pending-${mode}`,
+              expectedSha256: createHash('sha256').update(original).digest('hex'),
+            },
           },
-        },
-        undefined,
-        { signal: controller.signal, timeout: mode === 'timeout' ? 2500 : 10000 },
-      );
+          undefined,
+          { signal: controller.signal, timeout: mode === 'timeout' ? 2500 : 10000 },
+        )
+        .then((value) => {
+          throw new Error('Unexpected tool resolution before client action: ' + JSON.stringify(value).slice(0, 2500));
+        });
       // Attach immediately so cancellation/timeout cannot produce an unhandled rejection.
       const rejected = assert.rejects(pending, (error: unknown) => {
         const e = error as { message?: string; code?: number };
@@ -156,7 +160,12 @@ for (const mode of ['cancel', 'timeout', 'disconnect'] as const) {
           ? e.code === ErrorCode.RequestTimeout && e.message === 'MCP error -32001: Error: Fixed in-flight cancellation'
           : e.code === ErrorCode.ConnectionClosed;
       });
-      await entered; // A real subprocess elicitation proves this is after dispatch, not a pre-aborted request.
+      await Promise.race([
+        entered,
+        rejected.then(() => {
+          throw new Error('Request ended before the real approval form');
+        }),
+      ]); // A real subprocess elicitation proves this is after dispatch, not a pre-aborted request.
       assert.deepEqual(await readFile(path.join(root, 'main.gd')), original);
       if (mode === 'cancel') controller.abort(new Error('Fixed in-flight cancellation'));
       if (mode === 'disconnect') await c.close();
@@ -209,7 +218,11 @@ test(
         // not a 1-second throughput SLA. The form remains pending until expiry.
         timeoutMs: 5000,
       });
-      assert.equal(observed, true, 'Timeout must occur after the actual form request');
+      assert.equal(
+        observed,
+        true,
+        'Timeout must occur after the actual form request: ' + JSON.stringify(result).slice(0, 2500),
+      );
       assert.equal(result.isError, true);
       assert.equal((result.structuredContent as { code?: string }).code, 'TIMEOUT');
       assert.deepEqual(await readFile(path.join(root, 'main.gd')), original);
