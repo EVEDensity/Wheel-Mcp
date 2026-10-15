@@ -5,6 +5,21 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeDeck, advanceSnake, pickFood, canTurn, circleHitsRect } from '../docs/site/game-core.js';
 const docs = fileURLToPath(new URL('../docs/', import.meta.url));
+test('project root serves the original video landing page directly with working assets', async () => {
+  const root = path.resolve(docs, '..');
+  const source = await readFile(path.join(docs, 'index.html'), 'utf8');
+  const entry = await readFile(path.join(root, 'index.html'), 'utf8');
+  const expected = source.replace(/((?:href|src)=")\.\//g, '$1./docs/');
+  assert.equal(entry.replaceAll('\r\n', '\n'), expected.replaceAll('\r\n', '\n'));
+  assert.doesNotMatch(entry, /http-equiv="refresh"/i);
+  assert.match(entry, /<video[^>]*id="film"[^>]*autoplay[^>]*muted[^>]*loop/);
+  assert.match(entry, /src="\.\/docs\/assets\/videos\/wheel-showcase\.mp4"/);
+  for (const [, resource] of entry.matchAll(/(?:href|src)="(\.\/[^"#]+)"/g)) {
+    const target = path.resolve(root, resource);
+    assert.ok(!path.relative(docs, target).startsWith('..'), `${resource} escapes docs`);
+    await stat(target);
+  }
+});
 async function collect(dir) {
   const files = [];
   for (const item of await readdir(dir, { withFileTypes: true })) {

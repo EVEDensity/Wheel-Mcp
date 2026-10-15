@@ -4,9 +4,16 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-> Give your AI a running Godot game—not just source files.
+> Godot MCP server for AI-assisted game development. Run games, inspect state, and verify every change.
 
-Wheel-mcp is a **Godot MCP server for Codex, Cursor, and other MCP clients**. Connect your assistant to project files and a real game runtime: inspect state, test behavior, collect logs, and verify changes with screenshots and assertions.
+Wheel-mcp connects **Codex, Cursor and other Model Context Protocol (MCP) clients**
+to real Godot projects and game runtimes. Use it for **GDScript debugging, runtime
+testing and AI-assisted game development**: inspect scenes and runtime state,
+send inputs, read diagnostics, and verify changes with assertions, logs and screenshots.
+
+Your assistant writes the code. Wheel-mcp runs the checks and returns evidence.
+Client setup adapters are available; form approval and end-to-end compatibility
+depend on the client version. See [client compatibility](docs/AGENT-COMPATIBILITY.md).
 
 **v0.2.0 · Windows local stable · Godot 4.7.2 · MCP · MIT application code**
 

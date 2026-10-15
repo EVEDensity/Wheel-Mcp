@@ -85,13 +85,18 @@ No actual Godot export is included or validated in this change.
 
 ## Publish
 
-The current public deployment uses **main / root**. Root `index.html` redirects
-to `./docs/`; root `.nojekyll` disables Jekyll. The canonical entry to put in
+The current public deployment uses **main / root**. Root `index.html` serves the
+existing video showcase directly, without a redirect; root `.nojekyll` disables
+Jekyll. The canonical entry to put in
 GitHub About → Website is:
 
 https://evedensity.github.io/Wheel-Mcp/
 
-The showcase itself lives at https://evedensity.github.io/Wheel-Mcp/docs/.
+The authored showcase remains in `docs/index.html`, also available at
+https://evedensity.github.io/Wheel-Mcp/docs/. Root `index.html` mirrors that source
+with `./` asset URLs rebased to `./docs/`; fragment navigation stays on the current
+page. When changing the authored page, update the root entry too. `site:test`
+checks the two entries match and the root assets resolve.
 Use the exact repository-path casing. Pushing site changes to main triggers the
 existing Pages deployment; verify its result separately from the Node CI check.
 No MCP server, credentials or local project files are hosted by the showcase.

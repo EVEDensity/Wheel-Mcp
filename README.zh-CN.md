@@ -4,11 +4,17 @@
 
 **简体中文** | [English](README.md)
 
-> 让 AI 不只写 Godot 代码，还能运行游戏、检查结果。
+> 面向 AI 辅助游戏开发的 Godot MCP Server：运行游戏、检查状态、验证每一次修改。
 
-Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具服务器。它把真实的 Godot 项目、运行时状态、日志、截图和可复现证据暴露给 AI，帮助开发者更快地定位问题、验证改动和迭代游戏。
+Wheel-mcp 将 **Codex、Cursor 及其他 Model Context Protocol（MCP）客户端**
+接入真实的 Godot 项目与游戏运行时，服务于 **AI 辅助游戏开发、GDScript 调试和运行时测试**。
+让助手检查场景与运行时状态、发送输入、读取诊断，并通过断言、日志和截图验证修改。
 
-**定位边界：** 客户端负责理解需求、规划和编写代码；本项目负责受控执行 Godot 操作、采集结果并报告证据。它不是自动生成整款游戏的 Agent，也不是官方 Godot、Codex 或 Cursor 产品。
+**助手负责写代码，Wheel-mcp 负责运行检查、返回证据。**
+安装器提供客户端配置适配；表单审批与端到端兼容性仍取决于客户端版本，
+详见[客户端兼容性](docs/AGENT-COMPATIBILITY.md)。
+
+本项目不是自动生成整款游戏的 Agent，也不是官方 Godot、Codex 或 Cursor 产品。
 
 [![Godot 4](https://img.shields.io/badge/Godot-4-blue)](https://godotengine.org/) [![MCP](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Status](https://img.shields.io/badge/v0.2.0-Windows_local_stable-blue)](#当前状态)
 
