@@ -29,7 +29,7 @@
     "profile": "windows-local",
     "version": "0.2.0",
     "currentAcceptance": "LOCAL_STABLE_ACCEPTED_REVISION_2",
-    "acceptanceReceipt": "docs/releases/0.2.0-windows-local-v2.json",
+    "acceptanceReceipt": "docs/releases/0.2.0-windows-local-final.json",
     "sourceSyncAuthority": "Direct human confirmation: 先推送源码，明确验收未通过、不创建 Release",
     "authority": "Direct human request: 在最短的时间内完成稳定版，目前那些时间过长的内容不需要实现",
     "decision": "docs/LOCAL-STABLE-RELEASE.md",

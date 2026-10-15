@@ -1,7 +1,221 @@
 {
   "schemaVersion": 1,
+  "runId": "85f47f42-f322-49f9-9d75-2c17d8ecc88b",
+  "status": "PASS",
   "version": "0.2.0",
-  "profile": "windows-local",
-  "status": "NOT_RUN",
-  "productionQualification": "NOT_QUALIFIED"
+  "sourceHash": "f085007e5d6132832ace8ad70daaa12d94ec75e8dbb0971060e1a21b59ec4e2b",
+  "head": "d88dcc5583039a6d6b53f79fe941d53751047eb9",
+  "documents": {
+    "README.md": "01e7bed79518f1a2dc73d1fdc59b70ff71b8984b152d000635938145b6af1372",
+    "README.zh-CN.md": "ab4cd5542f38b8f78c84ee1c583e7d02929d9da40524e0fd5b2d59f73b9109ba",
+    "SECURITY.md": "b342ad5cbcdec843151746786e60de6e8dd426f645a8f2e5045d0444992a092e",
+    "THIRD-PARTY-NOTICES.md": "6977d1cd688d3f5e92813628bd0d19ab525efdb90daaa3d4171794c60af0dc7c",
+    "docs/LOCAL-STABLE-RELEASE.md": "a1e7c709dd44c098c02acde5f51dfb91d9e3ac76447a96b2a4dd2331125fe3e9"
+  },
+  "policy": {
+    "id": "windows-local",
+    "revision": 2,
+    "version": "0.2.0",
+    "platform": "win32",
+    "godot": "4.7.2",
+    "transport": "stdio",
+    "totalTimeoutMs": 600000,
+    "approval": "MOCK_IN_TESTS_HOST_CONFIRMATION_REQUIRED_IN_PRODUCT",
+    "excluded": [
+      "online-deployment",
+      "other-platforms",
+      "other-client-certification",
+      "human-approval-UX",
+      "long-session",
+      "high-load-performance",
+      "full-authoring-matrix"
+    ]
+  },
+  "startedAt": "2026-10-15T09:21:11.697Z",
+  "environment": {
+    "platform": "win32",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf"
+  },
+  "steps": [
+    {
+      "id": "build",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 4960,
+      "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "format",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 2897,
+      "outputHash": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 4133,
+      "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "core",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 42328,
+      "outputHash": "55c2659445d1985afc7222e9eea1d7f44f670de98693c8249a38c8030f52ed24",
+      "tests": {
+        "tests": 95,
+        "passed": 95,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "85f47f42-f322-49f9-9d75-2c17d8ecc88b"
+    },
+    {
+      "id": "safety",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 162586,
+      "outputHash": "d0a2ecc4b1be4cd611c0b3ef325803e432a67e75746fa671564d9f080a24a744",
+      "tests": {
+        "tests": 60,
+        "passed": 60,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "85f47f42-f322-49f9-9d75-2c17d8ecc88b"
+    },
+    {
+      "id": "engine",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 12379,
+      "outputHash": "bf6f8bf0bef6c4dd5fb07cd497451b81b7b8367c020e61ad180f7c0edc379af1",
+      "tests": {
+        "tests": 14,
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "85f47f42-f322-49f9-9d75-2c17d8ecc88b"
+    },
+    {
+      "id": "package",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 7746,
+      "outputHash": "26736ce5ca0987b86996fd8a46ad5377735db4e7be71e539495b17e5ddf31cd8",
+      "tests": {
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "85f47f42-f322-49f9-9d75-2c17d8ecc88b"
+    },
+    {
+      "id": "pack",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 904,
+      "outputHash": "9753f71526da4eb14e9031b64a843015a05499437c8774f251314ccf2a950f9b"
+    },
+    {
+      "id": "audit",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 5591,
+      "outputHash": "b957649e1943185f184a5f2cbbf6e850519b16e97549ddf6dd9979e4a77295c2"
+    },
+    {
+      "id": "sbom",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 617,
+      "outputHash": "696bc58ea5cfd7c2073206c5b768fed72b1391b99b4ad93c99c681e64db4704d"
+    }
+  ],
+  "durationMs": 245165,
+  "productionQualification": "NOT_QUALIFIED",
+  "package": {
+    "filename": "wheel-mcp-0.2.0.tgz",
+    "version": "0.2.0",
+    "files": 109,
+    "bytes": 238404,
+    "unpackedBytes": 993964,
+    "sha256": "7bff72017bad9e25d79a190e9ef427611aba932ba95beede17ba485a9cf2f897",
+    "excluded": 0
+  },
+  "audit": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 99,
+        "dev": 91,
+        "optional": 0,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 189
+      }
+    }
+  },
+  "sbomSha256": "696bc58ea5cfd7c2073206c5b768fed72b1391b99b4ad93c99c681e64db4704d",
+  "finishedAt": "2026-10-15T09:25:16.862Z",
+  "independentReceiptVerification": "PASS",
+  "independentCoreCI": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/38712299826",
+    "headSha": "d88dcc5583039a6d6b53f79fe941d53751047eb9",
+    "status": "PASS",
+    "tests": 95,
+    "failed": 0,
+    "skipped": 0,
+    "engine": "NOT_RUN_OPTIONAL_IN_HOSTED_CI"
+  },
+  "historicalReceipts": [
+    "docs/releases/0.2.0-windows-local-v2.json",
+    "docs/releases/0.2.0-source-push.json"
+  ]
 }
