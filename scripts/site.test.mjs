@@ -34,6 +34,57 @@ test('all static page assets, internal links and fragments resolve within docs',
     }
   }
 });
+test('public onboarding documents resolve local links and expose the existing website', async () => {
+  const root = path.dirname(docs.slice(0, -1));
+  const documents = [
+    'README.md',
+    'README.zh-CN.md',
+    'SECURITY.md',
+    'docs/README.md',
+    'docs/GETTING-STARTED.md',
+    'docs/GETTING-STARTED.zh-CN.md',
+    'docs/TROUBLESHOOTING.md',
+    'docs/AGENT-COMPATIBILITY.md',
+    'docs/WEBSITE.md',
+  ];
+  for (const name of documents) {
+    const file = path.join(root, name);
+    const text = await readFile(file, 'utf8');
+    for (const [, link] of text.matchAll(/\[[^\]]*\]\(([^\s)]+)\)/g)) {
+      if (/^(?:https?:|mailto:|#)/.test(link)) continue;
+      const resource = link.split('#')[0];
+      const target = path.resolve(path.dirname(file), resource);
+      assert.ok(!path.relative(root, target).startsWith('..'), `${name}: ${link} escapes repository`);
+      await stat(target);
+    }
+  }
+  for (const name of ['README.md', 'README.zh-CN.md']) {
+    const text = await readFile(path.join(root, name), 'utf8');
+    assert.ok(text.includes('https://evedensity.github.io/Wheel-Mcp/'));
+    assert.ok(text.includes('releases/tag/v0.2.0'));
+    assert.doesNotMatch(text, /status-preview|CI\/CD is paused|暂停 GitHub CI\/CD/);
+  }
+});
+test('documentation portal uses rendered documents and bilingual onboarding keeps the same restricted entry', async () => {
+  const guide = await readFile(path.join(docs, 'guide.html'), 'utf8');
+  assert.doesNotMatch(guide, /\?{3,}|PREVIEW/);
+  assert.match(guide, /GETTING-STARTED\.zh-CN\.md/);
+  assert.match(guide, /GETTING-STARTED\.md/);
+  for (const [, link] of guide.matchAll(/href="([^"]+)"/g))
+    assert.ok(!/^[^:]*\.md(?:#|$)/.test(link), `raw Markdown link in portal: ${link}`);
+  const entries = await Promise.all(
+    ['GETTING-STARTED.md', 'GETTING-STARTED.zh-CN.md'].map(async (name) => {
+      const text = await readFile(path.join(docs, name), 'utf8');
+      const json = text.match(/```json\r?\n([\s\S]*?)\r?\n```/);
+      assert.ok(json, `${name}: missing server entry`);
+      return JSON.parse(json[1]);
+    }),
+  );
+  assert.deepEqual(entries[0], entries[1]);
+  assert.equal(entries[0].env.MCP_STDIO_SCOPES, 'read');
+  assert.ok(entries[0].env.MCP_STDIO_PROJECT_ROOTS);
+  assert.ok(entries[0].env.MCP_STDIO_EVIDENCE_ROOTS);
+});
 test('deck contains exactly eight pairs and supports deterministic shuffling', () => {
   const deck = makeDeck(() => 0.5);
   assert.equal(deck.length, 16);

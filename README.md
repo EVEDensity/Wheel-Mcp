@@ -8,9 +8,9 @@
 
 Wheel-mcp is a **Godot MCP server for Codex, Cursor, and other MCP clients**. Connect your assistant to project files and a real game runtime: inspect state, test behavior, collect logs, and verify changes with screenshots and assertions.
 
-**Godot 4 · MCP · MIT · Preview**
+**v0.2.0 · Windows local stable · Godot 4.7.2 · MCP · MIT application code**
 
-[Quick start](#quick-start) · [Examples](#examples) · [Roadmap](#major-roadmap) · [Contributing](#contributing)
+[Website](https://evedensity.github.io/Wheel-Mcp/) · [Quick start](#quick-start) · [Documentation](docs/README.md) · [Download v0.2.0](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0) · [Contributing](CONTRIBUTING.md)
 
 If this helps your Godot workflow, **give it a Star**. Bug reports, reproducible examples, and focused PRs are just as welcome.
 
@@ -21,12 +21,6 @@ If this helps your Godot workflow, **give it a Star**. Bug reports, reproducible
 ![Wheel-mcp test comparison: estimated payload tokens and MCP requests](assets/benchmark-efficiency.svg)
 
 Use `responseMode: "compact"` for concise results and `dev_loop` to combine actions, assertions, and screenshots into one verification call.
-
-Project-file writes and repair candidates now require the client's separate MCP form confirmation of the exact transaction. `approved: true` alone does not authorize edits; clients without form elicitation support fail closed. Each failed candidate rolls back before another is tested. See the [transaction/migration contract](docs/production-roadmap/TRANSACTION-CONTRACT.md).
-
-Optional editor channel: `get_editor_state` reads an already-enabled, privately authorized Godot 4.7.2 editor. Independently opted-in write clients can use exact approved `apply_editor_scene`, bounded resources, native Undo/Redo and `save_editor_scene`. File candidates validate in an isolated project before commit; explicit raw writes report `NOT_RUN`. Native save retains the dirty marker/history. T17 adds bounded UI layouts and flat themes behind the explicit `scene.ui/v1` plugin capability; the user approved the separate human visual review on 2026-09-27. T18 adds bounded 3D physics queries and authoring. T19 adds bounded animation clips, state machines and two-source Blend2 behind `scene.animation/v1`. T20 adds exact shader text/texture-blend templates and a bounded Color/Mix VisualShader graph behind `scene.shader/v1`. T21 adds bounded PNG import, byte-exact transactions and isolated 2D/3D content workflows. The G3 frozen-source gate passed 300 full tests, 105 required Godot-suite checks, 20 native cycles and 18 representative workflow checks; automated approvals were mock. See the [UI boundaries](docs/production-roadmap/UI-AUTHORING-CONTRACT.md), [3D physics boundaries](docs/production-roadmap/PHYSICS-3D-CONTRACT.md), [animation boundaries](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md), [shader boundaries](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md), [content workflow boundaries](docs/production-roadmap/CONTENT-WORKFLOWS-CONTRACT.md), [manual editor setup](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md) and [safe save/migration](docs/production-roadmap/SAFE-SAVE-CONTRACT.md). These are deliberately limited types, not full authoring or online production qualification.
-
-`analyze_script_semantics` is explicitly heuristic; `query_script_semantics` reads bounded symbols, references, definitions and diagnostics from an authorized local Godot editor/LSP. Godot's raw references can include matching strings and comments, so neither tool authorizes rename. See the [semantic service boundary](docs/production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md).
 
 Seven controlled cases on 2026-09-13; payload tokens estimated as JSON characters / 4, not billable tokens or runtime speedups.
 
@@ -48,11 +42,10 @@ With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three altern
 
 ## Current status
 
-Version: `0.2.0`, targeting a **Windows-only local stable release profile for
-Godot 4.7.2 and trusted projects over stdio**. Stable acceptance requires a passing
-current-source `npm run release:gate` and `npm run release:check`; version alone
-does not grant acceptance. The [final acceptance receipt](docs/releases/0.2.0-windows-local-final.json)
-records its exact source and outcome. Earlier source-sync failures remain historical.
+**[v0.2.0 is released](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0)** for
+Windows, Godot 4.7.2 and trusted local projects over stdio. The release includes
+the runtime package, SBOM, checksums and [acceptance receipt](docs/releases/0.2.0-windows-local-final.json).
+The receipt covers the frozen release source, not every later commit on main.
 See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
 Long-session/high-load performance, public HTTP, other platforms/clients and
 advanced authoring are outside this stable profile. Automated approvals are
@@ -71,17 +64,28 @@ not automatically to website media or copied UI sources; see
 
 ### One-command setup
 
-Install Node.js **>=20.19.0** and Godot, then clone:
+Use **Windows, Node.js 24 and Godot 4.7.2** for the accepted profile. The server
+requires Node.js >=20.19.0; source development also needs the current toolchain.
+Clone the release tag for a reproducible starting point:
 
 ```bash
-git clone https://github.com/EVEDensity/Wheel-mcp.git
-cd Wheel-mcp
-npm run go:global
+git clone --branch v0.2.0 https://github.com/EVEDensity/Wheel-Mcp.git
+cd Wheel-Mcp
+npm.cmd run go:global
 ```
 
-Global setup also includes project configuration. The installer installs dependencies, builds, and looks for Godot. Existing Codex configuration is backed up automatically—**no manual backup needed**.
+Global setup also includes project configuration. It installs dependencies,
+builds, detects Godot and updates supported client entries. Back up existing MCP
+configuration first: JSON client entries may be replaced. The installer configures
+the Wheel-Mcp checkout, not every separate game workspace.
 
 Restart your client and call `get_godot_version` to verify the connection.
+
+**Before opening your own game**, set explicit project/evidence roots in the
+server environment. Follow the [first-project guide](docs/GETTING-STARTED.md)
+for a read-only starting configuration and [troubleshooting](docs/TROUBLESHOOTING.md)
+if the client cannot connect. Download from GitHub Releases or build from source;
+this release was not published to npm.
 
 - **Windows shortcut:** double-click [install.cmd](install.cmd) for project setup; use the global command for Codex. If PowerShell blocks npm, use `npm.cmd`.
 - **Godot not found:** set `GODOT_PATH=/absolute/path/to/godot` in the repository's `.env` and retry. Setup updates this file when Godot is detected.
@@ -162,11 +166,8 @@ unless screenshots or a screenshot baseline are requested; legacy one-shot
 screenshots still launch a separate rendered process. CLI/core launch defaults
 are unchanged; use `--headless true` for CLI background launches.
 
-GitHub CI/CD is paused at the owner's request as of October 14, 2026.
-All three existing remote workflows are `disabled_manually`; there were no
-running or queued jobs at the pause check. Local `ci.yml` retains only manual
-dispatch, with no PR or push triggers. Re-enable the remote workflow explicitly
-after opening the source; restore automatic triggers separately if wanted.
+GitHub CI is enabled for pushes and pull requests to main. Pages publishes the
+existing showcase; neither workflow publishes an npm package or creates a Release.
 
 The retained Windows workflow runs `npm run check`
 (one build, style/lint, core MCP transport, approval/transaction safety and site
@@ -234,17 +235,21 @@ Expected result: PASS, zero diagnostic errors, and a 320 × 180 screenshot. The 
 
 ## Know the boundaries
 
-- Runtime property changes do **not** imply a saved editor scene. Native editor editing, undo, and save/reopen verification remain roadmap work.
+- Runtime property changes do **not** imply a saved editor scene. Optional editor tools require a separately authorized running editor and support only their declared native types. See the [editor bridge contract](docs/production-roadmap/EDITOR-BRIDGE-CONTRACT.md).
+- Project-file writes normally require the client's separate form confirmation of the exact transaction. `approved: true` is not permission. Clients without form support fail closed unless a separate, exact local preauthorization policy is configured; do not disable approval checks. See the [transaction contract](docs/production-roadmap/TRANSACTION-CONTRACT.md).
 - Persistent sessions and one-shot runs use separate instances; do not assume they share state.
 - Only run trusted projects. Project scripts execute code; this server is not an operating-system sandbox.
 - Advanced 3D, animation, and shader workflows are not advertised as complete. See the roadmap before depending on them.
 
 ## Major roadmap
 
-All items below are future completion goals, not shipped guarantees. The [implementation plan](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) and [task state](docs/production-roadmap/tasks.json) contain detailed acceptance criteria.
+The limited local release is available. The following work extends its scope;
+existing bounded editor/semantic implementations are not promises of complete
+authoring support. See the [implementation plan](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md)
+and [task state](docs/production-roadmap/tasks.json) for individual acceptance records.
 
-- [ ] **Reliable execution:** consistent types, errors, events, timeouts, recovery, and verification that new code is actually loaded.
-- [ ] **Editor-native editing:** persistent scene/node changes, undo, transactions, and safe save/reopen verification.
+- [ ] **Reliability beyond the local profile:** long-session/high-load and independent-machine installation checks.
+- [ ] **Broader editor-native editing:** expand bounded scene/resource operations while retaining native undo and safe save/reopen verification.
 - [ ] **Broader Godot workflows:** bounded, tested support for UI, 3D, animation, materials, shaders, and physics.
 - [ ] **Project intelligence and context:** semantic resource indexing, structured Resources/Prompts, and predictable context budgets.
 - [ ] **Client compatibility and verification:** Codex/Cursor integration tests, reproducible operation sequences, external patch validation, and regression evidence.
@@ -262,6 +267,8 @@ Engine-related changes also need real Godot tests with `GODOT_PATH` configured. 
 
 ## Documentation
 
+- [Documentation index](docs/README.md) and [first-project setup](docs/GETTING-STARTED.md)
+- [Troubleshooting and support](docs/TROUBLESHOOTING.md)
 - [Tool catalog](docs/TOOL-CATALOG.md)
 - [Development loop](docs/DEV-LOOP.md)
 - [Client repair protocol](docs/CLIENT-REPAIR.md)
@@ -274,9 +281,13 @@ Engine-related changes also need real Godot tests with `GODOT_PATH` configured. 
 
 **Star to follow progress. Fork and open a PR to help build it.**
 
-## Project website (local preview)
+## Project website
 
+[Open the existing project showcase](https://evedensity.github.io/Wheel-Mcp/).
+It introduces the product; browser demos do not connect to your local MCP server.
 The static website and browser playground live in `docs/`. Run
 `npm run site:serve` and open `http://127.0.0.1:4173/Wheel-mcp/`.
 Run `npm run site:test` for static-link and game-logic checks.
 See [website setup and game integration](docs/WEBSITE.md).
+
+By [EVEDensity](https://github.com/EVEDensity).
