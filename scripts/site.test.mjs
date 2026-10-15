@@ -16,9 +16,11 @@ async function collect(dir) {
 }
 test('all static page assets, internal links and fragments resolve within docs', async () => {
   const files = (await collect(docs)).filter((p) => p.endsWith('.html'));
-  assert.equal(files.length, 7);
+  assert.equal(files.length, 6);
+  assert.ok(!files.includes(path.join(docs, 'guide.html')));
   for (const file of files) {
     const html = await readFile(file, 'utf8');
+    assert.doesNotMatch(html, /guide\.html/, `${file}: deleted guide page is still linked`);
     assert.match(html, /<html lang="zh-CN">/);
     assert.match(html, /name="viewport"/);
     for (const [, link] of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
@@ -65,13 +67,9 @@ test('public onboarding documents resolve local links and expose the existing we
     assert.doesNotMatch(text, /status-preview|CI\/CD is paused|暂停 GitHub CI\/CD/);
   }
 });
-test('documentation portal uses rendered documents and bilingual onboarding keeps the same restricted entry', async () => {
-  const guide = await readFile(path.join(docs, 'guide.html'), 'utf8');
-  assert.doesNotMatch(guide, /\?{3,}|PREVIEW/);
-  assert.match(guide, /GETTING-STARTED\.zh-CN\.md/);
-  assert.match(guide, /GETTING-STARTED\.md/);
-  for (const [, link] of guide.matchAll(/href="([^"]+)"/g))
-    assert.ok(!/^[^:]*\.md(?:#|$)/.test(link), `raw Markdown link in portal: ${link}`);
+test('homepage links directly to rendered documentation and bilingual onboarding keeps the same restricted entry', async () => {
+  const homepage = await readFile(path.join(docs, 'index.html'), 'utf8');
+  assert.match(homepage, /https:\/\/github\.com\/EVEDensity\/Wheel-Mcp\/blob\/main\/docs\/README\.md/);
   const entries = await Promise.all(
     ['GETTING-STARTED.md', 'GETTING-STARTED.zh-CN.md'].map(async (name) => {
       const text = await readFile(path.join(docs, name), 'utf8');

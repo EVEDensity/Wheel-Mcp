@@ -27,7 +27,7 @@ and intentionally uses the repository subpath to catch Pages path errors.
 - `games/circuit-snake/index.html`: original Canvas snake.
 - `games/signal-match/index.html`: original DOM memory game.
 - `games/godot-lab/index.html`: explicitly empty Godot Web slot.
-- `guide.html`: installation/documentation navigation, game integration and deployment guide.
+- Documentation links go directly to the repository's Markdown documentation index.
 - `site/`: shared styles and scripts.
 - `assets/icons/`: published brand, AI client and Godot icons.
 - `AGENT-COMPATIBILITY.md`: client matrix and the `npm.cmd run go:global` setup boundary.
@@ -41,10 +41,10 @@ buttons and keyboard support. No audio is included.
 ## Preserve the showcase
 
 Keep the current landing-page design rather than replacing it with a generated
-documentation theme. The documentation portal links to GitHub-rendered Markdown;
-it must not link directly to raw Markdown downloads on this no-Jekyll site.
+documentation theme. Documentation links open GitHub-rendered Markdown, not raw
+Markdown downloads on this no-Jekyll site. There is no separate HTML guide page.
 The static browser simulation must remain distinct from actual engine evidence.
-Guide and gallery pages are Chinese-first; the landing-page language toggle does
+Gallery pages are Chinese-first; the landing-page language toggle does
 not claim to translate every separate document or game.
 
 ## Add a Godot game
