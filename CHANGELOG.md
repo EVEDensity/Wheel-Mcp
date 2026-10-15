@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased 0.2.0 source snapshot
+## 0.2.0 Windows local release
+
+- Revision 2 splits build/style/lint from the core runner, fixes conflicting
+  parent/child budgets and requires current-run receipts with minimum coverage.
+  The ten-minute operator budget does not change product request deadlines or
+  safety requirements. Historical failures remain attached to their old source.
+- Restore bounded Windows push/PR CI when the repository is made public;
+  native smoke stays manual and npm publication is not automatic.
+
+### Historical source synchronization
 
 - The final pre-push gate exceeded its execution budget without a complete
   passing result. Source synchronization is authorized; this is not an accepted
@@ -14,7 +23,7 @@
   stdio. Defer long soak, large stress/matrices, independent-machine and other
   client certification at the maintainer's request; retain failures and safety
   controls. This is not full production or public-network qualification.
-- Add a six-minute source-bound release gate with native safety, crash recovery,
+- Add a source-bound release gate with native safety, crash recovery,
   headless runtime, actual packaged installation, dependency audit and SBOM.
   Failures/skips/unfinished cleanup cannot qualify the local release.
 - Separate `release:gate:full` and `release:check:production` from the local

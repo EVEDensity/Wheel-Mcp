@@ -12,7 +12,7 @@ honest description of their limits are welcome.
 
 Work from the repository root. The package declares Node `>=20.19.0`; also meet
 the installed lint/toolchain engine requirements. The recorded local evaluation
-used Node `24.19.0` and Godot `4.7.2` on Windows. For your own checkout, inspect
+used Node `24.18.0` and Godot `4.7.2` on Windows. For your own checkout, inspect
 `package.json` and the lockfile rather than assuming all Node 20 patch versions
 are supported.
 
@@ -71,10 +71,10 @@ npm run test:godot-ci
 
 Godot smoke tests must report **0 skipped** when `GODOT_PATH` is set. Run the
 bounded local stable gate with `npm run release:gate`; long production work is
-separate via `npm run release:gate:full`. GitHub CI/CD is paused as of
-October 14, 2026: remote workflows are manually disabled; local `ci.yml` retains
-only manual dispatch. The separate hosted engine/release workflows are removed
-locally. Re-enable GitHub execution explicitly after opening the source.
+separate via `npm run release:gate:full`. The owner authorized restoring short
+Windows push/PR CI when opening the repository on October 15, 2026. The optional
+engine smoke is manual; long engine/release workflows remain removed. The local
+release gate is source-bound and does not publish by itself.
 
 Without Godot, tests that require it can be skipped. Report skipped counts;
 a passing Node-only suite is not a real runtime result. Screenshot tests need

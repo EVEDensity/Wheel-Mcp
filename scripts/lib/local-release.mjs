@@ -4,12 +4,12 @@ import { sha256 } from './production-manifest.mjs';
 
 export const localReleasePolicy = {
   id: 'windows-local',
-  revision: 1,
+  revision: 2,
   version: '0.2.0',
   platform: 'win32',
   godot: '4.7.2',
   transport: 'stdio',
-  totalTimeoutMs: 360000,
+  totalTimeoutMs: 600000,
   approval: 'MOCK_IN_TESTS_HOST_CONFIRMATION_REQUIRED_IN_PRODUCT',
   excluded: [
     'online-deployment',
@@ -23,7 +23,15 @@ export const localReleasePolicy = {
 };
 
 export const localReleaseSteps = [
-  { id: 'core', program: 'npm', args: ['run', 'check'], timeoutMs: 120000 },
+  { id: 'build', program: 'node', args: ['node_modules/typescript/bin/tsc'], timeoutMs: 45000 },
+  {
+    id: 'format',
+    program: 'node',
+    args: ['node_modules/prettier/bin/prettier.cjs', '--check', 'src', 'tests', 'godot-plugin', '*.json'],
+    timeoutMs: 30000,
+  },
+  { id: 'lint', program: 'node', args: ['node_modules/eslint/bin/eslint.js', 'src', 'tests'], timeoutMs: 45000 },
+  { id: 'core', program: 'node', args: ['scripts/test-ci-fast.mjs'], timeoutMs: 100000 },
   { id: 'safety', program: 'node', args: ['scripts/test-local-release.mjs'], timeoutMs: 250000 },
   { id: 'engine', program: 'node', args: ['scripts/test-godot-ci.mjs'], timeoutMs: 70000 },
   { id: 'package', program: 'node', args: ['scripts/test-release-package.mjs'], timeoutMs: 50000 },
@@ -36,6 +44,8 @@ export const localReleaseSteps = [
   },
   { id: 'sbom', program: 'npm', args: ['sbom', '--sbom-format=cyclonedx'], timeoutMs: 15000 },
 ];
+
+export const minimumReleaseTests = { core: 93, safety: 60, engine: 14, package: 2 };
 
 export const localReleaseDocs = [
   'README.md',
@@ -56,6 +66,7 @@ export function assessLocalRelease(manifest, current) {
   const errors = [];
   const fail = (message) => errors.push(message);
   if (manifest?.schemaVersion !== 1 || manifest?.status !== 'PASS') fail('local gate is not PASS');
+  if (!/^[a-z0-9-]{20,64}$/.test(manifest?.runId ?? '')) fail('missing local run identity');
   if (JSON.stringify(manifest?.policy) !== JSON.stringify(localReleasePolicy)) fail('local release policy differs');
   if (manifest?.sourceHash !== current.sourceHash || !/^[a-f0-9]{64}$/.test(current.sourceHash ?? ''))
     fail('local evidence does not bind current source');
@@ -64,7 +75,9 @@ export function assessLocalRelease(manifest, current) {
   if (JSON.stringify(manifest?.documents) !== JSON.stringify(current.documents)) fail('release documentation changed');
   if (manifest?.environment?.platform !== 'win32' || !/^4\.7\.2(?:\.|$)/.test(manifest?.environment?.godot ?? ''))
     fail('local environment is outside scope');
-  if (!/^v\d+\./.test(manifest?.environment?.node ?? '')) fail('missing Node environment');
+  const node = /^v(\d+)\.(\d+)\./.exec(manifest?.environment?.node ?? '');
+  if (!node || Number(node[1]) < 20 || (Number(node[1]) === 20 && Number(node[2]) < 19))
+    fail('unsupported Node environment');
   if (
     !Number.isFinite(manifest?.durationMs) ||
     manifest.durationMs < 0 ||
@@ -95,7 +108,7 @@ export function assessLocalRelease(manifest, current) {
       if (
         !tests ||
         !Number.isSafeInteger(tests.tests) ||
-        tests.tests <= 0 ||
+        tests.tests < minimumReleaseTests[step.id] ||
         tests.passed !== tests.tests ||
         tests.failed !== 0 ||
         tests.skipped !== 0 ||
@@ -104,6 +117,7 @@ export function assessLocalRelease(manifest, current) {
         evidence.scratchCleanup !== 'PASS'
       )
         fail(`${step.id} is incomplete or cleanup failed`);
+      if (evidence?.runId !== manifest?.runId) fail(`${step.id} evidence belongs to another run`);
     }
   }
   if (manifest?.audit?.metadata?.vulnerabilities?.total !== 0)
@@ -118,5 +132,6 @@ export function assessLocalRelease(manifest, current) {
     fail('runtime artifact is not valid');
   if (manifest?.productionQualification !== 'NOT_QUALIFIED')
     fail('local gate must not promote production qualification');
+  if (!/^[a-f0-9]{64}$/.test(manifest?.sbomSha256 ?? '')) fail('missing SBOM fingerprint');
   return errors;
 }

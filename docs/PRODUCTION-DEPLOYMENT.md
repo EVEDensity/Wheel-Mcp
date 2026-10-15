@@ -27,11 +27,10 @@ The planned public release scope (not current qualification) is limited to:
 - MCP stdio and MCP Streamable HTTP. WebSocket is not an MCP standard transport
   in this release.
 
-As of October 14, 2026, GitHub CI/CD is paused at the owner's request. The three
-existing remote workflows are `disabled_manually`, and local `ci.yml` retains
-only manual dispatch. No running or queued jobs existed at the pause check.
-Re-enabling remote execution and restoring automatic triggers are separate,
-explicit steps after opening the source; neither happens during this audit.
+The October 14 CI pause is historical. On October 15, 2026, the owner authorized
+opening the repository and restoring the short Windows push/PR workflow.
+The optional real-engine smoke is manual. Heavy matrix/soak release workflows
+are not restored; current CI status is visible in GitHub Actions.
 
 The one retained bounded Windows-only workflow covers build/style, MCP
 transport, write approval/transaction safety and

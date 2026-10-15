@@ -9,7 +9,7 @@ const files = [
   'session-isolation',
   'stdio-cleanup',
 ].map((name) => `build/tests/${name}.test.js`);
-const plan = { files, concurrency: 2, timeoutMs: 180000, engine: 'REAL_HEADLESS', scope: 'engine-smoke' };
+const plan = { files, concurrency: 2, timeoutMs: 60000, engine: 'REAL_HEADLESS', scope: 'engine-smoke' };
 
 if (process.argv[2] === '--list' && process.argv.length === 3) console.log(JSON.stringify(plan));
 else if (process.argv.length !== 2) {

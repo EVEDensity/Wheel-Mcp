@@ -25,6 +25,7 @@ export default async function* jsonTestReporter(source) {
                 todo: data.todo ?? false,
                 type: data.type ?? 'test',
                 file: data.file,
+                durationMs: data.details?.duration_ms ?? null,
                 ...(event.type === 'test:fail'
                   ? {
                       error: {

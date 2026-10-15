@@ -1,8 +1,10 @@
 name: ci
 
 on:
-  # Paused on 2026-10-14 at the owner's request. GitHub workflows are also
-  # disabled_manually; re-enable remotely and restore automatic triggers later.
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       engine:
@@ -27,7 +29,7 @@ jobs:
           fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Build, style and core MCP checks

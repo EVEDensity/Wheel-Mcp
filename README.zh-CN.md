@@ -39,17 +39,15 @@ Wheel-mcp 是面向 **Codex、Cursor 及其他 MCP 客户端** 的 Godot 工具�
 
 ## 当前状态
 
-**当前是源码同步快照，尚未通过稳定版验收。** 最终推送前的门禁因超时未取得完整通过结果。
-维护者已明确允许先同步源码，不创建稳定版 Release。此前通过记录仅属于各自记录的源码
-哈希，不授予当前提交稳定资格。详见[当前源码状态](docs/releases/0.2.0-source-push.json)。
-
-候选版本：`0.2.0`，目标为 **Windows + Godot 4.7.2、可信本地项目、stdio 的限域发布**。
+版本：`0.2.0`，采用 **Windows + Godot 4.7.2、可信本地项目、stdio 的限域稳定版范围**。
 当前源码必须实际通过 `npm run release:gate` 和 `npm run release:check` 才能接受发布，
-版本号本身不是验收结果。详见[本机稳定版范围](docs/LOCAL-STABLE-RELEASE.md)。
+版本号本身不是验收结果。[修订版 2 验收记录](docs/releases/0.2.0-windows-local-v2.json)
+记录对应源码和实际结果；此前源码同步时的超时记录保留，不改写为通过。
+详见[本机稳定版范围](docs/LOCAL-STABLE-RELEASE.md)。
 长时间与高负载性能、线上 HTTP、其他平台/客户端及高级创作能力不属于此次稳定承诺。
 自动化验收的审批为明确的测试替身，不代表真人桌面审批体验已认证。完整生产资格仍为
-**NOT_QUALIFIED**，T31–T35/G4–G6 保留为后续工作，不标记完成。GitHub CI/CD 继续停用，
-不会自动发布。
+**NOT_QUALIFIED**，T31–T35/G4–G6 保留为后续工作，不标记完成。公开仓库的 CI 自动执行
+短时 Windows push/PR 检查，真实引擎检查手动运行，不自动发布 npm。
 
 Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱。应显式限制项目与证据
 目录，仅操作受信任项目。当前 HTTP 禁止非 loopback 监听。应用代码的 MIT 不自动

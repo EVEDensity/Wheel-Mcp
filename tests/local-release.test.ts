@@ -4,13 +4,14 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 
-const { localReleasePolicy, localReleaseSteps, assessLocalRelease } = await import(
+const { localReleasePolicy, localReleaseSteps, minimumReleaseTests, assessLocalRelease } = await import(
   pathToFileURL(path.resolve('scripts/lib/local-release.mjs')).href
 );
 // MOCK receipts exercise only the verifier, never qualify an actual release.
 function receipt() {
   return {
     schemaVersion: 1,
+    runId: 'test-run-012345678901234567890123',
     status: 'PASS',
     version: '0.2.0',
     sourceHash: 'a'.repeat(64),
@@ -26,12 +27,21 @@ function receipt() {
       error: null,
       durationMs: 5,
       outputHash: 'c'.repeat(64),
-      tests: { tests: 1, passed: 1, failed: 0, skipped: 0, cancelled: 0, todo: 0 },
+      runId: 'test-run-012345678901234567890123',
+      tests: {
+        tests: minimumReleaseTests[step.id] ?? 1,
+        passed: minimumReleaseTests[step.id] ?? 1,
+        failed: 0,
+        skipped: 0,
+        cancelled: 0,
+        todo: 0,
+      },
       scratchCleanup: 'PASS',
     })),
     package: { version: '0.2.0', files: 109, sha256: 'd'.repeat(64), excluded: 0 },
     audit: { metadata: { vulnerabilities: { total: 0 } } },
     productionQualification: 'NOT_QUALIFIED',
+    sbomSha256: 'e'.repeat(64),
   };
 }
 const current = { sourceHash: 'a'.repeat(64), version: '0.2.0', documents: { readme: 'b'.repeat(64) } };
@@ -40,10 +50,10 @@ test('limited local release accepts complete receipts without promoting producti
 test('local release rejects skipped tests, unknown actors and changed source or documents', () => {
   for (const mutate of [
     (value: ReturnType<typeof receipt>) => {
-      value.steps[0].tests.skipped = 1;
+      value.steps.find((step: { id: string }) => step.id === 'core')!.tests.skipped = 1;
     },
     (value: ReturnType<typeof receipt>) => {
-      value.steps[0].scratchCleanup = 'RETAINED';
+      value.steps.find((step: { id: string }) => step.id === 'core')!.scratchCleanup = 'RETAINED';
     },
     (value: ReturnType<typeof receipt>) => {
       value.sourceHash = 'f'.repeat(64);
@@ -58,7 +68,7 @@ test('local release rejects skipped tests, unknown actors and changed source or 
       value.steps[0].exitCode = 1;
     },
     (value: ReturnType<typeof receipt>) => {
-      value.durationMs = 360001;
+      value.durationMs = 600001;
     },
     (value: ReturnType<typeof receipt>) => {
       value.productionQualification = 'QUALIFIED';
@@ -104,8 +114,27 @@ test('local release plan excludes long tests but keeps native safety and real pa
   );
   assert.equal(plan.doesNotPublish, true);
   assert.equal(plan.policy.transport, 'stdio');
-  assert.equal(plan.policy.totalTimeoutMs, 360000);
+  assert.equal(plan.policy.totalTimeoutMs, 600000);
   assert.doesNotMatch(JSON.stringify(plan.steps), /soak|verify:production|matrix:generate|test:built/);
   assert.ok(plan.steps.some((step: { id: string }) => step.id === 'safety'));
   assert.ok(plan.steps.some((step: { id: string }) => step.id === 'package'));
+});
+
+test('local release rejects stale suite receipts and reduced coverage', () => {
+  const stale = receipt();
+  stale.steps.find((step: { id: string }) => step.id === 'core')!.runId = 'previous-run-01234567890123456789';
+  assert.ok(assessLocalRelease(stale, current).some((error: string) => error.includes('another run')));
+  const reduced = receipt();
+  const step = reduced.steps.find((item: { id: string }) => item.id === 'safety')!;
+  step.tests.tests = step.tests.passed = 1;
+  assert.ok(assessLocalRelease(reduced, current).some((error: string) => error.includes('safety')));
+});
+
+test('release budgets cover child suite deadlines and do not nest npm check', () => {
+  const core = localReleaseSteps.find((step: { id: string }) => step.id === 'core');
+  const engine = localReleaseSteps.find((step: { id: string }) => step.id === 'engine');
+  assert.ok(core.timeoutMs > 90000);
+  assert.ok(engine.timeoutMs > 60000);
+  assert.equal(core.program, 'node');
+  assert.ok(!localReleaseSteps.some((step: { args: string[] }) => step.args.includes('check')));
 });

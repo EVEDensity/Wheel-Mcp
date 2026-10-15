@@ -9,9 +9,9 @@ import { parse } from 'yaml';
 
 test('automatic CI is bounded and does not run the engine matrix, full tests or release gates', async () => {
   const ci = parse(await readFile('.github/workflows/ci.yml', 'utf8'));
-  assert.deepEqual(Object.keys(ci.on), ['workflow_dispatch']);
-  assert.equal(ci.on.push, undefined);
-  assert.equal(ci.on.pull_request, undefined);
+  assert.deepEqual(Object.keys(ci.on), ['push', 'pull_request', 'workflow_dispatch']);
+  assert.deepEqual(ci.on.push.branches, ['main']);
+  assert.deepEqual(ci.on.pull_request.branches, ['main']);
   assert.equal(ci.on.workflow_dispatch.inputs.engine.type, 'boolean');
   assert.equal(ci.on.workflow_dispatch.inputs.engine.default, false);
   assert.deepEqual(
@@ -73,7 +73,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
     execFileSync(process.execPath, ['scripts/test-godot-ci.mjs', '--list'], { encoding: 'utf8', windowsHide: true }),
   );
   assert.equal(smoke.engine, 'REAL_HEADLESS');
-  assert.equal(smoke.timeoutMs, 180000);
+  assert.equal(smoke.timeoutMs, 60000);
   assert.equal(smoke.files.length, 5);
   assert.ok(smoke.files.every((file: string) => !/soak|authoring|outcome-ledger|production-case/.test(file)));
   const release = JSON.parse(
@@ -84,7 +84,14 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   );
   assert.equal(release.doesNotPublish, true);
   assert.equal(release.policy.id, 'windows-local');
-  assert.equal(release.policy.totalTimeoutMs, 360000);
+  assert.equal(release.policy.totalTimeoutMs, 600000);
+  for (const id of ['build', 'format', 'lint', 'core'])
+    assert.ok(release.steps.some((step: { id: string }) => step.id === id));
+  assert.ok(
+    release.steps.every(
+      (step: { program: string; args: string[] }) => !(step.program === 'npm' && step.args.includes('check')),
+    ),
+  );
   assert.doesNotMatch(JSON.stringify(release.steps), /verify:production|matrix:generate|test:built|soak/);
   assert.ok(release.steps.some((step: { id: string }) => step.id === 'safety'));
   assert.ok(release.steps.some((step: { id: string }) => step.id === 'package'));

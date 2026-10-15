@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "runId": "c39acfbf-c4b4-43b0-b3ab-e3e13b791075",
+  "status": "PASS",
+  "version": "0.2.0",
+  "sourceHash": "52d305ee60cba360bea494fb4f5aaa9fec3ef106c4e4316c996a15463bcc3954",
+  "head": "dc86ef5417363fe1cbb938cf90f9261f4d3d25b1",
+  "documents": {
+    "README.md": "2249042d60a3410dd9a64d23af8dcd990a3987a7b31290d4269517ecae24c160",
+    "README.zh-CN.md": "34ba75111904c5f24cabd145f8f61b8897a53c8e8f231d35ec6493aabac90169",
+    "SECURITY.md": "b342ad5cbcdec843151746786e60de6e8dd426f645a8f2e5045d0444992a092e",
+    "THIRD-PARTY-NOTICES.md": "6977d1cd688d3f5e92813628bd0d19ab525efdb90daaa3d4171794c60af0dc7c",
+    "docs/LOCAL-STABLE-RELEASE.md": "4ac580992d6a17f7169b2b1304493d09e24a98c469f8b9f08db1075b43f3d5a7"
+  },
+  "policy": {
+    "id": "windows-local",
+    "revision": 2,
+    "version": "0.2.0",
+    "platform": "win32",
+    "godot": "4.7.2",
+    "transport": "stdio",
+    "totalTimeoutMs": 600000,
+    "approval": "MOCK_IN_TESTS_HOST_CONFIRMATION_REQUIRED_IN_PRODUCT",
+    "excluded": [
+      "online-deployment",
+      "other-platforms",
+      "other-client-certification",
+      "human-approval-UX",
+      "long-session",
+      "high-load-performance",
+      "full-authoring-matrix"
+    ]
+  },
+  "startedAt": "2026-10-15T09:03:18.406Z",
+  "environment": {
+    "platform": "win32",
+    "node": "v24.18.0",
+    "godot": "4.7.2.stable.official.ed1daf0bf"
+  },
+  "steps": [
+    {
+      "id": "build",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 5643,
+      "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "format",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 3038,
+      "outputHash": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "id": "lint",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 4363,
+      "outputHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "core",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 47087,
+      "outputHash": "28d00cd3a815edbc18af8d7fc3af8d50404096631138f707e95336f0ebab3958",
+      "tests": {
+        "tests": 93,
+        "passed": 93,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "c39acfbf-c4b4-43b0-b3ab-e3e13b791075"
+    },
+    {
+      "id": "safety",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 177618,
+      "outputHash": "7c914b4da1e34b9f5cffcab73449f2094ac0cc6839f587173184a4d1a2a959bf",
+      "tests": {
+        "tests": 60,
+        "passed": 60,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "c39acfbf-c4b4-43b0-b3ab-e3e13b791075"
+    },
+    {
+      "id": "engine",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 13350,
+      "outputHash": "1399afa874058bbcf7d3bf99870f80b10c0577f0123fd98affed8a942f278e51",
+      "tests": {
+        "tests": 14,
+        "passed": 14,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "c39acfbf-c4b4-43b0-b3ab-e3e13b791075"
+    },
+    {
+      "id": "package",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 7418,
+      "outputHash": "f300c033722e8acda5d62160eb5df0bf4f8a20d34768c2b1e3004ebd50fd6ba8",
+      "tests": {
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0
+      },
+      "scratchCleanup": "PASS",
+      "runId": "c39acfbf-c4b4-43b0-b3ab-e3e13b791075"
+    },
+    {
+      "id": "pack",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 942,
+      "outputHash": "f37959f3484d5bf7bb1a1e4a1d2aaf6f7cc15eaf7d09861948b6ddac86e6aa26"
+    },
+    {
+      "id": "audit",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 1389,
+      "outputHash": "b957649e1943185f184a5f2cbbf6e850519b16e97549ddf6dd9979e4a77295c2"
+    },
+    {
+      "id": "sbom",
+      "status": "PASS",
+      "exitCode": 0,
+      "signal": null,
+      "error": null,
+      "durationMs": 651,
+      "outputHash": "e680122d2cb1fe4feda7e85c95aaa571bb43e3cab67bf271436f7e2864f93bc4"
+    }
+  ],
+  "durationMs": 262570,
+  "productionQualification": "NOT_QUALIFIED",
+  "package": {
+    "filename": "wheel-mcp-0.2.0.tgz",
+    "version": "0.2.0",
+    "files": 109,
+    "bytes": 238270,
+    "unpackedBytes": 993421,
+    "sha256": "9188082bc0410bf5c32d9ea6299bac6b14c1cdf5d405baf23d92d777f28425fc",
+    "excluded": 0
+  },
+  "audit": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {},
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      },
+      "dependencies": {
+        "prod": 99,
+        "dev": 91,
+        "optional": 0,
+        "peer": 0,
+        "peerOptional": 0,
+        "total": 189
+      }
+    }
+  },
+  "sbomSha256": "e680122d2cb1fe4feda7e85c95aaa571bb43e3cab67bf271436f7e2864f93bc4",
+  "finishedAt": "2026-10-15T09:07:40.976Z",
+  "independentReceiptVerification": "PASS",
+  "supportedRelease": "Windows local stdio trusted projects; not full production qualification"
+}

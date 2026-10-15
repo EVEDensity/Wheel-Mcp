@@ -71,6 +71,7 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
       JSON.stringify(
         {
           scope,
+          runId: process.env.WHEEL_RELEASE_RUN_ID ?? null,
           status: 'PASS',
           ...summary,
           durationMs: Date.now() - started,
@@ -95,6 +96,7 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
     const failure = JSON.stringify(
       {
         scope,
+        runId: process.env.WHEEL_RELEASE_RUN_ID ?? null,
         status: 'FAIL',
         processResult,
         error: error.message,

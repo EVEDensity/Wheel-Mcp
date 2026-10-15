@@ -48,21 +48,18 @@ With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three altern
 
 ## Current status
 
-**Current source snapshot is not an accepted stable release.** The final
-pre-push gate timed out without a complete passing result. The maintainer
-authorized source synchronization only, with no stable Release. Earlier passing
-receipts belong to their recorded source hashes and do not qualify this commit.
-See the [current source status](docs/releases/0.2.0-source-push.json).
-
-Candidate version: `0.2.0`, targeting a **Windows-only local release profile for
+Version: `0.2.0`, targeting a **Windows-only local stable release profile for
 Godot 4.7.2 and trusted projects over stdio**. Stable acceptance requires a passing
 current-source `npm run release:gate` and `npm run release:check`; version alone
-does not grant acceptance. See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
+does not grant acceptance. The [revision 2 acceptance receipt](docs/releases/0.2.0-windows-local-v2.json)
+records its exact source and outcome. Earlier source-sync failures remain historical.
+See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
 Long-session/high-load performance, public HTTP, other platforms/clients and
 advanced authoring are outside this stable profile. Automated approvals are
 explicit test doubles, not human desktop UX certification. Full production
 qualification remains **NOT_QUALIFIED**; T31–T35/G4–G6 remain future work, not
-completed tasks. GitHub CI/CD remains disabled and no version is auto-published.
+completed tasks. Public-repository CI runs short Windows push/PR checks; real
+engine smoke is manual. No npm version is auto-published.
 
 Godot runs project code with your OS permissions; headless operation is not a
 sandbox. Configure explicit project/evidence roots and use only trusted local

@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { sourceIdentity, sha256 } from './lib/production-manifest.mjs';
@@ -33,6 +34,7 @@ if (process.argv.length === 3 && process.argv[2] === '--plan') {
     godotPath && spawnSync(godotPath, ['--version'], { encoding: 'utf8', windowsHide: true, timeout: 5000 });
   const manifest = {
     schemaVersion: 1,
+    runId: randomUUID(),
     status: 'FAIL',
     version: pkg.version,
     sourceHash: source.sourceHash,
@@ -59,6 +61,7 @@ if (process.argv.length === 3 && process.argv[2] === '--plan') {
     const env = {
       ...process.env,
       GODOT_PATH: godotPath,
+      WHEEL_RELEASE_RUN_ID: manifest.runId,
       npm_config_logs_max: '0',
       npm_config_update_notifier: 'false',
     };
@@ -105,6 +108,8 @@ if (process.argv.length === 3 && process.argv[2] === '--plan') {
           ['tests', 'passed', 'failed', 'skipped', 'cancelled', 'todo'].map((key) => [key, summary[key]]),
         );
         record.scratchCleanup = summary.scratchCleanup;
+        record.runId = summary.runId;
+        if (summary.runId !== manifest.runId) throw new Error(`${step.id} returned stale evidence`);
         if (summary.status !== 'PASS') throw new Error(`${step.id} did not produce a passing test summary`);
       }
       if (step.id === 'pack') {

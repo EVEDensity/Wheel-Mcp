@@ -1,9 +1,9 @@
 # Windows local stable release
 
-The current source snapshot is **NOT ACCEPTED** for stable release. Its final
-pre-push gate timed out. The maintainer authorized GitHub source synchronization
-only, without a stable Release. Historical passing receipts apply only to their
-original fingerprints. See [current source status](releases/0.2.0-source-push.json).
+The [revision 2 receipt](releases/0.2.0-windows-local-v2.json) records acceptance
+for the exact source being distributed. The earlier
+[source synchronization snapshot](releases/0.2.0-source-push.json) timed out and
+remains historical, not a replacement for fresh checks.
 
 Version `0.2.0` uses a limited local release profile, not the unfinished full
 production roadmap. On October 15, 2026, the maintainer requested the shortest
@@ -43,9 +43,16 @@ the controlled lock graph and local cache, not a separate clean Windows machine.
 Every test suite must finish with zero failures, skips, cancellations and todos,
 and clean its owned scratch directory. A missing engine, failed audit, changed
 source, modified artifact or incomplete summary fails the gate. Total execution
-is bounded to six minutes; it never pushes, creates tags, publishes npm packages
+is bounded to ten minutes; it never pushes, creates tags, publishes npm packages
 or changes GitHub CI settings. Successful runs keep only compact summaries,
 tarball and SBOM; failed runs retain bounded diagnostics and owned failure data.
+
+Revision 2 separates build, format, lint and core test budgets instead of putting
+a 90-second test inside a 120-second npm parent with its setup work. Child suite
+deadlines fit inside parent budgets. Every suite must carry the current run
+identity and meet minimum coverage counts; stale summaries cannot qualify new
+code. This revises operator budgets, not product request deadlines, permissions,
+integrity or rollback requirements.
 
 ## Removed release blockers
 
@@ -73,5 +80,7 @@ npm.cmd run release:check
 
 The receipt is `runs/local-release/latest.json`; the distributable and SBOM are
 alongside it. For future full production work, use `npm run release:gate:full`
-and `npm run release:check:production`. GitHub workflows stay disabled until
-the maintainer explicitly re-enables them. Version preparation is not publication.
+and `npm run release:check:production`. The maintainer authorized public GitHub
+distribution and restoring short push/PR CI on October 15, 2026. Optional engine
+smoke remains manual; long qualification is not an automatic CI job. GitHub
+Release publication is separate from npm publishing.

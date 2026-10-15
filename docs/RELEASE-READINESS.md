@@ -1,6 +1,17 @@
 # Release readiness (Windows)
 
-## Source synchronization on October 15 2026
+## Local stable release revision 2
+
+Current acceptance is recorded in the [revision 2 receipt](releases/0.2.0-windows-local-v2.json).
+It requires separate build/style/lint budgets, all core/native/runtime/package
+suites with zero skips and owned cleanup, fresh audit, SBOM and artifact
+integrity. Suite receipts must match the current run and meet minimum coverage.
+The operator budget is ten minutes; no product safety threshold is relaxed.
+The maintainer authorized public distribution and bounded push/PR CI after
+acceptance. Full production and remote deployment remain `NOT_QUALIFIED`.
+Earlier failed synchronization and successful checkpoint sections are historical.
+
+## Historical source synchronization on October 15 2026
 
 **The current commit is not accepted for stable release.** The final gate timed
 out in the core phase after 120 seconds; build, format and lint completed, but
