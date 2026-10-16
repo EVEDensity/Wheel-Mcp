@@ -10,6 +10,7 @@ import { runProcess, resolveGodotPath } from '../godot-runtime.js';
 import { readEditorState, type EditorState } from '../editor/editor-bridge.js';
 import { resolveProjectPath } from './paths.js';
 import { ProjectTransactions } from './transactions.js';
+import { setTimeout as delay } from 'node:timers/promises';
 import type { ProjectWriteOptions } from './write-file.js';
 const sha = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 export type ValidatedWriteOptions = ProjectWriteOptions & {
@@ -43,14 +44,36 @@ async function isolatedValidationExecutable(source: string, stageRoot: string): 
   return target;
 }
 
-async function cleanupValidationStage(stageRoot: string): Promise<void> {
+export async function cleanupValidationStage(stageRoot: string): Promise<void> {
   const tempRoot = path.resolve(os.tmpdir());
   const exactStage = path.resolve(stageRoot);
   if (path.dirname(exactStage) !== tempRoot || !/^wheel-validate-[A-Za-z0-9]+$/.test(path.basename(exactStage)))
     throw new WheelError('FORBIDDEN', 'Validation cleanup target escaped the temporary root');
-  const info = await lstat(exactStage);
-  if (info.isSymbolicLink()) throw new WheelError('FORBIDDEN', 'Validation stage became a symlink');
-  await rm(exactStage, { recursive: true, force: false });
+  // Windows can retain short-lived image/import/antivirus locks after process
+  // close. Bound backoff for the entire tree (not a retry budget per file), and
+  // recheck the root on each attempt. Persistent errors prevent source writes.
+  const transient = new Set(['EBUSY', 'EMFILE', 'ENFILE', 'ENOTEMPTY', 'EPERM']);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const info = await lstat(exactStage);
+      if (info.isSymbolicLink()) throw new WheelError('FORBIDDEN', 'Validation stage became a symlink');
+      await rm(exactStage, { recursive: true, force: false, maxRetries: 0 });
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code ?? '';
+      if (code === 'ENOENT') {
+        // A missing child is not proof that the entire stage was removed.
+        const remaining = await lstat(exactStage).catch((probe) => {
+          if (probe.code === 'ENOENT') return undefined;
+          throw probe;
+        });
+        if (!remaining) return;
+        throw error;
+      }
+      if (!transient.has(code) || attempt === 6) throw error;
+      await delay(100 * (attempt + 1)); // At most 2.1 seconds total backoff.
+    }
+  }
 }
 
 /** Pure fail-closed guard. Script dependencies may affect any candidate, not only the edited path. */
@@ -247,11 +270,22 @@ export async function validateCandidateFiles(
       try {
         await cleanupValidationStage(stageRoot);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT' && !primaryFailure)
-          primaryFailure = new WheelError('ENGINE_UNAVAILABLE', 'Temporary validation stage cleanup failed', {
+        const cause = error as NodeJS.ErrnoException;
+        if (cause.code !== 'ENOENT') {
+          const failure = {
+            status: 'FAIL',
+            originalsTouched: false,
+            code: 'ENGINE_UNAVAILABLE',
+            message: `Temporary validation stage cleanup failed: ${cause.code ?? 'UNKNOWN'}: ${cause.message}`,
+            evidenceDir,
             stageRoot,
-            cause: (error as Error).message,
-          });
+            cleanup: { code: cause.code ?? 'UNKNOWN', syscall: cause.syscall, message: cause.message },
+            primaryFailure: primaryFailure ? { message: (primaryFailure as Error).message } : null,
+          };
+          if (safeEvidence && evidenceDir)
+            await writeFile(path.join(evidenceDir, 'failure.json'), JSON.stringify(failure, null, 2));
+          primaryFailure ??= new WheelError('ENGINE_UNAVAILABLE', failure.message, failure);
+        }
       }
     }
   }

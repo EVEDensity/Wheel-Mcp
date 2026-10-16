@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.2.1
+## 0.2.2
+
+- Bound retries for transient Windows locks when removing an owned validation
+  stage. A persistent cleanup failure still prevents source writes and records
+  the underlying code/cause in failure evidence. Native lock and junction tests
+  cover successful cleanup and fail-closed retention.
+- The v0.2.1 GitHub build stopped at native validation-stage cleanup (63/64 safety
+  checks); it was not published. Keep the [failed run](https://github.com/EVEDensity/Wheel-Mcp/actions/runs/38873015917)
+  and tag as historical evidence.
+
+## 0.2.1 source candidate not published
 
 - Add an on-demand GitHub release workflow with bounded Windows acceptance,
   actual package installation, SBOM, checksums and a source-bound receipt.

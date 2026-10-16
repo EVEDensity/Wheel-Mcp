@@ -12,6 +12,7 @@ const plan = {
     'editor-scene-rpc',
     'editor-scene-save',
     'validated-project-write',
+    'validation-cleanup',
     'editor-outcome-smoke',
   ].map((name) => `build/tests/${name}.test.js`),
   scope: 'local-release-safety',

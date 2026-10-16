@@ -83,13 +83,15 @@ jobs:
         run: |
           set -euo pipefail
           gh release create "$RELEASE_TAG" --draft --verify-tag --target "$RELEASE_SHA" --title "$RELEASE_TAG · Windows local stable" --notes-file RELEASE-NOTES.md wheel-mcp-*.tgz sbom.json acceptance.json SHA256SUMS
-          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > uploaded-release.json
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > uploaded-releases.json
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
           import { createHash } from 'node:crypto';
-          const release = JSON.parse(readFileSync('uploaded-release.json', 'utf8'));
           const tag = process.env.RELEASE_TAG;
-          if (!/^v\d+\.\d+\.\d+$/.test(tag) || release.tag_name !== tag || !release.draft || release.target_commitish !== process.env.RELEASE_SHA) {
+          const matches = JSON.parse(readFileSync('uploaded-releases.json', 'utf8')).flat().filter((item) => item.tag_name === tag && item.draft);
+          const release = matches[0];
+          const acceptance = JSON.parse(readFileSync('acceptance.json', 'utf8'));
+          if (!/^v\d+\.\d+\.\d+$/.test(tag) || matches.length !== 1 || acceptance.status !== 'PASS' || acceptance.version !== tag.slice(1) || acceptance.head !== process.env.RELEASE_SHA) {
             throw new Error('Uploaded release does not match accepted source');
           }
           const names = [`wheel-mcp-${tag.slice(1)}.tgz`, 'sbom.json', 'acceptance.json', 'SHA256SUMS'];

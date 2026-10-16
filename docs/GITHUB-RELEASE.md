@@ -17,8 +17,8 @@ Commit the accepted source to main and push it. Review the short CI result.
 Create an annotated stable version tag on that exact commit, then push the tag:
 
 ```powershell
-git tag -a v0.2.1 -m "Wheel-mcp 0.2.1 Windows local stable"
-git push origin v0.2.1
+git tag -a v0.2.2 -m "Wheel-mcp 0.2.2 Windows local stable"
+git push origin v0.2.2
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
@@ -52,8 +52,8 @@ Download the four assets from the same release and compare their hashes against
 `SHA256SUMS` before installation. On Windows, for example:
 
 ```powershell
-Get-FileHash .\wheel-mcp-0.2.1.tgz -Algorithm SHA256
-npm.cmd install --ignore-scripts .\wheel-mcp-0.2.1.tgz
+Get-FileHash .\wheel-mcp-0.2.2.tgz -Algorithm SHA256
+npm.cmd install --ignore-scripts .\wheel-mcp-0.2.2.tgz
 ```
 
 Godot must be installed separately. Configure the installed server's absolute
