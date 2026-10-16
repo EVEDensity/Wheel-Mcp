@@ -5,7 +5,7 @@ import { sha256 } from './production-manifest.mjs';
 export const localReleasePolicy = {
   id: 'windows-local',
   revision: 2,
-  version: '0.2.2',
+  version: '0.2.3',
   platform: 'win32',
   godot: '4.7.2',
   transport: 'stdio',
@@ -45,7 +45,7 @@ export const localReleaseSteps = [
   { id: 'sbom', program: 'npm', args: ['sbom', '--sbom-format=cyclonedx'], timeoutMs: 15000 },
 ];
 
-export const minimumReleaseTests = { core: 105, safety: 67, engine: 14, package: 2 };
+export const minimumReleaseTests = { core: 106, safety: 67, engine: 14, package: 2 };
 
 export const localReleaseDocs = [
   'README.md',

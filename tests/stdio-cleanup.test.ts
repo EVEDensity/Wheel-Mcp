@@ -100,7 +100,10 @@ test(
       assert.equal(runRegistry.get(launch.run_id)?.state, 'STOPPED');
       assert.equal(runRegistry.get(bridge.session_id)?.state, 'STOPPED');
     } catch (error) {
-      throw new Error(`stdio cleanup failed during ${stage}; server stderr: ${serverErrors}`, { cause: error });
+      const cause = error instanceof Error ? error.message : String(error);
+      throw new Error(`stdio cleanup failed during ${stage}: ${cause}; server stderr: ${serverErrors}`, {
+        cause: error,
+      });
     } finally {
       await client.close().catch(() => undefined);
       if (runPid && getProcessStatus(runPid).running) await runRegistry.stopByPid(runPid).catch(() => undefined);

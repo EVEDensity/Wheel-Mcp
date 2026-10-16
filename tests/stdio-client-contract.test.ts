@@ -6,6 +6,28 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { wireEditor } from './helpers/editor-mcp.js';
+import { fixtureStdioEnv } from './helpers/stdio-fixture.js';
+import { createStdioPolicy } from '../src/mcp/stdio-policy.js';
+
+test('stdio fixtures forward the chosen engine and scratch roots without forwarding host credentials', () => {
+  const names = ['GODOT_PATH', 'TEMP', 'TMP', 'TMPDIR', 'GODOT_HARNESS_RUN_REGISTRY_PATH', 'WHEEL_TEST_SECRET'];
+  const original = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+  try {
+    for (const name of names) process.env[name] = `fixture-${name}`;
+    const env = fixtureStdioEnv();
+    assert.equal(env.GODOT_PATH, 'fixture-GODOT_PATH');
+    assert.equal(env.TEMP, 'fixture-TEMP');
+    assert.equal(env.GODOT_HARNESS_RUN_REGISTRY_PATH, 'fixture-GODOT_HARNESS_RUN_REGISTRY_PATH');
+    assert.equal(env.WHEEL_TEST_SECRET, undefined);
+    assert.deepEqual(createStdioPolicy(env).approvedGodotPaths, [path.resolve(env.GODOT_PATH)]);
+    assert.equal(fixtureStdioEnv({ GODOT_PATH: 'explicit-engine' }).GODOT_PATH, 'explicit-engine');
+  } finally {
+    for (const name of names) {
+      if (original[name] === undefined) delete process.env[name];
+      else process.env[name] = original[name];
+    }
+  }
+});
 
 async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'wheel-client-contract-'));

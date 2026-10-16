@@ -31,6 +31,7 @@ await writeFile(
     '- Godot CI downloads are SHA-256 pinned and bounded.\n\n' +
     '- Validation-stage cleanup tolerates bounded transient Windows locks; persistent failures still prevent writes and retain their cause.\n' +
     '- The v0.2.1 candidate failed hosted cleanup acceptance and was not published; its tag/run are retained.\n\n' +
+    '- Stdio acceptance explicitly forwards only the selected engine and scratch paths, not host credentials or implicit local .env state. The v0.2.2 candidate was also blocked, not published.\n\n' +
     `Commit: ${process.env.GITHUB_SHA ?? manifest.head}. Source SHA-256: ${manifest.sourceHash}.\n\n` +
     'Assets: prebuilt npm-format runtime archive, CycloneDX SBOM, acceptance receipt and SHA256SUMS.\n' +
     'Download the archive and install it with Node.js/npm. Godot is installed separately; no npm registry publication is performed.\n\n' +

@@ -1,6 +1,16 @@
 # Changelog
 
-## 0.2.2
+## 0.2.3
+
+- Pass only the selected Godot executable, test registry and scratch paths to
+  stdio fixtures. Hosted tests no longer depend on an untracked local `.env`;
+  arbitrary host credentials and preapproved grants are not inherited.
+- Keep the original tool/assertion failure in stdio cleanup diagnostics.
+- The [v0.2.2 hosted run](https://github.com/EVEDensity/Wheel-Mcp/actions/runs/38876107479)
+  passed 67/67 safety checks, then stopped at the stdio launch test because the
+  isolated child lacked an approved engine path. No Release was published.
+
+## 0.2.2 source candidate not published
 
 - Bound retries for transient Windows locks when removing an owned validation
   stage. A persistent cleanup failure still prevents source writes and records
