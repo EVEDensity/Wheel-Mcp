@@ -69,7 +69,7 @@ Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱�
 Node.js >=20.19.0，源码开发还需满足当前开发工具链要求。固定发布标签后再安装：
 
 ```bash
-git clone --branch v0.2.4 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.5 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```
@@ -240,6 +240,21 @@ $repo = (Get-Location).Path
 - 持久会话与单次运行使用不同实例，不能假设状态共享。
 - 仅运行可信项目。项目脚本能够执行代码，本服务器不是操作系统沙箱。
 - 复杂 3D、动画和 Shader 工作流尚不能视为完整支持。
+
+<details>
+<summary>编辑器创作能力：已实现的子集与主要缺口</summary>
+
+原生场景操作支持声明节点的创建、删除、重命名、重设父节点、受控实例化与继承覆盖；一批操作是一次 Godot 原生 Undo/Redo，保存需另行精确批准。保存前会重新加载原生暂存字节核对内容，测试还会实际关闭、重开编辑器；产品不会自动重载正在编辑的文档。
+
+- **场景与资源：** 每批最多 32 个操作、场景最多 100 个节点，资源限定为 14 类。含脚本、未声明节点类型或唯一名称节点的文档不支持原生批量编辑；继承场景仅支持声明的覆盖策略。批准后的 `.tscn` 文件写入不等于原生编辑或原生撤销。
+- **UI：** 基础控件、容器布局、Theme/StyleBoxFlat，以及有限的 `pressed → hide/show` 连接；尚不包含 LineEdit、ScrollContainer 等全部常用控件、任意脚本回调或字体资源图。
+- **3D 与物理：** 基础变换、网格、静态碰撞、Area3D、RayCast3D 和有界形状查询；不包含完整角色/刚体创作、骨骼工作流、导航烘焙或接触事件历史。
+- **动画：** 本地 2D/3D 位置关键帧、有限状态机和双源 Blend2；尚不支持旋转/缩放、骨骼、音频、方法轨道或导入动画的原位编辑。
+- **材质与 Shader：** 基础材质字段、固定 Shader 文本模板与 Color/Mix 有界图；不支持任意 Shader 源码或完整 PBR/VisualShader 编辑。
+
+高级创作仍属于[本机发布范围](docs/LOCAL-STABLE-RELEASE.md)中的实验性能力。T12–T21 的完成记录仅表示对应声明子集的历史验收，不代表下列两个扩展方向已全部完成。详细边界见 [UI](docs/production-roadmap/UI-AUTHORING-CONTRACT.md)、[物理](docs/production-roadmap/PHYSICS-3D-CONTRACT.md)、[动画](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md)与 [Shader](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md) 契约。
+
+</details>
 
 ## 主要路线图
 

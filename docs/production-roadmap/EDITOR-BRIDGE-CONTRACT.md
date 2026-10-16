@@ -39,6 +39,7 @@
 ## 协议、身份与边界
 
 - 独立 `wheel-editor/1` 协议，JSON-RPC 2.0、UTF-8 换行帧。只有 `127.0.0.1` 监听与连接；没有远程配置开关。
+- HTTP 探测、非法 JSON/UTF-8、无效 Unicode 转义与非对象帧直接断开该连接，不将输入正文、令牌或解析噪声打印成引擎错误。首个坏帧之后的同包数据不再处理；不会把这个端口改成 HTTP 服务。合法分片 UTF-8、中文、emoji 与 Unicode 转义仍须正常通过身份校验。真实脚本/引擎错误的日志验收不放宽。
 - `editor.hello` 校验令牌、传输客户端身份、协议/plane、项目 ID、真实项目路径和本次编辑器随机 session ID。响应确认版本、editor PID、端口、能力和授权状态，不能回显令牌。错误项目/令牌/会话为 `FORBIDDEN`，错误协议或 plane 为 `PROTOCOL_MISMATCH`。只验证了 Windows / Godot 4.7.2 stable；其他版本不冒充支持。
 - `editor-endpoint.json` 只含连接身份，无令牌。插件用独占目录 `editor-lease` 防止两个编辑器争抢端点；在租约内写暂存端点再原子改名发布。停用只清理自己持有的租约和匹配 session 的端点。
 - 不读取私有 Inspector，也不从磁盘场景推测编辑器状态。通过公开 `EditorInterface.get_edited_scene_root/get_unsaved_scenes/get_selection/get_resource_filesystem` 读取实际内存状态。缺公共脏状态 API 返回 `UNSUPPORTED`，不谎称干净。脏状态目前仅涵盖场景，不等于全部外部资源已保存。
@@ -63,6 +64,8 @@ Node 本地取消/超时会移除 pending 并发送取消通知，明确报告 `
 
 ## 验证方式与来源
 
-`tests/editor-bridge-e2e.test.ts` 在独立临时项目复制实际插件、显式授权并启动真正的 `--headless --editor`，另一个仅测试使用的插件通过公开 API 标脏、选择节点和禁用/启用。没有产品测试 RPC、私有 Inspector 依赖或用户项目配置写入。真实引擎的本地认证、脏状态、队列及清理验证不等于真人批准或桌面渲染测试。必需 CI 与全量生产基线均包含此文件，并拒绝 skip。
+`tests/editor-bridge-e2e.test.ts` 在独立临时项目复制实际插件、显式授权并启动真正的 `--headless --editor`，另一个仅测试使用的插件通过公开 API 标脏、选择节点和禁用/启用。没有产品测试 RPC、私有 Inspector 依赖或用户项目配置写入。真实引擎的本地认证、脏状态、队列及清理验证不等于真人批准或桌面渲染测试。
+
+短发布门禁包含 `tests/editor-protocol-input.test.ts`：真实 TCP 输入验证异常报文断开、同包后续请求不执行、合法会话继续可用、场景字节/脏状态不变，以及编辑器日志没有解析 ERROR。完整桥接与创作专项需定向或在完整基线中另行运行；不能将日常短 CI 当作全量引擎验收，跳过也不是通过。
 
 公开 API 依据：[EditorInterface](https://docs.godotengine.org/en/stable/classes/class_editorinterface.html)、[EditorPlugin](https://docs.godotengine.org/en/stable/classes/class_editorplugin.html)、[EditorFileSystem](https://docs.godotengine.org/en/stable/classes/class_editorfilesystem.html)、[TCPServer](https://docs.godotengine.org/en/stable/classes/class_tcpserver.html)；支持范围以本地 4.7.2 的实测为准，不根据新版文档推断支持。

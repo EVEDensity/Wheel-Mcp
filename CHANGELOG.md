@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.5
+
+- Reject foreign HTTP probes, malformed JSON/UTF-8 and invalid Unicode escapes
+  at the editor bridge without producing false engine errors. Stop processing
+  a connection after its first invalid frame; retain authentication, independent
+  write approval, frame limits and strict checks for real engine errors.
+- Add native regression coverage for 22 malformed-input cases, fragmented
+  Unicode, continued authenticated reads and unchanged scene bytes/dirty state.
+  Include it in the bounded release safety suite.
+- Retry transient Windows cleanup locks only within the verified CI scratch
+  root. Persistent cleanup failures still fail acceptance and retain diagnostics.
+- Run the competing-editor lease test using its isolated engine/profile rather
+  than the installed engine's global settings. Clarify bounded authoring support
+  and remaining gaps in the English and Chinese READMEs.
+- Keep the prior expanded-regression timeout and npm audit connection-reset
+  receipts as failures. Fresh version-bound acceptance is required for release;
+  no full authoring, long-session or production qualification is implied.
+
 ## 0.2.4
 
 - Install the actual archive with the locked dependency graph, normal lifecycles

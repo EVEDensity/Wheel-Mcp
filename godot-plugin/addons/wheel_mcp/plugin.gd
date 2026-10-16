@@ -260,6 +260,73 @@ func _snapshot(limit: int) -> Dictionary:
 		"mainThread": true, "persisted": false, "validation": "NOT_RUN",
 	}
 
+# Validate before decoding: Godot's UTF-8 decoder logs invalid byte sequences.
+# Network input must fail closed without becoming an engine diagnostic.
+func _valid_utf8(frame: PackedByteArray) -> bool:
+	var offset := 0
+	while offset < frame.size():
+		var first: int = frame[offset]
+		if first < 0x80:
+			if first == 0: return false
+			offset += 1
+			continue
+		var count: int
+		var scalar: int
+		var minimum: int
+		if first >= 0xc2 and first <= 0xdf:
+			count = 1
+			scalar = first & 0x1f
+			minimum = 0x80
+		elif first >= 0xe0 and first <= 0xef:
+			count = 2
+			scalar = first & 0x0f
+			minimum = 0x800
+		elif first >= 0xf0 and first <= 0xf4:
+			count = 3
+			scalar = first & 0x07
+			minimum = 0x10000
+		else:
+			return false
+		if offset + count >= frame.size(): return false
+		for index in range(offset + 1, offset + count + 1):
+			if (frame[index] & 0xc0) != 0x80: return false
+			scalar = (scalar << 6) | (frame[index] & 0x3f)
+		if scalar < minimum or scalar > 0x10ffff or (scalar >= 0xd800 and scalar <= 0xdfff): return false
+		offset += count + 1
+	return true
+
+func _hex_unit(text: String, offset: int) -> int:
+	if offset + 4 > text.length(): return -1
+	for index in range(offset, offset + 4):
+		var code := text.unicode_at(index)
+		if not ((code >= 48 and code <= 57) or (code >= 65 and code <= 70) or (code >= 97 and code <= 102)): return -1
+	return text.substr(offset, 4).hex_to_int()
+
+# JSON.parse can also log while repairing unpaired Unicode escapes. Reject
+# those first, while allowing escaped backslashes and valid surrogate pairs.
+func _valid_unicode_escapes(text: String) -> bool:
+	var offset := 0
+	while offset < text.length():
+		if text[offset] != "\\":
+			offset += 1
+			continue
+		if offset + 1 >= text.length(): return false
+		if text[offset + 1] != "u":
+			offset += 2
+			continue
+		var unit := _hex_unit(text, offset + 2)
+		if unit < 0: return false
+		if unit >= 0xd800 and unit <= 0xdbff:
+			if text.substr(offset + 6, 2) != "\\u": return false
+			var low := _hex_unit(text, offset + 8)
+			if low < 0xdc00 or low > 0xdfff: return false
+			offset += 12
+		elif unit >= 0xdc00 and unit <= 0xdfff:
+			return false
+		else:
+			offset += 6
+	return true
+
 func _process(_delta: float) -> void:
 	while _server.is_connection_available():
 		var socket := _server.take_connection()
@@ -284,9 +351,19 @@ func _process(_delta: float) -> void:
 				if newline > MAX_FRAME:
 					peer.socket.disconnect_from_host()
 					break
-				var text: String = peer.buffer.slice(0, newline).get_string_from_utf8()
+				var frame: PackedByteArray = peer.buffer.slice(0, newline)
 				peer.buffer = peer.buffer.slice(newline + 1)
-				_message(peer, JSON.parse_string(text))
+				if not _valid_utf8(frame):
+					peer.socket.disconnect_from_host()
+					break
+				var text := frame.get_string_from_utf8()
+				var parsed := JSON.new()
+				if not _valid_unicode_escapes(text) or parsed.parse(text) != OK:
+					peer.socket.disconnect_from_host()
+					break
+				_message(peer, parsed.data)
+				if peer.socket.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+					break
 			if peer.buffer.size() > MAX_FRAME:
 				peer.socket.disconnect_from_host()
 		if Time.get_ticks_msec() - peer.touched > (30000 if peer.authenticated else 5000):

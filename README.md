@@ -78,7 +78,7 @@ requires Node.js >=20.19.0; source development also needs the current toolchain.
 Clone the release tag for a reproducible starting point:
 
 ```bash
-git clone --branch v0.2.4 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.5 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```
@@ -259,6 +259,21 @@ Expected result: PASS, zero diagnostic errors, and a 320 × 180 screenshot. The 
 - Persistent sessions and one-shot runs use separate instances; do not assume they share state.
 - Only run trusted projects. Project scripts execute code; this server is not an operating-system sandbox.
 - Advanced 3D, animation, and shader workflows are not advertised as complete. See the roadmap before depending on them.
+
+<details>
+<summary>Editor authoring: implemented subsets and important gaps</summary>
+
+Declared scene operations cover node creation, deletion, rename, reparenting, controlled instantiation and inheritance overrides. A batch is one native Godot Undo/Redo action; saving requires separate exact approval. Save checks reload the actual native staged bytes, and tests also close and reopen the editor. The product does not automatically reload the live document.
+
+- **Scenes and resources:** at most 32 operations per batch, 100 nodes per scene and 14 declared resource types. Documents containing scripts, undeclared node classes or unique-name nodes are not supported by native batches. Inherited scenes require explicit bounded overrides. Approved `.tscn` file writes are not native editing or native undo.
+- **UI:** basic controls, containers, Theme/StyleBoxFlat and limited `pressed → hide/show` connections. Not all common controls such as LineEdit/ScrollContainer, arbitrary script callbacks or font resource graphs.
+- **3D and physics:** basic transforms, meshes, static collisions, Area3D, RayCast3D and bounded shape queries. Not complete character/rigid-body authoring, skeletal workflows, navigation baking or contact-event history.
+- **Animation:** local 2D/3D position keys, bounded state machines and two-source Blend2. Rotation/scale, skeletal, audio and method tracks, and in-place imported-animation editing are not supported.
+- **Materials and shaders:** basic material fields, fixed shader text templates and bounded Color/Mix graphs. Not arbitrary shader source or complete PBR/VisualShader editing.
+
+Advanced authoring remains experimental under the [local release profile](docs/LOCAL-STABLE-RELEASE.md). Completed T12–T21 records describe historical acceptance of their declared subsets, not completion of both roadmap directions below. See the [UI](docs/production-roadmap/UI-AUTHORING-CONTRACT.md), [physics](docs/production-roadmap/PHYSICS-3D-CONTRACT.md), [animation](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md) and [shader](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md) contracts.
+
+</details>
 
 ## Major roadmap
 

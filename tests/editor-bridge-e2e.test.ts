@@ -375,8 +375,12 @@ test(
         oversized.socket.destroy();
       }
       bridge = await EditorBridge.connect({ projectPath: fixture.root, ownerId: 'local-client' });
+      // Even a competing editor must use the fixture's self-contained profile,
+      // not the installed engine's global editor settings.
+      const isolatedGodot = path.join(fixture.root, '.harness/engine', path.basename(process.env.GODOT_PATH!));
+      assert.ok(existsSync(path.join(path.dirname(isolatedGodot), '_sc_')));
       await promisify(execFile)(
-        process.env.GODOT_PATH!,
+        isolatedGodot,
         [
           '--headless',
           '--editor',

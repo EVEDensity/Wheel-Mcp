@@ -9,6 +9,7 @@ const plan = {
     'transaction-recovery',
     'owned-process',
     'streamable-http-security',
+    'editor-protocol-input',
     'editor-scene-rpc',
     'editor-scene-save',
     'validated-project-write',

@@ -64,7 +64,9 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
       lstatSync(scratch).isSymbolicLink()
     )
       throw new Error('CI scratch escaped its owned root');
-    rmSync(exact, { recursive: true, force: false });
+    // Windows can briefly retain handles after the last engine worker exits.
+    // Retry only this already-validated owned root; persistent errors still fail.
+    rmSync(exact, { recursive: true, force: false, maxRetries: 3, retryDelay: 100 });
     passed = true;
     writeFileSync(
       path.join(output, 'summary.json'),
