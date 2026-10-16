@@ -39,7 +39,8 @@ native permissions/undo/save/validation and transaction crash recovery, runs a
 headless runtime smoke, and installs the actual tarball in an isolated consumer.
 It also audits dependencies, produces an SBOM and binds evidence to current
 source, release documentation and the tarball hash. Package installation uses
-the controlled lock graph and local cache, not a separate clean Windows machine.
+the controlled lock graph and prefers the local cache, with bounded registry
+access for missing metadata. The local test is not a separate clean Windows machine.
 
 Every test suite must finish with zero failures, skips, cancellations and todos,
 and clean its owned scratch directory. A missing engine, failed audit, changed

@@ -41,7 +41,11 @@ test(
         timeout: 30000,
         maxBuffer: 1024 * 1024,
       });
-      assert.equal(result.error, undefined, result.error?.message);
+      assert.equal(
+        result.error,
+        undefined,
+        `npm ${args.join(' ')}: ${result.error?.message ?? ''}\n${(result.stderr || result.stdout).slice(-8000)}`,
+      );
       assert.equal(result.status, 0, (result.stderr || result.stdout).slice(-8000));
       return result.stdout;
     };
@@ -113,7 +117,18 @@ test(
       await writeFile(path.join(fixture, 'project.godot'), '[application]\nconfig/name="Packed MCP fixture"\n');
       // Do not ignore lifecycle scripts: this is the regression for a
       // production-only dependency installation without a compiler.
-      runNpm(['ci', '--offline', '--omit=dev', '--no-audit', '--no-fund'], consumer);
+      runNpm(
+        [
+          'ci',
+          '--prefer-offline',
+          '--omit=dev',
+          '--no-audit',
+          '--no-fund',
+          '--fetch-retries=0',
+          '--fetch-timeout=10000',
+        ],
+        consumer,
+      );
       const installed = path.join(consumer, 'node_modules/wheel-mcp');
       assert.equal(existsSync(path.join(installed, 'node_modules/typescript')), false);
       assert.equal(existsSync(path.join(consumer, 'node_modules/typescript')), false);

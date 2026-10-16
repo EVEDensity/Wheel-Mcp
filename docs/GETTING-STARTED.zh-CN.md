@@ -11,7 +11,7 @@ Wheel-mcp 通过 stdio 在本机运行；访问展示页不会安装或启动服
 先安装 Git、Node.js 和 Godot，再在 PowerShell 中运行：
 
 ```powershell
-git clone --branch v0.2.3 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.4 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd ci
 npm.cmd run build

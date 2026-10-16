@@ -1,6 +1,17 @@
 # Changelog
 
-## 0.2.3
+## 0.2.4
+
+- Install the actual archive with the locked dependency graph, normal lifecycles
+  and cache-preferred bounded registry access. Do not require prewarmed offline
+  package metadata on a fresh hosted runner. Keep the 30-second command bound,
+  zero retries and ten-second registry timeout, and include command diagnostics.
+- The [v0.2.3 hosted run](https://github.com/EVEDensity/Wheel-Mcp/actions/runs/38877365342)
+  passed core, native safety and engine checks, then exceeded the offline package
+  installation bound. The same source passed all 189 tests locally. Neither
+  result overrides the other; that candidate was not published.
+
+## 0.2.3 source candidate not published
 
 - Pass only the selected Godot executable, test registry and scratch paths to
   stdio fixtures. Hosted tests no longer depend on an untracked local `.env`;

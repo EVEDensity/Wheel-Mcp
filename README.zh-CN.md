@@ -69,7 +69,7 @@ Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱�
 Node.js >=20.19.0，源码开发还需满足当前开发工具链要求。固定发布标签后再安装：
 
 ```bash
-git clone --branch v0.2.3 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.4 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```

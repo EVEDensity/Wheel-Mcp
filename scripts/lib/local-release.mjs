@@ -5,7 +5,7 @@ import { sha256 } from './production-manifest.mjs';
 export const localReleasePolicy = {
   id: 'windows-local',
   revision: 2,
-  version: '0.2.3',
+  version: '0.2.4',
   platform: 'win32',
   godot: '4.7.2',
   transport: 'stdio',
