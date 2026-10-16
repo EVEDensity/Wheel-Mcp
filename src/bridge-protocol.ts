@@ -21,6 +21,7 @@ export type BridgeHandshake = {
     physicsTicksPerSecond: number;
     physicsFrame: number;
     replaySeed: number | null;
+    window?: { background: boolean; mode: number; unfocusable: boolean };
   };
 };
 
@@ -122,6 +123,14 @@ export function validateBridgeHandshake(
       )
     )
       throw new BridgeProtocolError('bridge runtime conditions are invalid');
+    if (
+      data.window !== undefined &&
+      (!isRecord(data.window) ||
+        typeof data.window.background !== 'boolean' ||
+        !Number.isInteger(data.window.mode) ||
+        typeof data.window.unfocusable !== 'boolean')
+    )
+      throw new BridgeProtocolError('bridge window conditions are invalid');
   }
   if (match && (Number(match[1]) !== 4 || Number(match[2]) < 3))
     throw new BridgeRpcError('UNSUPPORTED', 'Godot version is outside the supported runtime range', {

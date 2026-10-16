@@ -156,10 +156,15 @@ MCP 的 `launch_project` 和 `open_runtime_bridge` 默认 `headless: true`，逻
 `session_id` 作为 `sessionId` 传给 `call_runtime_bridge`，完成后再停止；不要每次
 查询都重新打开。编辑器工具只连接已经授权的编辑器，不会自动另开编辑器。
 
-需要试玩或真实渲染截图时，显式设置 `headless: false`。headless 没有可截图的
-帧缓冲；`dev_loop` 在没有截图或截图基线需求时已自动后台运行，旧的一次性截图
-工具仍会启动独立渲染进程。CLI/底层 API 的默认值不变，CLI 后台启动请使用
-`--headless true`。
+截图仍需真实渲染，不能把 headless 的空帧缓冲当作截图。
+`capture_runtime_screenshot` 和需要截图的 `dev_loop` 默认在屏幕外启动，再将渲染
+窗口设为最小化、不可聚焦。任务栏可能保留图标；不抑制系统/显卡驱动的启动或报错
+对话框，也不保证任意项目脚本不会在启动阶段主动开窗或切换焦点。
+连续截图使用 `open_runtime_bridge` 的 `headless: false, background: true` 并复用会话；
+仅明确需要可见试玩时设置 `headless: false, background: false`。
+一次性截图仍启动独立进程，已有 headless 会话不能原地变为渲染会话。
+更新后重启 MCP 服务以加载新代码与桥接脚本。CLI/底层启动默认值不变，
+CLI 后台启动请使用 `--headless true`。
 
 GitHub CI 已启用，main 的 push 和 PR 自动执行短时检查。Pages 发布现有展示页；
 这两个流程都不会自动发布 npm 包或创建 Release。

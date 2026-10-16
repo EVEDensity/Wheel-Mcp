@@ -380,6 +380,7 @@ async function runDevelopmentLoop(
             evidenceDir: attemptDir,
             scenePath: options.scenePath,
             headless: !(options.screenshot || options.baselinePath),
+            background: true,
             timeout,
           });
           await bridge.waitForEvent(options.waitEvent ?? 'level_started', timeout, { includeHistory: true });

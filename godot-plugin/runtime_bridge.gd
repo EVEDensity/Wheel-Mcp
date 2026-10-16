@@ -22,6 +22,28 @@ class PhysicsSampler extends Node:
 		bridge._sample_physics_request()
 
 func _initialize() -> void:
+	# SceneTree applies native window defaults after _initialize returns.
+	# Background setup must run after that step, not be overwritten by it.
+	if OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1" and DisplayServer.get_name() != "headless":
+		_initialize_runtime.call_deferred()
+	else:
+		_initialize_runtime()
+
+func _configure_background_window() -> void:
+	if OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1" and DisplayServer.get_name() != "headless":
+		# A main Window cannot be hidden in Godot. Minimize it, retain its real
+		# render target, and explicitly draw when a screenshot is requested.
+		if not root.unfocusable:
+			root.unfocusable = true
+		if root.always_on_top:
+			root.always_on_top = false
+		if root.mode != Window.MODE_MINIMIZED:
+			root.position = Vector2i(-32000, -32000)
+			root.mode = Window.MODE_MINIMIZED
+		RenderingServer.viewport_set_update_mode(root.get_viewport_rid(), RenderingServer.VIEWPORT_UPDATE_ALWAYS)
+
+func _initialize_runtime() -> void:
+	_configure_background_window()
 	var replay_seed := OS.get_environment("GODOT_HARNESS_REPLAY_SEED")
 	if not replay_seed.is_empty():
 		seed(int(replay_seed))
@@ -77,7 +99,11 @@ func _run_legacy_request() -> void:
 	if request.get("method", "get_scene_tree") == "capture_screenshot":
 		await process_frame
 		await process_frame
-		_capture_screenshot(response_path, request)
+		var result := await _screenshot_result(request)
+		if result.has("error"):
+			_fail(response_path, str(result.error), "ENGINE_UNAVAILABLE")
+		else:
+			_write(response_path, result)
 		quit()
 		return
 	var tree := _tree_result(persistent_instance, request)
@@ -108,6 +134,7 @@ func _start_persistent(port: int) -> void:
 		return
 
 func _process(_delta: float) -> bool:
+	_configure_background_window()
 	if persistent_peer == null:
 		return false
 	persistent_peer.poll()
@@ -132,6 +159,7 @@ func _process(_delta: float) -> bool:
 				"physicsTicksPerSecond": Engine.physics_ticks_per_second,
 				"physicsFrame": Engine.get_physics_frames(),
 				"replaySeed": int(OS.get_environment("GODOT_HARNESS_REPLAY_SEED")) if not OS.get_environment("GODOT_HARNESS_REPLAY_SEED").is_empty() else null,
+				"window": {"background": OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1", "mode": root.mode, "unfocusable": root.unfocusable},
 			},
 			"plane": "runtime",
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
@@ -605,6 +633,7 @@ func _screenshot_result(request: Dictionary) -> Dictionary:
 		return {"error": "path is required for capture_screenshot"}
 	if DisplayServer.get_name() == "headless":
 		return {"error":"screenshots require a rendering display; headless has no framebuffer"}
+	_configure_background_window()
 	# Static/low-processor-mode projects may not schedule another draw on their own.
 	RenderingServer.force_draw.call_deferred()
 	await RenderingServer.frame_post_draw
@@ -615,7 +644,7 @@ func _screenshot_result(request: Dictionary) -> Dictionary:
 	var error := image.save_png(screenshot_path)
 	if error != OK:
 		return {"error": "save_png failed with code: " + str(error)}
-	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height()}
+	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height(), "window": {"background": OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1", "mode": root.mode, "unfocusable": root.unfocusable}}
 
 func _write_property(response_path: String, instance: Node, request: Dictionary) -> void:
 	var node_path: String = str(request.get("nodePath", "."))
@@ -664,21 +693,6 @@ func _inject_input(response_path: String, request: Dictionary) -> void:
 	Input.parse_input_event(event)
 	_emit_event(OS.get_environment("GODOT_HARNESS_EVENTS"), "input_injected", {"keycode": keycode, "pressed": event.pressed})
 	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true})
-
-func _capture_screenshot(response_path: String, request: Dictionary) -> void:
-	var screenshot_path: String = str(request.get("path", ""))
-	if screenshot_path.is_empty():
-		_fail(response_path, "path is required for capture_screenshot", "INVALID_ARGUMENT")
-		return
-	var image := get_root().get_texture().get_image()
-	if image == null or image.is_empty():
-		_fail(response_path, "viewport image is empty", "ENGINE_UNAVAILABLE")
-		return
-	var error := image.save_png(screenshot_path)
-	if error != OK:
-		_fail(response_path, "save_png failed with code: " + str(error), "ENGINE_UNAVAILABLE")
-		return
-	_write(response_path, {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height()})
 
 func _tree_result(instance: Node, request: Dictionary) -> Dictionary:
 	var subtree := str(request.get("subtree", "."))

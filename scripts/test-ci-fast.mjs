@@ -11,6 +11,7 @@ const files = [
   'response-budget',
   'method-authorization',
   'process-identity',
+  'render-window',
   'project-path-policy',
   'tool-registry',
   'mcp-prompts',

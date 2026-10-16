@@ -65,7 +65,9 @@ universal repair recipe.
   Reserved failure IDs `diagnostics` and `screenshot` can also select a repair.
   Each candidate is used at most once, with a fresh runtime for verification.
 - `maxRetries`: additional attempts, not total attempts; default 1, maximum 10.
-- `screenshot`: uses a non-headless runtime and validates the decoded PNG.
+- `screenshot`: uses a real renderer with an off-screen startup and minimized,
+  unfocusable window, then explicitly draws and validates the decoded PNG. It is
+  not headless; OS/driver startup or error dialogs are outside this control.
   A real available renderer is required. Static/low-power scenes explicitly
   request a render before waiting for the framebuffer. Capture is bounded.
 - `baselinePath`: enables pixel comparison against an existing PNG.

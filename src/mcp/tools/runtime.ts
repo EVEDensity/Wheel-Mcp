@@ -535,8 +535,16 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'capture_runtime_screenshot',
-    'Legacy one-shot: capture a PNG from a new rendered Godot process (may show a game window). For the current shared state, use call_runtime_bridge capture_screenshot with a session opened using headless:false. Headless sessions have no screenshot framebuffer.',
-    { godotPath, projectPath, bridgePath, evidenceDir, screenshotPath: z.string().optional(), timeoutMs },
+    'Capture a PNG from a new rendered Godot process. Background rendering is enabled by default: start off-screen, then minimize and disable focus before loading the scene. This is not headless. For shared state reuse call_runtime_bridge capture_screenshot on a session opened with headless:false, background:true. Set background:false only for an explicit visible preview. OS/driver startup dialogs are not suppressed.',
+    {
+      godotPath,
+      projectPath,
+      bridgePath,
+      evidenceDir,
+      screenshotPath: z.string().optional(),
+      background: z.boolean().default(true),
+      timeoutMs,
+    },
     async (args, extra) =>
       invoke(
         (context) =>
@@ -554,7 +562,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'open_runtime_bridge',
-    'Open one persistent Godot runtime bridge in the background by default. Reuse its sessionId for input, state and reload without restarting Godot. Use headless:false when a visible preview or rendered screenshot is required; never implicitly attach to another session.',
+    'Open one persistent Godot runtime bridge in headless mode by default. Reuse its sessionId for input, state and reload without restarting Godot. Use headless:false, background:true for minimized rendered screenshots, or headless:false, background:false for a visible preview; never implicitly attach to another session.',
     {
       godotPath,
       projectPath,
@@ -566,9 +574,18 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
         .boolean()
         .default(true)
         .describe('Background logic/physics by default. Set false for visible preview or rendered screenshots.'),
+      background: z
+        .boolean()
+        .default(true)
+        .describe(
+          'With headless:false, start off-screen and minimize the unfocusable render window before scene loading. Ignored for headless sessions. Set false only for visible previews.',
+        ),
       timeoutMs,
     },
-    async ({ godotPath, projectPath, bridgePath, evidenceDir, sessionId, scenePath, headless, timeoutMs }, extra) =>
+    async (
+      { godotPath, projectPath, bridgePath, evidenceDir, sessionId, scenePath, headless, background, timeoutMs },
+      extra,
+    ) =>
       invoke(
         (context) =>
           openRuntimeBridge({
@@ -579,6 +596,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
             runId: sessionId,
             scenePath,
             headless,
+            background,
             timeout: context,
           }),
         timeoutMs,

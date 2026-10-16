@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Screenshot-only runs start off-screen, then minimize an unfocusable real-render
+  window; `dev_loop` uses the same background policy. Persistent MCP rendering
+  defaults to background mode unless a visible preview is explicitly requested
+  with `headless:false, background:false`. Headless logic defaults are unchanged.
+- One-shot screenshots now explicitly draw a frame before capture. Native tests
+  verify actual pixels, changed session state, window flags and process reuse.
+  This does not suppress OS/driver dialogs or certify every startup focus path.
+- Restart the MCP server after updating. The v0.2.0 tag/assets are unchanged.
+
 ## 0.2.0 Windows local release
 
 - Fix cold Windows process identity probes with module-free .NET process APIs;

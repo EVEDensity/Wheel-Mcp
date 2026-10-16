@@ -21,6 +21,7 @@ import { validateVariantInput } from './protocol/variant.js';
 import { readProcessIdentity, type ProcessIdentity } from './process-identity.js';
 import { resolveProjectPath } from './project/paths.js';
 import { EvidenceLog } from './evidence-log.js';
+import { backgroundRenderArguments } from './render-window.js';
 export {
   readRuntimeEvents,
   readRuntimeEventsSince,
@@ -53,7 +54,7 @@ type BridgeOptions = {
 };
 type PropertyOptions = BridgeOptions & { nodePath?: string; property: string; value?: unknown };
 type InputOptions = BridgeOptions & { keycode: number; pressed?: boolean };
-type ScreenshotOptions = BridgeOptions & { screenshotPath?: string };
+type ScreenshotOptions = BridgeOptions & { screenshotPath?: string; background?: boolean };
 export type ProcessMetadata = {
   schema_version: '0.1';
   source: 'REAL';
@@ -751,6 +752,7 @@ export async function captureRuntimeScreenshot({
   evidenceDir,
   bridgePath,
   screenshotPath,
+  background = true,
   timeout,
 }: ScreenshotOptions) {
   const root = path.resolve(projectPath);
@@ -766,13 +768,14 @@ export async function captureRuntimeScreenshot({
   const projectInfo = await getProjectInfo(root, timeout);
   const result = await runProcess(
     resolveGodotPath(godotPath),
-    ['--path', root, '--script', path.resolve(bridgePath)],
+    [...backgroundRenderArguments(background), '--path', root, '--script', path.resolve(bridgePath)],
     root,
     DEFAULT_GODOT_PROCESS_TIMEOUT_MS / 1000,
     {
       GODOT_HARNESS_REQUEST: requestPath,
       GODOT_HARNESS_RESPONSE: responsePath,
       GODOT_HARNESS_MAIN_SCENE: projectInfo.mainScene || '',
+      GODOT_HARNESS_BACKGROUND_RENDER: background ? '1' : '0',
     },
     timeout,
   );
@@ -781,6 +784,13 @@ export async function captureRuntimeScreenshot({
     .catch(() => null);
   await finalizeBridgeEvidence(evidence, { method: 'capture_screenshot', path: outputPath }, response, result);
   assertLegacyBridgeResponse('capture_screenshot', response, result);
+  if (
+    background &&
+    (response?.window?.background !== true || response.window.mode !== 1 || response.window.unfocusable !== true)
+  )
+    throw new BridgeRpcError('ENGINE_UNAVAILABLE', 'bridge did not confirm background screenshot window policy', {
+      method: 'capture_screenshot',
+    });
   const imageStat = await stat(outputPath)
     .then((value) => ({ bytes: value.size }))
     .catch(() => null);

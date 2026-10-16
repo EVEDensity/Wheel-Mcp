@@ -31,6 +31,14 @@ test('MCP launch tools advertise background defaults and retain an explicit wind
       assert.match(tool.description!, /headless:false/);
     }
     assert.match(tools.find((item) => item.name === 'open_runtime_bridge')!.description!, /Reuse its sessionId/);
+    for (const name of ['open_runtime_bridge', 'capture_runtime_screenshot']) {
+      const tool = tools.find((item) => item.name === name)!;
+      const schema = tool.inputSchema.properties?.background as { type?: string; default?: boolean };
+      assert.equal(schema.type, 'boolean');
+      assert.equal(schema.default, true);
+      assert.ok(!tool.inputSchema.required?.includes('background'));
+      assert.match(tool.description!, /background:false/);
+    }
   } finally {
     await client.close();
     await server.close();

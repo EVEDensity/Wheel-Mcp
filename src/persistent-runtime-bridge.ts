@@ -3,6 +3,7 @@ import net from 'node:net';
 import { randomUUID } from 'node:crypto';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
+import { backgroundRenderArguments } from './render-window.js';
 import { createTimeoutContext, TimeoutContext, TimeoutError, CancelledError } from './timeout.js';
 import { runRegistry } from './run-registry.js';
 import { readProcessIdentity, stopIdentifiedProcess, type ProcessIdentity } from './process-identity.js';
@@ -30,6 +31,7 @@ export type PersistentBridgeOptions = {
   evidenceDir?: string;
   runId?: string;
   headless?: boolean;
+  background?: boolean;
   verbose?: boolean;
   scenePath?: string;
   replaySeed?: number;
@@ -210,7 +212,7 @@ export class PersistentRuntimeBridge {
     const child = spawn(
       executable,
       [
-        ...(options.headless === true ? ['--headless'] : []),
+        ...(options.headless === true ? ['--headless'] : backgroundRenderArguments(options.background === true)),
         ...(options.verbose ? ['--verbose'] : []),
         '--path',
         root,
@@ -229,6 +231,7 @@ export class PersistentRuntimeBridge {
         env: {
           ...process.env,
           GODOT_HARNESS_RUN_ID: sessionId,
+          GODOT_HARNESS_BACKGROUND_RENDER: options.headless !== true && options.background === true ? '1' : '0',
           GODOT_HARNESS_MAIN_SCENE: options.scenePath || '',
           GODOT_HARNESS_PORT: String(address.port),
           GODOT_HARNESS_REPLAY_SEED: options.replaySeed === undefined ? '' : String(options.replaySeed),
@@ -352,6 +355,11 @@ export class PersistentRuntimeBridge {
         if (evidenceFailure) throw evidenceFailure;
       };
       await bridge.waitForReady(context);
+      if (options.headless !== true && options.background === true) {
+        const window = bridge.handshake?.runtimeConditions?.window;
+        if (!window?.background || window.mode !== 1 || window.unfocusable !== true)
+          throw new BridgeProtocolError('bridge did not confirm minimized, unfocusable background rendering');
+      }
       await writeEvidenceJson(path.join(evidenceDir, 'startup.json'), {
         schema_version: '0.1',
         source: 'REAL',

@@ -167,11 +167,17 @@ then reuse its returned `session_id` as `sessionId` for subsequent
 every query. Existing editor tools connect to an authorized editor; they do not
 launch another editor.
 
-Set `headless: false` explicitly for a visible preview or rendered screenshots.
-Headless mode has no screenshot framebuffer. `dev_loop` already runs headless
-unless screenshots or a screenshot baseline are requested; legacy one-shot
-screenshots still launch a separate rendered process. CLI/core launch defaults
-are unchanged; use `--headless true` for CLI background launches.
+Screenshots still need a real renderer, not a dummy/headless framebuffer.
+`capture_runtime_screenshot` and screenshot-enabled `dev_loop` now start off-screen
+and minimize an unfocusable render window. A taskbar entry may remain; OS/driver
+startup or error dialogs are not suppressed. This is not a promise that arbitrary
+project scripts can never request another window or change focus during startup.
+For repeated screenshots use `open_runtime_bridge` with `headless: false,
+background: true` and reuse its session. Request `headless: false, background: false`
+only for an intentional visible preview. One-shot screenshots still use a separate
+process; existing headless sessions cannot be converted to rendered ones in place.
+Restart the MCP server after updating to load the new code/bridge. CLI/core launch
+defaults are unchanged; use `--headless true` for CLI background launches.
 
 GitHub CI is enabled for pushes and pull requests to main. Pages publishes the
 existing showcase; neither workflow publishes an npm package or creates a Release.

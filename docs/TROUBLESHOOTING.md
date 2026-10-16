@@ -46,12 +46,19 @@ separate policy and does not certify human approval UX.
 ## 为什么出现 Godot 窗口 Why a window opens
 
 纯逻辑与状态检查使用 headless；同一任务复用运行时桥接的 `sessionId`。
-截图和可见试玩需要渲染实例，headless 无截图帧缓冲。一次性截图工具会启动
-独立进程；编辑器插件只连接已经打开且授权的编辑器。
+截图需要渲染实例，headless 无截图帧缓冲。一次性截图与 `dev_loop` 截图默认
+屏幕外启动并最小化窗口，仍可能出现任务栏图标。连续截图打开桥接时使用
+`headless:false, background:true`，可见试玩才使用 `background:false`。
+更新后重启 MCP；已打开的旧会话不会自动套用新窗口策略。显卡/系统错误弹窗
+或项目代码在启动时主动切焦点，不属于这里的完全静默保证。
+编辑器插件只连接已经打开且授权的编辑器。
 
-Use headless for logic/state and reuse the bridge session. Screenshots and
-visible previews require rendering; one-shot screenshots start a separate
-process. Editor tools connect to an already authorized editor.
+Use headless for logic/state. Screenshots default to an off-screen startup and a
+minimized render window; a taskbar entry may remain. For persistent screenshots
+use `headless:false, background:true`; use `background:false` for a visible preview.
+Restart the MCP server after updating; existing sessions keep their old policy.
+OS/driver dialogs and startup focus changes requested by project code are not
+fully suppressed. Editor tools connect to an already authorized editor.
 
 ## 展示页能玩是否代表 MCP 已连接 Website versus local service
 
