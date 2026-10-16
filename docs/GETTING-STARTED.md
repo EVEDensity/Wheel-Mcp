@@ -2,7 +2,7 @@
 
 [简体中文](GETTING-STARTED.zh-CN.md) · [Documentation](README.md)
 
-Use Windows, Godot 4.7.2 and Node.js 24 for the v0.2.0 local stable profile.
+Use Windows, Godot 4.7.2 and Node.js 24 for the local stable profile.
 Wheel-mcp runs on your computer over stdio; visiting the website does not install
 or start it. Only open projects you trust: Godot executes project code with your
 OS permissions.
@@ -12,7 +12,7 @@ OS permissions.
 Install Git, Node.js and Godot first. In PowerShell:
 
 ```powershell
-git clone --branch v0.2.0 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.1 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd ci
 npm.cmd run build
@@ -27,7 +27,9 @@ part of this release; do not assume `npx wheel-mcp` installs this exact build.
 Automatic setup: back up existing MCP client configuration, then run
 `npm.cmd run go:global`. It installs dependencies, builds, discovers Godot and
 updates global and checkout-local client entries. Use `npm.cmd run go` if only
-checkout-local entries are wanted. JSON entries named `wheel-mcp` may be replaced.
+checkout-local entries are wanted. Updates preserve JSON environment and client
+settings, back up changed JSON/`.env` files and leave malformed JSON unchanged.
+Keep configuration backups private; they may contain credentials.
 These commands configure the Wheel-Mcp checkout, not each separate game folder.
 
 For manual setup, merge the following **server entry** into the location required

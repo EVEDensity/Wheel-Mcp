@@ -16,9 +16,9 @@ Wheel-mcp 将 **Codex、Cursor 及其他 Model Context Protocol（MCP）客户�
 
 本项目不是自动生成整款游戏的 Agent，也不是官方 Godot、Codex 或 Cursor 产品。
 
-[![Godot 4](https://img.shields.io/badge/Godot-4-blue)](https://godotengine.org/) [![MCP](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Status](https://img.shields.io/badge/v0.2.0-Windows_local_stable-blue)](#当前状态)
+[![Godot 4](https://img.shields.io/badge/Godot-4-blue)](https://godotengine.org/) [![MCP](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io/) [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Status](https://img.shields.io/badge/status-Windows_local_stable-blue)](#当前状态)
 
-[项目展示页](https://evedensity.github.io/Wheel-Mcp/) · [快速开始](#快速开始) · [文档中心](docs/README.md) · [下载 v0.2.0](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0) · [参与贡献](CONTRIBUTING.md)
+[项目展示页](https://evedensity.github.io/Wheel-Mcp/) · [快速开始](#快速开始) · [文档中心](docs/README.md) · [下载最新版本](https://github.com/EVEDensity/Wheel-Mcp/releases/latest) · [参与贡献](CONTRIBUTING.md)
 
 如果它对你的 Godot 工作流有帮助，欢迎点一个 **Star**，也欢迎提交问题、测试报告和 PR。
 
@@ -45,15 +45,17 @@ Wheel-mcp 将 **Codex、Cursor 及其他 Model Context Protocol（MCP）客户�
 
 ## 当前状态
 
-**[v0.2.0 已发布](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0)**，采用
+**[本机稳定版](https://github.com/EVEDensity/Wheel-Mcp/releases/latest)**采用
 **Windows + Godot 4.7.2、可信本地项目、stdio 的限域稳定版范围**。
-Release 附运行包、SBOM、校验值与[最终验收记录](docs/releases/0.2.0-windows-local-final.json)。
-验收对应冻结的发布源码，不自动覆盖 main 后续的每次提交。
+每次 Release 附运行包、SBOM、校验值与对应源码的验收记录。
+历史 [v0.2.0 验收记录](docs/releases/0.2.0-windows-local-final.json)只覆盖该冻结版本，
+不自动覆盖 main 后续提交。
 详见[本机稳定版范围](docs/LOCAL-STABLE-RELEASE.md)。
 长时间与高负载性能、线上 HTTP、其他平台/客户端及高级创作能力不属于此次稳定承诺。
 自动化验收的审批为明确的测试替身，不代表真人桌面审批体验已认证。完整生产资格仍为
 **NOT_QUALIFIED**，T31–T35/G4–G6 保留为后续工作，不标记完成。公开仓库的 CI 自动执行
-短时 Windows push/PR 检查，真实引擎检查手动运行，不自动发布 npm。
+短时 Windows push/PR 检查。[独立发布流程](docs/GITHUB-RELEASE.md)仅在版本标签或
+手动触发时执行有时限的真实引擎和安装包验收，不发布 npm。
 
 Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱。应显式限制项目与证据
 目录，仅操作受信任项目。当前 HTTP 禁止非 loopback 监听。应用代码的 MIT 不自动
@@ -67,13 +69,14 @@ Godot 会以本机权限执行项目代码，后台无窗口不是安全沙箱�
 Node.js >=20.19.0，源码开发还需满足当前开发工具链要求。固定发布标签后再安装：
 
 ```bash
-git clone --branch v0.2.0 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.1 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```
 
 全局安装也包含项目级配置。脚本安装依赖、编译、查找 Godot，并更新支持的客户端条目。
-请先备份已有 MCP 配置：JSON 客户端中的同名条目可能被替换。项目级配置写在
+更新 JSON 客户端条目时保留环境变量、目录限制、权限和客户端设置；改写 JSON 与
+`.env` 前备份原文件，异常 JSON 保持不变。备份可能含密钥，请勿公开。项目级配置写在
 Wheel-Mcp 仓库目录，不会自动写入其他游戏工作区。
 
 安装后重启客户端，调用 `get_godot_version` 验证连接。
@@ -145,7 +148,7 @@ GODOT_PATH = "D:/tools/Godot_console.exe"
 
 所有示例路径均需替换为本机绝对路径。若客户端找不到 Node，请将 `command` 改为 Node 可执行文件的绝对路径。
 
-先调用 `get_godot_version` 检查连接，再让客户端执行具体操作。安装脚本可能覆盖已有配置，请先备份。
+先调用 `get_godot_version` 检查连接，再让客户端执行具体操作。保留配置备份以便恢复。
 
 ## 你可以这样使用
 
@@ -167,7 +170,7 @@ MCP 的 `launch_project` 和 `open_runtime_bridge` 默认 `headless: true`，逻
 CLI 后台启动请使用 `--headless true`。
 
 GitHub CI 已启用，main 的 push 和 PR 自动执行短时检查。Pages 发布现有展示页；
-这两个流程都不会自动发布 npm 包或创建 Release。
+独立的标签/手动发布流程通过有时限的验收后才打包、创建 Release；所有流程都不发布 npm。
 
 保留的 Windows 工作流执行 `npm run check`，
 只构建一次，检查格式/lint、MCP 通信、审批与事务安全以及展示页。依赖清单、
@@ -177,8 +180,9 @@ GitHub CI 已启用，main 的 push 和 PR 自动执行短时检查。Pages 发�
 保留七天。CI 通过不代表发布资格。
 
 日常开发使用 `npm run check`；完整回归显式使用 `npm run check:full` 或
-`npm test`；小规模真实引擎检查使用 `npm run test:godot-ci`。发布准备留在本机，
+`npm test`；小规模真实引擎检查使用 `npm run test:godot-ci`。
 `npm run release:gate -- --plan` 可查看去重后的步骤，不执行验证或发布。
+[GitHub 发布流程](docs/GITHUB-RELEASE.md)说明版本标签、产物与失败处理。
 
 - “检查这个场景的节点树，并说明 Camera2D 为什么没有生效。”
 - “运行测试场景，发送输入，收集日志和截图；如果断言失败，给出证据。”

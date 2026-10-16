@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.2.1
+
+- Add an on-demand GitHub release workflow with bounded Windows acceptance,
+  actual package installation, SBOM, checksums and a source-bound receipt.
+  Upload to a draft, verify remote asset hashes, then publish without overwriting
+  existing releases. Daily CI remains short; no npm publication or soak job.
+- Preserve JSON client environment, roots/scopes and client-owned settings on
+  forced setup. Back up changed configurations and reject malformed structures.
+  Update only `GODOT_PATH` in `.env`, preserving unrelated settings and comments.
+- Pin official Godot CI archives by SHA-256 and bound download duration, size
+  and redirects to exact HTTPS release hosts before extraction/execution.
 
 - Screenshot-only runs start off-screen, then minimize an unfocusable real-render
   window; `dev_loop` uses the same background policy. Persistent MCP rendering

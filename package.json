@@ -1,6 +1,6 @@
 {
   "name": "wheel-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "wheelReleaseProfile": "windows-local",
   "private": false,
   "type": "module",
@@ -8,11 +8,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/EVEDensity/Wheel-mcp.git"
+    "url": "git+https://github.com/EVEDensity/Wheel-Mcp.git"
   },
-  "homepage": "https://github.com/EVEDensity/Wheel-mcp#readme",
+  "homepage": "https://evedensity.github.io/Wheel-Mcp/",
   "bugs": {
-    "url": "https://github.com/EVEDensity/Wheel-mcp/issues"
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/issues"
   },
   "files": [
     "build/src/**/*.js",

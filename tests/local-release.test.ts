@@ -13,7 +13,7 @@ function receipt() {
     schemaVersion: 1,
     runId: 'test-run-012345678901234567890123',
     status: 'PASS',
-    version: '0.2.0',
+    version: localReleasePolicy.version,
     sourceHash: 'a'.repeat(64),
     policy: localReleasePolicy,
     documents: { readme: 'b'.repeat(64) },
@@ -38,13 +38,17 @@ function receipt() {
       },
       scratchCleanup: 'PASS',
     })),
-    package: { version: '0.2.0', files: 109, sha256: 'd'.repeat(64), excluded: 0 },
+    package: { version: localReleasePolicy.version, files: 109, sha256: 'd'.repeat(64), excluded: 0 },
     audit: { metadata: { vulnerabilities: { total: 0 } } },
     productionQualification: 'NOT_QUALIFIED',
     sbomSha256: 'e'.repeat(64),
   };
 }
-const current = { sourceHash: 'a'.repeat(64), version: '0.2.0', documents: { readme: 'b'.repeat(64) } };
+const current = {
+  sourceHash: 'a'.repeat(64),
+  version: localReleasePolicy.version,
+  documents: { readme: 'b'.repeat(64) },
+};
 test('limited local release accepts complete receipts without promoting production qualification', () =>
   assert.deepEqual(assessLocalRelease(receipt(), current), []));
 test('local release rejects skipped tests, unknown actors and changed source or documents', () => {

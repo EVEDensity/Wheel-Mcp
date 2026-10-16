@@ -78,7 +78,7 @@ test('public onboarding documents resolve local links and expose the existing we
   for (const name of ['README.md', 'README.zh-CN.md']) {
     const text = await readFile(path.join(root, name), 'utf8');
     assert.ok(text.includes('https://evedensity.github.io/Wheel-Mcp/'));
-    assert.ok(text.includes('releases/tag/v0.2.0'));
+    assert.ok(text.includes('releases/latest'));
     assert.doesNotMatch(text, /status-preview|CI\/CD is paused|暂停 GitHub CI\/CD/);
   }
 });

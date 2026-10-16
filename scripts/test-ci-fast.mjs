@@ -5,6 +5,7 @@ const files = [
   'ci-policy',
   'production-manifest',
   'local-release',
+  'github-release',
   'error-schema',
   'variant-codec',
   'response-types',

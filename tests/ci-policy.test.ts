@@ -14,10 +14,10 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   assert.deepEqual(ci.on.pull_request.branches, ['main']);
   assert.equal(ci.on.workflow_dispatch.inputs.engine.type, 'boolean');
   assert.equal(ci.on.workflow_dispatch.inputs.engine.default, false);
-  assert.deepEqual(
-    (await readdir('.github/workflows')).filter((name) => /\.ya?ml$/.test(name)),
-    ['ci.yml'],
-  );
+  assert.deepEqual((await readdir('.github/workflows')).filter((name) => /\.ya?ml$/.test(name)).sort(), [
+    'ci.yml',
+    'release.yml',
+  ]);
   assert.equal(ci.concurrency['cancel-in-progress'], true);
   const jobs = Object.values(ci.jobs) as Array<{
     'runs-on': string;

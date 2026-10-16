@@ -1,0 +1,106 @@
+name: release
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.context.outputs.tag }}
+      commit: ${{ steps.context.outputs.commit }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          cache: npm
+      - name: Verify existing tag, version and main ancestry
+        id: context
+        run: node scripts/github-release-context.mjs
+      - run: npm ci --ignore-scripts
+      - name: Install verified Godot 4.7.2
+        run: node scripts/ci-install-godot.mjs
+      - name: Bounded Windows release acceptance and actual package install
+        run: npm run release:gate
+      - name: Independently verify acceptance and artifacts
+        run: npm run release:check
+      - name: Prepare exact release assets
+        run: node scripts/prepare-github-release.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-assets
+          path: runs/github-release/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Bounded failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-failure
+          path: |
+            runs/local-release/latest.json
+            runs/local-release/last-failure-output.txt
+            runs/ci/**/summary.json
+            runs/ci/**/failure.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: release-assets
+          path: release-assets
+      - name: Verify asset hashes
+        working-directory: release-assets
+        run: sha256sum --check --strict SHA256SUMS
+      - name: Publish accepted release without overwriting existing releases
+        working-directory: release-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.build.outputs.tag }}
+          RELEASE_SHA: ${{ needs.build.outputs.commit }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" --draft --verify-tag --target "$RELEASE_SHA" --title "$RELEASE_TAG · Windows local stable" --notes-file RELEASE-NOTES.md wheel-mcp-*.tgz sbom.json acceptance.json SHA256SUMS
+          gh api "repos/$GH_REPO/releases/tags/$RELEASE_TAG" > uploaded-release.json
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+          const release = JSON.parse(readFileSync('uploaded-release.json', 'utf8'));
+          const tag = process.env.RELEASE_TAG;
+          if (!/^v\d+\.\d+\.\d+$/.test(tag) || release.tag_name !== tag || !release.draft || release.target_commitish !== process.env.RELEASE_SHA) {
+            throw new Error('Uploaded release does not match accepted source');
+          }
+          const names = [`wheel-mcp-${tag.slice(1)}.tgz`, 'sbom.json', 'acceptance.json', 'SHA256SUMS'];
+          if (release.assets.length !== names.length) throw new Error('Unexpected release asset count');
+          for (const name of names) {
+            const bytes = readFileSync(name);
+            const asset = release.assets.find((item) => item.name === name);
+            const hash = createHash('sha256').update(bytes).digest('hex');
+            if (!asset || asset.size !== bytes.length || asset.digest !== `sha256:${hash}`) {
+              throw new Error(`Uploaded asset hash mismatch: ${name}`);
+            }
+          }
+          NODE
+          gh release edit "$RELEASE_TAG" --draft=false --latest

@@ -146,6 +146,7 @@ test(
       });
       client = new Client({ name: 'real-package-test', version: '1.0.0' });
       await client.connect(transport, { timeout: 10000 });
+      assert.deepEqual(client.getServerVersion(), { name: sourcePackage.name, version: sourcePackage.version });
       const tools = await client.listTools({}, { timeout: 10000 });
       assert.ok(tools.tools.some((tool) => tool.name === 'get_project_info'));
       const result = await client.callTool(

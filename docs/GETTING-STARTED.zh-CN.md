@@ -2,7 +2,7 @@
 
 [English](GETTING-STARTED.md) · [文档中心](README.md)
 
-v0.2.0 本机稳定版使用 Windows、Godot 4.7.2 与 Node.js 24。
+本机稳定版使用 Windows、Godot 4.7.2 与 Node.js 24。
 Wheel-mcp 通过 stdio 在本机运行；访问展示页不会安装或启动服务。
 仅操作可信项目：Godot 会以本机权限执行项目代码。
 
@@ -11,7 +11,7 @@ Wheel-mcp 通过 stdio 在本机运行；访问展示页不会安装或启动服
 先安装 Git、Node.js 和 Godot，再在 PowerShell 中运行：
 
 ```powershell
-git clone --branch v0.2.0 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.1 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd ci
 npm.cmd run build
@@ -24,7 +24,8 @@ npm.cmd run build
 
 自动配置：先备份已有 MCP 客户端配置，再运行 `npm.cmd run go:global`。
 它会安装依赖、编译、查找 Godot，并更新全局和仓库内的客户端条目。
-仅需仓库级配置时使用 `npm.cmd run go`。JSON 中名为 `wheel-mcp` 的条目可能被替换。
+仅需仓库级配置时使用 `npm.cmd run go`。更新时保留 JSON 环境变量和客户端设置，
+改写 JSON/`.env` 前备份原文件，异常 JSON 保持不变。备份可能含密钥，请勿公开。
 这里的项目级配置指 Wheel-Mcp 仓库，不会自动写入其他游戏文件夹。
 
 手动配置：按客户端要求，将下面的**服务条目**合并到已有配置。这不是完整配置文件。

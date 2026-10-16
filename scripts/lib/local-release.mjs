@@ -5,7 +5,7 @@ import { sha256 } from './production-manifest.mjs';
 export const localReleasePolicy = {
   id: 'windows-local',
   revision: 2,
-  version: '0.2.0',
+  version: '0.2.1',
   platform: 'win32',
   godot: '4.7.2',
   transport: 'stdio',
@@ -45,7 +45,7 @@ export const localReleaseSteps = [
   { id: 'sbom', program: 'npm', args: ['sbom', '--sbom-format=cyclonedx'], timeoutMs: 15000 },
 ];
 
-export const minimumReleaseTests = { core: 95, safety: 60, engine: 14, package: 2 };
+export const minimumReleaseTests = { core: 104, safety: 64, engine: 14, package: 2 };
 
 export const localReleaseDocs = [
   'README.md',
@@ -53,6 +53,8 @@ export const localReleaseDocs = [
   'SECURITY.md',
   'THIRD-PARTY-NOTICES.md',
   'docs/LOCAL-STABLE-RELEASE.md',
+  'docs/GITHUB-RELEASE.md',
+  'CHANGELOG.md',
 ];
 
 export async function localDocumentHashes(root) {

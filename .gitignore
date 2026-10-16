@@ -37,3 +37,4 @@ coverage/
 # Logs.
 *.log
 npm-debug.log*
+*.wheel-mcp-*.bak

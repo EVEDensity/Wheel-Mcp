@@ -3,7 +3,7 @@
 [Documentation index](README.md) · [First project](GETTING-STARTED.md) · [首次接入](GETTING-STARTED.zh-CN.md)
 
 Installer adapters below describe configuration generation, not a support or
-end-to-end acceptance matrix. The v0.2.0 stable profile is Windows/local stdio;
+end-to-end acceptance matrix. The stable profile is Windows/local stdio;
 other clients' form approval and model-driven workflows need separate validation.
 In particular, the earlier Cursor real-client write acceptance was not completed.
 
@@ -29,8 +29,10 @@ The global setup builds Wheel-mcp, detects Godot, and writes the standard `wheel
 
 After setup, restart the client and call `get_godot_version` to verify the connection.
 
-Back up existing client configuration first. Setup may replace an existing
-`wheel-mcp` JSON entry. Project-scoped entries are written in the Wheel-Mcp
+Setup updates the executable entry while preserving existing JSON environment,
+roots/scopes and client settings. Changed JSON and `.env` files have exact backups;
+malformed JSON is left unchanged. Keep backups private because they may contain credentials.
+Project-scoped entries are written in the Wheel-Mcp
 checkout, not automatically in your separate Godot game folder. Global entries
 use absolute paths to this checkout. Set explicit project/evidence roots and
 least-privilege scopes before opening another project; see the first-project guide.

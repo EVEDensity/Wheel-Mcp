@@ -2,14 +2,18 @@
 
 ## Local stable release revision 2
 
-Current acceptance is recorded in the [final receipt](releases/0.2.0-windows-local-final.json).
-It requires separate build/style/lint budgets, all core/native/runtime/package
+The latest published [GitHub Release](https://github.com/EVEDensity/Wheel-Mcp/releases/latest)
+contains its exact-source `acceptance.json`. The historical
+[v0.2.0 receipt](releases/0.2.0-windows-local-final.json) does not qualify newer source.
+Current acceptance requires separate build/style/lint budgets, all core/native/runtime/package
 suites with zero skips and owned cleanup, fresh audit, SBOM and artifact
 integrity. Suite receipts must match the current run and meet minimum coverage.
 The operator budget is ten minutes; no product safety threshold is relaxed.
 The maintainer authorized public distribution and bounded push/PR CI after
 acceptance. Full production and remote deployment remain `NOT_QUALIFIED`.
-Earlier failed synchronization and successful checkpoint sections are historical.
+The [GitHub packaging workflow](GITHUB-RELEASE.md) repeats this bounded gate on
+Windows before publishing; daily CI remains short. All dated synchronization
+and checkpoint sections below are historical, including their old CI settings.
 
 An initial revision 2 local pass was followed by independent GitHub Windows CI
 failures: process identity probes could time out during PowerShell module cold

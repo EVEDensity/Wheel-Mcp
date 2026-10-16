@@ -3,6 +3,22 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { defaultSearchRoots, fixedGodotCandidates, isGodotExecutableName } from './platform-paths.mjs';
 
+// Preserve unrelated settings, comments and line endings when setup updates Godot.
+export function mergeGodotEnv(content, godotPath) {
+  const setting = `GODOT_PATH=${godotPath}`;
+  const parts = content.split(/(\r?\n)/);
+  let found = false;
+  for (let index = 0; index < parts.length; index += 2) {
+    if (/^[ \t]*GODOT_PATH[ \t]*=/.test(parts[index])) {
+      parts[index] = setting;
+      found = true;
+    }
+  }
+  if (found) return parts.join('');
+  const newline = content.includes('\r\n') ? '\r\n' : '\n';
+  return `${content}${content && !content.endsWith('\n') ? newline : ''}${setting}${newline}`;
+}
+
 export function parseEnvFile(content) {
   const env = {};
   for (const line of content.split(/\r?\n/)) {

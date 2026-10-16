@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Security fixes target the latest published release, currently v0.2.0. Its stable
+Security fixes target the [latest published release](https://github.com/EVEDensity/Wheel-Mcp/releases/latest). Its stable
 profile is Windows, Godot 4.7.2 and trusted local projects over stdio. The
 `0.1.0-preview.*` line is evaluation-only. Public HTTP, Linux/macOS and long/high-load
 qualification are outside this release's support scope. See the

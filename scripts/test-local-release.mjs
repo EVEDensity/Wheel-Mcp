@@ -4,6 +4,7 @@ import { statSync } from 'node:fs';
 const plan = {
   files: [
     'install',
+    'setup',
     'project-transactions',
     'transaction-recovery',
     'owned-process',

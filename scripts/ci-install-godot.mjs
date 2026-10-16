@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { createWriteStream, writeFileSync } from 'node:fs';
-import { appendFile, chmod, mkdir } from 'node:fs/promises';
+import { appendFile, chmod, mkdir, readFile } from 'node:fs/promises';
+import { Transform } from 'node:stream';
+import { godotArchives, verifyArchive, validateDownloadUrl } from './lib/godot-archive.mjs';
 import https from 'node:https';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,26 +21,42 @@ const platforms = {
   linux: { archive: `Godot_v${VERSION}_linux.x86_64.zip` },
 };
 
-function downloadFile(urlString, destination) {
+function downloadFile(urlString, destination, redirects = 0, signal = AbortSignal.timeout(120000)) {
   return new Promise((resolve, reject) => {
-    const url = new URL(urlString);
+    if (redirects > 5) {
+      reject(new Error('Too many Godot download redirects'));
+      return;
+    }
+    const url = validateDownloadUrl(urlString);
     const request = https.request(
       url,
-      { method: 'GET', headers: { 'user-agent': 'wheel-mcp-ci-installer', accept: '*/*' } },
+      { method: 'GET', signal, headers: { 'user-agent': 'wheel-mcp-ci-installer', accept: '*/*' } },
       (response) => {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
           response.resume();
-          downloadFile(new URL(response.headers.location, url).toString(), destination).then(resolve, reject);
+          downloadFile(new URL(response.headers.location, url).toString(), destination, redirects + 1, signal).then(
+            resolve,
+            reject,
+          );
           return;
         }
-        if (response.statusCode >= 400) {
+        if (response.statusCode !== 200) {
+          response.resume();
           reject(new Error(`HTTP ${response.statusCode} fetching ${urlString}`));
           return;
         }
-        pipeline(response, createWriteStream(destination)).then(resolve, reject);
+        let bytes = 0;
+        const bound = new Transform({
+          transform(chunk, _encoding, done) {
+            bytes += chunk.length;
+            done(bytes > 200 * 1024 * 1024 ? new Error('Godot download exceeds size bound') : null, chunk);
+          },
+        });
+        pipeline(response, bound, createWriteStream(destination)).then(resolve, reject);
       },
     );
     request.on('error', reject);
+    request.setTimeout(20000, () => request.destroy(new Error('Godot download stalled')));
     request.end();
   });
 }
@@ -85,6 +103,7 @@ async function install() {
 
   console.log(`Downloading ${downloadUrl}`);
   await downloadFile(downloadUrl, archivePath);
+  verifyArchive(await readFile(archivePath), godotArchives[platform].sha256);
 
   const extractDir = path.join(ROOT, 'extract');
   await mkdir(extractDir, { recursive: true });
@@ -118,7 +137,9 @@ async function install() {
   }
 
   console.log(`Verifying: ${godotPath} --version`);
-  execFileSync(godotPath, ['--version'], { stdio: 'inherit' });
+  const actual = execFileSync(godotPath, ['--version'], { encoding: 'utf8', timeout: 10000, windowsHide: true }).trim();
+  if (!/^4\.7\.2(?:\.|$)/.test(actual)) throw new Error('Downloaded Godot version differs from 4.7.2');
+  console.log(actual);
 
   const envPath = godotPath.replaceAll('\\', '/');
   if (process.env.GITHUB_ENV) {

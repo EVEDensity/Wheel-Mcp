@@ -15,9 +15,9 @@ Your assistant writes the code. Wheel-mcp runs the checks and returns evidence.
 Client setup adapters are available; form approval and end-to-end compatibility
 depend on the client version. See [client compatibility](docs/AGENT-COMPATIBILITY.md).
 
-**v0.2.0 · Windows local stable · Godot 4.7.2 · MCP · MIT application code**
+**Windows local stable · Godot 4.7.2 · MCP · MIT application code**
 
-[Website](https://evedensity.github.io/Wheel-Mcp/) · [Quick start](#quick-start) · [Documentation](docs/README.md) · [Download v0.2.0](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0) · [Contributing](CONTRIBUTING.md)
+[Website](https://evedensity.github.io/Wheel-Mcp/) · [Quick start](#quick-start) · [Documentation](docs/README.md) · [Latest download](https://github.com/EVEDensity/Wheel-Mcp/releases/latest) · [Contributing](CONTRIBUTING.md)
 
 If this helps your Godot workflow, **give it a Star**. Bug reports, reproducible examples, and focused PRs are just as welcome.
 
@@ -49,17 +49,19 @@ With a real `GODOT_PATH`, `npm run benchmark:comparison` reproduces three altern
 
 ## Current status
 
-**[v0.2.0 is released](https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.0)** for
-Windows, Godot 4.7.2 and trusted local projects over stdio. The release includes
-the runtime package, SBOM, checksums and [acceptance receipt](docs/releases/0.2.0-windows-local-final.json).
-The receipt covers the frozen release source, not every later commit on main.
+The **[local stable release](https://github.com/EVEDensity/Wheel-Mcp/releases/latest)**
+targets Windows, Godot 4.7.2 and trusted local projects over stdio. Each release
+includes the runtime package, SBOM, checksums and its source-bound acceptance receipt.
+The historical [v0.2.0 receipt](docs/releases/0.2.0-windows-local-final.json)
+covers that frozen release, not later commits on main.
 See the [local release scope](docs/LOCAL-STABLE-RELEASE.md).
 Long-session/high-load performance, public HTTP, other platforms/clients and
 advanced authoring are outside this stable profile. Automated approvals are
 explicit test doubles, not human desktop UX certification. Full production
 qualification remains **NOT_QUALIFIED**; T31–T35/G4–G6 remain future work, not
-completed tasks. Public-repository CI runs short Windows push/PR checks; real
-engine smoke is manual. No npm version is auto-published.
+completed tasks. Daily CI runs short Windows push/PR checks. The separate
+[release workflow](docs/GITHUB-RELEASE.md) runs bounded real-engine/package
+acceptance only for version tags or explicit dispatch. No npm version is published.
 
 Godot runs project code with your OS permissions; headless operation is not a
 sandbox. Configure explicit project/evidence roots and use only trusted local
@@ -76,14 +78,16 @@ requires Node.js >=20.19.0; source development also needs the current toolchain.
 Clone the release tag for a reproducible starting point:
 
 ```bash
-git clone --branch v0.2.0 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.1 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```
 
 Global setup also includes project configuration. It installs dependencies,
-builds, detects Godot and updates supported client entries. Back up existing MCP
-configuration first: JSON client entries may be replaced. The installer configures
+builds, detects Godot and updates supported client entries. Existing JSON entries
+retain their environment, roots/scopes and client settings; changed JSON and
+`.env` files are backed up before writing. Malformed JSON is left unchanged.
+Keep backups private because they may contain credentials. The installer configures
 the Wheel-Mcp checkout, not every separate game workspace.
 
 Restart your client and call `get_godot_version` to verify the connection.
@@ -180,7 +184,8 @@ Restart the MCP server after updating to load the new code/bridge. CLI/core laun
 defaults are unchanged; use `--headless true` for CLI background launches.
 
 GitHub CI is enabled for pushes and pull requests to main. Pages publishes the
-existing showcase; neither workflow publishes an npm package or creates a Release.
+existing showcase. A separate tag/manual release workflow packages and publishes
+only after its bounded acceptance passes; none of these workflows publishes to npm.
 
 The retained Windows workflow runs `npm run check`
 (one build, style/lint, core MCP transport, approval/transaction safety and site
@@ -192,8 +197,9 @@ seven days. CI passing is not release qualification.
 
 Use `npm run check` for daily work, `npm run check:full` for full regression,
 and `npm run test:godot-ci` for the small native smoke. `npm test` still runs all
-tests. Release preparation stays local and explicit: `npm run release:gate --
---plan` previews its deduplicated steps without running them or publishing.
+tests. `npm run release:gate -- --plan` previews the bounded acceptance steps
+without running them or publishing. Follow the [GitHub release procedure](docs/GITHUB-RELEASE.md)
+for version tags, artifacts and failure recovery.
 
 Try asking your connected client:
 

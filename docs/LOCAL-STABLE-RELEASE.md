@@ -1,11 +1,12 @@
 # Windows local stable release
 
-The [final receipt](releases/0.2.0-windows-local-final.json) records acceptance
-for the exact source being distributed. The earlier
+Each GitHub Release includes an `acceptance.json` for its exact source and artifacts.
+The historical [v0.2.0 receipt](releases/0.2.0-windows-local-final.json)
+does not qualify later versions. The earlier
 [source synchronization snapshot](releases/0.2.0-source-push.json) timed out and
 remains historical, not a replacement for fresh checks.
 
-Version `0.2.0` uses a limited local release profile, not the unfinished full
+The `0.2.x` series uses a limited local release profile, not the unfinished full
 production roadmap. On October 15, 2026, the maintainer requested the shortest
 useful release path and removed long-running acceptance from the release scope.
 The release is acceptable only when `npm run release:gate` and the independent
@@ -82,5 +83,8 @@ The receipt is `runs/local-release/latest.json`; the distributable and SBOM are
 alongside it. For future full production work, use `npm run release:gate:full`
 and `npm run release:check:production`. The maintainer authorized public GitHub
 distribution and restoring short push/PR CI on October 15, 2026. Optional engine
-smoke remains manual; long qualification is not an automatic CI job. GitHub
-Release publication is separate from npm publishing.
+smoke remains optional in daily CI; long qualification is not an automatic CI job.
+The separate [GitHub release workflow](GITHUB-RELEASE.md) runs the bounded gate
+on a fresh hosted Windows runner, verifies the actual uploaded assets in a draft,
+then publishes. It is separate from npm publishing and does not certify all
+Windows machines, graphics drivers or interactive clients.
