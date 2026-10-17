@@ -1,0 +1,268 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17 20:12:53 UTC",
+  "status": "PASS_PERSONAL_WINDOWS_LOCAL_HANDOFF",
+  "acceptedCommit": "5c5331ef7e3948ed1e34677d48665b98eb2ff61e",
+  "sourceHash": "698412dfa0829c5d5a501a256941053493d92fd008ef0e938f32261666d7310b",
+  "completionScope": "Finite personal-maintainer Windows/Godot 4.7.2/stdio integration; not completion of optional engine/platform wishlist or full production qualification.",
+  "completed": [
+    "Bounded native mouse-wheel input and actual ScrollContainer behavior, with local reversible pixel evidence.",
+    "Existing editor/resource/PNG/gradient/undo/save/transaction/install integration, without dropping previous required tests.",
+    "Personal-repository minimal-permission CI/CD policy locked in regression tests; no extra credentials or organization-only service dependency.",
+    "Local acceptance before source push, actual hosted CI/Pages/acceptance and independently downloaded artifact verification."
+  ],
+  "runtime": {
+    "bridgeVersion": "0.3.1",
+    "capability": "input.mouse_wheel/v1",
+    "editorBridgeUnchanged": "0.3.5",
+    "directions": [
+      "up",
+      "down",
+      "left",
+      "right"
+    ],
+    "viewportCoordinates": "finite x/y 0..16384",
+    "factor": "finite >0 and <=8; default 1",
+    "delivery": "One native InputEventMouseButton press/release pair; no OS mouse control or direct scroll-property assignment.",
+    "acceptanceIsNotConsumption": true,
+    "writeRunOwnershipAndReplayPreserved": true
+  },
+  "personalPermissions": {
+    "ownerType": "User",
+    "repository": "EVEDensity/Wheel-Mcp",
+    "visibility": "public",
+    "customSecretsRequired": false,
+    "organizationApprovalRequired": false,
+    "paidSecurityServiceRequired": false,
+    "selfHostedRunnerRequired": false,
+    "buildPermission": "contents: read",
+    "publishPermission": "contents: write only when source/tag gate authorizes publication",
+    "token": "automatic github.token",
+    "pages": "existing branch-source main /; no repository setting changed",
+    "globalOrOrganizationSettingsChanged": false
+  },
+  "localGate": {
+    "status": "PASS",
+    "runId": "3a0cea83-562d-4db6-81c6-7772d36e8217",
+    "sourceHash": "698412dfa0829c5d5a501a256941053493d92fd008ef0e938f32261666d7310b",
+    "head": "98cf15480e3ad42df37d3eb3cecdcdd034f06093",
+    "environment": {
+      "platform": "win32",
+      "node": "v24.18.0",
+      "godot": "4.7.2.stable.official.ed1daf0bf"
+    },
+    "durationMs": 241687,
+    "tests": [
+      {
+        "id": "core",
+        "tests": 134,
+        "passed": 134,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "cleanup": "PASS"
+      },
+      {
+        "id": "package",
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "cleanup": "PASS"
+      },
+      {
+        "id": "safety",
+        "tests": 73,
+        "passed": 73,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "cleanup": "PASS"
+      },
+      {
+        "id": "engine",
+        "tests": 16,
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "cleanup": "PASS"
+      }
+    ],
+    "auditTotal": 0,
+    "receiptSha256": "0d952719fc810fdbd4d39065a421187febe5175a88520a664e7990ca37ae4f21",
+    "receipt": "runs/local-release/latest.json",
+    "boundary": "Executed before the source commit on the identical resulting source hash. The hosted run below binds the committed source exactly.",
+    "totalTests": 225
+  },
+  "frozenSpecializedRegression": {
+    "sourceHash": "698412dfa0829c5d5a501a256941053493d92fd008ef0e938f32261666d7310b",
+    "reports": [
+      {
+        "report": "runs/ci/personal-wheel-final/summary.json",
+        "tests": 6,
+        "durationMs": 35289
+      },
+      {
+        "report": "runs/ci/personal-integration-frozen/summary.json",
+        "tests": 4,
+        "durationMs": 39021
+      }
+    ],
+    "totalTests": 10,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "scratchCleanup": "PASS",
+    "approval": "MOCK exact-plan host through official SDK stdio; not human UX",
+    "renderScope": "Actual local wheel scrolling and restoration, PNG and gradient pixels; not hosted GPU or hardware mouse certification"
+  },
+  "preservedDevelopmentFailure": {
+    "report": "runs/ci/personal-wheel-initial/failure-summary.json",
+    "testsPassed": 4,
+    "testsFailed": 1,
+    "cause": "New unit test used synchronous assert.throws for async authorizeToolCall. Replaced it with awaited assert.rejects; scope denial remains required. Compiler also caught two missing typed arguments before testing.",
+    "scratchAndPriorFailuresRetained": true,
+    "acceptanceThresholdsRelaxed": false
+  },
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39065159573",
+    "status": "success",
+    "tests": 134,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39065159425",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "status": "PASS",
+    "head": "5c5331ef7e3948ed1e34677d48665b98eb2ff61e",
+    "sourceHash": "698412dfa0829c5d5a501a256941053493d92fd008ef0e938f32261666d7310b",
+    "runId": "2de0d524-a26b-4bae-aab0-dc4f846a66f5",
+    "environment": {
+      "platform": "win32",
+      "node": "v24.21.0",
+      "godot": "4.7.2.stable.official.ed1daf0bf"
+    },
+    "durationMs": 246041,
+    "tests": [
+      {
+        "id": "core",
+        "durationMs": 24219,
+        "tests": 134,
+        "passed": 134,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "package",
+        "durationMs": 4242,
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "safety",
+        "durationMs": 177775,
+        "tests": 73,
+        "passed": 73,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "engine",
+        "durationMs": 18683,
+        "tests": 16,
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "scratchCleanup": "PASS"
+      }
+    ],
+    "vulnerabilities": 0,
+    "hashes": {
+      "RELEASE-NOTES.md": "c8623f76d7d8d7d880943d83c792245ca3206361d8541dc617696aa2822e10d6",
+      "SHA256SUMS": "47db3fa7ee4835e7aa6b319fe0e0279505d7903e8d9107c0c913a34690bae39d",
+      "acceptance.json": "899591de620635f228dd2d64c2cc010db34bf018851bdbc93b91dc26f86e6139",
+      "sbom.json": "e424039edd4f3d10ee56379c65e2cb08349d98e55810dc361e7b272b9df3ee73",
+      "wheel-mcp-0.2.8.tgz": "2d74590061a9a3b216e1f0fb51b40ab2a804b44d4719291a56e69a6095f23454"
+    },
+    "probeSha256": "d22ad96bd412c4b0b43ba87125b6541f706b57d30debe4bcc25b2b8ed53e71c9",
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39065169725",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "totalTests": 225,
+    "artifactId": 12113575261,
+    "artifactName": "release-assets-39065169725-1",
+    "independentDownloadVerification": "PASS: exact commit/current source/policy/guarded documents, exact five-file set, runtime archive, SBOM and all checksum entries."
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "698412dfa0829c5d5a501a256941053493d92fd008ef0e938f32261666d7310b",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T20-03-55-542Z-22596/report.json",
+    "sha256": "d22ad96bd412c4b0b43ba87125b6541f706b57d30debe4bcc25b2b8ed53e71c9",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK installed app-server protocol, not desktop/TUI human UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "ciBoundaries": {
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "newTests": {
+      "core": 4,
+      "headlessEngine": 1
+    },
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "requiredCounts": {
+      "core": 134,
+      "safety": 73,
+      "engine": 16,
+      "package": 2
+    },
+    "newPublisherExecution": "NOT_RUN; acceptance-only correctly skips publication. Existing publisher unit/HTTP negative controls remain mandatory."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArtifactIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-T31-T35-G4-G6-or-all-test-files",
+    "all-Godot-UI-physics-animation-shader-engine-coverage",
+    "touch-IME-signal-whitelist-expansion-hardware-mouse-and-desktop-focus-UX",
+    "other-platforms-clients-independent-machine-high-load-long-session-public-HTTP"
+  ],
+  "handoff": "Personal-project integration checklist complete. Optional broad extensions remain explicitly unimplemented/unqualified; they are not relabeled PASS or silently removed."
+}
