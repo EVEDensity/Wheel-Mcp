@@ -10,7 +10,7 @@ const Dependencies = preload("res://addons/wheel_mcp/scene_dependencies.gd")
 const UI = preload("res://addons/wheel_mcp/ui_service.gd")
 const Physics = preload("res://addons/wheel_mcp/physics_service.gd")
 const Animations = preload("res://addons/wheel_mcp/animation_service.gd")
-const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
+const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "TextureRect", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
 const PROPERTIES := ["position", "rotation", "scale", "visible", "visibility_parent"]
 const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
 
@@ -242,6 +242,7 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 		# Rechecked by commit's live snapshot: a callback attached while the
 		# approval form is open must not become a deferred layout side effect.
 		if node is ScrollContainer and UI.scroll_callbacks(node): return _error("CONFLICT", "Scroll callbacks require a separate policy")
+		if node is TextureRect and not UI.inline_texture(node, root): return _error("CONFLICT", "TextureRect requires inline native texture data; external dependencies are not declared")
 		if node is RichTextLabel and UI.rich_text_unsafe(node): return _error("CONFLICT", "RichTextLabel requires plain declarative text without callbacks/effects")
 		var props: Dictionary = {}
 		var animation_state := Animations.signature(node)
@@ -668,6 +669,7 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 		if target == null or _instance_boundary(target, root) != null or op.get("property") not in Resources.NODE_PROPERTIES or op.get("policy") not in ["shared", "make_unique"]:
 			return _error("FORBIDDEN", "Resource operation requires a local node, declared property and explicit sharing policy")
 		var expected := ""
+		if op.property == "texture" and not target is TextureRect: return _error("UNSUPPORTED", "Texture references require TextureRect")
 		for info in target.get_property_list():
 			if str(info.name) == op.property and int(info.type) == TYPE_OBJECT: expected = info.hint_string
 		if expected.is_empty(): return _error("INVALID_ARGUMENT", "Node has no declared resource property")
@@ -678,6 +680,7 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 			if not op.get("ref") is Dictionary or not batch.resource_refs.has(op.ref.get("handle", "")):
 				return _error("NOT_FOUND", "Missing resource handle")
 			live = batch.resource_refs[op.ref.handle]
+			if op.property == "texture" and op.policy == "shared" and not live.resource_path.is_empty() and not live.resource_path.begins_with(batch.root.scene_file_path + "::"): return _error("FORBIDDEN", "External texture references require an explicit make_unique copy")
 			if op.policy == "make_unique":
 				live = live.duplicate(true)
 				live.resource_path = ""

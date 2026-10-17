@@ -20,6 +20,7 @@ export const resourceTypes = [
   'SphereMesh',
   'Theme',
   'StyleBoxFlat',
+  'GradientTexture2D',
 ] as const;
 export const resourceRefSchema = z
   .object({
@@ -67,6 +68,7 @@ export const resourcePropertySchema = z.enum([
   'shape',
   'physics_material_override',
   'theme',
+  'texture',
 ]);
 const themeType = z.enum([
   'Control',
@@ -148,6 +150,19 @@ const shaderSource = z.discriminatedUnion('format', [
     .strict(),
 ]);
 export const resourceRequestSchema = z.discriminatedUnion('action', [
+  z
+    .object({
+      action: z.literal('texture'),
+      source: z
+        .object({
+          format: z.literal('linear-gradient'),
+          width: z.number().int().min(1).max(32),
+          height: z.number().int().min(1).max(32),
+          colors: z.array(typed.options[0]).length(2),
+        })
+        .strict(),
+    })
+    .strict(),
   z.object({ action: z.literal('theme'), items: z.array(themeItem).min(1).max(24) }).strict(),
   z.object({ action: z.literal('shader_capabilities') }).strict(),
   z.object({ action: z.literal('shader'), source: shaderSource }).strict(),
@@ -190,6 +205,14 @@ export async function manageEditorResource(options: {
   try {
     if (!bridge.identity.capabilities.includes('resource.manage'))
       throw new WheelError('FORBIDDEN', 'Resources require independent private write opt-in');
+    if (
+      (request.action === 'texture' ||
+        (request.action === 'create' && request.resourceType === 'GradientTexture2D') ||
+        ('ref' in request && request.ref.resourceType === 'GradientTexture2D') ||
+        (request.action === 'reference' && request.property === 'texture')) &&
+      !bridge.identity.capabilities.includes('scene.texture/v1')
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks bounded native textures; upgrade explicitly');
     if (
       (request.action === 'shader' || request.action === 'shader_capabilities') &&
       !bridge.identity.capabilities.includes('scene.shader/v1')

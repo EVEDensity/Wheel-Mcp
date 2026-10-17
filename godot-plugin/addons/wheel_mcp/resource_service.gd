@@ -2,6 +2,7 @@
 extends RefCounted
 const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
 const ShaderAuthoring = preload("res://addons/wheel_mcp/shader_service.gd")
+const Textures = preload("res://addons/wheel_mcp/texture_service.gd")
 
 # Explicit native types only. Handles never interpret a client path as a Resource.
 const FIELDS := {
@@ -14,10 +15,11 @@ const FIELDS := {
 	"CapsuleShape2D": ["radius", "height"],
 	"BoxMesh": ["size"], "SphereMesh": ["radius", "height"],
 	"Theme": ["default_font_size"],
+	"GradientTexture2D": [], # Immutable through resource_set; replace via an exact-plan assignment.
 	"StyleBoxFlat": ["bg_color", "border_color", "border_width_left", "border_width_top", "border_width_right", "border_width_bottom", "corner_radius_top_left", "corner_radius_top_right", "corner_radius_bottom_left", "corner_radius_bottom_right", "content_margin_left", "content_margin_top", "content_margin_right", "content_margin_bottom"],
 }
 const SHADER := "shader_type spatial;\nuniform vec4 tint : source_color = vec4(1.0);\nuniform float roughness = 0.5;\nvoid fragment() { ALBEDO = tint.rgb; ROUGHNESS = roughness; }\n"
-const NODE_PROPERTIES := ["material_override", "mesh", "shape", "physics_material_override", "theme"]
+const NODE_PROPERTIES := ["material_override", "mesh", "shape", "physics_material_override", "theme", "texture"]
 var _handles: Dictionary = {}
 var _exports: Dictionary = {}
 const TTL := 120000
@@ -38,11 +40,16 @@ static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary
 	if resource is ShaderMaterial and resource.shader is Shader and resource.shader.code != SHADER:
 		fields = ShaderAuthoring.fields(resource.shader)
 		if not ShaderAuthoring.supported(resource.shader): return error("UNSUPPORTED", "Unrecognized shader source or visual graph")
-	# Reject every opaque object graph, including texture, next_pass and cycles.
-	# A fixed authored shader is the only nested Resource supported in this slice.
+	# Reject opaque graphs, next_pass and cycles. Only the explicit shader,
+	# UI Theme and bounded gradient graphs have separate storage contracts.
 	var storage: Dictionary = {}
 	for property in resource.get_property_list():
 		if not (int(property.usage) & PROPERTY_USAGE_STORAGE): continue
+		if resource is GradientTexture2D:
+			var inspected := Textures.storage(resource)
+			if inspected.has("code"): return inspected
+			storage = inspected.storage
+			break
 		if resource is Theme:
 			var inspected := UITheme.storage(resource)
 			if inspected.has("code"): return inspected
@@ -73,9 +80,11 @@ static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary
 		var value: Variant = resource.get_shader_parameter(property) if resource is ShaderMaterial else resource.get(property)
 		properties[property] = encode(value)
 	var actual: Resource = mapping.get(resource, resource)
+	if resource is GradientTexture2D: properties = Textures.properties(resource)
 	return {"resourceType": resource.get_class(), "properties": properties, "id": actual.get_instance_id(), "path": actual.resource_path, "storage": storage}
 
 static func set_values(resource: Resource, values: Dictionary) -> Dictionary:
+	if resource is GradientTexture2D: return error("UNSUPPORTED", "Declared textures are immutable; create and assign a replacement")
 	var state := describe(resource)
 	if state.has("code"): return state
 	var fields: Array = state.properties.keys()
@@ -119,6 +128,9 @@ static func set_values(resource: Resource, values: Dictionary) -> Dictionary:
 static func create(kind: Variant, values: Variant) -> Dictionary:
 	if not kind is String or not FIELDS.has(kind) or not values is Dictionary:
 		return error("UNSUPPORTED", "Unknown resource kind/properties")
+	if kind == "GradientTexture2D":
+		if not values.is_empty(): return error("UNSUPPORTED", "Use the bounded texture source for custom gradients")
+		return Textures.create({"format": "linear-gradient", "width": 16, "height": 16, "colors": [{"type": "Color", "r": 0, "g": 0, "b": 0, "a": 1}, {"type": "Color", "r": 1, "g": 1, "b": 1, "a": 1}]})
 	var resource: Resource = ClassDB.instantiate(kind)
 	if resource is ShaderMaterial:
 		var shader := Shader.new()
@@ -165,6 +177,9 @@ func resolve(ref: Variant, owner: String, identity: Dictionary) -> Dictionary:
 func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictionary:
 	if params.get("sessionId") != identity.sessionId: return error("CONFLICT", "Resource editor session changed")
 	var action: Variant = params.get("action")
+	if action == "texture":
+		var made := Textures.create(params.get("source"))
+		return made if made.has("code") else retain(made.resource, owner, identity)
 	if action == "shader_capabilities":
 		return {"status": "PASS", "capability": "scene.shader/v1", "textTemplates": ["spatial-unshaded-tint/v1", "spatial-unshaded-texture-blend/v1"], "visualNodes": ["color", "mix"], "visualPorts": {"color": {"outputs": ["vec3", "float"]}, "mix": {"inputs": ["vec3", "vec3", "float"], "outputs": ["vec3"]}, "fragment": {"inputs": {"ALBEDO": "vec3"}}}, "renderModes": ["spatial/unshaded", "spatial/visual-fragment"], "supportedRenderers": ["forward_plus", "mobile", "gl_compatibility"], "editorRenderer": RenderingServer.get_current_rendering_method(), "renderValidation": "NOT_RUN", "persisted": false}
 	if action == "theme":
@@ -248,7 +263,7 @@ func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictio
 		var loaded: Resource = ResourceLoader.load(staged, "", ResourceLoader.CACHE_MODE_IGNORE)
 		var before := describe(copy)
 		var after := describe(loaded)
-		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties) or ((copy is Theme or copy is StyleBoxFlat or copy is ShaderMaterial) and after.storage != before.storage):
+		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties) or ((copy is Theme or copy is StyleBoxFlat or copy is ShaderMaterial or copy is GradientTexture2D) and after.storage != before.storage):
 			return error("VALIDATION_FAILED", "ResourceSaver roundtrip differs")
 		var content := FileAccess.get_file_as_string(staged)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(staged))

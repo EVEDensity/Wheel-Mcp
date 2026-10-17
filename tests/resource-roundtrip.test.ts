@@ -89,28 +89,39 @@ test(
         }
         const shape = type.includes('Shape'),
           physics = type === 'PhysicsMaterial',
+          texture = type === 'GradientTexture2D',
           theme = type === 'Theme';
-        const nodeType = theme
-          ? 'Control'
-          : shape
-            ? type.endsWith('2D')
-              ? 'CollisionShape2D'
-              : 'CollisionShape3D'
-            : physics
-              ? 'StaticBody3D'
-              : 'MeshInstance3D';
-        const property = theme
-          ? 'theme'
-          : shape
-            ? 'shape'
-            : physics
-              ? 'physics_material_override'
-              : type.endsWith('Mesh')
-                ? 'mesh'
-                : 'material_override';
+        const nodeType = texture
+          ? 'TextureRect'
+          : theme
+            ? 'Control'
+            : shape
+              ? type.endsWith('2D')
+                ? 'CollisionShape2D'
+                : 'CollisionShape3D'
+              : physics
+                ? 'StaticBody3D'
+                : 'MeshInstance3D';
+        const property = texture
+          ? 'texture'
+          : theme
+            ? 'theme'
+            : shape
+              ? 'shape'
+              : physics
+                ? 'physics_material_override'
+                : type.endsWith('Mesh')
+                  ? 'mesh'
+                  : 'material_override';
         ops.push(
           { kind: 'create', parent: '.', name: `R${i}`, type: nodeType },
-          { kind: 'resource_assign', path: `R${i}`, property, ref: saved.ref, policy: 'shared' },
+          {
+            kind: 'resource_assign',
+            path: `R${i}`,
+            property,
+            ref: saved.ref,
+            policy: texture ? 'make_unique' : 'shared',
+          },
         );
         expected[`R${i}`] = { property, type, properties: made.properties };
         if (i === 0) {

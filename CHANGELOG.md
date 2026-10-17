@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Add bounded TextureRect authoring: expand modes 0..1, stretch modes 0..6 and
+  flips, with exact native Undo/Redo and save/reopen checks. Add a fifteenth
+  resource type, GradientTexture2D, limited to 1..32 dimensions and a closed,
+  script-free two-stop linear sRGB gradient. No arbitrary image paths or imports.
+  Texture handles are immutable; replace them through an approved assignment.
+  External exports require an explicit unique inline copy, never an unguarded
+  external scene dependency. Reject opaque metadata and stale live resources.
+  Bridge 0.3.4 adds scene.texture/v1 with a 24-entry capability budget; upgrade
+  host/plugin together. Keep all old CI cases, concurrency and deadlines, adding
+  two schema checks and one native case (126 core, 72 safety, 15 engine, 2 package).
+  A separate local rendered PNG flip/restore check is not headless CI certification.
 - Add bounded native plain-text RichTextLabel creation, multiline text up to
   512 characters, autowrap, fit_content and scroll_active. Keep BBCode, threaded
   parsing, effects, selection/menu, links and manual format stacks outside scope.

@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.3`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`，新增 `scene.rich_text/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20/21/22 项能力上限不能解析新插件的 23 项写入能力公告；新版保留 23 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.4`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`、`scene.rich_text/v1`，新增 `scene.texture/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20–23 项能力上限不能解析新插件的 24 项写入能力公告；新版保留 24 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 
@@ -37,7 +37,7 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 `ui-line-edit-native.test.ts` 使用真实 Godot 和官方 SDK stdio，批准为 MOCK：只读拒绝、缺新能力及超能力预算拒绝、非法输入保持场景/磁盘不变、准确 Undo/Redo、实际 ResourceSaver 保存重开，以及聚焦/编辑模式/光标定位后的 GUI Backspace 和只读文本不变。不会把直接赋值冒充键盘输入。
 
-本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；RichTextLabel 的后续纯文本子集见下节，TextureRect 尚未实现。现有公开 v0.2.8 包不包含这些 main 开发改动。
+本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；RichTextLabel 与 TextureRect 的后续子集见下节。现有公开 v0.2.8 包不包含这些 main 开发改动。
 
 ## ScrollContainer 首批声明子集（main 开发源码）
 
@@ -63,9 +63,23 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 `ui-rich-text-native.test.ts` 通过真实 Godot、官方 SDK stdio 和 MOCK 批准验收：只读/缺能力/超预算拒绝、字面标签与 512/空文本、类型与内部路径边界、整批失败无残留、审批期间增加回调拒绝、原生创建/删除/编辑 Undo/Redo、实际 ResourceSaver 保存重开并比较全部声明存储。headless 运行时读取原生 parsed text、行数和内容高度，缩窄控件后必须实际重新换行；这不是像素排版、CJK 字体、链接交互或人工视觉验收。
 
+## TextureRect 与原生渐变纹理（main 开发源码）
+
+新增创建 `TextureRect`，继续使用精确批准、CAS、原生 Undo/Redo 和独立保存：
+
+- `ui_set` 声明 `expand_mode` 整数 0..1（Keep Size / Ignore Size）、`stretch_mode` 整数 0..6、`flip_h` / `flip_v` bool，仅对 TextureRect 开放。扩展模式 2..5 在引擎文档中有 Container 稳定性警告，不在本批范围。Container 直接子节点仍不得改 anchors/offsets 或跨边界 reparent。
+- `manage_editor_resource` 的 `request: {action:"texture", source:{format:"linear-gradient", width, height, colors:[Color,Color]}}` 创建原生 `GradientTexture2D` 句柄。宽高为整数 1..32，两个显式有限 0..1 Color；内部 Gradient 固定 0/1 两个位置、线性插值、sRGB、水平填充、不重复、非 HDR。普通 `create GradientTexture2D` 只接受空 properties，生成 16×16 黑白默认纹理。
+- 新增第 15 类资源不是开放任意 Texture2D：只允许无脚本 `GradientTexture2D -> Gradient` 闭合图，完整标量/PackedArray 存储参与指纹及保存读回。所有自定义元数据、对象/Array/Dictionary 或其他依赖拒绝，单层存储最多 24 项、字符串最多 512 字符。纹理通过 `resource_assign property:"texture"` 引用；`resource_set` 直接改纹理拒绝，应新建句柄并用准确计划替换。没有开放任意路径加载、ImageTexture/CompressedTexture2D、PNG/SVG、Atlas、材质纹理槽或自定义导入器。
+- 句柄继承项目/会话/owner/fingerprint、64 个、120 秒约束。内存或当前场景内嵌纹理允许 shared / make_unique；导出的外部 `.tres` 必须明确 `make_unique` 后内嵌到 TextureRect，不允许 shared 外部引用。已有外部纹理依赖的 TextureRect 场景也拒绝进入本批编辑/保存，不能用旧资源缓存替代外部文件依赖 CAS。不会自动转存或改写原文件。
+- 纹理本身仍可通过现有独立精确批准、T10 CAS 和原生 ResourceSaver 导出 `.tres`、按同 owner 原生导出哈希 adopt/read，再显式拷贝赋值。保存同时比较 TextureRect authored 字段和两层完整纹理存储，不忽略纹理内容来让重开通过。节点/资源身份在重开后的测试比较中归一化，但共享关系、外部路径和全部存储保留。
+
+`ui-texture-native.test.ts` 使用真实 headless 编辑器和主要 stdio 客户端：权限/能力预算、共享与独占、第二 owner 拒绝、释放句柄后的拒绝、错误类型/伪造指纹、批次失败无残留、原生 Undo/Redo、审批期间修改渐变导致 CONFLICT、HDR/不透明元数据和外部引用拒绝、独立资源导出与场景实际保存重开。第二 owner 使用独立 SDK 内存传输，不冒充第二种已安装客户端。`resource-roundtrip.test.ts` 同时覆盖全部 15 类原生资源，TextureRect 外部纹理明确走 make_unique。
+
+`ui-texture-render.test.ts` 是单独本机真实渲染验收：从 MCP 创建并保存的场景启动渲染运行桥，水平翻转后 PNG 至少 1000 像素改变，恢复后零像素差异。它不进入 GitHub headless 门禁，不将 headless 存储通过当成 GPU、全 stretch/flip 模式的像素布局或桌面焦点资格。无人工视觉答复不记为人工 PASS。
+
 ## Theme 与样式（原有子集）
 
-`manage_editor_resource` 新增 Theme、StyleBoxFlat，总计 14 种受控资源。继承现有 ResourceRef 项目/会话/owner/fingerprint、64 句柄、120 秒 TTL 和共享外部资源只读约束。
+原有 `manage_editor_resource` 的 Theme、StyleBoxFlat 位于此前 14 种受控资源中；main 新增的第 15 种 GradientTexture2D 见上节。继承现有 ResourceRef 项目/会话/owner/fingerprint、64 句柄、120 秒 TTL 和共享外部资源只读约束，原 Theme 类型槽不扩大。
 
 StyleBoxFlat 支持 bg_color/border_color、四边 border_width、四角 corner_radius、四边 content_margin；整数边框/圆角 metric 0..128，浮点 content_margin 0..1000000（不开放 -1 自动边距），颜色采用显式 Color，单次普通属性最多 8 项。Theme 的普通属性仅 default_font_size 1..128。节点赋值使用 `resource_assign property:theme`，不能把 StyleBoxFlat 直接挂到 material_override。
 
@@ -91,5 +105,7 @@ themeType 限 Control、Label、Button、CheckButton、HSlider、PanelContainer�
 人工视觉复核与自动几何/代理图片检查分开记录；没有真人答复不得记为真人 PASS。表单批准测试是 MOCK，编辑器、ResourceSaver、输入、几何和渲染是 REAL。测试失败原件保留，不用后续 PASS 抹去早期裁切/默认值丢失问题。
 
 ## API 依据
+
+纹理子集另参考 [TextureRect](https://docs.godotengine.org/en/stable/classes/class_texturerect.html)、[GradientTexture2D](https://docs.godotengine.org/en/stable/classes/class_gradienttexture2d.html)、[Gradient](https://docs.godotengine.org/en/stable/classes/class_gradient.html) 与 [4.7.2 原生渐变实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/resources/gradient_texture.cpp)。headless 存储比较不调用 get_image 或伪造 GPU 图像，PNG 资格只来自单独实际渲染用例。
 
 [Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[ScrollContainer](https://docs.godotengine.org/en/stable/classes/class_scrollcontainer.html)、[RichTextLabel](https://docs.godotengine.org/en/stable/classes/class_richtextlabel.html) 与 [4.7.2 原生实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/gui/rich_text_label.cpp)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。

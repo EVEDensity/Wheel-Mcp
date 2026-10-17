@@ -11,6 +11,7 @@ const plan = {
     'editor-outcome-smoke',
     'ui-scroll-native',
     'ui-rich-text-native',
+    'ui-texture-native',
     'ui-line-edit-native',
     'install',
     'setup',

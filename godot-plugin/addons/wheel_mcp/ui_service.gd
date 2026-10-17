@@ -1,13 +1,24 @@
 @tool
 extends RefCounted
 const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
+const Textures = preload("res://addons/wheel_mcp/texture_service.gd")
 
-const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
-const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus", "fit_content", "scroll_active", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
+const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "TextureRect", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
+const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus", "fit_content", "scroll_active", "expand_mode", "stretch_mode", "flip_h", "flip_v", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
 const LAYOUT := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom"]
 
 static func managed(node: Node) -> bool:
 	return node is Control and node.get_parent() is Container
+
+# This first texture subset has no external image/dependency CAS grammar.
+# Embed an explicit unique copy rather than saving a live external reference.
+static func inline_texture(node: TextureRect, root: Node) -> bool:
+	if node.texture == null: return true
+	if not node.texture is GradientTexture2D or node.texture.get_script() != null: return false
+	for resource in [node.texture, node.texture.gradient]:
+		if resource == null or resource.get_script() != null: return false
+		if not resource.resource_path.is_empty() and not resource.resource_path.begins_with(root.scene_file_path + "::"): return false
+	return true
 
 # Container-owned geometry is derived, not a stable authored offset.
 static func derived(node: Node, property: String) -> bool:
@@ -65,6 +76,8 @@ static func signature(node: Control) -> Dictionary:
 	for field in FIELDS:
 		if field in node and not derived(node, field): result[field] = var_to_bytes(node.get(field)).hex_encode()
 	if node.theme != null: result["theme"] = UITheme.storage(node.theme)
+	if node is TextureRect and node.texture != null:
+		result["texture"] = Textures.storage(node.texture) if node.texture is GradientTexture2D else {"code": "UNSUPPORTED"}
 	return result
 
 static func apply(node: Control, values: Dictionary) -> void:
@@ -96,6 +109,7 @@ static func prepare(node: Node, values: Variant) -> Dictionary:
 		if field in ["placeholder_text", "editable", "max_length"] and not node is LineEdit: return error("UNSUPPORTED", "Text input fields require LineEdit")
 		if field in ["horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus"] and not node is ScrollContainer: return error("UNSUPPORTED", "Scroll fields require ScrollContainer")
 		if field in ["fit_content", "scroll_active"] and not node is RichTextLabel: return error("UNSUPPORTED", "Plain display fields require RichTextLabel")
+		if field in ["expand_mode", "stretch_mode", "flip_h", "flip_v"] and not node is TextureRect: return error("UNSUPPORTED", "Texture layout fields require TextureRect")
 		if managed(node) and field in LAYOUT: return error("CONFLICT", "Container owns child anchors/offsets; use minimum sizes and size flags")
 		if field.begins_with("anchor_") and values[field] != 0 and node.get_parent() is CanvasItem and not node.get_parent() is Control: return error("CONFLICT", "Responsive UI anchors require a Control parent or top-level UI root, not Node2D")
 		var expected: Variant = node.get(field)
@@ -115,6 +129,8 @@ static func prepare(node: Node, values: Variant) -> Dictionary:
 		if field in ["size_flags_horizontal", "size_flags_vertical"] and (value < 0 or value > 15 or (value & 4 and value & 8)): return error("INVALID_ARGUMENT", "Invalid size flags")
 		if field in ["focus_mode", "mouse_filter", "grow_horizontal", "grow_vertical"] and (value < 0 or value > 2): return error("INVALID_ARGUMENT", "Invalid UI mode")
 		if field == "autowrap_mode" and (value < 0 or value > 3): return error("INVALID_ARGUMENT", "Invalid wrap mode")
+		if field == "expand_mode" and (value < 0 or value > 1): return error("INVALID_ARGUMENT", "Only stable expand modes 0..1 declared")
+		if field == "stretch_mode" and (value < 0 or value > 6): return error("INVALID_ARGUMENT", "Stretch modes must be 0..6")
 		if field == "columns" and (value < 1 or value > 12): return error("INVALID_ARGUMENT", "Grid columns must be 1..12")
 		if field in ["step", "size_flags_stretch_ratio"] and value <= 0: return error("INVALID_ARGUMENT", "Positive UI step/stretch required")
 		if field == "size_flags_stretch_ratio" and value > 1000: return error("INVALID_ARGUMENT", "UI stretch exceeds budget")

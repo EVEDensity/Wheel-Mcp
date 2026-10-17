@@ -24,6 +24,7 @@ const files = [
   'ui-line-edit-schema',
   'ui-scroll-schema',
   'ui-rich-text-schema',
+  'ui-texture-schema',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

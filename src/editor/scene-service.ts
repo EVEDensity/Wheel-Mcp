@@ -282,6 +282,20 @@ export async function applyEditorScene(
         'PROTOCOL_MISMATCH',
         'Editor plugin lacks plain RichTextLabel capability; upgrade explicitly',
       );
+    if (
+      operations.some(
+        (op) =>
+          (op.kind === 'create' && op.type === 'TextureRect') ||
+          (op.kind === 'ui_set' &&
+            ['expand_mode', 'stretch_mode', 'flip_h', 'flip_v'].some((field) => field in op.properties)) ||
+          ((op.kind === 'resource_assign' || op.kind === 'resource_set') && op.property === 'texture'),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.texture/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks TextureRect/texture capability; upgrade explicitly',
+      );
     if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
     if (
@@ -290,7 +304,7 @@ export async function applyEditorScene(
           op.kind === 'ui_set' ||
           (op.kind === 'create' && (uiTypes as readonly string[]).includes(op.type)) ||
           ((op.kind === 'connect' || op.kind === 'disconnect') && op.signal === 'pressed') ||
-          ((op.kind === 'resource_assign' || op.kind === 'resource_set') && op.property === 'theme'),
+          ((op.kind === 'resource_assign' || op.kind === 'resource_set') && ['theme', 'texture'].includes(op.property)),
       ) &&
       !bridge.identity.capabilities.includes('scene.ui/v1')
     )
