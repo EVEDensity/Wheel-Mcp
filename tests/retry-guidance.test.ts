@@ -51,6 +51,7 @@ test('read-only timeout retry semantics stay unchanged, including dispatcher rea
     const body = (await failure('call_runtime_bridge', new TimeoutError(), { method })).structuredContent;
     assert.equal(body?.retryable, false);
     assert.match(String(body?.retryAdvice), /get_runtime_operation_status/);
+    assert.match(String(body?.retryAdvice), /For tracked writes.*otherwise inspect owned runs/);
   }
 });
 

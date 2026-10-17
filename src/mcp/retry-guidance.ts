@@ -13,7 +13,7 @@ export function applyRetryGuidance(body: Record<string, unknown>): Record<string
   if (!request || request.readOnly || !['TIMEOUT', 'CANCELLED', 'UNKNOWN'].includes(String(body.code))) return body;
   const inspection =
     request.tool === 'call_runtime_bridge'
-      ? 'Query get_runtime_operation_status with the original sessionId and operationId.'
+      ? 'For tracked writes, query get_runtime_operation_status with the original sessionId/operationId; otherwise inspect owned runs/state.'
       : request.tool === 'apply_editor_scene'
         ? 'Query get_editor_scene_operation with the original editor sessionId and operationId.'
         : request.tool === 'submit_repair_candidate'
