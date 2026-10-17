@@ -43,12 +43,13 @@
 - 完整生产资格仍是 NOT_QUALIFIED。现有本机稳定范围不包含所有平台、客户端、创作矩阵、公网、多租户或高负载承诺。
 - main 后续开发提交 cda367f 的 P0 防误重试改动已独立通过 197/197 托管限域门禁，短 CI、Pages 和产物下载复验通过，发布作业按预期跳过；同源 Codex 0.163.0-alpha.10.2 原生接口代表操作通过，但批准为 MOCK。详见[本轮证据](releases/main-client-safety-verification.json)。这不是新的 Release，也不覆盖公开 v0.2.8 的包和验收记录。
 - 后续提交 13ba554 的配置入口改动独立通过 203/203 托管限域门禁，覆盖真实 Godot 的异常退出后重连回收；安装包入口和已安装 Codex 的同源探针通过，批准仍为 MOCK。短 CI、Pages、下载复验及零漏洞审计通过，发布作业跳过。详见[入口恢复证据](releases/main-launcher-verification.json)，不沿用前一提交的验收，也不宣称人工界面已经通过。
+- main 提交 7e98725 的 LineEdit 有界子集及安装测试修正已通过 206/206 托管限域门禁，零跳过、清理通过、审计零漏洞，短 CI、Pages 和下载产物复验通过。保留前两次安装超时失败；新增阶段计时、透传真实 Godot 配置，并将受控消费者安装改为使用前置 npm ci 已填充的校验缓存，缺缓存仍失败、正常生命周期及原时限不变。这不证明旧超时一定由网络导致，也不认证冷缓存或独立机器安装。详见[LineEdit 与 CI 回查](releases/main-line-edit-verification.json)。未创建新 Release，公开 v0.2.8 附件不变。
 
 ## 建议后续新增或扩展（尚未完成，不是交付承诺）
 
 1. **已完成 P0：自动发布闭环（v0.2.8）。** 只验收和正式标签两轮完整门禁均通过，自动上传、公开发布和下载复验通过，同一源码与运行包哈希一致。后续维护继续保留准确 ID、失败闭锁、独立校验和不可变标签，不把一次通过当成永远不会出现外部服务或 runner 故障的保证。
 2. **P0：真实项目可用性（进行中）。** main 开发源码已补超时后的防误重试提示、并发隔离及迟到批准回归。本轮进一步让配置中的启动入口直接运行在客户端所属 PID，缺包/入口不兼容时仅 stderr 提示，不隐式构建；新增入口 EOF、异常退出、替换后重启、SDK 重连及真实 Godot 孤儿回收检查。安装包和 Codex 原生接口探针改走该入口。继续回查人工审批、实际更新交互和截图焦点；探针批准仍为 MOCK，不能冒充人工 UX 通过。v0.2.8 发布包不包含这些 main 开发改动；Cursor 待具备条件再验收。
-3. **P1：常用 UI 与交互（首步推进中）。** main 已补 LineEdit 声明子集和原生回归，宿主/插件配套升级要求见 [UI 契约](production-roadmap/UI-AUTHORING-CONTRACT.md)。后续继续 ScrollContainer、RichTextLabel、TextureRect，字符输入与 IME、滚动和信号白名单仍需分步实现及实际验收，不因一个控件通过而声称 UI 全覆盖。
+3. **P1：常用 UI 与交互（LineEdit 有界首步已验收）。** main 已补 LineEdit 声明子集、原生 Undo/Redo、保存重开及焦点内 Backspace/只读行为回归，宿主/插件配套升级要求见 [UI 契约](production-roadmap/UI-AUTHORING-CONTRACT.md)。后续继续 ScrollContainer、RichTextLabel、TextureRect，字符输入与 IME、滚动和信号白名单仍需分步实现及实际验收，不因一个控件通过而声称 UI 全覆盖。
 4. **P1：可用的 2D/3D 创作链。** 优先 Sprite2D、CharacterBody2D/3D、RigidBody3D 的声明子集，以及脚本挂载的明确安全契约。先完整跑通一个角色控制/交互最小闭环，再扩骨骼、导航和复杂物理；不一次性声称完整 Godot 支持。
 5. **P1：动画扩展。** 在位置轨道之外增加旋转、缩放和更多受控混合节点；导入动画用非破坏性副本策略。每步都验证资源归属、运行读回和保存重开。
 6. **P1：材质、纹理与 Shader。** 补受控纹理引用和常用 PBR 字段，再考虑参数化 Shader 或更多有类型的 VisualShader 节点；增加编译错误定位与真实像素验证，不直接开放任意代码写入绕过审批。

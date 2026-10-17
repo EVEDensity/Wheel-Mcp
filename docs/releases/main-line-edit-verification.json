@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T17:34:45Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "7e987259e3bb5cdd5c6e08ee43d8a812bf5bd7f7",
+  "sourceHash": "e5f548a0705213e844e919d4624f037871df7c290a9d768dc244ee22a8e9c27e",
+  "change": "Bounded native LineEdit creation and text/placeholder/editable/max_length authoring, exact Undo/Redo, callback guards, signal-block preservation, save/reopen and focused native Backspace/read-only behavior. Host and editor plugin must upgrade together to bridge 0.3.1 / scene.line_edit/v1 / capability bound 21.",
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39053877495",
+    "status": "success",
+    "passed": 120,
+    "skipped": 0
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39053877641",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39053878213",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "6291cab6-50e5-429c-a60b-2c73c9754e94",
+    "artifactId": 12108539023,
+    "artifactName": "release-assets-39053878213-1",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 298198,
+    "tests": { "core": 120, "package": 2, "safety": 69, "engine": 15, "total": 206 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: receipt policy/source/documents/commit and archive/SBOM/checksums",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "ccd058c9b8b1a555953ddda5eb701ede5c2c1ac59ae9abe1883dec94679e8c17",
+      "sbom.json": "6a23360480eb4e07ae5aca881e4420baf5219cf1cdebfd37675ee87edab17175",
+      "acceptance.json": "707280370038f6a755008b62776ab856d7cd73e3156ef12c2157780a8e5e2300",
+      "SHA256SUMS": "a7ac56d02161d36f4976a934fcdc98cece726764d50d9ef1e75f47627c801e0f"
+    }
+  },
+  "earlierFailedRuns": [
+    {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39052400685",
+      "commit": "5a9843857217ea22bbe17594dd22f80999fd3d52",
+      "status": "FAIL",
+      "corePassed": 120,
+      "failure": "Package suite outer 40000ms timeout; no final summary. The available evidence cannot identify its inner phase. Publication skipped."
+    },
+    {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39053269874",
+      "commit": "f13f8d92a81726138bf7ecc3a36fda1b66d32681",
+      "status": "FAIL",
+      "corePassed": 120,
+      "failure": "Phase evidence: pack completed at 2765ms; consumer npm ci started at 2772ms and timed out at its 30000ms command deadline. MCP connection was not reached. Final package result 1/2; publication skipped."
+    }
+  ],
+  "packageVerification": {
+    "configuredEnginePreserved": true,
+    "consumer": "Real tarball, locked production dependency installation, --offline against the integrity-checked cache primed by required source npm ci, normal lifecycle handling, configured scripts/run-mcp.mjs entry, no compiler dependency",
+    "cacheMiss": "FAIL, not silently fetched or replaced with source node_modules",
+    "deadlines": "UNCHANGED: npm command 30000ms, package suite 40000ms, enclosing package step 50000ms, whole gate 600000ms",
+    "diagnostics": "Compact phase/elapsed-only receipt persists through outer timeout; npm details bounded on failure; no environment values recorded",
+    "boundary": "This removes redundant registry access from a packaging contract, not proof that networking caused either old timeout. Cold-cache/network installation and independent clean-machine qualification are NOT_RUN. The passing hosted package step took 30818ms."
+  },
+  "localTargeted": {
+    "scope": "line-edit-and-pixels-cache-frozen",
+    "sourceHash": "e5f548a0705213e844e919d4624f037871df7c290a9d768dc244ee22a8e9c27e",
+    "passed": 3,
+    "skipped": 0,
+    "durationMs": 34649,
+    "scratchCleanup": "PASS",
+    "checks": ["Native LineEdit stdio approval/undo/redo/save/reopen/GUI input", "Compatibility real screenshot pixels and session reuse", "Forward+ real screenshot pixels and session reuse"],
+    "approval": "MOCK exact-plan test host",
+    "desktopFocus": "NOT_OBSERVED"
+  },
+  "installedCodex": {
+    "status": "PASS_REPRESENTATIVE_NATIVE_INTERFACE",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "entrypoint": "scripts/run-mcp.mjs",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T17-28-29-526Z-52948/report.json",
+    "reportSha256": "27a2f7473953cea85abe1ac52cac5c991a7c6d4e31f0484b12abb53121b6b983",
+    "sourceHash": "e5f548a0705213e844e919d4624f037871df7c290a9d768dc244ee22a8e9c27e",
+    "tools": 71,
+    "resources": 5,
+    "checks": ["discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene", "independent saved byte readback"],
+    "approval": "MOCK exact-plan host; NOT human desktop/TUI UX",
+    "modelTurn": false,
+    "permanentClientConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "unchanged": true,
+    "evidence": "docs/releases/0.2.8-ci-cd-verification.json",
+    "note": "No tag, Release or public asset created or replaced. This main acceptance archive still has package version 0.2.8 but is NOT the public v0.2.8 archive."
+  },
+  "remaining": ["Other planned UI controls and character/IME input", "Human Codex approval UX", "Actual user source-update/reconnect experience", "Desktop foreground/focus observation"],
+  "productionQualification": "NOT_QUALIFIED",
+  "boundary": "Source-bound Windows/local stdio automated checks only. Not full Godot UI, all renderer/hardware, human UX, cross-platform, public HTTP, long-session or full-authoring certification. Later documentation commits are not the accepted source commit. A passing run is not a guarantee against future runner or external-service failures."
+}
