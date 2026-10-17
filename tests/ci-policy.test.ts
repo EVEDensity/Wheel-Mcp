@@ -134,6 +134,32 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   assert.ok(safety.files.includes('build/tests/editor-protocol-input.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-line-edit-native.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-scroll-native.test.js'));
+  assert.equal(safety.concurrency, 2);
+  assert.deepEqual(safety.files.slice(0, 2), [
+    'build/tests/validated-project-write.test.js',
+    'build/tests/editor-scene-rpc.test.js',
+  ]);
+  assert.deepEqual(
+    [...safety.files].sort(),
+    [
+      'install',
+      'setup',
+      'project-transactions',
+      'transaction-recovery',
+      'owned-process',
+      'streamable-http-security',
+      'editor-protocol-input',
+      'editor-scene-rpc',
+      'editor-scene-save',
+      'validated-project-write',
+      'validation-cleanup',
+      'editor-outcome-smoke',
+      'ui-line-edit-native',
+      'ui-scroll-native',
+    ]
+      .map((name) => `build/tests/${name}.test.js`)
+      .sort(),
+  );
   assert.equal(safety.timeoutMs, 240000);
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
   assert.ok(pkg.scripts.check.includes('test:ci-fast'));
@@ -193,11 +219,71 @@ test('CI runner refuses a process-exit-zero skipped suite and preserves bounded 
     const details = await readFile(path.join(root, 'runs/ci/negative-control/failure-details.txt'), 'utf8');
     assert.match(details, /test:summary/);
     assert.ok(details.length <= 16000);
+    const progress = JSON.parse(
+      await readFile(path.join(root, 'runs/ci/negative-control/progress/summary.json'), 'utf8'),
+    );
+    assert.equal(progress.finalSummaryReceived, true);
+    assert.equal(progress.files.length, 1);
+    assert.equal(progress.files[0].file, 'skip.test.mjs');
     const scratch = await realpath(report.scratch);
     assert.equal(path.dirname(scratch), parent);
     assert.match(path.basename(scratch), /^wheel-ci-[A-Za-z0-9]+$/);
     assert.equal((await lstat(report.scratch)).isSymbolicLink(), false);
     await rm(scratch, { recursive: true, force: false }); // Owned synthetic control: no engine actors or business evidence.
+
+    // Reverse lexical order must remain explicit, not be sorted by the CLI.
+    await writeFile(
+      path.join(root, 'z-first.test.mjs'),
+      "import test from 'node:test'; test('z-first', () => { globalThis.wheelIsolationMarker = true; });\n",
+    );
+    await writeFile(
+      path.join(root, 'a-second.test.mjs'),
+      "import test from 'node:test'; import assert from 'node:assert/strict'; test('a-second', () => { assert.equal(globalThis.wheelIsolationMarker, undefined); });\n",
+    );
+    const ordered = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import {runCiSuite} from ${JSON.stringify(module)}; runCiSuite({files:['z-first.test.mjs','a-second.test.mjs'],scope:'ordered-control',timeoutMs:5000,concurrency:1});`,
+      ],
+      { cwd: root, encoding: 'utf8', windowsHide: true, timeout: 10000 },
+    );
+    assert.equal(ordered.status, 0, ordered.stdout + ordered.stderr);
+    const orderedSummary = JSON.parse(await readFile(path.join(root, 'runs/ci/ordered-control/summary.json'), 'utf8'));
+    assert.deepEqual(
+      orderedSummary.cases.map((c: { name: string }) => c.name),
+      ['z-first', 'a-second'],
+    );
+
+    // A passing case with a live worker is not a completed suite. The bounded
+    // synthetic timer expires naturally; no engine or persistent actor exists.
+    await writeFile(
+      path.join(root, 'held.test.mjs'),
+      "import test from 'node:test'; test('held worker', () => { setTimeout(() => {}, 3000); });\n",
+    );
+    const held = spawnSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `import {runCiSuite} from ${JSON.stringify(module)}; runCiSuite({files:['held.test.mjs'],scope:'held-control',timeoutMs:1500});`,
+      ],
+      { cwd: root, encoding: 'utf8', windowsHide: true, timeout: 10000 },
+    );
+    assert.equal(held.status, 1, held.stdout + held.stderr);
+    const heldSummary = JSON.parse(await readFile(path.join(root, 'runs/ci/held-control/summary.json'), 'utf8'));
+    assert.equal(heldSummary.status, 'FAIL');
+    assert.match(heldSummary.processResult.error, /ETIMEDOUT/);
+    const heldProgress = JSON.parse(
+      await readFile(path.join(root, 'runs/ci/held-control/progress/summary.json'), 'utf8'),
+    );
+    assert.equal(heldProgress.finalSummaryReceived, false);
+    const heldScratch = await realpath(heldSummary.scratch);
+    assert.equal(path.dirname(heldScratch), parent);
+    assert.match(path.basename(heldScratch), /^wheel-ci-[A-Za-z0-9]+$/);
+    assert.equal((await lstat(heldScratch)).isSymbolicLink(), false);
+    await rm(heldScratch, { recursive: true, force: false }); // Owned engine-free timeout control only.
   } finally {
     const exact = await realpath(root);
     assert.equal(path.dirname(exact), parent);

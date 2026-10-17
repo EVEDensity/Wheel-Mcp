@@ -3,6 +3,14 @@ import { statSync } from 'node:fs';
 
 const plan = {
   files: [
+    // Long native/validation files first. Every prior file remains in the queue;
+    // concurrency and the overall deadline are unchanged.
+    'validated-project-write',
+    'editor-scene-rpc',
+    'editor-scene-save',
+    'editor-outcome-smoke',
+    'ui-scroll-native',
+    'ui-line-edit-native',
     'install',
     'setup',
     'project-transactions',
@@ -10,13 +18,7 @@ const plan = {
     'owned-process',
     'streamable-http-security',
     'editor-protocol-input',
-    'editor-scene-rpc',
-    'editor-scene-save',
-    'validated-project-write',
     'validation-cleanup',
-    'editor-outcome-smoke',
-    'ui-line-edit-native',
-    'ui-scroll-native',
   ].map((name) => `build/tests/${name}.test.js`),
   scope: 'local-release-safety',
   concurrency: 2,

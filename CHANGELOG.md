@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Preserve the explicit isolated test-file queue with Node's public run API
+  instead of the CLI's alphabetical ordering. Start expensive native validation
+  files first while retaining every file, two workers and all deadlines. Keep
+  compact live per-file progress for timeout diagnosis. A passed case with a
+  still-live worker remains a failure at the suite deadline; never force exit.
 - Add bounded native ScrollContainer creation, scroll modes 0..4 and follow_focus.
   Protect engine-internal nodes from authoring paths; exclude layout-dependent
   scroll positions from authored CAS/readback. Reject user scroll callbacks,

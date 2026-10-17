@@ -53,6 +53,14 @@ is bounded to ten minutes; it never pushes, creates tags, publishes npm packages
 or changes GitHub CI settings. Successful runs keep only compact summaries,
 tarball and SBOM; failed runs retain bounded diagnostics and owned failure data.
 
+The explicit isolated file queue uses Node's public `run({files})` API, rather
+than the CLI's alphabetical file sorting. Native validation files start first
+to reduce scheduling tails, still with two workers and the same 240-second
+safety-suite deadline. No test file is removed. Compact per-file event/summary
+progress survives timeouts; it is diagnostic only, not acceptance evidence.
+Individual passes without a complete final summary, or workers that do not
+exit, fail the gate. The runner never uses forced exit to manufacture success.
+
 Revision 2 separates build, format, lint and core test budgets instead of putting
 a 90-second test inside a 120-second npm parent with its setup work. Child suite
 deadlines fit inside parent budgets. Every suite must carry the current run

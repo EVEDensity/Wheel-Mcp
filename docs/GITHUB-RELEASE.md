@@ -63,6 +63,10 @@ the required source `npm ci`, still verifies integrity and runs normal lifecycle
 handling. A cache miss fails; it does not silently use source node_modules,
 retry installation or certify cold-cache/network installation. Phase names and
 elapsed times survive an outer timeout, without recording environment values.
+The safety suite also keeps bounded per-file progress. Its explicit queue uses
+the public Node test-runner API to start expensive validation files first;
+every file, process isolation, two-worker concurrency and the original deadlines
+remain required. A completed case is not a completed suite or proof of cleanup.
 
 For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
 and `engine=false` to repeat the real archive install check without native

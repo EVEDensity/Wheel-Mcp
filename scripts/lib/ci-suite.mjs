@@ -2,10 +2,11 @@ import { spawnSync } from 'node:child_process';
 import { lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { summarizeTestEvents } from './test-report.mjs';
 
 /** Bounded diagnostics only, not a source-frozen release/soak qualification. */
-export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
+export function runCiSuite({ files, scope, timeoutMs, godotPath = '', concurrency = 2 }) {
   const parent = realpathSync(os.tmpdir());
   const scratch = mkdtempSync(path.join(parent, 'wheel-ci-'));
   const output = path.resolve('runs/ci', scope);
@@ -15,6 +16,7 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
     stderr = '';
   let processResult = null;
   mkdirSync(output, { recursive: true });
+  mkdirSync(path.join(output, 'progress'), { recursive: true });
   try {
     const env = {
       ...process.env,
@@ -23,13 +25,14 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
       TEMP: scratch,
       TMP: scratch,
       TMPDIR: scratch,
+      WHEEL_CI_PROGRESS_PATH: path.join(output, 'progress/summary.json'),
     };
     // Node's test-worker context is not an input to a fresh CLI test suite.
     // Inheriting it can suppress the nested runner's reporter entirely.
     delete env.NODE_TEST_CONTEXT;
     const result = spawnSync(
       process.execPath,
-      ['--test', '--test-concurrency=2', '--test-reporter=./scripts/lib/json-test-reporter.mjs', ...files],
+      [fileURLToPath(new URL('./ci-test-runner.mjs', import.meta.url)), JSON.stringify({ files, concurrency })],
       {
         cwd: process.cwd(),
         windowsHide: true,
