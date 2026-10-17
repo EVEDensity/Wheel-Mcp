@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { startEditorFixture } from './editor-fixture.js';
 import { wireEditor } from './editor-mcp.js';
 import { compareScreenshots } from '../../src/godot-development.js';
+import { exerciseCharacterGravity } from './character-gravity-behavior.js';
 
 /** Real author -> save -> runtime motion. No controller script or direct position-as-motion assertion. */
 export async function exerciseCharacter(render: boolean) {
@@ -35,7 +36,8 @@ export async function exerciseCharacter(render: boolean) {
       ).ref;
     const player = await shape(20, 20),
       wall = await shape(20, 160),
-      floor = await shape(400, 20);
+      floor = await shape(400, 20),
+      ceiling = await shape(80, 20);
     const texture = (
       await call('manage_editor_resource', {
         request: {
@@ -80,6 +82,10 @@ export async function exerciseCharacter(render: boolean) {
         position('Floor', 120, 140),
         create('Floor', 'Collider', 'CollisionShape2D'),
         assign('Floor/Collider', floor),
+        create('.', 'Ceiling', 'StaticBody2D'),
+        position('Ceiling', 280, 40),
+        create('Ceiling', 'Collider', 'CollisionShape2D'),
+        assign('Ceiling/Collider', ceiling),
       ],
     });
     assert.equal((await call('save_editor_scene')).persisted, true);
@@ -227,6 +233,15 @@ export async function exerciseCharacter(render: boolean) {
     const latePosition = await get('position');
     await step(-120, 0, 30, lateId);
     assert.deepEqual(await get('position'), latePosition);
+    await exerciseCharacterGravity({
+      rpc,
+      call,
+      rawCall: (name, args) => c.call(name, args),
+      sessionId,
+      render,
+      capture,
+      get,
+    });
     assert.deepEqual(
       await readFile(path.join(f.root, 'main.tscn')),
       saved,

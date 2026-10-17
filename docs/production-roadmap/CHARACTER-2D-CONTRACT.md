@@ -51,6 +51,11 @@ unchanged scene/document; it does not reinterpret it as an engine error.
 
 ## Stage 2: bounded native runtime command
 
+The fixed-velocity stage below was accepted on runtime 0.3.2. Current runtime
+0.3.3 preserves that behavior and adds separately capability-gated finite gravity
+and flat-floor jumps; see the [extension contract](CHARACTER-GRAVITY-CONTRACT.md).
+Upgrade explicitly; older fixed-motion evidence is not gravity qualification.
+
 Upgrade the runtime bridge explicitly to 0.3.2. Its `step_character_2d` method
 requires `character.step2d/v1`, plus existing run/write scope and owned session.
 It is a short commanded motion, not keyboard consumption, automatic gravity,

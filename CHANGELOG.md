@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Gravity stage 2 adds runtime 0.3.3 / character.gravity2d/v1: explicit bounded
+  world-Y integration, fresh flat-floor jump probe, speed clamp and native
+  floor/ceiling observations. No idle gravity or permanent controller. Existing
+  native/render fixture verifies arcs, stale floor refusal, replay/late results,
+  unchanged authored bytes and restored pixels without extra engine startups.
+  Keep two development contact-oracle failures; freefall remains exact while
+  native contact recovery is checked against authored geometry/safe_margin.
+  Required counts: 144 core, 73 safety, 19 engine, 2 package (238 total), with
+  all previous cases and original time/concurrency budgets retained.
+
 - Stage 1 gravity/jump host contract: closed optional gravity/impulse fields,
   independent character.gravity2d/v1 capability and exact normal/late response
   correlation. Native runtime 0.3.2 does not advertise the capability and new

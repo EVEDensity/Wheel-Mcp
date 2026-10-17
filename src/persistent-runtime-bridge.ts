@@ -58,7 +58,7 @@ type Pending = {
 };
 type OperationRecord = {
   method: string;
-  params: Record<string, unknown>;
+  params?: Record<string, unknown>;
   fingerprint: string;
   status: 'PENDING' | 'UNKNOWN' | 'COMPLETED' | 'FAILED';
   promise?: Promise<unknown>;
@@ -474,7 +474,13 @@ export class PersistentRuntimeBridge {
       throw new BridgeRpcError('CONFLICT', 'operation status quota is exhausted for this session', {
         sessionId: this.sessionId,
       });
-    const operation: OperationRecord = { method, params, fingerprint, status: 'PENDING' };
+    // Retain only the tiny closed character request, not generic large write payloads.
+    const operation: OperationRecord = {
+      method,
+      ...(method === 'step_character_2d' ? { params } : {}),
+      fingerprint,
+      status: 'PENDING',
+    };
     this.operations.set(id, operation);
     const promise = this.dispatch(method, params, timeout, id)
       .then((result) => {
@@ -788,7 +794,7 @@ export class PersistentRuntimeBridge {
               try {
                 operation.result = validateBridgeResult(operation.method, message.result);
                 if (operation.method === 'step_character_2d')
-                  validateCharacterObservation(operation.params, operation.result);
+                  validateCharacterObservation(operation.params ?? {}, operation.result);
                 operation.status = 'COMPLETED';
               } catch (error) {
                 operation.status = 'FAILED';

@@ -150,7 +150,7 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.3.2",
+			"bridgeVersion": "0.3.3",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"runtimeConditions": {
 				"renderer": RenderingServer.get_current_rendering_method(),
@@ -165,7 +165,7 @@ func _process(_delta: float) -> bool:
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1", "character.gravity2d/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -353,7 +353,9 @@ func _sample_physics_request() -> void:
 		_respond(request.id, result)
 
 func _prepare_character_step(params: Dictionary) -> Dictionary:
-	if params.size() != 3 or not params.get("nodePath") is String or params.nodePath.is_empty() or params.nodePath.length() > 512: return {"error":"Character step requires nodePath, velocity and frames", "errorCode":-32602}
+	if params.size() < 3 or params.size() > 5 or not params.get("nodePath") is String or params.nodePath.is_empty() or params.nodePath.length() > 512: return {"error":"Character step requires nodePath, velocity and frames", "errorCode":-32602}
+	for field in params:
+		if field not in ["nodePath", "velocity", "frames", "gravity", "jumpSpeed"]: return {"error":"Undeclared character step field", "errorCode":-32602}
 	if params.nodePath != ".":
 		for part in params.nodePath.split("/"):
 			if part.is_empty() or part in [".", ".."] or ":" in part or "%" in part or "\\" in part: return {"error":"Character target must be a canonical scene-local relative node path", "errorCode":-32602}
@@ -361,11 +363,14 @@ func _prepare_character_step(params: Dictionary) -> Dictionary:
 	var frames: Variant = params.get("frames")
 	if not velocity is Dictionary or velocity.size() != 2 or not _valid_number(velocity.get("x")) or not _valid_number(velocity.get("y")) or absf(velocity.x) > 1000 or absf(velocity.y) > 1000: return {"error":"Character velocity requires finite x/y within +/-1000 px/s", "errorCode":-32602}
 	if not _valid_number(frames) or frames != floor(frames) or frames < 1 or frames > 30: return {"error":"Character frames must be an integer in 1..30", "errorCode":-32602}
+	if params.has("gravity") and (not _valid_number(params.gravity) or params.gravity < 0 or params.gravity > 4000): return {"error":"Character gravity must be finite in 0..4000", "errorCode":-32602}
+	if params.has("jumpSpeed") and (not _valid_number(params.jumpSpeed) or params.jumpSpeed <= 0 or params.jumpSpeed > 1000 or not params.has("gravity") or params.gravity <= 0 or velocity.y != 0): return {"error":"Jump requires positive gravity, speed in (0,1000] and zero initial vertical velocity", "errorCode":-32602}
 	var node := _resolve_node(persistent_instance, params.nodePath)
 	if node == null: return {"error":"Character node not found", "errorCode":-32004}
 	if node != persistent_instance and not persistent_instance.is_ancestor_of(node): return {"error":"Character target is outside the active scene", "errorCode":-32602}
 	if not node is CharacterBody2D: return {"error":"Character step requires CharacterBody2D", "errorCode":-32601}
 	if not node.can_process(): return {"error":"Character processing is disabled", "errorCode":-32601}
+	if params.has("gravity") and (node.motion_mode != CharacterBody2D.MOTION_MODE_GROUNDED or node.up_direction != Vector2.UP): return {"error":"Gravity requires grounded mode with world up Vector2.UP", "errorCode":-32601}
 	var delta := node.get_physics_process_delta_time()
 	if not is_finite(delta) or delta <= 0 or delta > 0.1: return {"error":"Character physics delta must be positive and <=0.1 seconds", "errorCode":-32601}
 	if node.get_script() != null or node.velocity != Vector2.ZERO or node.max_slides < 1 or node.max_slides > 8 or not is_finite(node.safe_margin) or node.safe_margin < 0.001 or node.safe_margin > 10: return {"error":"Character must be native, stationary between steps and within slide/margin budgets", "errorCode":-32601}
@@ -402,11 +407,27 @@ func _sample_character_step(request: Dictionary) -> void:
 		return
 	var node := instance_from_id(request.nodeId) as CharacterBody2D
 	if request.completedFrames == 0:
+		if request.params.has("jumpSpeed"):
+			var contact := KinematicCollision2D.new()
+			if not node.is_on_floor() or not node.test_move(node.global_transform, Vector2(0, 0.25), contact, node.safe_margin, false) or contact.get_normal().y > -0.99:
+				_respond_error(request.id, -32009, "Jump requires a fresh flat-floor contact", {"completedFrames":0, "rollback":false})
+				return
 		request["before"] = _character_point(node.position)
 		request["startPhysicsFrame"] = Engine.get_physics_frames()
-	node.velocity = Vector2(request.params.velocity.x, request.params.velocity.y)
+		request["verticalVelocity"] = -float(request.params.jumpSpeed) if request.params.has("jumpSpeed") else float(request.params.velocity.y)
+		request["speedClamped"] = false
+		request["elapsedSeconds"] = 0.0
+	var commanded := Vector2(request.params.velocity.x, request.params.velocity.y)
+	if request.params.has("gravity"):
+		var delta := node.get_physics_process_delta_time()
+		var integrated: float = request.verticalVelocity + float(request.params.gravity) * delta
+		commanded.y = clampf(integrated, -1000.0, 1000.0)
+		request.speedClamped = request.speedClamped or integrated < -1000.0 or integrated > 1000.0
+		request.elapsedSeconds += delta
+	node.velocity = commanded
 	var collided := node.move_and_slide()
 	var resulting_velocity := node.velocity
+	request.verticalVelocity = resulting_velocity.y
 	# Never leave a held velocity or a hidden autonomous process after a frame.
 	node.velocity = Vector2.ZERO
 	request.completedFrames += 1
@@ -420,7 +441,10 @@ func _sample_character_step(request: Dictionary) -> void:
 		var collider := collision.get_collider() as Node
 		var collider_path := str(persistent_instance.get_path_to(collider)) if collider != null and (collider == persistent_instance or persistent_instance.is_ancestor_of(collider)) else ""
 		collisions.append({"path":collider_path, "position":_character_point(collision.get_position()), "normal":_character_point(collision.get_normal())})
-	_respond(request.id, {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_CHARACTER_STEP", "runtime":true, "persisted":false, "schedule":"physics_process", "nodePath":str(persistent_instance.get_path_to(node)), "frames":int(request.params.frames), "completedFrames":request.completedFrames, "startPhysicsFrame":request.startPhysicsFrame, "physicsFrame":Engine.get_physics_frames(), "before":request.before, "after":_character_point(node.position), "velocity":_character_point(resulting_velocity), "velocityReset":true, "collided":collided, "collidedDuringStep":request.collidedDuringStep, "onFloor":node.is_on_floor(), "onWall":node.is_on_wall(), "onCeiling":node.is_on_ceiling(), "collisions":collisions})
+	var result := {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_CHARACTER_STEP", "runtime":true, "persisted":false, "schedule":"physics_process", "nodePath":str(persistent_instance.get_path_to(node)), "frames":int(request.params.frames), "completedFrames":request.completedFrames, "startPhysicsFrame":request.startPhysicsFrame, "physicsFrame":Engine.get_physics_frames(), "before":request.before, "after":_character_point(node.position), "velocity":_character_point(resulting_velocity), "velocityReset":true, "collided":collided, "collidedDuringStep":request.collidedDuringStep, "onFloor":node.is_on_floor(), "onWall":node.is_on_wall(), "onCeiling":node.is_on_ceiling(), "collisions":collisions}
+	if request.params.has("gravity"):
+		result["dynamics"] = {"gravity":request.params.gravity, "jumpSpeed":request.params.get("jumpSpeed", 0), "jumped":request.params.has("jumpSpeed"), "speedClamped":request.speedClamped, "elapsedSeconds":request.elapsedSeconds}
+	_respond(request.id, result)
 
 func _respond_error(request_id, code: int, message: String, data: Dictionary = {}) -> void:
 	_emit_json({"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message, "data": data}})
