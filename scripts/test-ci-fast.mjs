@@ -30,6 +30,7 @@ const files = [
   'sprite-schema',
   'character-schema',
   'character-step-contract',
+  'character-dynamics-contract',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

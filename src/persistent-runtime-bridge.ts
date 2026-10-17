@@ -15,7 +15,7 @@ import { resolveGodotPathSync } from './godot-path.js';
 import { validateVariantInput } from './protocol/variant.js';
 import { validateCollisionQuery } from './runtime/physics-query.js';
 import { validateMouseWheel } from './runtime/mouse-wheel.js';
-import { validateCharacterStep } from './runtime/character-step.js';
+import { validateCharacterStep, validateCharacterObservation } from './runtime/character-step.js';
 import { normalizeBridgeRuntimeEvent, type EventCursor, type RuntimeEvent } from './runtime-events.js';
 import {
   BridgeProtocolError,
@@ -58,6 +58,7 @@ type Pending = {
 };
 type OperationRecord = {
   method: string;
+  params: Record<string, unknown>;
   fingerprint: string;
   status: 'PENDING' | 'UNKNOWN' | 'COMPLETED' | 'FAILED';
   promise?: Promise<unknown>;
@@ -431,6 +432,10 @@ export class PersistentRuntimeBridge {
         throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise character.step2d/v1', {
           sessionId: this.sessionId,
         });
+      if (params.gravity !== undefined && !this.handshake?.capabilities.includes('character.gravity2d/v1'))
+        throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise character.gravity2d/v1', {
+          sessionId: this.sessionId,
+        });
     }
     if (method === 'inject_input' && params.type === 'mouse_wheel') {
       params = validateMouseWheel(params);
@@ -469,7 +474,7 @@ export class PersistentRuntimeBridge {
       throw new BridgeRpcError('CONFLICT', 'operation status quota is exhausted for this session', {
         sessionId: this.sessionId,
       });
-    const operation: OperationRecord = { method, fingerprint, status: 'PENDING' };
+    const operation: OperationRecord = { method, params, fingerprint, status: 'PENDING' };
     this.operations.set(id, operation);
     const promise = this.dispatch(method, params, timeout, id)
       .then((result) => {
@@ -566,7 +571,9 @@ export class PersistentRuntimeBridge {
       path.join(this.evidenceDir, 'responses.jsonl'),
       JSON.stringify({ id: request.id, result: response }) + '\n',
     );
-    return validateBridgeResult(method, response);
+    const result = validateBridgeResult(method, response);
+    if (method === 'step_character_2d') validateCharacterObservation(params, result);
+    return result;
   }
 
   getEvents(): JsonRpcNotification[] {
@@ -780,6 +787,8 @@ export class PersistentRuntimeBridge {
             } else {
               try {
                 operation.result = validateBridgeResult(operation.method, message.result);
+                if (operation.method === 'step_character_2d')
+                  validateCharacterObservation(operation.params, operation.result);
                 operation.status = 'COMPLETED';
               } catch (error) {
                 operation.status = 'FAILED';

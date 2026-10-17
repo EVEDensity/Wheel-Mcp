@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Stage 1 gravity/jump host contract: closed optional gravity/impulse fields,
+  independent character.gravity2d/v1 capability and exact normal/late response
+  correlation. Native runtime 0.3.2 does not advertise the capability and new
+  requests fail closed; actual integration is a separate subsequent stage.
+  Three new fast cases; all previous cases and time/concurrency budgets remain.
+
 - Stage 2 adds runtime bridge 0.3.2 / character.step2d/v1: bounded native
   step_character_2d with run/write/owner checks, consecutive physics scheduling,
   last-frame contacts, zero held velocity, exact replay and UNKNOWN late-result
