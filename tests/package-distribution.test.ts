@@ -48,6 +48,11 @@ test(
     };
     mark('start');
     const parent = await realpath(os.tmpdir());
+    const outside = path.relative(await realpath(process.cwd()), parent);
+    assert.ok(
+      outside === '..' || outside.startsWith(`..${path.sep}`) || path.isAbsolute(outside),
+      'Consumer temp must remain outside the source checkout; never resolve missing dependencies from source node_modules',
+    );
     const root = await mkdtemp(path.join(parent, 'wheel-package-'));
     const npmCli = [
       process.env.npm_execpath,

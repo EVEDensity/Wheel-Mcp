@@ -67,6 +67,10 @@ The safety suite also keeps bounded per-file progress. Its explicit queue uses
 the public Node test-runner API to start expensive validation files first;
 every file, process isolation, two-worker concurrency and the original deadlines
 remain required. A completed case is not a completed suite or proof of cleanup.
+Hosted test steps explicitly use `runner.temp` for TEMP/TMP/TMPDIR, rather than
+the Windows user-profile temp directory. Package consumers must stay outside
+the checkout, so source node_modules cannot mask missing runtime dependencies.
+This placement change is not proof of a unique cause for past reify timeouts.
 
 For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
 and `engine=false` to repeat the real archive install check without native

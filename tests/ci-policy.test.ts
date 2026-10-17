@@ -25,7 +25,13 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
     'runs-on': string;
     'timeout-minutes': number;
     strategy?: unknown;
-    steps: Array<{ run?: string; if?: string; uses?: string; with?: Record<string, unknown> }>;
+    steps: Array<{
+      run?: string;
+      if?: string;
+      uses?: string;
+      with?: Record<string, unknown>;
+      env?: Record<string, string>;
+    }>;
   }>;
   assert.equal(jobs.length, 1);
   assert.equal(jobs[0]['runs-on'], 'windows-latest');
@@ -53,6 +59,11 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   assert.equal(archive.length, 1);
   assert.equal(archive[0].if, "github.event_name == 'workflow_dispatch' && inputs.package");
   assert.equal(archive[0].run, 'node scripts/test-release-package.mjs');
+  for (const step of jobs[0].steps.filter(
+    (s) => s.run && /npm run check|test-godot-ci|test-release-package/.test(s.run),
+  )) {
+    assert.deepEqual(step.env, { TEMP: '${{ runner.temp }}', TMP: '${{ runner.temp }}', TMPDIR: '${{ runner.temp }}' });
+  }
   for (const step of jobs[0].steps.filter((step) => step.uses?.includes('upload-artifact'))) {
     assert.equal(step.if, 'failure()');
     assert.equal(step.with?.['retention-days'], 7);

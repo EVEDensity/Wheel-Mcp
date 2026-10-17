@@ -138,6 +138,11 @@ test('release workflow isolates packaging from write access and verifies before 
   const { build, publish } = workflow.jobs;
   assert.equal(build['runs-on'], 'windows-latest');
   assert.ok(build['timeout-minutes'] <= 15);
+  assert.deepEqual(build.steps.find((s: { run?: string }) => s.run === 'node scripts/release-gate-local.mjs').env, {
+    TEMP: '${{ runner.temp }}',
+    TMP: '${{ runner.temp }}',
+    TMPDIR: '${{ runner.temp }}',
+  });
   const buildCommands = build.steps.map((step: { run?: string }) => step.run ?? '').join('\n');
   for (const command of [
     'github-release-context.mjs',

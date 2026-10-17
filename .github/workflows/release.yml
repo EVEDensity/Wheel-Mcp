@@ -44,6 +44,10 @@ jobs:
       - name: Install verified Godot 4.7.2
         run: node scripts/ci-install-godot.mjs
       - name: Bounded Windows release acceptance and actual package install
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}
         run: node scripts/release-gate-local.mjs
       - name: Independently verify acceptance and artifacts
         run: npm run release:check

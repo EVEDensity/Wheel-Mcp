@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Run hosted test fixtures under GitHub's runner-owned temporary directory,
+  not the Windows user-profile temp path. Keep package consumers outside the
+  checkout so missing production imports cannot fall back to source node_modules.
+  Keep all installation/acceptance deadlines and fail-closed checks unchanged.
 - Preserve the explicit isolated test-file queue with Node's public run API
   instead of the CLI's alphabetical ordering. Start expensive native validation
   files first while retaining every file, two workers and all deadlines. Keep

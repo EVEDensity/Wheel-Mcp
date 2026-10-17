@@ -38,6 +38,10 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Build, style and core MCP checks
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}
         run: npm run check
       - name: Check whether dependencies changed
         id: dependencies
@@ -52,9 +56,17 @@ jobs:
         run: node scripts/ci-install-godot.mjs
       - name: Short headless Godot smoke (no rebuild)
         if: github.event_name == 'workflow_dispatch' && inputs.engine
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}
         run: node scripts/test-godot-ci.mjs
       - name: Optional real archive install check (no engine or rebuild)
         if: github.event_name == 'workflow_dispatch' && inputs.package
+        env:
+          TEMP: ${{ runner.temp }}
+          TMP: ${{ runner.temp }}
+          TMPDIR: ${{ runner.temp }}
         run: node scripts/test-release-package.mjs
       - name: Keep only bounded failure diagnostics
         if: failure()
