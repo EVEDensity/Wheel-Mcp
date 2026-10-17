@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.6`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`、`scene.rich_text/v1`、`scene.texture/v1`，新增 `scene.png_texture/v1`；后续 Sprite2D 扩展另见 [精灵契约](SPRITE-2D-CONTRACT.md)，公告同时含 `scene.sprite2d/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20–25 项能力上限不能解析新插件的 26 项写入能力公告；新版保留 26 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.7`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`、`scene.rich_text/v1`、`scene.texture/v1`，新增 `scene.png_texture/v1`；后续 Sprite2D 扩展另见 [精灵契约](SPRITE-2D-CONTRACT.md)，公告同时含 `scene.sprite2d/v1` 和 `scene.character2d/v1`（[角色契约](CHARACTER-2D-CONTRACT.md)）；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20–27 项能力上限不能解析新插件的 27 项写入能力公告；新版保留 27 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 

@@ -7,8 +7,10 @@ Public v0.2.8 packages do not contain this later main integration.
 
 ## Explicit upgrade and operations
 
-Upgrade host and editor plugin together: editor bridge 0.3.6 announces
-`scene.sprite2d/v1`, with at most 26 capabilities (read-only remains two).
+Upgrade host and editor plugin together: editor bridge 0.3.7 retains
+`scene.sprite2d/v1`, with at most 27 capabilities (read-only remains two).
+Sprite support was introduced in 0.3.6; the later character capability is
+described in the [character contract](CHARACTER-2D-CONTRACT.md).
 Creation and `sprite_set` without this capability fail `PROTOCOL_MISMATCH`;
 missing independent private write opt-in still fails `FORBIDDEN` first. Frame,
 private metadata, operation/node and handle quotas are unchanged. The product

@@ -9,6 +9,7 @@ import { resourceRefSchema, resourcePropertySchema, resourcePropertiesSchema } f
 import { verifySceneDependencies } from './scene-dependencies.js';
 import { uiPropertiesSchema, uiTypes } from './ui-schema.js';
 import { spritePropertiesSchema } from './sprite-schema.js';
+import { characterPropertiesSchema } from './character-schema.js';
 import { physicsPropertiesSchema, physicsTypes } from './physics-schema.js';
 import { animationClipsSchema, animationGraphSchema, animationBlendSchema } from './animation-schema.js';
 
@@ -51,6 +52,7 @@ export const sceneOperationsSchema = z
             'Node',
             'Node2D',
             'Sprite2D',
+            'CharacterBody2D',
             'Node3D',
             'Marker2D',
             'Marker3D',
@@ -72,6 +74,7 @@ export const sceneOperationsSchema = z
       z.object({ kind: z.literal('delete'), path: nodePath }).strict(),
       z.object({ kind: z.literal('ui_set'), path: nodePath, properties: uiPropertiesSchema }).strict(),
       z.object({ kind: z.literal('sprite_set'), path: nodePath, properties: spritePropertiesSchema }).strict(),
+      z.object({ kind: z.literal('character_set'), path: nodePath, properties: characterPropertiesSchema }).strict(),
       z.object({ kind: z.literal('physics_set'), path: nodePath, properties: physicsPropertiesSchema }).strict(),
       z.object({ kind: z.literal('animation_clips'), path: nodePath, clips: animationClipsSchema }).strict(),
       z.object({ kind: z.literal('animation_graph'), path: nodePath, graph: animationGraphSchema }).strict(),
@@ -247,6 +250,14 @@ export async function applyEditorScene(
   try {
     if (!bridge.identity.capabilities.includes('scene.prepare'))
       throw new WheelError('FORBIDDEN', 'Editor scene writes require independent private opt-in');
+    if (
+      operations.some((op) => op.kind === 'character_set' || (op.kind === 'create' && op.type === 'CharacterBody2D')) &&
+      !bridge.identity.capabilities.includes('scene.character2d/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks bounded CharacterBody2D authoring; upgrade explicitly',
+      );
     if (
       operations.some((op) => op.kind === 'sprite_set' || (op.kind === 'create' && op.type === 'Sprite2D')) &&
       !bridge.identity.capabilities.includes('scene.sprite2d/v1')

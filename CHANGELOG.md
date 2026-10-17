@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Stage 1 CharacterBody2D native creation and six bounded character_set fields;
+  exact approval, callback/conflict refusal, shape/visual composition, native
+  Undo/Redo and actual saved reopen. Editor bridge 0.3.7 announces
+  scene.character2d/v1 (27 capabilities); upgrade host/plugin explicitly.
+  Runtime movement and arbitrary script attachment are not part of this stage.
+  Add two fast cases and one native safety case without removing old tests or
+  raising concurrency/deadlines (138 core, 75 safety, 16 engine, 2 package).
+
 - Front-load long transaction/PNG/install files in the unchanged two-worker
   native safety queue. A hosted run reached 240 seconds without a final summary
   after starting transactions at 184s and cleanup at 238s; retain that failure.

@@ -28,6 +28,7 @@ const files = [
   'png-texture-contract',
   'mouse-wheel-contract',
   'sprite-schema',
+  'character-schema',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "LOCAL_CHECKS_PASSED_NOT_RELEASE_QUALIFICATION",
+  "sourceHash": "ddcbb694934499e4c27064108d93bfff49c7691e18a23daa3edb681801176323",
+  "scope": "Stage 1 native CharacterBody2D authored configuration; no runtime controller or arbitrary script attachment.",
+  "upgrade": { "editorBridge": "0.3.7", "capability": "scene.character2d/v1", "maximumCapabilities": 27 },
+  "localChecks": {
+    "buildFormatLint": "PASS",
+    "finalCore": { "passed": 138, "failed": 0, "skipped": 0, "scratchCleanup": "PASS" },
+    "nativeIntegration": {
+      "report": "runs/ci/character-stage1-integration/summary.json",
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 54108,
+      "scratchCleanup": "PASS",
+      "includes": ["CharacterBody2D", "Sprite2D", "existing 3D physics authoring", "all 16 resource types"],
+      "boundary": "Executed before the final CI allowlist assertion correction; product code and these native cases were unchanged. Not labeled a frozen final-source full gate."
+    },
+    "approval": "MOCK exact-plan via official SDK stdio, not human UX",
+    "roadmapLedger": "PASS: 36 tasks / 7 gates; not full production qualification"
+  },
+  "preservedFailures": [
+    { "report": "runs/ci/character-stage1-initial/failure-summary.json", "cause": "New test tried structuredContent.code on SDK schema refusal. Require isError, failing max_slides field and unchanged document/bytes instead." },
+    { "report": "runs/ci/fast-contract-only/failure-details.txt", "cause": "Exact CI safety allowlist assertion lacked the newly added character-native file. Added it explicitly; all old names and deadlines preserved." }
+  ],
+  "hostedAcceptanceThisStage": "NOT_RUN; stage 2 final-source gate must not inherit old Sprite2D receipts",
+  "previousTestsRemoved": false,
+  "deadlinesOrConcurrencyIncreased": false,
+  "newTagReleaseOrNpmPublish": false,
+  "publicV028Unchanged": true,
+  "next": "Push this verified local stage, check its actual short CI and Pages, then implement and independently qualify bounded runtime movement."
+}

@@ -242,6 +242,7 @@ main 新增 `input.mouse_wheel/v1` 有界原生滚轮：viewport 坐标、四方
 验证真实 ScrollContainer 响应，不控制系统鼠标；注入被接受不代表控件已消费。
 
 main 继续新增单帧 Sprite2D 的居中、偏移、翻转和受控内嵌 PNG/渐变引用，保留原生撤销及保存重开；
+main 还支持 CharacterBody2D 原生创建和六项有界碰撞/运动配置，组合形状与 Sprite2D、原生撤销及保存重开；第一阶段不是运行时控制器，不支持任意脚本挂载。见[角色契约](docs/production-roadmap/CHARACTER-2D-CONTRACT.md)。
 不含任意图片加载、图集分帧、区域、材质或角色脚本。见[精灵契约](docs/production-roadmap/SPRITE-2D-CONTRACT.md)。
 
 - 运行时属性修改不等于保存编辑器场景。编辑器保存需独立授权与精确批准，仅支持声明的原生类型；保存后 Undo 的文档/磁盘冲突会阻止普通文件覆盖。
@@ -256,7 +257,7 @@ main 继续新增单帧 Sprite2D 的居中、偏移、翻转和受控内嵌 PNG/
 原生场景操作支持声明节点的创建、删除、重命名、重设父节点、受控实例化与继承覆盖；一批操作是一次 Godot 原生 Undo/Redo，保存需另行精确批准。保存前会重新加载原生暂存字节核对内容，测试还会实际关闭、重开编辑器；产品不会自动重载正在编辑的文档。
 
 - **场景与资源：** 每批最多 32 个操作、场景最多 100 个节点；公开 v0.2.8 包限定 14 类资源，main 新增有界 GradientTexture2D 和 ImageTexture，共 16 类。含脚本、未声明节点类型或唯一名称节点的文档不支持原生批量编辑；继承场景仅支持声明的覆盖策略。批准后的 `.tscn` 文件写入不等于原生编辑或原生撤销。
-- **UI：** 基础控件、容器布局、Theme/StyleBoxFlat，以及有限的 `pressed → hide/show` 连接。main 开发源码新增有界 LineEdit、ScrollContainer、纯文本 RichTextLabel 和 TextureRect 创作，保留原生撤销及保存重开。TextureRect 支持稳定扩展模式、拉伸/翻转、最多 32×32 的内嵌双色原生渐变及 PNG 快照。PNG 来源须有 SHA-256、最多 16 KiB、非交错 8 位 RGB/RGBA，不能带元数据/色彩配置块；审批绑定原始文件字节，通过后内嵌独立像素，不是动态导入纹理依赖或加载导入缓存。外部导出纹理须明确独占复制。需要宿主/插件配套升级（桥接 0.3.6），尚未包含在公开 v0.2.8 包中。更大或任意图片、SVG、CompressedTexture2D、RichTextLabel 的 BBCode/图片/链接/特效/手动格式栈、脚本回调、IME 和字体资源图仍不在支持范围。
+- **UI：** 基础控件、容器布局、Theme/StyleBoxFlat，以及有限的 `pressed → hide/show` 连接。main 开发源码新增有界 LineEdit、ScrollContainer、纯文本 RichTextLabel 和 TextureRect 创作，保留原生撤销及保存重开。TextureRect 支持稳定扩展模式、拉伸/翻转、最多 32×32 的内嵌双色原生渐变及 PNG 快照。PNG 来源须有 SHA-256、最多 16 KiB、非交错 8 位 RGB/RGBA，不能带元数据/色彩配置块；审批绑定原始文件字节，通过后内嵌独立像素，不是动态导入纹理依赖或加载导入缓存。外部导出纹理须明确独占复制。需要宿主/插件配套升级（桥接 0.3.7），尚未包含在公开 v0.2.8 包中。更大或任意图片、SVG、CompressedTexture2D、RichTextLabel 的 BBCode/图片/链接/特效/手动格式栈、脚本回调、IME 和字体资源图仍不在支持范围。
 - **3D 与物理：** 基础变换、网格、静态碰撞、Area3D、RayCast3D 和有界形状查询；不包含完整角色/刚体创作、骨骼工作流、导航烘焙或接触事件历史。
 - **动画：** 本地 2D/3D 位置关键帧、有限状态机和双源 Blend2；尚不支持旋转/缩放、骨骼、音频、方法轨道或导入动画的原位编辑。
 - **材质与 Shader：** 基础材质字段、固定 Shader 文本模板与 Color/Mix 有界图；不支持任意 Shader 源码或完整 PBR/VisualShader 编辑。
