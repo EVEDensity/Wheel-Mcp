@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Text-input stage 2: runtime bridge 0.3.4 advertises input.text_scalar/v1,
+  sends a Unicode-only press/release pulse through native Input, and does not
+  assign control text, grab GUI focus or manipulate OS input. Extend the same
+  wheel native/render fixture for CJK/non-BMP storage, routing, readonly/limits,
+  replay after focus changes, late results, unchanged scene bytes and reversible
+  Latin pixels; test-only observer verifies no held keys/Unicode action.
+  All prior cases and time/concurrency budgets remain; approval is still MOCK.
+
 - Text-input stage 1: one committed Unicode scalar, independent
   input.text_scalar/v1 capability and exact normal/late result correlation.
   Runtime 0.3.3 still refuses the new capability; native input is a separate

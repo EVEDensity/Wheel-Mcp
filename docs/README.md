@@ -27,6 +27,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 - [Sprite2D single-frame textures / 原生单帧精灵](production-roadmap/SPRITE-2D-CONTRACT.md): bounded main development, not a complete character controller or arbitrary sprite sheet workflow.
 - [CharacterBody2D / 原生角色配置](production-roadmap/CHARACTER-2D-CONTRACT.md): staged bounded configuration and separately verified runtime work; no arbitrary script attachment.
 - [有界重力与跳跃](production-roadmap/CHARACTER-GRAVITY-CONTRACT.md): explicit finite physics-frame commands, fresh flat-floor contact and exact replay; not a permanent controller.
+- [已提交字符输入](production-roadmap/TEXT-INPUT-CONTRACT.md): one Unicode scalar through the native runtime input pipeline; actual focused GUI consumption must be checked, not IME or OS keyboard automation.
 - [语义服务 / Semantic service](production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md): heuristic analysis and editor/LSP results have distinct limits; neither alone authorizes a rename.
 
 这些为声明类型与能力范围内的可选接口，不等于完整编辑器替代或所有客户端均通过实测。

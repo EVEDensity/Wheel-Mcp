@@ -243,6 +243,8 @@ main 新增 `input.mouse_wheel/v1` 有界原生滚轮：viewport 坐标、四方
 
 main 继续新增单帧 Sprite2D 的居中、偏移、翻转和受控内嵌 PNG/渐变引用，保留原生撤销及保存重开；
 main 还支持 CharacterBody2D 原生创建和六项有界碰撞/运动配置，组合形状与 Sprite2D、原生撤销及保存重开；运行桥 0.3.3 扩展物理帧短步 `step_character_2d`，支持显式世界 Y 轴重力、新鲜平地接触起跳、墙面/地面/顶面读回和操作去重。命令间不会自动重力运动，不是按键消费、永久角色控制器或任意脚本挂载。见[角色契约](docs/production-roadmap/CHARACTER-2D-CONTRACT.md)与[重力/跳跃扩展](docs/production-roadmap/CHARACTER-GRAVITY-CONTRACT.md)。
+
+运行桥 0.3.4 的 `input.text_scalar/v1` 还支持 `inject_input` 参数 `{type:"text",text:"中"}`：向游戏当前焦点注入一个已提交 Unicode 字符，保留重复请求去重，须通过真实控件读回确认消费；不是 IME、粘贴、系统键盘自动化或自动指定节点。见[字符输入契约](docs/production-roadmap/TEXT-INPUT-CONTRACT.md)。
 不含任意图片加载、图集分帧、区域、材质或角色脚本。见[精灵契约](docs/production-roadmap/SPRITE-2D-CONTRACT.md)。
 
 - 运行时属性修改不等于保存编辑器场景。编辑器保存需独立授权与精确批准，仅支持声明的原生类型；保存后 Undo 的文档/磁盘冲突会阻止普通文件覆盖。

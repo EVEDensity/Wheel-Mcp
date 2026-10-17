@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { startEditorFixture } from './editor-fixture.js';
 import { wireEditor } from './editor-mcp.js';
 import { compareScreenshots } from '../../src/godot-development.js';
+import { exerciseTextInput, inputProbeScript } from './text-input-behavior.js';
 
 export async function exerciseWheel(render: boolean) {
   const f = await startEditorFixture(process.env.GODOT_PATH!, {
     writeEnabled: true,
     scene: '[gd_scene format=3]\n[node name="Main" type="Control"]\n',
+    files: { 'input_probe.gd': inputProbeScript }, // TEST ONLY observer, not product script attachment.
   });
   const c = await wireEditor(f.root, { transport: 'stdio' }); // MOCK exact-plan approval; no human UX claim.
   let sessionId = '';
@@ -40,12 +42,21 @@ export async function exerciseWheel(render: boolean) {
         }),
         { kind: 'create', parent: 'Scroll/Content', name: 'Bottom', type: 'Label' },
         ui('Scroll/Content/Bottom', { text: 'BOTTOM / NATIVE GUI', custom_minimum_size: v2(600, 820) }),
+        { kind: 'create', parent: '.', name: 'Entry', type: 'LineEdit' },
+        ui('Entry', { offset_left: 24, offset_top: 260, offset_right: 344, offset_bottom: 300 }),
+        { kind: 'create', parent: '.', name: 'Other', type: 'LineEdit' },
+        ui('Other', { offset_left: 380, offset_top: 260, offset_right: 620, offset_bottom: 300 }),
       ],
     });
     assert.equal((await call('save_editor_scene')).persisted, true);
     const saved = await readFile(path.join(f.root, 'main.tscn'));
     await f.command('quit');
     await f.exited;
+    // Test-only observer autoload; the MCP-authored scene stays byte-identical.
+    await writeFile(
+      path.join(f.root, 'project.godot'),
+      f.project + '\n[autoload]\nInputProbe="*res://input_probe.gd"\n',
+    );
     const evidenceDir = path.join(f.root, '.harness/wheel-runtime');
     sessionId = (
       await call('open_runtime_bridge', {
@@ -113,6 +124,7 @@ export async function exerciseWheel(render: boolean) {
     assert.equal(await get('scroll_vertical'), end, 'Native scroll must clamp at its limit');
     await wheel('up');
     assert.ok((await get('scroll_vertical')) < end);
+    await exerciseTextInput({ rpc, call, rawCall: c.call, root: f.root, sessionId, render, capture });
     assert.deepEqual(
       await readFile(path.join(f.root, 'main.tscn')),
       saved,

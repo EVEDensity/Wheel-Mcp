@@ -27,11 +27,14 @@ Three fast cases extend core to 147; safety 73, engine 19 and package 2 remain
 required (241 total). No longer deadlines, workers, automatic engine matrix or
 required organization permissions.
 
-## Stage 2: native input and consumption evidence (planned)
+## Stage 2: native input and consumption evidence
 
-Explicitly upgrade host and runtime plugin to the subsequently tested version.
-Create a Unicode-only native InputEventKey with no physical/key label/keycode,
-echo or modifiers, and feed it to the game's Input pipeline. It follows current
+Explicitly upgrade host and runtime plugin to runtime bridge 0.3.4. The editor
+bridge remains 0.3.7 / 27 capabilities. No implicit installation/update occurs.
+Create a Unicode-only native InputEventKey press/release pair with no physical
+key/label/keycode, echo or modifiers, and feed it to the game's Input pipeline.
+The release retains the scalar to release matching custom Unicode InputMap
+actions, while LineEdit only inserts on the pressed event. It follows current
 viewport/GUI focus, not a named node or OS focus. Do not assign LineEdit.text as
 the implementation or automatically grab focus. Acceptance alone proves neither
 focus nor consumption; independently read actual GUI state after native frames.
@@ -39,10 +42,19 @@ Project callbacks remain trusted code and may handle/redirect/reject input.
 
 Reuse the existing wheel author/save/runtime fixture for native and local pixel
 checks, without extra engine startup: Latin/CJK/non-BMP storage, focus routing,
-noneditable/max-length/no-focus behavior, duplicate/reused IDs, invalid-input
-no-op, no held physical keys, exact late result and unchanged authored bytes.
+noneditable/max-length/hidden/no-focus behavior, duplicate/reused IDs even after
+focus changes, invalid-input no-op, no held physical keys or fixture Unicode
+action, exact late result and unchanged authored bytes. A TEST-ONLY observer
+autoload reads actual events and supplies a 500ms blocked-main-loop barrier for
+UNKNOWN/late completion; it does not insert text or attach product scripts.
 Rendered Latin glyph changes/restoration are separate local evidence, not CJK
 font coverage, hosted GPU or human approval UX. Approval remains MOCK.
+
+The first new contract run failed one expected-code assertion: NaN was already
+rejected by the shared Variant UNSUPPORTED guard before the text-specific
+protocol schema. That guard stays in place; the corrected test explicitly
+requires it rather than relaxing validation. Native integration and final CI
+evidence must be source-bound separately from the stage-1 host-only green run.
 
 References: [InputEventKey.unicode](https://docs.godotengine.org/en/stable/classes/class_inputeventkey.html#class-inputeventkey-property-unicode),
 [Input.parse_input_event](https://docs.godotengine.org/en/stable/classes/class_input.html#class-input-method-parse-input-event),

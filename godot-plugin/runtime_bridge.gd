@@ -150,7 +150,7 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.3.3",
+			"bridgeVersion": "0.3.4",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"runtimeConditions": {
 				"renderer": RenderingServer.get_current_rendering_method(),
@@ -165,7 +165,7 @@ func _process(_delta: float) -> bool:
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1", "character.gravity2d/v1"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1", "character.gravity2d/v1", "input.text_scalar/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -713,6 +713,21 @@ func _call_method_result(request: Dictionary) -> Dictionary:
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_METHOD_CALL", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "method": method_name, "value": value}
 
 func _input_result(request: Dictionary) -> Dictionary:
+	if request.get("type", "key") == "text":
+		if request.size() != 2 or not request.get("text") is String or request.text.length() != 1: return {"error":"Text requires exactly one committed Unicode scalar", "errorCode":-32602}
+		var codepoint: int = request.text.unicode_at(0)
+		if codepoint < 0x20 or codepoint > 0x10ffff or (codepoint >= 0x7f and codepoint <= 0x9f) or (codepoint >= 0xd800 and codepoint <= 0xdfff) or codepoint in [0x2028, 0x2029]: return {"error":"Control, separator or surrogate text input is unsupported", "errorCode":-32602}
+		# Unicode-only pulse through the real viewport pipeline. The release keeps
+		# the scalar so custom Unicode InputMap actions cannot remain held.
+		var character := InputEventKey.new()
+		character.unicode = codepoint
+		character.pressed = true
+		Input.parse_input_event(character)
+		var release_character := character.duplicate() as InputEventKey
+		release_character.pressed = false
+		Input.parse_input_event(release_character)
+		_emit_notification("input_injected", {"type":"text", "unicode":codepoint})
+		return {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_INPUT_INJECTION", "runtime":true, "type":"text", "unicode":codepoint, "accepted":true}
 	if request.get("type", "key") == "mouse_wheel":
 		for key in request:
 			if key not in ["type", "direction", "position", "factor"]: return {"error": "Unexpected wheel input field"}
