@@ -77,6 +77,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'stdio-client-contract',
     'mcp-launcher',
     'ui-line-edit-schema',
+    'ui-scroll-schema',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -132,6 +133,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   );
   assert.ok(safety.files.includes('build/tests/editor-protocol-input.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-line-edit-native.test.js'));
+  assert.ok(safety.files.includes('build/tests/ui-scroll-native.test.js'));
   assert.equal(safety.timeoutMs, 240000);
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
   assert.ok(pkg.scripts.check.includes('test:ci-fast'));

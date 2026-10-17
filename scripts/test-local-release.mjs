@@ -16,6 +16,7 @@ const plan = {
     'validation-cleanup',
     'editor-outcome-smoke',
     'ui-line-edit-native',
+    'ui-scroll-native',
   ].map((name) => `build/tests/${name}.test.js`),
   scope: 'local-release-safety',
   concurrency: 2,

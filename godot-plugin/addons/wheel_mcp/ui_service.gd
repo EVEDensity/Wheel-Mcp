@@ -2,8 +2,8 @@
 extends RefCounted
 const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
 
-const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
-const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
+const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
+const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
 const LAYOUT := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom"]
 
 static func managed(node: Node) -> bool:
@@ -11,7 +11,7 @@ static func managed(node: Node) -> bool:
 
 # Container-owned geometry is derived, not a stable authored offset.
 static func derived(node: Node, property: String) -> bool:
-	return managed(node) and (property.begins_with("offset_") or property == "layout_mode")
+	return (managed(node) and (property.begins_with("offset_") or property == "layout_mode")) or (node is ScrollContainer and property in ["scroll_horizontal", "scroll_vertical"])
 
 static func error(code: String, message: String) -> Dictionary:
 	return {"status": "FAIL", "code": code, "message": message, "persisted": false}
@@ -19,6 +19,21 @@ static func error(code: String, message: String) -> Dictionary:
 static func line_edit_callbacks(node: LineEdit) -> bool:
 	for signal_name in ["text_changed", "text_change_rejected", "text_submitted", "editing_toggled"]:
 		if not node.get_signal_connection_list(signal_name).is_empty(): return true
+	return false
+
+static func scroll_callbacks(node: ScrollContainer) -> bool:
+	for signal_name in ["scroll_started", "scroll_ended"]:
+		if not node.get_signal_connection_list(signal_name).is_empty(): return true
+	for bar in [node.get_h_scroll_bar(), node.get_v_scroll_bar()]:
+		if not is_instance_valid(bar) or bar.get_parent() != node or bar.get_script() != null: return true
+		if not bar.get_signal_connection_list("changed").is_empty(): return true
+		var connections: Array = bar.get_signal_connection_list("value_changed")
+		if connections.size() != 1: return true # Required constructor connection must still exist.
+		for connection in connections:
+			# Godot 4.7.2's constructor uses a native method-pointer callable to
+			# this ScrollContainer. No user callback/bind/flags are part of it.
+			var callback: Callable = connection.callable
+			if callback.get_object() != node or not callback.is_custom() or str(callback.get_method()) != "ScrollContainer::_scroll_moved" or int(connection.flags) != 0 or callback.get_bound_arguments_count() != 0 or callback.get_unbound_arguments_count() != 0: return true
 	return false
 
 static func signature(node: Control) -> Dictionary:
@@ -54,6 +69,7 @@ static func prepare(node: Node, values: Variant) -> Dictionary:
 	for field in values:
 		if field not in FIELDS or field not in node: return error("UNSUPPORTED", "UI property not available for declared class")
 		if field in ["placeholder_text", "editable", "max_length"] and not node is LineEdit: return error("UNSUPPORTED", "Text input fields require LineEdit")
+		if field in ["horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus"] and not node is ScrollContainer: return error("UNSUPPORTED", "Scroll fields require ScrollContainer")
 		if managed(node) and field in LAYOUT: return error("CONFLICT", "Container owns child anchors/offsets; use minimum sizes and size flags")
 		if field.begins_with("anchor_") and values[field] != 0 and node.get_parent() is CanvasItem and not node.get_parent() is Control: return error("CONFLICT", "Responsive UI anchors require a Control parent or top-level UI root, not Node2D")
 		var expected: Variant = node.get(field)
@@ -66,6 +82,7 @@ static func prepare(node: Node, values: Variant) -> Dictionary:
 			for index in range(value.length()):
 				if value.unicode_at(index) < 32 or value.unicode_at(index) == 127: return error("INVALID_ARGUMENT", "LineEdit text must be single-line without control characters")
 		if field == "max_length" and (value < 0 or value > 512): return error("INVALID_ARGUMENT", "LineEdit maximum length must be 0..512")
+		if field in ["horizontal_scroll_mode", "vertical_scroll_mode"] and (value < 0 or value > 4): return error("INVALID_ARGUMENT", "Declared scroll modes must be 0..4")
 		if value is float and (not is_finite(value) or absf(value) > 100000): return error("INVALID_ARGUMENT", "UI coordinate outside budget")
 		if field.begins_with("anchor_") and (value < 0 or value > 1): return error("INVALID_ARGUMENT", "Anchors must be 0..1")
 		if value is Vector2 and (not value.is_finite() or value.x < 0 or value.y < 0 or value.x > 100000 or value.y > 100000): return error("INVALID_ARGUMENT", "Invalid minimum size")

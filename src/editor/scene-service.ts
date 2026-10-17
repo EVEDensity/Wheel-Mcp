@@ -257,6 +257,19 @@ export async function applyEditorScene(
         'PROTOCOL_MISMATCH',
         'Editor plugin lacks declared LineEdit authoring capability; upgrade explicitly',
       );
+    if (
+      operations.some(
+        (op) =>
+          (op.kind === 'create' && op.type === 'ScrollContainer') ||
+          (op.kind === 'ui_set' &&
+            ['horizontal_scroll_mode', 'vertical_scroll_mode', 'follow_focus'].some((field) => field in op.properties)),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.scroll/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks ScrollContainer authoring capability; upgrade explicitly',
+      );
     if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
     if (

@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.1`，沿用 `scene.ui/v1`，另增 `scene.line_edit/v1`；缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20 项能力上限不能解析新插件的 21 项写入能力公告；新版仍保留 21 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.2`，沿用 `scene.ui/v1`、`scene.line_edit/v1`，新增 `scene.scroll/v1`；缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20/21 项能力上限不能解析新插件的 22 项写入能力公告；新版保留 22 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 
@@ -37,7 +37,20 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 `ui-line-edit-native.test.ts` 使用真实 Godot 和官方 SDK stdio，批准为 MOCK：只读拒绝、缺新能力及超能力预算拒绝、非法输入保持场景/磁盘不变、准确 Undo/Redo、实际 ResourceSaver 保存重开，以及聚焦/编辑模式/光标定位后的 GUI Backspace 和只读文本不变。不会把直接赋值冒充键盘输入。
 
-本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；ScrollContainer、RichTextLabel、TextureRect 仍未实现。现有公开 v0.2.8 包不包含本批开发改动。
+本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；RichTextLabel、TextureRect 仍未实现。现有公开 v0.2.8 包不包含这些 main 开发改动。
+
+## ScrollContainer 首批声明子集（main 开发源码）
+
+新增创建 `ScrollContainer`，同样走精确批准、CAS、一批一次原生 Undo/Redo 和单独保存；不增加隐式脚本或运行时生成器。
+
+- `ui_set` 新增 `horizontal_scroll_mode`、`vertical_scroll_mode`：整数 0..4，分别为 Disabled、Auto、Always Show、Never Show、Reserve；`follow_focus` 为 bool。这些字段只对 ScrollContainer 开放。Maximize First (5)、滚动提示纹理、自定义步长及触摸配置不在本批声明范围。
+- 内容应使用直接子 Control/Container 的 minimum size、size flags 布局。直接子节点的 anchors/offsets 和跨 Container reparent 仍拒绝；内部滚动条、焦点装饰不进入 authored 节点遍历，也不能通过已知名称删除、改值或作为创建父节点。
+- `scroll_horizontal` / `scroll_vertical` 是受当前布局和输入影响的位置，不开放为 `ui_set` 字段，也不进入 authored CAS/保存一致性比较。不将预览影子树的滚动位置冒充实际布局或保证非零初始滚动位置保存重开。
+- 拒绝 `scroll_started` / `scroll_ended` 用户连接、内部滚动条的 `changed` 或外部 `value_changed` 连接，以及移出的/带脚本的内部滚动条。每根内部滚动条必须恰好保留一个固定 Godot 4.7.2 构造的同接收者原生 `ScrollContainer::_scroll_moved` 无 bind/flags 连接，缺失也拒绝；不是放行任意同类节点回调。实时文档快照在 commit 前再次检查，审批期间新接入回调也会冲突拒绝。该规则不是所有 UI 信号或任意脚本的安全契约。
+
+`ui-scroll-native.test.ts` 使用真实 Godot、官方 SDK stdio 和 MOCK 批准，检查只读/缺能力/超能力预算拒绝、控件类型与内部路径拒绝、整批失败无残留、准确 Undo/Redo、实际 ResourceSaver 保存重开并按路径归一化身份后比较全部声明存储。运行时通过真实 Tab 键事件将焦点从首按钮移至末按钮，读取自动滚动及末按钮垂直几何；关闭 follow_focus 后再 Tab，焦点改变但滚动位置不变。
+
+这是 headless 原生 GUI 行为和存储验收，不是鼠标滚轮、触屏拖拽、桌面焦点、像素裁剪、无障碍或不同 viewport/renderer 的资格。没有用直接设置 scroll_vertical 冒充输入后的自动滚动；直接设置仅用于关闭 follow_focus 的对照组复位。
 
 ## Theme 与样式（原有子集）
 
@@ -68,4 +81,4 @@ themeType 限 Control、Label、Button、CheckButton、HSlider、PanelContainer�
 
 ## API 依据
 
-[Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。
+[Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[ScrollContainer](https://docs.godotengine.org/en/stable/classes/class_scrollcontainer.html)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。

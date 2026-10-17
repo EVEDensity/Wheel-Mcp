@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Add bounded native ScrollContainer creation, scroll modes 0..4 and follow_focus.
+  Protect engine-internal nodes from authoring paths; exclude layout-dependent
+  scroll positions from authored CAS/readback. Reject user scroll callbacks,
+  including connections attached during approval. Verify native Undo/Redo,
+  actual save/reopen and real Tab-triggered focus following with a disabled
+  control group. Bridge 0.3.2 adds scene.scroll/v1 with a 22-entry capability
+  budget; host/plugin must upgrade together. No new Release or IME/wheel/touch
+  qualification is implied.
 - Preserve the configured Godot executable in the actual package-install gate;
   use the explicit Node executable test double only in engine-free CI. Keep
   bounded phase/elapsed-only package diagnostics when an outer timeout prevents

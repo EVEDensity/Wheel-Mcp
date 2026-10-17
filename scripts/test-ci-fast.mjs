@@ -21,6 +21,7 @@ const files = [
   'stdio-client-contract',
   'mcp-launcher',
   'ui-line-edit-schema',
+  'ui-scroll-schema',
   'project-write-approval',
   'preapproved-writes',
 ]
