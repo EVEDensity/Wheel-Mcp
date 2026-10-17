@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Text-input stage 1: one committed Unicode scalar, independent
+  input.text_scalar/v1 capability and exact normal/late result correlation.
+  Runtime 0.3.3 still refuses the new capability; native input is a separate
+  subsequent stage, not IME, paste, shortcuts or OS keyboard automation.
+  Three added fast cases; all previous cases and original budgets remain
+  (147 core, 73 safety, 19 engine, 2 package; 241 total).
+
 - Retain hosted gravity acceptance failure 39072866136: safety reached 240s
   before four original files finished/started, with no final summary. Reuse
   only the current live Node process's successful OS identity when creating

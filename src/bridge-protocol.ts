@@ -4,6 +4,7 @@ import { validateVariantOutput } from './protocol/variant.js';
 import { physics3dResultSchema } from './protocol/physics3d.js';
 import { mouseWheelSchema } from './runtime/mouse-wheel.js';
 import { characterStepResultSchema } from './runtime/character-step.js';
+import { textInputResultSchema } from './runtime/text-input.js';
 
 export const BRIDGE_PROTOCOL_VERSION = 'wheel-runtime/1';
 
@@ -217,6 +218,8 @@ export function validateBridgeResult(method: string, value: unknown): Record<str
     )
       throw new BridgeProtocolError('Invalid mouse wheel observation');
   }
+  if (method === 'inject_input' && value.type === 'text' && !textInputResultSchema.safeParse(value).success)
+    throw new BridgeProtocolError('Invalid committed text input observation');
   if (method === 'query_collisions' && value.dimension === '3D') {
     const parsed = physics3dResultSchema.safeParse(value);
     if (!parsed.success)

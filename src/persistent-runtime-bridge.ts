@@ -15,6 +15,7 @@ import { resolveGodotPathSync } from './godot-path.js';
 import { validateVariantInput } from './protocol/variant.js';
 import { validateCollisionQuery } from './runtime/physics-query.js';
 import { validateMouseWheel } from './runtime/mouse-wheel.js';
+import { validateTextInput, validateTextObservation } from './runtime/text-input.js';
 import { validateCharacterStep, validateCharacterObservation } from './runtime/character-step.js';
 import { normalizeBridgeRuntimeEvent, type EventCursor, type RuntimeEvent } from './runtime-events.js';
 import {
@@ -444,6 +445,13 @@ export class PersistentRuntimeBridge {
           sessionId: this.sessionId,
         });
     }
+    if (method === 'inject_input' && params.type === 'text') {
+      params = validateTextInput(params);
+      if (!this.handshake?.capabilities.includes('input.text_scalar/v1'))
+        throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise input.text_scalar/v1', {
+          sessionId: this.sessionId,
+        });
+    }
     if (method === 'create_node' && Object.hasOwn(params, 'properties'))
       validateVariantInput(params.properties, 'properties');
     if (method === 'call_method' && Object.hasOwn(params, 'args')) validateVariantInput(params.args, 'args');
@@ -474,10 +482,10 @@ export class PersistentRuntimeBridge {
       throw new BridgeRpcError('CONFLICT', 'operation status quota is exhausted for this session', {
         sessionId: this.sessionId,
       });
-    // Retain only the tiny closed character request, not generic large write payloads.
+    // Retain only tiny closed character/text requests, not generic large write payloads.
     const operation: OperationRecord = {
       method,
-      ...(method === 'step_character_2d' ? { params } : {}),
+      ...(method === 'step_character_2d' || (method === 'inject_input' && params.type === 'text') ? { params } : {}),
       fingerprint,
       status: 'PENDING',
     };
@@ -579,6 +587,7 @@ export class PersistentRuntimeBridge {
     );
     const result = validateBridgeResult(method, response);
     if (method === 'step_character_2d') validateCharacterObservation(params, result);
+    if (method === 'inject_input') validateTextObservation(params, result);
     return result;
   }
 
@@ -795,6 +804,8 @@ export class PersistentRuntimeBridge {
                 operation.result = validateBridgeResult(operation.method, message.result);
                 if (operation.method === 'step_character_2d')
                   validateCharacterObservation(operation.params ?? {}, operation.result);
+                if (operation.method === 'inject_input')
+                  validateTextObservation(operation.params ?? {}, operation.result);
                 operation.status = 'COMPLETED';
               } catch (error) {
                 operation.status = 'FAILED';

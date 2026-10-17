@@ -97,6 +97,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'ui-texture-schema',
     'png-texture-contract',
     'mouse-wheel-contract',
+    'text-input-contract',
     'sprite-schema',
     'character-schema',
     'character-step-contract',
