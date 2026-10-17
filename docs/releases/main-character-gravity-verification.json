@@ -72,7 +72,7 @@
     "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 144, "durationMs": 21687, "scratchCleanup": "PASS" },
     "safety": { "report": "runs/ci/local-release-safety/summary.json", "tests": 73, "durationMs": 140436, "scratchCleanup": "PASS" },
     "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 41943, "scratchCleanup": "PASS" },
-    "renderAndResources": { "report": "runs/ci/gravity-optimized-final-visual/summary.json", "tests": 3, "durationMs": 20921, "allDeclaredResourceTypes": 16, "scratchCleanup": "PASS" },
+    "renderAndResources": { "report": "runs/ci/gravity-optimized-final-visual/summary.json", "tests": 3, "durationMs": 20920, "allDeclaredResourceTypes": 16, "scratchCleanup": "PASS" },
     "failed": 0,
     "skipped": 0,
     "cancelled": 0,
