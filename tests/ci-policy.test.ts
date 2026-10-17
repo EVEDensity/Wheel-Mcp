@@ -115,7 +115,18 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   );
   assert.equal(smoke.engine, 'REAL_HEADLESS');
   assert.equal(smoke.timeoutMs, 60000);
-  assert.equal(smoke.files.length, 6);
+  assert.equal(smoke.files.length, 9);
+  assert.deepEqual(smoke.files, [
+    'build/tests/sprite-native.test.js',
+    'build/tests/character-native.test.js',
+    'build/tests/character-step-native.test.js',
+    'build/tests/mouse-wheel-native.test.js',
+    'build/tests/mcp-background-runtime.test.js',
+    'build/tests/bridge-handshake.test.js',
+    'build/tests/runtime-error-contract.test.js',
+    'build/tests/session-isolation.test.js',
+    'build/tests/stdio-cleanup.test.js',
+  ]);
   assert.ok(smoke.files.includes('build/tests/mouse-wheel-native.test.js'));
   assert.ok(smoke.files.every((file: string) => !/soak|authoring|outcome-ledger|production-case/.test(file)));
   const release = JSON.parse(
@@ -159,8 +170,11 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   assert.ok(safety.files.includes('build/tests/ui-scroll-native.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-rich-text-native.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-texture-native.test.js'));
-  assert.ok(safety.files.includes('build/tests/character-native.test.js'));
-  assert.ok(safety.files.includes('build/tests/character-step-native.test.js'));
+  for (const file of ['sprite-native', 'character-native', 'character-step-native']) {
+    assert.ok(smoke.files.includes(`build/tests/${file}.test.js`));
+    assert.ok(!safety.files.includes(`build/tests/${file}.test.js`));
+  }
+  assert.equal(new Set([...safety.files, ...smoke.files]).size, safety.files.length + smoke.files.length);
   assert.equal(safety.concurrency, 2);
   assert.deepEqual(safety.files.slice(0, 2), [
     'build/tests/validated-project-write.test.js',
@@ -191,9 +205,6 @@ test('optional engine smoke is small and bounded; local release prep has no redu
       'ui-scroll-native',
       'ui-rich-text-native',
       'ui-texture-native',
-      'sprite-native',
-      'character-native',
-      'character-step-native',
       'png-texture-native',
     ]
       .map((name) => `build/tests/${name}.test.js`)

@@ -176,6 +176,38 @@ export async function exerciseCharacter(render: boolean) {
     assert.equal((disabled.structuredContent as any).code, 'UNSUPPORTED');
     assert.deepEqual(await get('position'), stationary);
     await rpc('set_property', { nodePath: '.', property: 'process_mode', value: 0 });
+    const ownerId = (await rpc('call_method', { nodePath: 'Player', method: 'shape_find_owner', args: [0] })).value;
+    assert.equal(Number.isInteger(ownerId), true);
+    // Native owner APIs can diverge from CollisionShape2D's inspector fields.
+    for (const method of ['shape_owner_set_disabled', 'shape_owner_set_one_way_collision']) {
+      await rpc('call_method', { nodePath: 'Player', method, args: [ownerId, true] });
+      const refused = await c.call('call_runtime_bridge', {
+        sessionId,
+        method: 'step_character_2d',
+        params: { nodePath: 'Player', velocity: { x: 10, y: 0 }, frames: 1 },
+      });
+      assert.equal((refused.structuredContent as any).code, 'UNSUPPORTED');
+      assert.deepEqual(await get('position'), stationary);
+      await rpc('call_method', { nodePath: 'Player', method, args: [ownerId, false] });
+    }
+    const ownerTransform = (x: number) => ({ type: 'Transform2D', x: v2(x, 0), y: v2(0, 1), origin: v2(0, 0) });
+    await rpc('call_method', {
+      nodePath: 'Player',
+      method: 'shape_owner_set_transform',
+      args: [ownerId, ownerTransform(2)],
+    });
+    const diverged = await c.call('call_runtime_bridge', {
+      sessionId,
+      method: 'step_character_2d',
+      params: { nodePath: 'Player', velocity: { x: 10, y: 0 }, frames: 1 },
+    });
+    assert.equal((diverged.structuredContent as any).code, 'UNSUPPORTED');
+    assert.deepEqual(await get('position'), stationary);
+    await rpc('call_method', {
+      nodePath: 'Player',
+      method: 'shape_owner_set_transform',
+      args: [ownerId, ownerTransform(1)],
+    });
     // A submitted timed-out command may finish later. Query its original ID,
     // never submit a new movement to pretend that timeout rolled it back.
     const lateId = 'bounded-character-late-result';

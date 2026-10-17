@@ -6,16 +6,14 @@ const plan = {
     // Fixed two-worker longest-work-first queue. Hosted trace 39066732705
     // started the ~50s transaction file at 184s and cleanup at 238s, losing
     // the final summary at 240s. Do not leave these files behind short work.
-    // Every file, test, deadline and concurrency limit remains unchanged.
+    // Native sprite/character cases also remain required, in the existing
+    // 60s engine phase: do not grow this queue past its unchanged 240s budget.
     'validated-project-write',
     'editor-scene-rpc',
     'editor-scene-save',
     'project-transactions',
     'png-texture-native',
     'install',
-    'sprite-native',
-    'character-native',
-    'character-step-native',
     'ui-scroll-native',
     'ui-rich-text-native',
     'ui-texture-native',

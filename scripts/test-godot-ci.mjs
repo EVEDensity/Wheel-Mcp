@@ -1,14 +1,19 @@
 import { statSync } from 'node:fs';
 import { runCiSuite } from './lib/ci-suite.mjs';
 
-// Short no-display smoke, not every editor/physics/animation/render case.
+// Bounded no-display checks, not the complete authoring/render matrix.
+// Rebalance three required native cases out of the overloaded safety phase.
+// Both phases retain two workers and the original 240s/60s deadlines.
 const files = [
+  'sprite-native',
+  'character-native',
+  'character-step-native',
+  'mouse-wheel-native',
   'mcp-background-runtime',
   'bridge-handshake',
   'runtime-error-contract',
   'session-isolation',
   'stdio-cleanup',
-  'mouse-wheel-native',
 ].map((name) => `build/tests/${name}.test.js`);
 const plan = { files, concurrency: 2, timeoutMs: 60000, engine: 'REAL_HEADLESS', scope: 'engine-smoke' };
 

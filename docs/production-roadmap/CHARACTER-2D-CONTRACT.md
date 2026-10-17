@@ -76,8 +76,13 @@ enabled, finite position within +/-100000 and delta 0..0.1 seconds (zero
 excluded), 1..8 slides and margin 0.001..10. Only world-axis unit body/shape
 transforms, 1..8 direct native rectangle/circle/capsule shape owners, no one-way
 shape, script or geometry callbacks and at least one enabled shape are accepted.
-Shape size/radius/height and local offsets are bounded by 10000. Collision
-environment is the trusted running project, not frozen or certified geometry.
+Shape size/radius/height and local offsets are bounded by 10000. Native
+shape-owner identity, resource, transform, disabled and one-way settings must
+also match their actual CollisionShape2D node; checking inspector fields alone
+is insufficient after raw native owner API changes. Those divergences are
+refused before moving, with real native regression coverage.
+The collision environment is the trusted running project, not frozen or
+certified geometry.
 
 The response contains before/after *local* position, actual last-slide velocity,
 exact completed/start/end physics frame counts, floor/wall/ceiling flags and up
@@ -109,6 +114,15 @@ UNSUPPORTED first. That guard was preserved. The first complete local gate
 passed before the later scene-local path tightening; it is not reused as the
 final source's complete gate. Final evidence must bind the tightened source.
 
-Primary reference: [Godot CharacterBody2D](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html).
+Hosted run 39070022126 later hit the unchanged 240s safety deadline without a
+final summary. Character cases passed, but remaining original cases had not
+finished. Keep that failed run. Rebalance sprite/character native checks into
+the existing 60s engine phase, retaining every required case exactly once,
+two workers in each sequential phase, 240s safety and 600s total gate. This
+does not raise deadlines, enlarge automatic CI or turn individual passes into
+qualification. Final counts: 141 core, 73 safety, 19 engine, 2 package (235).
+
+Primary references: [Godot CharacterBody2D](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html)
+and [CollisionObject2D shape-owner APIs](https://docs.godotengine.org/en/stable/classes/class_collisionobject2d.html).
 Full production qualification, all platforms, human approval UX and complete
 character workflows remain NOT_QUALIFIED.
