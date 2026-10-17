@@ -76,14 +76,26 @@ func dispatch(method: String, params: Dictionary, owner: String, identity: Dicti
 			return _error("CONFLICT", "Editor active-plan quota exhausted; pending plans are never evicted")
 		var root := EditorInterface.get_edited_scene_root()
 		var references: Dictionary = {}
+		var source_hashes: Dictionary = {}
 		for op in operations:
 			if op is Dictionary and op.get("kind") == "resource_assign":
 				var resolved: Dictionary = resources.resolve(op.get("ref"), owner, identity)
 				if resolved.has("code"): return resolved
 				references[op.ref.handle] = resolved.resource
+				for source in resolved.sourceHashes:
+					if source_hashes.has(source) and source_hashes[source] != resolved.sourceHashes[source]: return _error("CONFLICT", "PNG handles disagree on a source fingerprint")
+					source_hashes[source] = resolved.sourceHashes[source]
 		var prepared: Dictionary = Core.prepare(root, operations, manager, references)
 		if prepared.has("code"):
 			return prepared
+		for source in source_hashes:
+			if prepared.batch.instance_sources.has(source) and prepared.batch.instance_sources[source] != source_hashes[source]:
+				prepared.batch.discard()
+				return _error("CONFLICT", "Plan source fingerprints disagree")
+			prepared.batch.instance_sources[source] = source_hashes[source]
+		if prepared.batch.instance_sources.size() > 32:
+			prepared.batch.discard()
+			return _error("UNSUPPORTED", "Combined scene/PNG source budget exceeded")
 		var reserved: Dictionary = _outcomes.reserve(key, identity.sessionId)
 		if reserved.has("code"):
 			prepared.batch.discard()

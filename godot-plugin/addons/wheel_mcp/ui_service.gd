@@ -14,8 +14,9 @@ static func managed(node: Node) -> bool:
 # Embed an explicit unique copy rather than saving a live external reference.
 static func inline_texture(node: TextureRect, root: Node) -> bool:
 	if node.texture == null: return true
-	if not node.texture is GradientTexture2D or node.texture.get_script() != null: return false
-	for resource in [node.texture, node.texture.gradient]:
+	if not (node.texture is GradientTexture2D or node.texture is ImageTexture) or node.texture.get_script() != null: return false
+	var leaf: Resource = node.texture.gradient if node.texture is GradientTexture2D else node.texture.get_image()
+	for resource in [node.texture, leaf]:
 		if resource == null or resource.get_script() != null: return false
 		if not resource.resource_path.is_empty() and not resource.resource_path.begins_with(root.scene_file_path + "::"): return false
 	return true
@@ -77,7 +78,7 @@ static func signature(node: Control) -> Dictionary:
 		if field in node and not derived(node, field): result[field] = var_to_bytes(node.get(field)).hex_encode()
 	if node.theme != null: result["theme"] = UITheme.storage(node.theme)
 	if node is TextureRect and node.texture != null:
-		result["texture"] = Textures.storage(node.texture) if node.texture is GradientTexture2D else {"code": "UNSUPPORTED"}
+		result["texture"] = Textures.storage(node.texture)
 	return result
 
 static func apply(node: Control, values: Dictionary) -> void:

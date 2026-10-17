@@ -25,6 +25,7 @@ const files = [
   'ui-scroll-schema',
   'ui-rich-text-schema',
   'ui-texture-schema',
+  'png-texture-contract',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

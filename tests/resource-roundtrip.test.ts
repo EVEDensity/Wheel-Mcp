@@ -89,7 +89,7 @@ test(
         }
         const shape = type.includes('Shape'),
           physics = type === 'PhysicsMaterial',
-          texture = type === 'GradientTexture2D',
+          texture = type === 'GradientTexture2D' || type === 'ImageTexture',
           theme = type === 'Theme';
         const nodeType = texture
           ? 'TextureRect'
@@ -133,10 +133,11 @@ test(
           );
         }
       }
-      await call('apply_editor_scene', { operations: ops });
+      for (let offset = 0; offset < ops.length; offset += 32)
+        await call('apply_editor_scene', { operations: ops.slice(offset, offset + 32) });
       assert.equal(Object.keys(files).length, resourceTypes.length);
       assert.equal(Object.keys(expected).length, resourceTypes.length - 1);
-      assert.equal(approvals, resourceTypes.length + 1);
+      assert.equal(approvals, resourceTypes.length + Math.ceil(ops.length / 32));
       const packed = await f.command('test-only-pack');
       assert.equal(packed.pack, 0);
       assert.equal(packed.save, 0);

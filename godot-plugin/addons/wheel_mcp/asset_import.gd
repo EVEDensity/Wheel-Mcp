@@ -20,5 +20,5 @@ func dispatch(method: String, params: Dictionary) -> Dictionary:
 		var ready := false
 		if not scanning and not importing and not file_type.is_empty():
 			ready = ResourceLoader.load(resource_path, "", ResourceLoader.CACHE_MODE_IGNORE) is Texture2D
-		return {"status": "PASS", "scanning": scanning, "importing": importing, "progress": fs.get_scanning_progress(), "fileType": file_type, "ready": ready, "source": "REAL"}
+		return {"status": "PASS", "scanning": scanning, "importing": importing, "progress": clampf(fs.get_scanning_progress(), 0.0, 1.0), "fileType": file_type, "ready": ready, "source": "REAL"}
 	return {"status": "FAIL", "code": "UNSUPPORTED", "message": "Unknown asset import method"}

@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.4`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`、`scene.rich_text/v1`，新增 `scene.texture/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20–23 项能力上限不能解析新插件的 24 项写入能力公告；新版保留 24 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.5`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`、`scene.rich_text/v1`、`scene.texture/v1`，新增 `scene.png_texture/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20–24 项能力上限不能解析新插件的 25 项写入能力公告；新版保留 25 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 
@@ -69,17 +69,27 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 - `ui_set` 声明 `expand_mode` 整数 0..1（Keep Size / Ignore Size）、`stretch_mode` 整数 0..6、`flip_h` / `flip_v` bool，仅对 TextureRect 开放。扩展模式 2..5 在引擎文档中有 Container 稳定性警告，不在本批范围。Container 直接子节点仍不得改 anchors/offsets 或跨边界 reparent。
 - `manage_editor_resource` 的 `request: {action:"texture", source:{format:"linear-gradient", width, height, colors:[Color,Color]}}` 创建原生 `GradientTexture2D` 句柄。宽高为整数 1..32，两个显式有限 0..1 Color；内部 Gradient 固定 0/1 两个位置、线性插值、sRGB、水平填充、不重复、非 HDR。普通 `create GradientTexture2D` 只接受空 properties，生成 16×16 黑白默认纹理。
-- 新增第 15 类资源不是开放任意 Texture2D：只允许无脚本 `GradientTexture2D -> Gradient` 闭合图，完整标量/PackedArray 存储参与指纹及保存读回。所有自定义元数据、对象/Array/Dictionary 或其他依赖拒绝，单层存储最多 24 项、字符串最多 512 字符。纹理通过 `resource_assign property:"texture"` 引用；`resource_set` 直接改纹理拒绝，应新建句柄并用准确计划替换。没有开放任意路径加载、ImageTexture/CompressedTexture2D、PNG/SVG、Atlas、材质纹理槽或自定义导入器。
+- 新增第 15 类资源不是开放任意 Texture2D：渐变只允许无脚本 `GradientTexture2D -> Gradient` 闭合图，完整标量/PackedArray 存储参与指纹及保存读回。所有自定义元数据、对象/Array/Dictionary 或其他依赖拒绝，单层存储最多 24 项、字符串最多 512 字符。纹理通过 `resource_assign property:"texture"` 引用；`resource_set` 直接改纹理拒绝，应新建句柄并用准确计划替换。第 16 类有界 ImageTexture 见下节；没有开放任意路径加载、CompressedTexture2D、SVG、Atlas、材质纹理槽或自定义导入器。
 - 句柄继承项目/会话/owner/fingerprint、64 个、120 秒约束。内存或当前场景内嵌纹理允许 shared / make_unique；导出的外部 `.tres` 必须明确 `make_unique` 后内嵌到 TextureRect，不允许 shared 外部引用。已有外部纹理依赖的 TextureRect 场景也拒绝进入本批编辑/保存，不能用旧资源缓存替代外部文件依赖 CAS。不会自动转存或改写原文件。
 - 纹理本身仍可通过现有独立精确批准、T10 CAS 和原生 ResourceSaver 导出 `.tres`、按同 owner 原生导出哈希 adopt/read，再显式拷贝赋值。保存同时比较 TextureRect authored 字段和两层完整纹理存储，不忽略纹理内容来让重开通过。节点/资源身份在重开后的测试比较中归一化，但共享关系、外部路径和全部存储保留。
 
-`ui-texture-native.test.ts` 使用真实 headless 编辑器和主要 stdio 客户端：权限/能力预算、共享与独占、第二 owner 拒绝、释放句柄后的拒绝、错误类型/伪造指纹、批次失败无残留、原生 Undo/Redo、审批期间修改渐变导致 CONFLICT、HDR/不透明元数据和外部引用拒绝、独立资源导出与场景实际保存重开。第二 owner 使用独立 SDK 内存传输，不冒充第二种已安装客户端。`resource-roundtrip.test.ts` 同时覆盖全部 15 类原生资源，TextureRect 外部纹理明确走 make_unique。
+`ui-texture-native.test.ts` 使用真实 headless 编辑器和主要 stdio 客户端：权限/能力预算、共享与独占、第二 owner 拒绝、释放句柄后的拒绝、错误类型/伪造指纹、批次失败无残留、原生 Undo/Redo、审批期间修改渐变导致 CONFLICT、HDR/不透明元数据和外部引用拒绝、独立资源导出与场景实际保存重开。第二 owner 使用独立 SDK 内存传输，不冒充第二种已安装客户端。`resource-roundtrip.test.ts` 当前覆盖全部 16 类原生资源，按每批最多 32 操作拆分，TextureRect 外部纹理明确走 make_unique。
 
 `ui-texture-render.test.ts` 是单独本机真实渲染验收：从 MCP 创建并保存的场景启动渲染运行桥，水平翻转后 PNG 至少 1000 像素改变，恢复后零像素差异。它不进入 GitHub headless 门禁，不将 headless 存储通过当成 GPU、全 stretch/flip 模式的像素布局或桌面焦点资格。无人工视觉答复不记为人工 PASS。
 
+## PNG 来源快照（main 开发源码）
+
+- `manage_editor_resource` 接受 `request:{action:"png_texture",path:"res://icon.png",sourceHash:"<SHA-256>"}`。路径必须在授权项目内，拒绝绝对路径、逃逸、保护目录、符号链接/junction、硬链接；最多 16 KiB、宽高 1..32、非交错 8 位 RGB/RGBA，仅 IHDR/IDAT/IEND 块。拒绝色彩配置、文本、动画块、SVG、调色板等未声明格式。
+- 宿主检查哈希、CRC、压缩数据和扫描行，内部传递准确字节；原生再次核对源文件、用 Image.load_png_from_buffer 解码并转换 RGBA8，宿主独立比较全部像素。此路径不使用 ResourceLoader 的 PNG 导入缓存或 `.import`，不宣称具备任意导入器来源认证。既有 `import_project_png` 的独立隔离导入限制不变；它不是必须前置步骤。
+- 第 16 类 ImageTexture 只接受无脚本 `ImageTexture -> Image` 闭合图，RGBA8、无压缩/纹理尺寸覆盖/mipmap、全部像素参与指纹和实际保存重开比较。`create ImageTexture properties:{}` 只生成 1×1 白色默认图；不能通过公共请求注入任意原始字节。句柄不可原地修改。
+- 新建/复制句柄临时绑定 sourceHashes，读取/计划准备重查来源；合并进原有最多 32 个场景/PNG 依赖的准确计划，宿主在审批前后及原生最终 commit 重查哈希。源文件改变返回 CONFLICT、不得提交。带来源句柄禁止直接导出，避免绕开赋值的来源审批；先批准赋值，再 reference 内嵌资源后独立导出。
+- 成功赋值是**独立像素快照**，不是源 PNG 的动态引用：之后源文件改变或删除不影响已内嵌资源，也不要求保存时继续检查它。外部 `.tres` 仍须 make_unique，已有外部纹理场景仍拒绝，不因本功能开放外部依赖或热更新。
+- `png-texture-contract.test.ts` 检查真实像素、格式/CRC/元数据、路径及 32 文件总预算；`png-texture-native.test.ts` 检查权限/能力、复制来源、拒绝审批、审批中变化、原生最终 CAS、准确 Undo/Redo、删除源后资源/场景保存及重开。审批为 MOCK；直接私有 RPC 仅作为原生最终 CAS 的授权测试控制，不算产品批准。
+- `png-texture-render.test.ts` 本机走实际 MCP PNG 导入 → 快照赋值 → 原生保存 → 渲染运行桥，检查红蓝像素、翻转差异和恢复；与原有渐变真实渲染检查分开，不进入托管 headless 门禁，不认证 GPU 矩阵或人工 UX。
+
 ## Theme 与样式（原有子集）
 
-原有 `manage_editor_resource` 的 Theme、StyleBoxFlat 位于此前 14 种受控资源中；main 新增的第 15 种 GradientTexture2D 见上节。继承现有 ResourceRef 项目/会话/owner/fingerprint、64 句柄、120 秒 TTL 和共享外部资源只读约束，原 Theme 类型槽不扩大。
+原有 `manage_editor_resource` 的 Theme、StyleBoxFlat 位于此前 14 种受控资源中；main 新增 GradientTexture2D、ImageTexture 见上节。继承现有 ResourceRef 项目/会话/owner/fingerprint、64 句柄、120 秒 TTL 和共享外部资源只读约束，原 Theme 类型槽不扩大。
 
 StyleBoxFlat 支持 bg_color/border_color、四边 border_width、四角 corner_radius、四边 content_margin；整数边框/圆角 metric 0..128，浮点 content_margin 0..1000000（不开放 -1 自动边距），颜色采用显式 Color，单次普通属性最多 8 项。Theme 的普通属性仅 default_font_size 1..128。节点赋值使用 `resource_assign property:theme`，不能把 StyleBoxFlat 直接挂到 material_override。
 
@@ -106,6 +116,6 @@ themeType 限 Control、Label、Button、CheckButton、HSlider、PanelContainer�
 
 ## API 依据
 
-纹理子集另参考 [TextureRect](https://docs.godotengine.org/en/stable/classes/class_texturerect.html)、[GradientTexture2D](https://docs.godotengine.org/en/stable/classes/class_gradienttexture2d.html)、[Gradient](https://docs.godotengine.org/en/stable/classes/class_gradient.html) 与 [4.7.2 原生渐变实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/resources/gradient_texture.cpp)。headless 存储比较不调用 get_image 或伪造 GPU 图像，PNG 资格只来自单独实际渲染用例。
+纹理子集另参考 [TextureRect](https://docs.godotengine.org/en/stable/classes/class_texturerect.html)、[GradientTexture2D](https://docs.godotengine.org/en/stable/classes/class_gradienttexture2d.html)、[Gradient](https://docs.godotengine.org/en/stable/classes/class_gradient.html) 与 [4.7.2 原生渐变实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/resources/gradient_texture.cpp)。渐变的 headless 存储比较不调用 get_image；ImageTexture 用原生 Image 的实际 RGBA8 数据比较，不伪造 GPU 输出。Godot 4.7.2 dummy 存储保存创建时的 Image，不能据此认证原地 update；产品纹理保持不可变。参考 [Image](https://docs.godotengine.org/en/stable/classes/class_image.html)、[ImageTexture](https://docs.godotengine.org/en/stable/classes/class_imagetexture.html) 与 [dummy 原生存储](https://github.com/godotengine/godot/blob/4.7.2-stable/servers/rendering/dummy/storage/texture_storage.h)。最终可见像素资格只来自单独实际渲染用例。扫描进度在插件端限定 0..1，不能代替真实扫描/导入/就绪判断；宿主仍严格拒绝越界值。
 
 [Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[ScrollContainer](https://docs.godotengine.org/en/stable/classes/class_scrollcontainer.html)、[RichTextLabel](https://docs.godotengine.org/en/stable/classes/class_richtextlabel.html) 与 [4.7.2 原生实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/gui/rich_text_label.cpp)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。

@@ -10,7 +10,7 @@ import type { TimeoutContext } from './timeout.js';
 function readU32(b: Buffer, o: number) {
   return b.readUInt32BE(o);
 }
-function decodePng(data: Buffer) {
+export function decodePng(data: Buffer) {
   if (data.subarray(0, 8).compare(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) !== 0) throw new Error('not a PNG');
   let p = 8,
     w = 0,
@@ -94,7 +94,7 @@ function crc32(buf: Buffer) {
   }
   return (c ^ 0xffffffff) >>> 0;
 }
-function encodePng(w: number, h: number, rgba: Buffer) {
+export function encodePng(w: number, h: number, rgba: Buffer) {
   const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
   const chunk = (t: string, c: Buffer) => {
     const tb = Buffer.from(t);

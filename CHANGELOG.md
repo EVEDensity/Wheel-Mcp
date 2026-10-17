@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Normalize native scan progress at the plugin boundary: a real post-PNG rescan
+  returned 1.85 and broke the unchanged strict editor-state protocol. Clamp only
+  the display indicator to 0..1; completion still checks real scanning/importing
+  flags and resource readiness, not the progress number.
+- Add bounded PNG source snapshots as the sixteenth native resource type,
+  ImageTexture: SHA-256-bound project PNG, at most 16 KiB and 32×32, non-interlaced
+  8-bit RGB/RGBA with only IHDR/IDAT/IEND. Independently compare host/native pixels,
+  bind source hashes through exact approval and final native commit, then embed
+  independent RGBA8 pixels. No importer cache, live PNG dependency or arbitrary
+  image/metadata/SVG loading. Source-backed handles cannot export directly; approve
+  scene assignment first, then reference the independent inline snapshot. Textures
+  remain immutable; native Undo/Redo, resource export and actual scene save/reopen
+  must retain every pixel. Bridge 0.3.5 adds scene.png_texture/v1 (25 capabilities).
+  Preserve every old CI test, deadline and worker limit; add four core checks and
+  one native safety case (130 core, 73 safety, 15 engine, 2 package). Local rendered
+  PNG import/snapshot/flip checks are separate from hosted headless qualification.
 - Add bounded TextureRect authoring: expand modes 0..1, stretch modes 0..6 and
   flips, with exact native Undo/Redo and save/reopen checks. Add a fifteenth
   resource type, GradientTexture2D, limited to 1..32 dimensions and a closed,

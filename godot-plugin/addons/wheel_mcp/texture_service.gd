@@ -1,5 +1,6 @@
 @tool
 extends RefCounted
+const Png = preload("res://addons/wheel_mcp/png_texture.gd")
 
 # A closed native resource graph, not a loader for arbitrary project images.
 static func error(message: String, code: String = "UNSUPPORTED") -> Dictionary:
@@ -10,7 +11,12 @@ static func color_valid(value: Color) -> bool:
 		if not is_finite(channel) or channel < 0 or channel > 1: return false
 	return true
 
-static func storage(texture: GradientTexture2D) -> Dictionary:
+static func storage(texture: Texture2D) -> Dictionary:
+	if texture is ImageTexture: return Png.storage(texture)
+	if not texture is GradientTexture2D: return error("Only declared gradient or PNG image textures supported")
+	return gradient_storage(texture)
+
+static func gradient_storage(texture: GradientTexture2D) -> Dictionary:
 	if texture.get_script() != null or texture.width < 1 or texture.width > 32 or texture.height < 1 or texture.height > 32 or texture.use_hdr or texture.fill != 0 or texture.repeat != 0 or texture.fill_from != Vector2.ZERO or texture.fill_to != Vector2(1, 0): return error("Only a bounded 1..32 linear horizontal LDR gradient texture is declared")
 	var gradient := texture.gradient
 	if gradient == null or gradient.get_class() != "Gradient" or gradient.get_script() != null or gradient.get_point_count() != 2 or gradient.offsets != PackedFloat32Array([0, 1]) or gradient.interpolation_mode != 0 or gradient.interpolation_color_space != 0: return error("Texture requires exactly two native linear sRGB gradient stops")
@@ -54,7 +60,11 @@ static func create(source: Variant) -> Dictionary:
 	var checked := storage(texture)
 	return checked if checked.has("code") else {"resource": texture}
 
-static func properties(texture: GradientTexture2D) -> Dictionary:
+static func properties(texture: Texture2D) -> Dictionary:
+	if texture is ImageTexture: return Png.properties(texture)
+	return gradient_properties(texture as GradientTexture2D)
+
+static func gradient_properties(texture: GradientTexture2D) -> Dictionary:
 	var colors: Array = []
 	for color in texture.gradient.colors:
 		colors.append({"type": "Color", "r": color.r, "g": color.g, "b": color.b, "a": color.a})

@@ -296,6 +296,14 @@ export async function applyEditorScene(
         'PROTOCOL_MISMATCH',
         'Editor plugin lacks TextureRect/texture capability; upgrade explicitly',
       );
+    if (
+      operations.some((op) => op.kind === 'resource_assign' && op.ref.resourceType === 'ImageTexture') &&
+      !bridge.identity.capabilities.includes('scene.png_texture/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks PNG snapshot dependency checks; upgrade explicitly',
+      );
     if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
     if (

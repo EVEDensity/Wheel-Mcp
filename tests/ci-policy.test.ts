@@ -95,6 +95,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'ui-scroll-schema',
     'ui-rich-text-schema',
     'ui-texture-schema',
+    'png-texture-contract',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -177,6 +178,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
       'ui-scroll-native',
       'ui-rich-text-native',
       'ui-texture-native',
+      'png-texture-native',
     ]
       .map((name) => `build/tests/${name}.test.js`)
       .sort(),

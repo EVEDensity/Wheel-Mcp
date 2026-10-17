@@ -92,7 +92,7 @@ test(
       const endpointPath = path.join(f.root, '.harness/editor-endpoint.json');
       const endpointBytes = await readFile(endpointPath),
         endpoint = JSON.parse(endpointBytes.toString());
-      assert.equal(endpoint.capabilities.length, 24);
+      assert.equal(endpoint.capabilities.length, 25);
       assert.ok(endpoint.capabilities.includes('scene.texture/v1'));
       try {
         for (const capabilities of [

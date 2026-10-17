@@ -12,6 +12,7 @@ const plan = {
     'ui-scroll-native',
     'ui-rich-text-native',
     'ui-texture-native',
+    'png-texture-native',
     'ui-line-edit-native',
     'install',
     'setup',

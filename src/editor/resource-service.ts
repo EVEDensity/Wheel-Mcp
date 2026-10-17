@@ -5,6 +5,7 @@ import { resolveProjectPath } from '../project/paths.js';
 import { writeProjectText, type ProjectWriteOptions } from '../project/write-file.js';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { readTexturePng } from './png-source.js';
 export const resourceTypes = [
   'StandardMaterial3D',
   'ShaderMaterial',
@@ -21,6 +22,7 @@ export const resourceTypes = [
   'Theme',
   'StyleBoxFlat',
   'GradientTexture2D',
+  'ImageTexture',
 ] as const;
 export const resourceRefSchema = z
   .object({
@@ -152,6 +154,13 @@ const shaderSource = z.discriminatedUnion('format', [
 export const resourceRequestSchema = z.discriminatedUnion('action', [
   z
     .object({
+      action: z.literal('png_texture'),
+      path: z.string().min(1).max(512),
+      sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
+    })
+    .strict(),
+  z
+    .object({
       action: z.literal('texture'),
       source: z
         .object({
@@ -206,6 +215,13 @@ export async function manageEditorResource(options: {
     if (!bridge.identity.capabilities.includes('resource.manage'))
       throw new WheelError('FORBIDDEN', 'Resources require independent private write opt-in');
     if (
+      (request.action === 'png_texture' ||
+        (request.action === 'create' && request.resourceType === 'ImageTexture') ||
+        ('ref' in request && request.ref.resourceType === 'ImageTexture')) &&
+      !bridge.identity.capabilities.includes('scene.png_texture/v1')
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks bounded PNG snapshots; upgrade explicitly');
+    if (
       (request.action === 'texture' ||
         (request.action === 'create' && request.resourceType === 'GradientTexture2D') ||
         ('ref' in request && request.ref.resourceType === 'GradientTexture2D') ||
@@ -226,7 +242,14 @@ export async function manageEditorResource(options: {
       !bridge.identity.capabilities.includes('scene.ui/v1')
     )
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks declared UI themes; upgrade explicitly');
-    const value = (await bridge.sceneRequest('resource.manage', request, options)) as Record<string, unknown>;
+    const png =
+      request.action === 'png_texture'
+        ? await readTexturePng(options.projectPath, request.path, request.sourceHash)
+        : undefined;
+    const wireRequest = png
+      ? { ...request, path: png.resourcePath, dataBase64: png.bytes.toString('base64') }
+      : request;
+    const value = (await bridge.sceneRequest('resource.manage', wireRequest, options)) as Record<string, unknown>;
     if (!value || typeof value !== 'object') throw new WheelError('PROTOCOL_MISMATCH', 'Malformed resource response');
     if (value.status === 'FAIL')
       throw new WheelError(
@@ -243,6 +266,8 @@ export async function manageEditorResource(options: {
       )
         throw new WheelError('PROTOCOL_MISMATCH', 'Resource response scope mismatch');
     }
+    if (png && (value.properties as { rgba8?: string })?.rgba8 !== png.image.rgba.toString('hex'))
+      throw new WheelError('PROTOCOL_MISMATCH', 'Native PNG pixels differ from the validated source');
     return value;
   } finally {
     bridge.close();

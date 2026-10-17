@@ -3,6 +3,7 @@ extends RefCounted
 const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
 const ShaderAuthoring = preload("res://addons/wheel_mcp/shader_service.gd")
 const Textures = preload("res://addons/wheel_mcp/texture_service.gd")
+const Png = preload("res://addons/wheel_mcp/png_texture.gd")
 
 # Explicit native types only. Handles never interpret a client path as a Resource.
 const FIELDS := {
@@ -16,6 +17,7 @@ const FIELDS := {
 	"BoxMesh": ["size"], "SphereMesh": ["radius", "height"],
 	"Theme": ["default_font_size"],
 	"GradientTexture2D": [], # Immutable through resource_set; replace via an exact-plan assignment.
+	"ImageTexture": [],
 	"StyleBoxFlat": ["bg_color", "border_color", "border_width_left", "border_width_top", "border_width_right", "border_width_bottom", "corner_radius_top_left", "corner_radius_top_right", "corner_radius_bottom_left", "corner_radius_bottom_right", "content_margin_left", "content_margin_top", "content_margin_right", "content_margin_bottom"],
 }
 const SHADER := "shader_type spatial;\nuniform vec4 tint : source_color = vec4(1.0);\nuniform float roughness = 0.5;\nvoid fragment() { ALBEDO = tint.rgb; ROUGHNESS = roughness; }\n"
@@ -45,7 +47,7 @@ static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary
 	var storage: Dictionary = {}
 	for property in resource.get_property_list():
 		if not (int(property.usage) & PROPERTY_USAGE_STORAGE): continue
-		if resource is GradientTexture2D:
+		if resource is GradientTexture2D or resource is ImageTexture:
 			var inspected := Textures.storage(resource)
 			if inspected.has("code"): return inspected
 			storage = inspected.storage
@@ -80,11 +82,11 @@ static func describe(resource: Resource, mapping: Dictionary = {}) -> Dictionary
 		var value: Variant = resource.get_shader_parameter(property) if resource is ShaderMaterial else resource.get(property)
 		properties[property] = encode(value)
 	var actual: Resource = mapping.get(resource, resource)
-	if resource is GradientTexture2D: properties = Textures.properties(resource)
+	if resource is GradientTexture2D or resource is ImageTexture: properties = Textures.properties(resource)
 	return {"resourceType": resource.get_class(), "properties": properties, "id": actual.get_instance_id(), "path": actual.resource_path, "storage": storage}
 
 static func set_values(resource: Resource, values: Dictionary) -> Dictionary:
-	if resource is GradientTexture2D: return error("UNSUPPORTED", "Declared textures are immutable; create and assign a replacement")
+	if resource is GradientTexture2D or resource is ImageTexture: return error("UNSUPPORTED", "Declared textures are immutable; create and assign a replacement")
 	var state := describe(resource)
 	if state.has("code"): return state
 	var fields: Array = state.properties.keys()
@@ -131,6 +133,11 @@ static func create(kind: Variant, values: Variant) -> Dictionary:
 	if kind == "GradientTexture2D":
 		if not values.is_empty(): return error("UNSUPPORTED", "Use the bounded texture source for custom gradients")
 		return Textures.create({"format": "linear-gradient", "width": 16, "height": 16, "colors": [{"type": "Color", "r": 0, "g": 0, "b": 0, "a": 1}, {"type": "Color", "r": 1, "g": 1, "b": 1, "a": 1}]})
+	if kind == "ImageTexture":
+		if not values.is_empty(): return error("UNSUPPORTED", "Use a fingerprinted PNG source for image contents")
+		var image := Image.create(1, 1, false, Image.FORMAT_RGBA8)
+		image.fill(Color.WHITE)
+		return {"resource": ImageTexture.create_from_image(image)}
 	var resource: Resource = ClassDB.instantiate(kind)
 	if resource is ShaderMaterial:
 		var shader := Shader.new()
@@ -152,15 +159,17 @@ func _expire() -> void:
 	for hash in _exports.keys():
 		if Time.get_ticks_msec() >= _exports[hash].expires: _exports.erase(hash)
 
-func retain(resource: Resource, owner: String, identity: Dictionary) -> Dictionary:
+func retain(resource: Resource, owner: String, identity: Dictionary, source_hashes: Dictionary = {}) -> Dictionary:
 	_expire()
 	var state := describe(resource)
 	if state.has("code"): return state
 	if _handles.size() >= 64: return error("CONFLICT", "Resource handle quota exceeded")
 	var id := Crypto.new().generate_random_bytes(16).hex_encode()
 	var ref := {"type": "ResourceRef", "handle": id, "resourceType": resource.get_class(), "projectId": identity.projectId, "sessionId": identity.sessionId, "ownerId": owner, "fingerprint": JSON.stringify(state).sha256_text()}
-	_handles[id] = {"resource": resource, "ref": ref, "expires": Time.get_ticks_msec() + TTL}
-	return {"status": "PASS", "ref": ref, "properties": state.properties, "expiresInMs": TTL, "persisted": false}
+	_handles[id] = {"resource": resource, "ref": ref, "expires": Time.get_ticks_msec() + TTL, "sourceHashes": source_hashes.duplicate()}
+	var result := {"status": "PASS", "ref": ref, "properties": state.properties, "expiresInMs": TTL, "persisted": false}
+	if not source_hashes.is_empty(): result["sourceHashes"] = source_hashes.duplicate()
+	return result
 
 func resolve(ref: Variant, owner: String, identity: Dictionary) -> Dictionary:
 	_expire()
@@ -169,14 +178,21 @@ func resolve(ref: Variant, owner: String, identity: Dictionary) -> Dictionary:
 	var record: Dictionary = _handles[ref.handle]
 	if ref.get("ownerId") != owner or ref.get("projectId") != identity.projectId or ref.get("sessionId") != identity.sessionId or JSON.stringify(ref) != JSON.stringify(record.ref):
 		return error("FORBIDDEN", "Resource handle scope/type/fingerprint mismatch")
+	for source in record.sourceHashes:
+		var checked := Png.source_file(source, record.sourceHashes[source])
+		if checked.has("code"): return checked
 	var state := describe(record.resource)
 	if state.has("code"): return state
 	if JSON.stringify(state).sha256_text() != ref.fingerprint: return error("CONFLICT", "Resource changed; obtain a fresh handle")
-	return {"resource": record.resource, "properties": state.properties}
+	return {"resource": record.resource, "properties": state.properties, "sourceHashes": record.sourceHashes.duplicate()}
 
 func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictionary:
 	if params.get("sessionId") != identity.sessionId: return error("CONFLICT", "Resource editor session changed")
 	var action: Variant = params.get("action")
+	if action == "png_texture":
+		var made := Png.create(params)
+		if made.has("code"): return made
+		return retain(made.resource, owner, identity, {params.path: params.sourceHash})
 	if action == "texture":
 		var made := Textures.create(params.get("source"))
 		return made if made.has("code") else retain(made.resource, owner, identity)
@@ -243,8 +259,9 @@ func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictio
 	if action == "duplicate":
 		var unique: Resource = resolved.resource.duplicate(true)
 		unique.resource_path = ""
-		return retain(unique, owner, identity)
+		return retain(unique, owner, identity, resolved.sourceHashes)
 	if action == "export":
+		if not resolved.sourceHashes.is_empty(): return error("UNSUPPORTED", "Approve embedding the PNG snapshot first, then reference/export the independent scene texture")
 		var record: Dictionary = _handles[params.ref.handle]
 		var uid: Variant = params.get("uid", "")
 		if not uid is String or uid.length() > 40 or (not uid.is_empty() and ResourceUID.text_to_id(uid) == ResourceUID.INVALID_ID): return error("INVALID_ARGUMENT", "Invalid native resource UID")
@@ -263,7 +280,7 @@ func dispatch(params: Dictionary, owner: String, identity: Dictionary) -> Dictio
 		var loaded: Resource = ResourceLoader.load(staged, "", ResourceLoader.CACHE_MODE_IGNORE)
 		var before := describe(copy)
 		var after := describe(loaded)
-		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties) or ((copy is Theme or copy is StyleBoxFlat or copy is ShaderMaterial or copy is GradientTexture2D) and after.storage != before.storage):
+		if after.has("code") or after.resourceType != before.resourceType or JSON.stringify(after.properties) != JSON.stringify(before.properties) or ((copy is Theme or copy is StyleBoxFlat or copy is ShaderMaterial or copy is GradientTexture2D or copy is ImageTexture) and after.storage != before.storage):
 			return error("VALIDATION_FAILED", "ResourceSaver roundtrip differs")
 		var content := FileAccess.get_file_as_string(staged)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(staged))

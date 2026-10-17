@@ -81,7 +81,7 @@ test(
       const endpointPath = path.join(f.root, '.harness/editor-endpoint.json');
       const bytes = await readFile(endpointPath);
       const endpoint = JSON.parse(bytes.toString());
-      assert.equal(endpoint.capabilities.length, 24);
+      assert.equal(endpoint.capabilities.length, 25);
       assert.ok(endpoint.capabilities.includes('scene.scroll/v1'));
       try {
         for (const capabilities of [

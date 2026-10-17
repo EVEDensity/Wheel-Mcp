@@ -2,6 +2,7 @@ import { lstat, readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolveProjectPath } from '../project/paths.js';
 import { WheelError } from '../error-schema.js';
+import { readTexturePng } from './png-source.js';
 
 /** Native grammar checks do not replace host path/link checks or dependency CAS. */
 export async function verifySceneDependencies(
@@ -12,6 +13,10 @@ export async function verifySceneDependencies(
   if (Object.keys(hashes).length > 32) throw new WheelError('UNSUPPORTED', 'Scene dependency budget exceeded');
   for (const [resourcePath, expected] of Object.entries(hashes)) {
     signal?.throwIfAborted();
+    if (resourcePath.startsWith('res://') && resourcePath.endsWith('.png')) {
+      await readTexturePng(projectPath, resourcePath, expected);
+      continue;
+    }
     const resolved = await resolveProjectPath(projectPath, resourcePath, { mode: 'read' });
     const info = await lstat(resolved.absolutePath);
     if (
