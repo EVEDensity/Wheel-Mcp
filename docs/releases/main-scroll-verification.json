@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T18:28:29Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "7d2007efa5eb8ea88d2dad1218693d5b237bdb85",
+  "sourceHash": "7f5ef08a1d9121d48b67eae4885eb79b5715303f7d41b5146216242769bb8fa6",
+  "change": "Bounded native ScrollContainer creation, scroll modes 0..4 and follow_focus, native Undo/Redo and actual save/reopen. Internal bars/focus helpers are not mutable authoring paths. Native Tab input validates focus-follow scrolling and a disabled control group.",
+  "upgrade": "Host and plugin must upgrade together: bridge 0.3.2, scene.scroll/v1, maximum 22 advertised capabilities; frame/private-file byte limits unchanged.",
+  "contracts": [
+    "Read-only, missing capability and over-budget capability advertisements fail closed",
+    "Scroll fields on other control types, Container-owned offsets/reparent and internal-node operations are rejected without disk/document changes",
+    "A partially invalid batch leaves no created node behind",
+    "Native create/delete/mode batches have exact Undo/Redo and preserve save/reopen storage after identity-to-path normalization",
+    "Each internal bar must retain its sole native ScrollContainer::_scroll_moved connection; external callbacks and a missing native connection are refused",
+    "A callback attached during approval is rejected again by commit's live document check",
+    "Runtime scroll offsets are not authored ui_set fields or authored CAS/readback claims",
+    "Actual Tab changes GUI focus and scrolls the bottom button into vertical bounds; disabled follow_focus changes focus without scrolling"
+  ],
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39057889496",
+    "status": "success",
+    "passed": 122,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39057889227",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39057890814",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "0b84e276-d042-457d-a622-6ce9b5d3f9c2",
+    "artifactId": 12110033590,
+    "artifactName": "release-assets-39057890814-1",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 194032,
+    "tests": { "core": 122, "package": 2, "safety": 70, "engine": 15, "total": 209 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "packageDurationMs": 3121,
+    "safetyDurationMs": 147883,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: policy/source/documents/commit, archive, SBOM and all checksum entries",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "7adc2628f749c540c3f266a3e3af1cf3b57dfddc9b43e25cde7e526e2ee8958f",
+      "sbom.json": "38a8390cdebf3997cb301c08d394c363018d9708a68bf613c888cb19096a19de",
+      "acceptance.json": "507536148b27ce59df8e21436efcd55c2cec89b147c9f38daad4db08f3f58dda",
+      "SHA256SUMS": "ae6103b0560595fd688e7bdbcc47ecbe1fdae6c29cca385c20ec87899c14934b"
+    }
+  },
+  "earlierSuccessfulAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39057363327",
+    "commit": "0db177ef9a5dc2a8418bd8b709f6299123928503",
+    "sourceHash": "2880a39a2c6d699cdf45f5434937308532f66072f3eabe5fbe13b62af3e62d6d",
+    "runId": "74146aaa-d7a8-4e49-96e4-17588705ea06",
+    "artifactId": 12109704445,
+    "testsPassed": 209,
+    "skipped": 0,
+    "durationMs": 250280,
+    "packageDurationMs": 5110,
+    "safetyDurationMs": 185483,
+    "scratchCleanup": "PASS",
+    "publish": "skipped",
+    "downloadVerification": "PASS before subsequent CI-only edits",
+    "runtimeArchiveByteIdenticalToFinal": true,
+    "betweenSuccessfulCommits": ["scripts/test-ci-fast.mjs", "tests/ci-policy.test.ts", "tests/process-identity.test.ts"],
+    "boundary": "These are different source commits, not two passes on an identical source tree. Their actual runtime archives are byte-identical. The independent short CI on this earlier commit failed and is retained below."
+  },
+  "preservedFailures": [
+    {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39055723662",
+      "commit": "091d639c5f38c4392cd1a25c416228aac85d6e57",
+      "status": "FAIL",
+      "finding": "Core 122/122 and package 2/2 passed. Safety hit its 240000ms suite deadline without a final global summary; the ScrollContainer file had reported a 1/1 pass. This is not a passing safety suite. Publication skipped."
+    },
+    {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39056843702",
+      "commit": "b802d3ff03405d98c0ff033e736217e37e066ecd",
+      "status": "FAIL",
+      "finding": "Core 122/122 passed. Offline consumer npm ci timed out at its 30000ms deadline after reify moves {}, in the Windows user-profile temp directory. Package result 1/2, publication skipped. Offline caching alone did not eliminate the failure."
+    },
+    {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39057362383",
+      "commit": "0db177ef9a5dc2a8418bd8b709f6299123928503",
+      "status": "FAIL",
+      "finding": "Independent short CI was 121/122: stable OS identity comparison failed (case duration 5384ms). The old assertion did not distinguish a null second read from a changed identity; the exact cause is UNPROVEN, not established merely by elapsed time. The full gate on this commit passed independently."
+    }
+  ],
+  "ciChanges": {
+    "queue": "Public node:test run({files}) preserves the explicit process-isolated queue instead of CLI alphabetical sorting. All 14 safety files remain; costly native validation starts early. Core identity preflight is ahead of process-heavy fixtures.",
+    "diagnostics": "Compact live per-file dequeue/complete/summary observations survive timeout under runs/ci/<scope>/progress/summary.json; diagnostic events never grant acceptance.",
+    "temp": "Hosted test steps set TEMP/TMP/TMPDIR to runner.temp. Consumer temp must be outside the checkout, preventing source node_modules fallback.",
+    "negativeControls": ["Exit-zero skipped suite still fails", "Reverse lexical queue order is honored", "Files retain separate global state even at concurrency one", "Passing case with live worker fails the enclosing deadline"],
+    "unchangedGuards": "No test/install/identity-read retries, forced test exit, cached-identity substitution, skipped cases or increased deadlines introduced. Two workers; 5000ms OS identity read; 30000ms npm command; 40000ms package suite; 240000ms safety suite; 600000ms whole gate.",
+    "causalityBoundary": "The ordered queue and runner-owned temp placement have passing measurements, but are not a controlled proof of the unique cause of either original timeout. Earlier successes do not erase failed runs or guarantee future runner/external-service availability."
+  },
+  "developmentUiRegression": {
+    "scope": "scroll-ui-frozen",
+    "sourceHash": "dfe8b357a3eb87a2baa7b87aeb821587fd64616cc823ddd1ad07fd33ec73ee66",
+    "passed": 6,
+    "skipped": 0,
+    "scratchCleanup": "PASS",
+    "checks": ["ScrollContainer guards/Undo/Redo/reopen/Tab", "LineEdit native regression", "Existing UI/Theme/native button input and three localized viewports", "Existing invalid-batch and resource/save guards"],
+    "boundary": "Development-tree UI regression before later CI-only edits, not a final-source full gate. Final source is independently bound by hostedAcceptance above."
+  },
+  "installedCodex": {
+    "status": "PASS_REPRESENTATIVE_NATIVE_INTERFACE",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "entrypoint": "scripts/run-mcp.mjs",
+    "sourceHash": "7f5ef08a1d9121d48b67eae4885eb79b5715303f7d41b5146216242769bb8fa6",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T18-24-07-873Z-60452/report.json",
+    "reportSha256": "de204399cde63b045940997a2ac2eaef6bf00dce9d187cd7ff32c0c22375fa9a",
+    "tools": 71,
+    "resources": 5,
+    "checks": ["discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene", "independent saved byte readback"],
+    "approval": "MOCK exact-plan host, NOT human desktop/TUI approval UX",
+    "modelTurn": false,
+    "permanentClientConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "unchanged": true,
+    "evidence": "docs/releases/0.2.8-ci-cd-verification.json",
+    "note": "No new tag/Release/npm publication or overwritten public asset. This development archive also has package version 0.2.8 but is NOT the public v0.2.8 archive."
+  },
+  "productionQualification": "NOT_QUALIFIED",
+  "boundary": "Declared Windows/local stdio subset only. No full Godot UI, wheel/touch/IME, pixel-clipping/desktop focus, accessibility, human approval, cold-cache clean-machine installation, cross-platform, public HTTP or long-session qualification. Later documentation commits are not the accepted source commit."
+}
