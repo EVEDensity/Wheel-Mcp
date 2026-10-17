@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Stage 2 adds runtime bridge 0.3.2 / character.step2d/v1: bounded native
+  step_character_2d with run/write/owner checks, consecutive physics scheduling,
+  last-frame contacts, zero held velocity, exact replay and UNKNOWN late-result
+  lookup. Actual authored/saved native and local rendered movement tests; no
+  automatic controller, gravity, keyboard-consumption or script attachment.
+  Preserve existing tests/time/concurrency bounds: 141 core, 76 safety,
+  16 engine and 2 package cases (235 total).
+
 - Stage 1 CharacterBody2D native creation and six bounded character_set fields;
   exact approval, callback/conflict refusal, shape/visual composition, native
   Undo/Redo and actual saved reopen. Editor bridge 0.3.7 announces

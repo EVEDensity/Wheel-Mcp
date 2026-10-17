@@ -150,7 +150,7 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.3.1",
+			"bridgeVersion": "0.3.2",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"runtimeConditions": {
 				"renderer": RenderingServer.get_current_rendering_method(),
@@ -165,7 +165,7 @@ func _process(_delta: float) -> bool:
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -204,6 +204,16 @@ func _handle_persistent_request(request: Dictionary) -> void:
 		return
 	if shutting_down:
 		_respond_error(request_id, -32000, "runtime is stopping")
+		return
+	if method == "step_character_2d":
+		var checked := _prepare_character_step(params)
+		if checked.has("error"):
+			_respond_error(request_id, int(checked.get("errorCode", -32602)), str(checked.error))
+		elif paused or physics_requests.size() >= 16:
+			_respond_error(request_id, -32009, "character step unavailable while paused or physics queue full")
+		else:
+			checked.merge({"id":request_id, "method":method, "params":params.duplicate(true), "sceneId":persistent_instance.get_instance_id(), "completedFrames":0, "collidedDuringStep":false})
+			physics_requests.append(checked)
 		return
 	if method == "query_collisions" or method == "get_specialized_state":
 		var physics_node := _resolve_node(persistent_instance, str(params.get("nodePath", ".")))
@@ -330,6 +340,9 @@ func _sample_physics_request() -> void:
 	if paused:
 		_respond_error(request.id, -32009, "scene paused before physics sampling")
 		return
+	if request.method == "step_character_2d":
+		_sample_character_step(request)
+		return
 	if request.method == "wait_physics_frames":
 		_respond(request.id, {"frames":request.frames, "physicsFrame":Engine.get_physics_frames(), "schedule":"physics_process"})
 		return
@@ -338,6 +351,75 @@ func _sample_physics_request() -> void:
 		_respond_error(request.id, int(result.get("errorCode", -32602)), str(result.error), {"nodePath":request.params.get("nodePath", ".")})
 	else:
 		_respond(request.id, result)
+
+func _prepare_character_step(params: Dictionary) -> Dictionary:
+	if params.size() != 3 or not params.get("nodePath") is String or params.nodePath.is_empty() or params.nodePath.length() > 512: return {"error":"Character step requires nodePath, velocity and frames", "errorCode":-32602}
+	if params.nodePath != ".":
+		for part in params.nodePath.split("/"):
+			if part.is_empty() or part in [".", ".."] or ":" in part or "%" in part or "\\" in part: return {"error":"Character target must be a canonical scene-local relative node path", "errorCode":-32602}
+	var velocity: Variant = params.get("velocity")
+	var frames: Variant = params.get("frames")
+	if not velocity is Dictionary or velocity.size() != 2 or not _valid_number(velocity.get("x")) or not _valid_number(velocity.get("y")) or absf(velocity.x) > 1000 or absf(velocity.y) > 1000: return {"error":"Character velocity requires finite x/y within +/-1000 px/s", "errorCode":-32602}
+	if not _valid_number(frames) or frames != floor(frames) or frames < 1 or frames > 30: return {"error":"Character frames must be an integer in 1..30", "errorCode":-32602}
+	var node := _resolve_node(persistent_instance, params.nodePath)
+	if node == null: return {"error":"Character node not found", "errorCode":-32004}
+	if node != persistent_instance and not persistent_instance.is_ancestor_of(node): return {"error":"Character target is outside the active scene", "errorCode":-32602}
+	if not node is CharacterBody2D: return {"error":"Character step requires CharacterBody2D", "errorCode":-32601}
+	if not node.can_process(): return {"error":"Character processing is disabled", "errorCode":-32601}
+	var delta := node.get_physics_process_delta_time()
+	if not is_finite(delta) or delta <= 0 or delta > 0.1: return {"error":"Character physics delta must be positive and <=0.1 seconds", "errorCode":-32601}
+	if node.get_script() != null or node.velocity != Vector2.ZERO or node.max_slides < 1 or node.max_slides > 8 or not is_finite(node.safe_margin) or node.safe_margin < 0.001 or node.safe_margin > 10: return {"error":"Character must be native, stationary between steps and within slide/margin budgets", "errorCode":-32601}
+	if not node.global_position.is_finite() or node.global_position.abs().x > 100000 or node.global_position.abs().y > 100000: return {"error":"Character position outside motion budget", "errorCode":-32601}
+	# World-axis, unit-scale subset only. No physics result inferred from a
+	# sheared/mirrored/scaled collision body or unverified custom shape owner.
+	if not node.global_transform.x.is_equal_approx(Vector2.RIGHT) or not node.global_transform.y.is_equal_approx(Vector2.DOWN): return {"error":"Character step requires world-axis unit transform", "errorCode":-32601}
+	for signal_name in ["item_rect_changed", "draw"]:
+		if not node.get_signal_connection_list(signal_name).is_empty(): return {"error":"Character callbacks require a separate movement policy", "errorCode":-32601}
+	var owners: Variant = node.get_shape_owners()
+	if owners.is_empty() or owners.size() > 8: return {"error":"Character needs 1..8 declared shape owners", "errorCode":-32601}
+	var enabled := false
+	for owner_id in owners:
+		var owner := node.shape_owner_get_owner(owner_id) as CollisionShape2D
+		if owner == null or owner.get_parent() != node or owner.get_script() != null or owner.one_way_collision or node.shape_owner_get_shape_count(owner_id) != 1: return {"error":"Character shape owner outside declared subset", "errorCode":-32601}
+		var shape := owner.shape
+		if shape == null or shape.get_script() != null or not (shape is RectangleShape2D or shape is CircleShape2D or shape is CapsuleShape2D): return {"error":"Character requires native rectangle/circle/capsule shape", "errorCode":-32601}
+		if not owner.global_transform.x.is_equal_approx(Vector2.RIGHT) or not owner.global_transform.y.is_equal_approx(Vector2.DOWN) or not owner.position.is_finite() or owner.position.abs().x > 10000 or owner.position.abs().y > 10000: return {"error":"Character shape transform outside declared subset", "errorCode":-32601}
+		if shape is RectangleShape2D and (not shape.size.is_finite() or shape.size.x <= 0 or shape.size.y <= 0 or shape.size.x > 10000 or shape.size.y > 10000): return {"error":"Character rectangle outside size budget", "errorCode":-32601}
+		if (shape is CircleShape2D or shape is CapsuleShape2D) and (not is_finite(shape.radius) or shape.radius <= 0 or shape.radius > 10000): return {"error":"Character radius outside size budget", "errorCode":-32601}
+		if shape is CapsuleShape2D and (not is_finite(shape.height) or shape.height < shape.radius * 2 or shape.height > 10000): return {"error":"Character capsule outside size budget", "errorCode":-32601}
+		if not owner.disabled: enabled = true
+	if not enabled: return {"error":"Character needs an enabled collision shape", "errorCode":-32601}
+	return {"nodeId":node.get_instance_id()}
+
+func _character_point(value: Vector2) -> Dictionary:
+	return {"x":value.x, "y":value.y}
+
+func _sample_character_step(request: Dictionary) -> void:
+	var checked := _prepare_character_step(request.params)
+	if checked.has("error") or checked.get("nodeId") != request.nodeId:
+		_respond_error(request.id, int(checked.get("errorCode", -32009)), str(checked.get("error", "Character identity changed before movement")), {"completedFrames":request.completedFrames, "rollback":false})
+		return
+	var node := instance_from_id(request.nodeId) as CharacterBody2D
+	if request.completedFrames == 0:
+		request["before"] = _character_point(node.position)
+		request["startPhysicsFrame"] = Engine.get_physics_frames()
+	node.velocity = Vector2(request.params.velocity.x, request.params.velocity.y)
+	var collided := node.move_and_slide()
+	var resulting_velocity := node.velocity
+	# Never leave a held velocity or a hidden autonomous process after a frame.
+	node.velocity = Vector2.ZERO
+	request.completedFrames += 1
+	request.collidedDuringStep = request.collidedDuringStep or collided
+	if request.completedFrames < int(request.params.frames):
+		physics_requests.push_front(request)
+		return
+	var collisions: Array[Dictionary] = []
+	for index in range(mini(node.get_slide_collision_count(), 8)):
+		var collision := node.get_slide_collision(index)
+		var collider := collision.get_collider() as Node
+		var collider_path := str(persistent_instance.get_path_to(collider)) if collider != null and (collider == persistent_instance or persistent_instance.is_ancestor_of(collider)) else ""
+		collisions.append({"path":collider_path, "position":_character_point(collision.get_position()), "normal":_character_point(collision.get_normal())})
+	_respond(request.id, {"schema_version":"0.1", "source":"REAL", "capability":"RUNTIME_CHARACTER_STEP", "runtime":true, "persisted":false, "schedule":"physics_process", "nodePath":str(persistent_instance.get_path_to(node)), "frames":int(request.params.frames), "completedFrames":request.completedFrames, "startPhysicsFrame":request.startPhysicsFrame, "physicsFrame":Engine.get_physics_frames(), "before":request.before, "after":_character_point(node.position), "velocity":_character_point(resulting_velocity), "velocityReset":true, "collided":collided, "collidedDuringStep":request.collidedDuringStep, "onFloor":node.is_on_floor(), "onWall":node.is_on_wall(), "onCeiling":node.is_on_ceiling(), "collisions":collisions})
 
 func _respond_error(request_id, code: int, message: String, data: Dictionary = {}) -> void:
 	_emit_json({"jsonrpc": "2.0", "id": request_id, "error": {"code": code, "message": message, "data": data}})

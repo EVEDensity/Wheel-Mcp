@@ -15,6 +15,7 @@ import { resolveGodotPathSync } from './godot-path.js';
 import { validateVariantInput } from './protocol/variant.js';
 import { validateCollisionQuery } from './runtime/physics-query.js';
 import { validateMouseWheel } from './runtime/mouse-wheel.js';
+import { validateCharacterStep } from './runtime/character-step.js';
 import { normalizeBridgeRuntimeEvent, type EventCursor, type RuntimeEvent } from './runtime-events.js';
 import {
   BridgeProtocolError,
@@ -64,6 +65,7 @@ type OperationRecord = {
   error?: Error;
 };
 export const RUNTIME_WRITE_METHODS = new Set([
+  'step_character_2d',
   'set_property',
   'create_node',
   'delete_node',
@@ -423,6 +425,13 @@ export class PersistentRuntimeBridge {
         method,
       });
     if (method === 'set_property' && Object.hasOwn(params, 'value')) validateVariantInput(params.value);
+    if (method === 'step_character_2d') {
+      params = validateCharacterStep(params);
+      if (!this.handshake?.capabilities.includes('character.step2d/v1'))
+        throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise character.step2d/v1', {
+          sessionId: this.sessionId,
+        });
+    }
     if (method === 'inject_input' && params.type === 'mouse_wheel') {
       params = validateMouseWheel(params);
       if (!this.handshake?.capabilities.includes('input.mouse_wheel/v1'))

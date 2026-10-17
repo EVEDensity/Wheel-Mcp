@@ -99,6 +99,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'mouse-wheel-contract',
     'sprite-schema',
     'character-schema',
+    'character-step-contract',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -159,6 +160,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   assert.ok(safety.files.includes('build/tests/ui-rich-text-native.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-texture-native.test.js'));
   assert.ok(safety.files.includes('build/tests/character-native.test.js'));
+  assert.ok(safety.files.includes('build/tests/character-step-native.test.js'));
   assert.equal(safety.concurrency, 2);
   assert.deepEqual(safety.files.slice(0, 2), [
     'build/tests/validated-project-write.test.js',
@@ -191,6 +193,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
       'ui-texture-native',
       'sprite-native',
       'character-native',
+      'character-step-native',
       'png-texture-native',
     ]
       .map((name) => `build/tests/${name}.test.js`)

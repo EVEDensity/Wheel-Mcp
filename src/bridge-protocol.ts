@@ -3,6 +3,7 @@ import type { ErrorCode } from './error-schema.js';
 import { validateVariantOutput } from './protocol/variant.js';
 import { physics3dResultSchema } from './protocol/physics3d.js';
 import { mouseWheelSchema } from './runtime/mouse-wheel.js';
+import { characterStepResultSchema } from './runtime/character-step.js';
 
 export const BRIDGE_PROTOCOL_VERSION = 'wheel-runtime/1';
 
@@ -151,6 +152,7 @@ export function validateBridgeResult(method: string, value: unknown): Record<str
       bridgeError: value.error,
     });
   const required: Record<string, Array<[string, (input: unknown) => boolean]>> = {
+    step_character_2d: [['completedFrames', Number.isInteger]],
     get_scene_tree: [['nodes', Array.isArray]],
     get_property: [['value', () => true]],
     set_property: [
@@ -195,6 +197,11 @@ export function validateBridgeResult(method: string, value: unknown): Record<str
         key,
       });
   validateVariantOutput(value, `bridge.${method}`);
+  if (method === 'step_character_2d') {
+    const parsed = characterStepResultSchema.safeParse(value);
+    if (!parsed.success)
+      throw new BridgeProtocolError('Invalid CharacterBody2D step observation', { issues: parsed.error.issues });
+  }
   if (method === 'inject_input' && value.type === 'mouse_wheel') {
     const parsed = mouseWheelSchema.safeParse({
       type: value.type,

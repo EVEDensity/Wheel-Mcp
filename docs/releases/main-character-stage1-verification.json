@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "status": "LOCAL_CHECKS_PASSED_NOT_RELEASE_QUALIFICATION",
+  "acceptedCommit": "e401eb83bc877a30f22f89ca326e7f9208cc3545",
   "sourceHash": "ddcbb694934499e4c27064108d93bfff49c7691e18a23daa3edb681801176323",
   "scope": "Stage 1 native CharacterBody2D authored configuration; no runtime controller or arbitrary script attachment.",
   "upgrade": { "editorBridge": "0.3.7", "capability": "scene.character2d/v1", "maximumCapabilities": 27 },
@@ -25,6 +26,8 @@
     { "report": "runs/ci/fast-contract-only/failure-details.txt", "cause": "Exact CI safety allowlist assertion lacked the newly added character-native file. Added it explicitly; all old names and deadlines preserved." }
   ],
   "hostedAcceptanceThisStage": "NOT_RUN; stage 2 final-source gate must not inherit old Sprite2D receipts",
+  "shortCi": { "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39068889420", "status": "success", "tests": 138, "skipped": 0, "scratchCleanup": "PASS" },
+  "pages": { "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39068888940", "status": "success" },
   "previousTestsRemoved": false,
   "deadlinesOrConcurrencyIncreased": false,
   "newTagReleaseOrNpmPublish": false,

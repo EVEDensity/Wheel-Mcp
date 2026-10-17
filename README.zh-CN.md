@@ -242,7 +242,7 @@ main 新增 `input.mouse_wheel/v1` 有界原生滚轮：viewport 坐标、四方
 验证真实 ScrollContainer 响应，不控制系统鼠标；注入被接受不代表控件已消费。
 
 main 继续新增单帧 Sprite2D 的居中、偏移、翻转和受控内嵌 PNG/渐变引用，保留原生撤销及保存重开；
-main 还支持 CharacterBody2D 原生创建和六项有界碰撞/运动配置，组合形状与 Sprite2D、原生撤销及保存重开；第一阶段不是运行时控制器，不支持任意脚本挂载。见[角色契约](docs/production-roadmap/CHARACTER-2D-CONTRACT.md)。
+main 还支持 CharacterBody2D 原生创建和六项有界碰撞/运动配置，组合形状与 Sprite2D、原生撤销及保存重开；运行桥 0.3.2 新增物理帧调度的短步 `step_character_2d`，原生验证移动、墙面/地面和操作去重。不是按键消费、自动运行的角色脚本或任意脚本挂载。见[角色契约](docs/production-roadmap/CHARACTER-2D-CONTRACT.md)。
 不含任意图片加载、图集分帧、区域、材质或角色脚本。见[精灵契约](docs/production-roadmap/SPRITE-2D-CONTRACT.md)。
 
 - 运行时属性修改不等于保存编辑器场景。编辑器保存需独立授权与精确批准，仅支持声明的原生类型；保存后 Undo 的文档/磁盘冲突会阻止普通文件覆盖。

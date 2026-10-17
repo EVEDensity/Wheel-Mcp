@@ -29,6 +29,7 @@ const files = [
   'mouse-wheel-contract',
   'sprite-schema',
   'character-schema',
+  'character-step-contract',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

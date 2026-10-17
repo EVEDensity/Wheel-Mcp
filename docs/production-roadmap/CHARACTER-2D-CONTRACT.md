@@ -49,12 +49,65 @@ The first development failure was an assertion attempting to read
 error content body. The test now requires the SDK error, the failing field and
 unchanged scene/document; it does not reinterpret it as an engine error.
 
-## Stage 2: pending runtime control
+## Stage 2: bounded native runtime command
 
-Stage 1 alone does not move a body or consume player input. The next separately
-verified step is a bounded, physics-frame scheduled native movement command
-with run/write permissions, session ownership, operation replay and collision
-readback. No arbitrary script attachment is authorized by this contract.
+Upgrade the runtime bridge explicitly to 0.3.2. Its `step_character_2d` method
+requires `character.step2d/v1`, plus existing run/write scope and owned session.
+It is a short commanded motion, not keyboard consumption, automatic gravity,
+jump logic, a permanent controller or arbitrary script attachment.
+
+```json
+{"sessionId":"<owned-session>","method":"step_character_2d","operationId":"move-001","params":{"nodePath":"Player","velocity":{"x":120,"y":0},"frames":6}}
+```
+
+Velocity is finite pixels/second, each component within +/-1000; frames is an
+integer 1..30. Both the host and native runtime reject extra/invalid fields.
+Targets must be canonical scene-local relative paths (or `.` for the scene
+root); absolute paths, empty/dot/traversal components, subnames, unique-name
+paths and backslashes are rejected. Native containment is checked independently.
+Old runtime capabilities fail before dispatch. The command is classified as a
+write, binding its exact content to operationId. Same ID/content returns the
+original result without movement; different content conflicts.
+
+Execution uses the existing bounded 16-entry physics queue, binds scene and
+native node identity, and calls native `move_and_slide` on consecutive physics
+frames. Recheck the script-free body, stationary between steps, processing
+enabled, finite position within +/-100000 and delta 0..0.1 seconds (zero
+excluded), 1..8 slides and margin 0.001..10. Only world-axis unit body/shape
+transforms, 1..8 direct native rectangle/circle/capsule shape owners, no one-way
+shape, script or geometry callbacks and at least one enabled shape are accepted.
+Shape size/radius/height and local offsets are bounded by 10000. Collision
+environment is the trusted running project, not frozen or certified geometry.
+
+The response contains before/after *local* position, actual last-slide velocity,
+exact completed/start/end physics frame counts, floor/wall/ceiling flags and up
+to eight *last-frame* native contact positions/normals in world space. Contacts
+are not an all-frame event history. Velocity resets to zero after each movement
+frame; no autonomous process, held input or authored file write is installed.
+
+Timeout/cancellation is not rollback. A submitted command may complete its
+bounded remaining frames; query `get_runtime_operation_status` with the original
+ID and do not submit a new movement. Scene replacement, pause or invalid state
+can abort after partial movement, without undoing prior frames. Never claim a
+failed runtime command left the world unchanged. Stopping the owned session
+ends the run; replay records are session-local, not durable after restart.
+
+Tests add three fast grammar/observation/permission cases, a real stdio native
+author/save/run case and a separate local rendered pixel case. Tests verify
+free motion, wall/floor normals, exact duplicate replay, conflict, invalid
+parameters, wrong target, disabled/scaled body refusal, idle stability, UNKNOWN
+then late completion lookup, unchanged authored bytes, and reversible pixels.
+Approval for authoring remains MOCK. Native stepping does not require rendering
+and does not pop up a game window; local pixel acceptance uses the existing
+minimized background renderer, not headless screenshots.
+
+Development failure evidence is retained: the first runtime test exposed a
+GDScript inferred-Variant parse error in the shape-owner lookup (fixed with an
+explicit Variant declaration), and a new non-finite-output assertion expected
+PROTOCOL_MISMATCH even though the existing shared Variant guard returns
+UNSUPPORTED first. That guard was preserved. The first complete local gate
+passed before the later scene-local path tightening; it is not reused as the
+final source's complete gate. Final evidence must bind the tightened source.
 
 Primary reference: [Godot CharacterBody2D](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html).
 Full production qualification, all platforms, human approval UX and complete

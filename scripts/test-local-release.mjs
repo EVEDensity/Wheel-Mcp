@@ -15,6 +15,7 @@ const plan = {
     'install',
     'sprite-native',
     'character-native',
+    'character-step-native',
     'ui-scroll-native',
     'ui-rich-text-native',
     'ui-texture-native',

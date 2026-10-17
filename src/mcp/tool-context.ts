@@ -37,6 +37,7 @@ export const toolSchemas = {
   eventNames: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
   eventPayload: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])).optional(),
   runtimeMethod: z.enum([
+    'step_character_2d',
     'get_scene_tree',
     'get_property',
     'set_property',

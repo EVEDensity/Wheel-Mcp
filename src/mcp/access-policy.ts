@@ -121,6 +121,7 @@ export function isReadOnlyToolCall(tool: string, args: Record<string, unknown>):
 }
 const runBridgeMethods = new Set(['subscribe_events', 'stop']);
 const writeBridgeMethods = new Set([
+  'step_character_2d',
   'set_property',
   'create_node',
   'delete_node',
