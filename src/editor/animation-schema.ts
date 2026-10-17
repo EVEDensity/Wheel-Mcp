@@ -11,14 +11,32 @@ const key = z
     ]),
   })
   .strict();
-const track = z
-  .object({
-    id,
-    target: z.string().min(1).max(128),
-    property: z.literal('position'),
-    keys: z.array(key).min(1).max(32),
-  })
-  .strict();
+const base = { id, target: z.string().min(1).max(128) };
+const timed = { time: z.number().finite().min(0).max(60) };
+const scaleAxis = z.number().finite().min(0.0625).max(16);
+const track = z.discriminatedUnion('property', [
+  z.object({ ...base, property: z.literal('position'), keys: z.array(key).min(1).max(32) }).strict(),
+  z
+    .object({
+      ...base,
+      property: z.literal('rotation'),
+      keys: z
+        .array(z.object({ ...timed, value: z.number().finite().min(-32).max(32) }).strict())
+        .min(1)
+        .max(32),
+    })
+    .strict(),
+  z
+    .object({
+      ...base,
+      property: z.literal('scale'),
+      keys: z
+        .array(z.object({ ...timed, value: z.object({ x: scaleAxis, y: scaleAxis }).strict() }).strict())
+        .min(1)
+        .max(32),
+    })
+    .strict(),
+]);
 const clip = z
   .object({
     id,
@@ -38,10 +56,15 @@ export const animationClipsSchema = z
       if (ids.has(item.id)) context.addIssue({ code: 'custom', message: 'Duplicate clip ID', path: [ci, 'id'] });
       ids.add(item.id);
       const tracks = new Set<string>();
+      const channels = new Set<string>();
       for (const [ti, channel] of item.tracks.entries()) {
         if (tracks.has(channel.id))
           context.addIssue({ code: 'custom', message: 'Duplicate track ID', path: [ci, 'tracks', ti, 'id'] });
         tracks.add(channel.id);
+        const address = JSON.stringify([channel.target, channel.property]);
+        if (channels.has(address))
+          context.addIssue({ code: 'custom', message: 'Duplicate target property', path: [ci, 'tracks', ti] });
+        channels.add(address);
         let previous = -1;
         for (const [ki, frame] of channel.keys.entries()) {
           if (frame.time <= previous || frame.time > item.length)

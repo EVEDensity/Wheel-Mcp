@@ -95,7 +95,7 @@ test(
       const endpointFile = path.join(f.root, '.harness/editor-endpoint.json');
       const bytes = await readFile(endpointFile),
         endpoint = JSON.parse(bytes.toString());
-      assert.equal(endpoint.capabilities.length, 27);
+      assert.equal(endpoint.capabilities.length, 28);
       try {
         for (const capabilities of [
           endpoint.capabilities.filter((v: string) => v !== 'scene.character2d/v1'),

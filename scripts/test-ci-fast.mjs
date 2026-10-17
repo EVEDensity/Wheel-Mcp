@@ -32,6 +32,7 @@ const files = [
   'character-schema',
   'character-step-contract',
   'character-dynamics-contract',
+  'animation-transform-schema',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

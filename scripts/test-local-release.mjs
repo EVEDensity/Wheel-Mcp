@@ -12,6 +12,8 @@ const plan = {
     'editor-scene-rpc',
     'editor-scene-save',
     'project-transactions',
+    // Save/reopen and stale approval make this a safety fixture, not smoke.
+    'animation-transform-native',
     'png-texture-native',
     'install',
     'ui-scroll-native',

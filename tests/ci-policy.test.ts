@@ -102,6 +102,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'character-schema',
     'character-step-contract',
     'character-dynamics-contract',
+    'animation-transform-schema',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -182,9 +183,10 @@ test('optional engine smoke is small and bounded; local release prep has no redu
     'build/tests/validated-project-write.test.js',
     'build/tests/editor-scene-rpc.test.js',
   ]);
-  assert.deepEqual(safety.files.slice(2, 6), [
+  assert.deepEqual(safety.files.slice(2, 7), [
     'build/tests/editor-scene-save.test.js',
     'build/tests/project-transactions.test.js',
+    'build/tests/animation-transform-native.test.js',
     'build/tests/png-texture-native.test.js',
     'build/tests/install.test.js',
   ]);
@@ -194,6 +196,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
       'install',
       'setup',
       'project-transactions',
+      'animation-transform-native',
       'transaction-recovery',
       'owned-process',
       'streamable-http-security',

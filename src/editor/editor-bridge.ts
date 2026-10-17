@@ -18,7 +18,7 @@ const identitySchema = z.object({
   port: z.number().int().min(1).max(65535),
   // Bounded native UI/texture extensions; frames and private files
   // retain their existing byte limits. Older clients need a coordinated upgrade.
-  capabilities: z.array(z.string()).max(27),
+  capabilities: z.array(z.string()).max(28),
   authorized: z.literal(true),
 });
 type EditorIdentity = z.infer<typeof identitySchema>;

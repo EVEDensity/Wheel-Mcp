@@ -84,7 +84,7 @@ func _enter_tree() -> void:
 		_release_lease()
 		return
 	_identity = {
-		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.7",
+		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.8",
 		"projectId": _config.get("projectId", ""), "projectPath": project_path,
 		"sessionId": Crypto.new().generate_random_bytes(16).hex_encode(),
 		"godotVersion": Engine.get_version_info().string, "editorPid": OS.get_process_id(),
@@ -94,6 +94,7 @@ func _enter_tree() -> void:
 		_identity.capabilities.append_array(["scene.prepare", "scene.commit", "scene.discard", "scene.status", "resource.manage", "scene.export", "scene.verify", "scene.notify", "scene.observe", "asset.scan", "asset.status", "scene.dependencies/v1", "scene.overrides/v1", "scene.ui/v1", "scene.physics3d/v1", "scene.animation/v1", "scene.shader/v1", "asset.import/v1"])
 		_identity.capabilities.append_array(["scene.line_edit/v1", "scene.scroll/v1", "scene.rich_text/v1", "scene.texture/v1", "scene.png_texture/v1", "scene.sprite2d/v1"])
 		_identity.capabilities.append("scene.character2d/v1")
+		_identity.capabilities.append("scene.animation_transform2d/v1")
 	var staged := LEASE + "/endpoint.json"
 	var output := FileAccess.open(staged, FileAccess.WRITE)
 	if output == null:

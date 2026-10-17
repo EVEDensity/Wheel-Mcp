@@ -251,6 +251,18 @@ export async function applyEditorScene(
     if (!bridge.identity.capabilities.includes('scene.prepare'))
       throw new WheelError('FORBIDDEN', 'Editor scene writes require independent private opt-in');
     if (
+      operations.some(
+        (op) =>
+          op.kind === 'animation_clips' &&
+          op.clips.some((clip) => clip.tracks.some((track) => track.property !== 'position')),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.animation_transform2d/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks bounded 2D rotation/scale animation; upgrade explicitly',
+      );
+    if (
       operations.some((op) => op.kind === 'character_set' || (op.kind === 'create' && op.type === 'CharacterBody2D')) &&
       !bridge.identity.capabilities.includes('scene.character2d/v1')
     )

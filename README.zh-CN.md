@@ -261,7 +261,7 @@ main 还支持 CharacterBody2D 原生创建和六项有界碰撞/运动配置，
 - **场景与资源：** 每批最多 32 个操作、场景最多 100 个节点；公开 v0.2.8 包限定 14 类资源，main 新增有界 GradientTexture2D 和 ImageTexture，共 16 类。含脚本、未声明节点类型或唯一名称节点的文档不支持原生批量编辑；继承场景仅支持声明的覆盖策略。批准后的 `.tscn` 文件写入不等于原生编辑或原生撤销。
 - **UI：** 基础控件、容器布局、Theme/StyleBoxFlat，以及有限的 `pressed → hide/show` 连接。main 开发源码新增有界 LineEdit、ScrollContainer、纯文本 RichTextLabel 和 TextureRect 创作，保留原生撤销及保存重开。TextureRect 支持稳定扩展模式、拉伸/翻转、最多 32×32 的内嵌双色原生渐变及 PNG 快照。PNG 来源须有 SHA-256、最多 16 KiB、非交错 8 位 RGB/RGBA，不能带元数据/色彩配置块；审批绑定原始文件字节，通过后内嵌独立像素，不是动态导入纹理依赖或加载导入缓存。外部导出纹理须明确独占复制。需要宿主/插件配套升级（桥接 0.3.7），尚未包含在公开 v0.2.8 包中。更大或任意图片、SVG、CompressedTexture2D、RichTextLabel 的 BBCode/图片/链接/特效/手动格式栈、脚本回调、IME 和字体资源图仍不在支持范围。
 - **3D 与物理：** 基础变换、网格、静态碰撞、Area3D、RayCast3D 和有界形状查询；不包含完整角色/刚体创作、骨骼工作流、导航烘焙或接触事件历史。
-- **动画：** 本地 2D/3D 位置关键帧、有限状态机和双源 Blend2；尚不支持旋转/缩放、骨骼、音频、方法轨道或导入动画的原位编辑。
+- **动画：** 本地 2D/3D 位置关键帧、有限状态机和双源 Blend2。main 开发源码增加本地 Node2D 旋转（弧度 −32…32）和正向缩放（每轴 1/16…16）值轨道，连续线性插值，保留原生撤销及安全保存重开检查。宿主/编辑插件须配套升级至桥接 0.3.8 / `scene.animation_transform2d/v1`，不在公开 v0.2.8 包内。3D 旋转/缩放、最短角插值、骨骼/音频/方法轨道及导入动画原位编辑仍不支持。
 - **材质与 Shader：** 基础材质字段、固定 Shader 文本模板与 Color/Mix 有界图；不支持任意 Shader 源码或完整 PBR/VisualShader 编辑。
 
 高级创作仍属于[本机发布范围](docs/LOCAL-STABLE-RELEASE.md)中的实验性能力。T12–T21 的完成记录仅表示对应声明子集的历史验收，不代表下列两个扩展方向已全部完成。详细边界见 [UI](docs/production-roadmap/UI-AUTHORING-CONTRACT.md)、[物理](docs/production-roadmap/PHYSICS-3D-CONTRACT.md)、[动画](docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md)与 [Shader](docs/production-roadmap/SHADER-AUTHORING-CONTRACT.md) 契约。
