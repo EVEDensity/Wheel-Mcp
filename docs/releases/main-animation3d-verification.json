@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_HOSTED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "candidateCommit": "25d8119e98ca2c7b6c76d08c6ee47c245f0e4667",
+  "acceptedCommit": "25d8119e98ca2c7b6c76d08c6ee47c245f0e4667",
+  "sourceHash": "85c4554e9ee134e05c3d6140045785493b4a5ce0cd93be1a0aa24700ce791d1a",
+  "scope": "Owned local Node3D unit-quaternion rotation and positive Vector3 scale on dedicated native tracks; exact float preview/request/plan/document binding. Windows / Godot 4.7.2 / trusted local stdio. No imported resource mutation, Euler/degree conversion, multi-turn authoring, skeletons, GPU or wall-clock certification.",
+  "contract": "docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md",
+  "upgrade": {
+    "editorBridge": "0.3.9",
+    "capability": "scene.animation_transform3d/v1",
+    "independentOf2dExtension": true,
+    "maximumEditorCapabilities": 29,
+    "runtimeBridge": "0.3.4",
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "localChecks": {
+    "sourceHash": "85c4554e9ee134e05c3d6140045785493b4a5ce0cd93be1a0aa24700ce791d1a",
+    "buildFormatLint": "PASS",
+    "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 153, "durationMs": 24662, "scratchCleanup": "PASS" },
+    "animation": { "report": "runs/ci/animation3d-final-axis-regression/summary.json", "tests": 10, "durationMs": 42770, "scratchCleanup": "PASS" },
+    "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 51491, "scratchCleanup": "PASS" },
+    "approval": "MOCK exact-plan fixture host through official SDK stdio",
+    "coverage": [
+      "independent old 2D/3D capability refusal and legacy position compatibility",
+      "read-only refusal, declined exact approval, unchanged scene bytes and document on rejected native requests",
+      "invalid unit quaternion, dimensions, aliases, scale budgets and duplicate target channels fail atomically",
+      "same operation ID replays once; a 1e-15 quaternion component change requires CONFLICT without another approval",
+      "one native Undo/Redo; unsupported live 3D settings refuse save and unrelated writes",
+      "stale approval conflict, real engine validation, native save and editor reopen",
+      "real runtime play/seek/advance and four-time quaternion component/scale/position readback on an XYZ-nonzero rotation axis with nonuniform scale",
+      "existing position/state-machine/shared-library/Blend2 and engine cases retained"
+    ],
+    "boundary": "Final-source bounded local checks, not a complete local release gate or native human approval UX. Test-only controllers never assign expected transforms. Native sampling is headless, not rendering or wall-clock animation performance."
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/ci/animation3d-initial/failure-summary.json",
+      "details": "runs/ci/animation3d-initial/failure-details.txt",
+      "sha256": "11fd596f87737872a820939200d477505089304a58d55c72827136c9b235dd97",
+      "status": "FAIL",
+      "tests": 7,
+      "passed": 6,
+      "failed": 1,
+      "durationMs": 5688,
+      "scratchCleanup": "RETAINED",
+      "reason": "Before the precision fix: the nontrivial quaternion preview was rejected with PROTOCOL_MISMATCH instead of reaching the deliberately declined approval. Exact host comparison remained closed."
+    },
+    {
+      "report": "runs/ci/animation3d-preview-diagnostic/failure-summary.json",
+      "details": "runs/ci/animation3d-preview-diagnostic/failure-details.txt",
+      "sha256": "b0b4f12fa59d27b355be607d3e6599c3c989da04e6c340f3287f46809deebf9d",
+      "status": "FAIL",
+      "tests": 1,
+      "failed": 1,
+      "durationMs": 5795,
+      "scratchCleanup": "RETAINED",
+      "reason": "Diagnostic captured Scene preview identity/operations mismatch. Godot's default reduced-precision JSON response rounded the request quaternion. Editor replies and request/plan/document hashes now retain full precision; the host equality guard was not relaxed. Tiny-request conflict is explicitly retested."
+    }
+  ],
+  "installedCodexProbe": {
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T23-21-32-750Z-10148/report.json",
+    "sha256": "16533ef1e53a1c8a7bedd2ecdb88d6a97088c40bbe7b2a23d562cef6bd269b29",
+    "sourceHash": "85c4554e9ee134e05c3d6140045785493b4a5ce0cd93be1a0aa24700ce791d1a",
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK exact-plan fixture host",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "boundary": "Installed app-server discovery and representative scene author/save fixture, not rotation/scale operations driven through Codex, model quality or desktop/TUI human UX."
+  },
+  "shortCi": { "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39078632147", "status": "success", "tests": 153 },
+  "pages": { "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39078631764", "status": "success" },
+  "hostedAcceptance": {
+    "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39078633006",
+    "status": "PASS",
+    "acceptanceOnly": true,
+    "head": "25d8119e98ca2c7b6c76d08c6ee47c245f0e4667",
+    "sourceHash": "85c4554e9ee134e05c3d6140045785493b4a5ce0cd93be1a0aa24700ce791d1a",
+    "runId": "e0fad181-d584-4a1b-bad5-3bc7a37eab43",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "build": "success",
+    "publish": "skipped",
+    "durationMs": 251127,
+    "tests": [
+      { "id": "core", "tests": 153, "passed": 153, "durationMs": 17882, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 4097, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 74, "passed": 74, "durationMs": 163907, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 19, "passed": 19, "durationMs": 47568, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 248,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12117853922,
+    "artifactName": "release-assets-39078633006-1",
+    "download": "runs/animation3d-accepted-39078633006-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "b991f2a998952b14cc01b044cc69db264e48c3ad1d44c32cc200c9f3485b7c7d",
+      "SHA256SUMS": "83780421335c9b06e5ee6195827dfc37e15ee3a13da942f702cbcae9dc94a7f3",
+      "acceptance.json": "18d36f5f0401e435b1cc0e4f3e6af201b0c108d6d8da1337011e6366ca599103",
+      "sbom.json": "bad034b54ba3181970e688a6e21adae23b357ffb8fa6f3f53af32f75303429f0",
+      "wheel-mcp-0.2.8.tgz": "1472266a318053c247fc472523d56dc44ac79f1d69b2bc7eb18d436cbe146ea8"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, accepted head/current source/policy/guarded documents, package archive, SBOM and all three exact checksum entries. This main acceptance artifact is not the immutable public v0.2.8 archive."
+  },
+  "ciBoundaries": {
+    "requiredCounts": { "core": 153, "safety": 74, "engine": 19, "package": 2, "total": 248 },
+    "previousTestsRemoved": false,
+    "newNativeFixtureOrEngineStartupAddedToRequiredSuites": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "hostedTempConfigurationChanged": false,
+    "newPublisherExecution": "NOT_RUN; acceptance-only skips publication"
+  },
+  "unresolvedPriorRenderCleanup": {
+    "evidence": "docs/releases/main-animation-transform-verification.json",
+    "report": "runs/ci/animation-final-visual-resources/failure-summary.json",
+    "status": "FAIL",
+    "scratchBasename": "wheel-ci-kGVWCS",
+    "errorCode": "EPERM",
+    "currentStageRenderSuite": "NOT_RUN",
+    "permissionCauseFixedOrCertificationGranted": false,
+    "blindRetryOrAclChangeOrAlternateDeletionInterface": false,
+    "boundary": "Earlier supplemental render assertions passed 4/4 but scratch removal failed. Their failure and retained directory are not replaced by this stage's headless tests or hosted gate; no new render certification is claimed."
+  },
+  "publication": { "newTag": false, "newRelease": false, "npmPublish": false, "publicVersionUnchanged": "v0.2.8" },
+  "publicRelease": { "tag": "v0.2.8", "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d", "annotatedTagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59", "tagAndFourAssetHashesUnchanged": true },
+  "notQualified": [
+    "imported-animation-copy-or-in-place-mutation-skeleton-audio-method-tracks-full-authoring",
+    "Euler-degree-conversion-or-multi-turn-rotation-curve-authoring",
+    "GPU-rendering-wall-clock-animation-performance-or-human-approval-UX",
+    "prior-local-render-cleanup-or-system/workspace-TEMP-permission-root-cause",
+    "all-test-files-full-production-T31-T35-G4-G6",
+    "other-platforms-clients-independent-machine-public-HTTP-long-session-high-load"
+  ],
+  "productionQualification": "NOT_QUALIFIED"
+}
