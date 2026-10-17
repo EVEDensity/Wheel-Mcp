@@ -9,6 +9,7 @@ import { DEFAULT_COMMAND_TIMEOUT_MS } from '../timeouts.js';
 import { budgetResponse } from '../response-budget.js';
 import type { McpClientPolicy } from './access-policy.js';
 import type { ApprovalVerifier } from '../project/transactions.js';
+import { applyRetryGuidance } from './retry-guidance.js';
 
 export const toolSchemas = {
   projectPath: z.string(),
@@ -155,6 +156,7 @@ export async function invokeTool<T>(
       ? createUnifiedResponse(data as Record<string, unknown>)
       : { schema_version: '0.1', source: 'REAL', data };
   if (body.status === 'FAIL') failed = true;
+  body = applyRetryGuidance(body);
   try {
     body = budgetResponse(body);
   } catch (error) {

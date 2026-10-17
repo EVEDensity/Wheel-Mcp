@@ -18,6 +18,7 @@ import { createStdioPolicy } from './mcp/stdio-policy.js';
 import { registerOperationLifecycle, drainMcpOperations } from './mcp/operation-lifecycle.js';
 import { registerDiscovery } from './mcp/discovery.js';
 import type { PreapprovedWritesConfig } from './mcp/preapproved-writes.js';
+import { runWithRetryGuidance } from './mcp/retry-guidance.js';
 
 export function createMcpServer(
   policy?: McpClientPolicy,
@@ -66,7 +67,9 @@ export function createMcpServer(
               const merged = createMergedAbortSignal(extra.signal, getHttpRequestSignal(), closingSignal);
               try {
                 const response = await runWithResponseOwner(policy?.clientId ?? 'local', () =>
-                  callback(args, merged ? { ...extra, signal: merged.signal } : extra),
+                  runWithRetryGuidance(name, args, () =>
+                    callback(args, merged ? { ...extra, signal: merged.signal } : extra),
+                  ),
                 );
                 if (policy) recordToolOwnership(policy, name, response);
                 return response;

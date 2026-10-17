@@ -10,6 +10,7 @@ const files = [
   'variant-codec',
   'response-types',
   'response-budget',
+  'retry-guidance',
   'method-authorization',
   'process-identity',
   'render-window',

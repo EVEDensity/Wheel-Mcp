@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Prevent automatic retry advice for side-effecting MCP requests after timeout,
+  cancellation or unknown outcome, including writes routed through the runtime
+  dispatcher. Keep read-only timeout behavior and preserve inspection advice on
+  bounded failure pages. Add concurrent-policy and late-approval regression tests.
+  This change is on main only; existing v0.2.8 assets are not replaced.
 - Promote installation examples to verified v0.2.8 after automatic publication
   and public-download verification. Preserve unaccepted candidate history.
 - Record two independent 193-test hosted passes on commit 9675e7d, with matching

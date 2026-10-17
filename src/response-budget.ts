@@ -14,7 +14,7 @@ type Snapshot = {
   expiresAt: number;
   owner: string;
   maxBytes: number;
-  failure?: { code: unknown; message: string };
+  failure?: { code: unknown; message: string; retryable?: false; retryAdvice?: string };
 };
 const snapshots = new Map<string, Snapshot>();
 let storedBytes = 0;
@@ -87,7 +87,14 @@ export function budgetResponse(
     owner: currentOwner(),
     maxBytes,
     ...(body.status === 'FAIL'
-      ? { failure: { code: body.code, message: String(body.message ?? '').slice(0, 128) } }
+      ? {
+          failure: {
+            code: body.code,
+            message: String(body.message ?? '').slice(0, 128),
+            ...(body.retryable === false ? { retryable: false as const } : {}),
+            ...(typeof body.retryAdvice === 'string' ? { retryAdvice: body.retryAdvice.slice(0, 384) } : {}),
+          },
+        }
       : {}),
   };
   snapshots.set(ref, snapshot);

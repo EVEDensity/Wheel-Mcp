@@ -112,6 +112,13 @@ const readBridgeMethods = new Set([
   'get_specialized_state',
   'query_collisions',
 ]);
+
+/** A read-classified dispatcher can still perform writes, rendering or frame advances. */
+export function isReadOnlyToolCall(tool: string, args: Record<string, unknown>): boolean {
+  return (
+    toolPermissions[tool] === 'read' && (tool !== 'call_runtime_bridge' || readBridgeMethods.has(String(args.method)))
+  );
+}
 const runBridgeMethods = new Set(['subscribe_events', 'stop']);
 const writeBridgeMethods = new Set([
   'set_property',

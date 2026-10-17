@@ -210,15 +210,15 @@ for (const mode of ['cancel', 'timeout', 'disconnect'] as const) {
 }
 
 test(
-  'T30 server approval deadline preserves TIMEOUT rather than SDK-wrapped FAILED and leaves bytes unchanged',
+  'T30 server approval deadline preserves TIMEOUT and a late acceptance cannot revive the write',
   { timeout: 15000 },
   async () => {
     const root = await fixture();
     const original = await readFile(path.join(root, 'main.gd'));
     let observed = false;
-    let decline!: () => void;
-    const decision = new Promise<{ action: 'decline' }>((resolve) => {
-      decline = () => resolve({ action: 'decline' });
+    let lateAccept!: () => void;
+    const decision = new Promise<{ action: 'accept'; content: { confirm: true } }>((resolve) => {
+      lateAccept = () => resolve({ action: 'accept', content: { confirm: true } });
     });
     const c = await wireEditor(root, {
       scopes: ['read', 'write'],
@@ -247,11 +247,15 @@ test(
       );
       assert.equal(result.isError, true);
       assert.equal((result.structuredContent as { code?: string }).code, 'TIMEOUT');
+      const failure = result.structuredContent as { retryable?: boolean; retryAdvice?: string };
+      assert.equal(failure.retryable, false);
+      assert.match(String(failure.retryAdvice), /Do not automatically repeat/);
       assert.deepEqual(await readFile(path.join(root, 'main.gd')), original);
-      decline();
+      lateAccept();
       assert.notEqual((await c.call('get_project_info')).isError, true);
+      assert.deepEqual(await readFile(path.join(root, 'main.gd')), original);
     } finally {
-      decline();
+      lateAccept();
       await c.close();
     }
   },
