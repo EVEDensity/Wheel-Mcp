@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T18:51:28Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "6a689878325fbd28697c8d8240647c0f2a8c28fa",
+  "sourceHash": "1bdd986be46fa4787293e22678d0cd9f1389e9c749730cc7527ed84ee499607b",
+  "change": "Bounded native plain-text RichTextLabel creation, multiline text up to 512 characters, autowrap, fit_content and scroll_active. Native Undo/Redo, actual ResourceSaver save/reopen and runtime text reflow. Not full rich text or BBCode support.",
+  "upgrade": "Explicit coordinated host/plugin upgrade: bridge 0.3.3, scene.rich_text/v1, maximum 23 advertised capabilities. Frame/private-file limits unchanged. No automatic user-project plugin replacement.",
+  "contracts": [
+    "Read-only, missing feature capability and over-budget capability advertisements fail closed",
+    "Text containing BBCode-looking image/resource tags remains literal; no tag resource loading is enabled",
+    "Empty and 512-character text, fit_content, scroll_active and all declared wrap modes retain native Undo/Redo",
+    "Type-specific fields on other classes, internal node paths and extra RichTextLabel leaf children are rejected without document or disk changes",
+    "Partially invalid batches leave no created node behind",
+    "Existing BBCode, threaded, selection/menu and scroll-follow settings are rejected, not silently converted",
+    "finished/meta callbacks and extra or missing native scrollbar/timer connections are rejected before editing and by save",
+    "A callback attached during approval is rejected again by the live commit snapshot",
+    "Changed parsed text from a non-persistent manual tag stack is rejected; equal-text manual formatting is not certified or claimed detectable",
+    "Actual saved/reopened authored properties, groups, signals and owners match after normalizing only native identities to authored paths",
+    "Headless runtime reads parsed text, native line count and content height; narrowing the actual Control must increase native wrapped lines"
+  ],
+  "localUiRegression": {
+    "report": "runs/ci/rich-text-ui-regression/summary.json",
+    "sourceHash": "1bdd986be46fa4787293e22678d0cd9f1389e9c749730cc7527ed84ee499607b",
+    "files": ["ui-rich-text-native", "ui-scroll-native", "ui-line-edit-native", "ui-authoring-e2e"],
+    "testsPassed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 75245,
+    "scratchCleanup": "PASS",
+    "approval": "MOCK exact-plan host; native Godot editor, ResourceSaver, runtime and GUI regression are REAL"
+  },
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39059508695",
+    "status": "success",
+    "passed": 124,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39059508152",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39059518791",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "97dc1a45-70a4-4d5e-a416-728735f10a4b",
+    "artifactId": 12110778454,
+    "artifactName": "release-assets-39059518791-1",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 241035,
+    "tests": { "core": 124, "package": 2, "safety": 71, "engine": 15, "total": 212 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "packageDurationMs": 4332,
+    "safetyDurationMs": 184234,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: exact commit, current source/policy/documents, archive, SBOM and all three checksum entries; exact artifact file set",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "713259f72ae5148cb9ba4fe848bec16ac3ca46da42414c3ca634d1012d5a3f39",
+      "sbom.json": "97f9a2a6f6cd5da7e68e91738cdd3803247aaeeeea36c931df62dd1ed26bd25b",
+      "acceptance.json": "5ceb1ee4437a61aa5e24c875a8c9494721c76282a4464c65117e0f4f3641bc43",
+      "SHA256SUMS": "7d1c8534155b959a826a9251258c7770d71f0c84fb4fc5c15ce06adbf64cc828"
+    }
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "1bdd986be46fa4787293e22678d0cd9f1389e9c749730cc7527ed84ee499607b",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T18-45-44-983Z-15960/report.json",
+    "reportSha256": "19582b8bd10f28545737f02ad98ec0a9a1dd7bf609bac92fcc4383ea15b035ef",
+    "tools": 71,
+    "resources": 5,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "approval": "MOCK; installed app-server protocol, not desktop/TUI human approval UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false
+  },
+  "ciBoundaries": {
+    "oldTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "skipAcceptedAsPass": false,
+    "priorFailureEvidenceRewritten": false,
+    "newTests": { "schema": 2, "native": 1 },
+    "previousEvidence": "main-scroll-verification.json"
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArchiveIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production",
+    "full-RichTextLabel-or-BBCode-resource-graphs",
+    "arbitrary-nonpersistent-manual-format-stacks",
+    "images-links-custom-effects-or-font-resource-graphs",
+    "pixel-layout-CJK-IME-clipboard-accessibility",
+    "human-approval-or-desktop-focus-UX",
+    "other-platforms-clients-long-session-public-HTTP"
+  ],
+  "next": "TextureRect and explicitly bounded texture references; do not infer full UI coverage from the plain-text subset."
+}
