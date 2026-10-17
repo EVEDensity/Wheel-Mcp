@@ -12,7 +12,7 @@ OS permissions.
 Install Git, Node.js and Godot first. In PowerShell:
 
 ```powershell
-git clone --branch v0.2.7 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.5 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd ci
 npm.cmd run build

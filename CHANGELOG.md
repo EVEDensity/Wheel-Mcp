@@ -1,6 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Keep user installation examples on published v0.2.5 while later candidates
+  remain unaccepted. Do not treat passing isolated archive checks as a complete
+  release gate, or move the failed candidate tags.
+
 ## 0.2.7
+
+**Source candidate not published.** Both hosted attempts failed acceptance.
 
 - Include the exact-ID publication flow, source/asset verification, current
   71-tool catalog and version-bound notes from the unpublished v0.2.6 candidate.
@@ -16,6 +24,11 @@
 - v0.2.6 passed core, native safety and runtime checks in both hosted attempts,
   but its actual archive installation exceeded the unchanged command bound.
   It was not published; keep its tag and failed attempts as evidence.
+- v0.2.7's first hosted attempt failed four bounded Windows process-identity
+  checks. Its second passed core but timed out during archive installation,
+  despite installation preceding native safety. The ordering change did not
+  resolve the installation issue. No Release was published and no further
+  unchanged-candidate reruns were made.
 
 ## 0.2.6 source candidate not published
 

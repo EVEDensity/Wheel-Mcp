@@ -5,6 +5,11 @@ npm registry. Releases cover Windows, Godot 4.7.2 and trusted local stdio projec
 The daily push/PR workflow stays short; the release workflow runs only on a
 version tag or explicit manual dispatch.
 
+Current published installation target: **v0.2.5**. v0.2.6 and v0.2.7 are retained
+source candidates, not published releases. The next tag example below must be
+advanced to a new unused version after the packaging failure is fixed; do not
+reuse or move either failed tag.
+
 ## Prepare the source
 
 Keep `package.json`, the root/package lock versions and
@@ -17,8 +22,8 @@ Commit the accepted source to main and push it. Review the short CI result.
 Create an annotated stable version tag on that exact commit, then push the tag:
 
 ```powershell
-git tag -a v0.2.7 -m "Wheel-mcp 0.2.7 Windows local stable"
-git push origin v0.2.7
+git tag -a v0.2.8 -m "Wheel-mcp 0.2.8 Windows local stable"
+git push origin v0.2.8
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
@@ -65,8 +70,8 @@ Download the four assets from the same release and compare their hashes against
 `SHA256SUMS` before installation. On Windows, for example:
 
 ```powershell
-Get-FileHash .\wheel-mcp-0.2.7.tgz -Algorithm SHA256
-npm.cmd install --ignore-scripts .\wheel-mcp-0.2.7.tgz
+Get-FileHash .\wheel-mcp-0.2.5.tgz -Algorithm SHA256
+npm.cmd install --ignore-scripts .\wheel-mcp-0.2.5.tgz
 ```
 
 Godot must be installed separately. Configure the installed server's absolute
