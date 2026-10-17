@@ -9,6 +9,9 @@ import { parse } from 'yaml';
 const { validateReleaseContext, releaseChanges } = await import(
   pathToFileURL(resolve('scripts/lib/github-release.mjs')).href
 );
+const { consumerNpmEnvironment, npmFailureDetails } = await import(
+  pathToFileURL(resolve('scripts/lib/npm-consumer-env.mjs')).href
+);
 const { godotArchives, verifyArchive, validateDownloadUrl } = await import(
   pathToFileURL(resolve('scripts/lib/godot-archive.mjs')).href
 );
@@ -21,7 +24,7 @@ test('release requires an existing stable tag on the accepted main commit', () =
     tagHead: 'a'.repeat(40),
     mainContains: true,
   };
-  assert.deepEqual(validateReleaseContext(context), { tag: 'v0.2.2', commit: context.head });
+  assert.deepEqual(validateReleaseContext(context), { tag: 'v0.2.2', commit: context.head, publish: true });
   assert.doesNotThrow(() => validateReleaseContext({ ...context, ref: 'refs/heads/main' }));
   for (const invalid of [
     { version: '0.2.2-preview' },
@@ -33,6 +36,54 @@ test('release requires an existing stable tag on the accepted main commit', () =
   ]) {
     assert.throws(() => validateReleaseContext({ ...context, ...invalid }));
   }
+  const untagged = { ...context, ref: 'refs/heads/main', tagHead: undefined, acceptanceOnly: true };
+  assert.deepEqual(validateReleaseContext(untagged), { tag: 'v0.2.2', commit: context.head, publish: false });
+  assert.throws(() => validateReleaseContext({ ...untagged, acceptanceOnly: false }));
+  assert.throws(() => validateReleaseContext({ ...untagged, ref: context.ref }));
+  assert.throws(() => validateReleaseContext({ ...untagged, mainContains: false }));
+  assert.throws(() => validateReleaseContext({ ...untagged, head: '' }));
+  assert.throws(() => validateReleaseContext({ ...untagged, acceptanceOnly: 'true' }));
+});
+
+test('consumer npm isolation removes parent lifecycle metadata but preserves registry and host settings', () => {
+  const input = {
+    PATH: 'synthetic-path',
+    npm_package_name: 'parent-project',
+    NPM_LIFECYCLE_EVENT: 'release:gate',
+    npm_execpath: '/parent/npm',
+    npm_node_execpath: '/parent/node',
+    npm_command: 'run-script',
+    INIT_CWD: '/parent',
+    npm_config_local_prefix: '/parent',
+    npm_config_registry: 'https://registry.npmjs.org/',
+    npm_config_cache: '/synthetic/cache',
+    HTTPS_PROXY: 'synthetic-proxy',
+    NPM_TOKEN: 'synthetic-token',
+    GODOT_PATH: 'synthetic-engine',
+  };
+  const cleaned = consumerNpmEnvironment(input);
+  for (const key of [
+    'npm_package_name',
+    'NPM_LIFECYCLE_EVENT',
+    'npm_execpath',
+    'npm_node_execpath',
+    'npm_command',
+    'INIT_CWD',
+    'npm_config_local_prefix',
+  ])
+    assert.equal(cleaned[key], undefined);
+  for (const key of ['PATH', 'npm_config_registry', 'npm_config_cache', 'HTTPS_PROXY', 'NPM_TOKEN', 'GODOT_PATH'])
+    assert.equal(cleaned[key], input[key as keyof typeof input]);
+  assert.equal(input.npm_package_name, 'parent-project');
+  const noisy =
+    'npm verbose cli synthetic\n' +
+    'npm http cache package@https://registry.npmjs.org/p.tgz 0ms (cache hit)\n'.repeat(200) +
+    'npm error fetch https://name:secret@registry.example/failed';
+  const details = npmFailureDetails(noisy);
+  assert.match(details, /npm verbose cli/);
+  assert.match(details, /npm error fetch/);
+  assert.doesNotMatch(details, /cache hit|secret/);
+  assert.ok(npmFailureDetails('x'.repeat(20000)).length < 2700);
 });
 
 test('release notes use only the exact nonempty version section, never stale or unreleased notes', async () => {
@@ -82,15 +133,32 @@ test('release workflow isolates packaging from write access and verifies before 
   assert.deepEqual(Object.keys(workflow.on).sort(), ['push', 'workflow_dispatch']);
   assert.deepEqual(workflow.on.push.tags, ['v[0-9]*']);
   assert.equal(workflow.on.push.branches, undefined);
+  assert.equal(workflow.on.workflow_dispatch.inputs.acceptance_only.default, true);
   assert.deepEqual(workflow.permissions, { contents: 'read' });
   const { build, publish } = workflow.jobs;
   assert.equal(build['runs-on'], 'windows-latest');
   assert.ok(build['timeout-minutes'] <= 15);
   const buildCommands = build.steps.map((step: { run?: string }) => step.run ?? '').join('\n');
-  for (const command of ['github-release-context.mjs', 'release:gate', 'release:check', 'prepare-github-release.mjs']) {
+  for (const command of [
+    'github-release-context.mjs',
+    'node scripts/release-gate-local.mjs',
+    'release:check',
+    'prepare-github-release.mjs',
+  ]) {
     assert.ok(buildCommands.includes(command));
   }
   assert.equal(publish.needs, 'build');
+  assert.equal(publish.if, "needs.build.outputs.publish == 'true'");
+  assert.equal(build.outputs.publish, '${{ steps.context.outputs.publish }}');
+  assert.equal(build.outputs.asset_name, '${{ steps.context.outputs.asset_name }}');
+  const upload = build.steps.find((step: { with?: { path?: string } }) => step.with?.path === 'runs/github-release/');
+  assert.equal(upload.with.name, '${{ steps.context.outputs.asset_name }}');
+  assert.equal(publish.steps[0].with.name, '${{ needs.build.outputs.asset_name }}');
+  const contextStep = build.steps.find((step: { id?: string }) => step.id === 'context');
+  assert.equal(
+    contextStep.env.RELEASE_ACCEPTANCE_ONLY,
+    "${{ github.event_name == 'workflow_dispatch' && inputs.acceptance_only }}",
+  );
   assert.deepEqual(publish.permissions, { contents: 'write' });
   assert.ok(publish.steps.every((step: { uses?: string }) => !step.uses?.startsWith('actions/checkout@')));
   const publishCommands = publish.steps.map((step: { run?: string }) => step.run ?? '').join('\n');

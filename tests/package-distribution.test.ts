@@ -7,6 +7,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { pathToFileURL } from 'node:url';
+const { consumerNpmEnvironment, npmFailureDetails } = await import(
+  pathToFileURL(path.resolve('scripts/lib/npm-consumer-env.mjs')).href
+);
 
 test('package lifecycle is build-before-pack and has no consumer install side effects', async () => {
   const pkg = JSON.parse(await readFile('package.json', 'utf8'));
@@ -29,7 +33,11 @@ test(
       path.resolve(path.dirname(process.execPath), '../lib/node_modules/npm/bin/npm-cli.js'),
     ].find((file) => file && existsSync(file));
     assert.ok(npmCli, 'npm CLI is required; do not skip real package installation');
-    const env: NodeJS.ProcessEnv = { ...process.env, npm_config_logs_max: '0', npm_config_update_notifier: 'false' };
+    const env: NodeJS.ProcessEnv = consumerNpmEnvironment({
+      ...process.env,
+      npm_config_logs_max: '0',
+      npm_config_update_notifier: 'false',
+    });
     delete env.NODE_TEST_CONTEXT;
     delete env.MCP_STDIO_PREAPPROVED_WRITES;
     const runNpm = (args: string[], cwd: string) => {
@@ -44,9 +52,9 @@ test(
       assert.equal(
         result.error,
         undefined,
-        `npm ${args.join(' ')}: ${result.error?.message ?? ''}\n${(result.stderr || result.stdout).slice(-8000)}`,
+        `npm ${args.join(' ')}: ${result.error?.message ?? ''}\n${npmFailureDetails(result.stderr || result.stdout)}`,
       );
-      assert.equal(result.status, 0, (result.stderr || result.stdout).slice(-8000));
+      assert.equal(result.status, 0, npmFailureDetails(result.stderr || result.stdout));
       return result.stdout;
     };
     let client: Client | undefined;

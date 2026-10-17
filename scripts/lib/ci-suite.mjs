@@ -91,6 +91,10 @@ export function runCiSuite({ files, scope, timeoutMs, godotPath = '' }) {
     const lines = stdout.trim().split(/\r?\n/);
     const failures = lines.filter((line) => line.includes('"type":"test:fail"'));
     const finalSummary = lines.filter((line) => line.includes('"type":"test:summary"')).at(-1);
+    writeFileSync(
+      path.join(output, 'failure-details.txt'),
+      [...failures, ...(finalSummary ? [finalSummary] : []), stderr.slice(-4000)].join('\n').slice(-16000),
+    );
     process.stdout.write([...failures, ...(finalSummary ? [finalSummary] : [])].join('\n') + '\n');
     process.stderr.write(stderr);
     writeFileSync(path.join(output, 'stdout.jsonl'), stdout);

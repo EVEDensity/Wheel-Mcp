@@ -8,13 +8,16 @@ export function releaseChanges(changelog, version) {
   if (!changes) throw new Error(`Empty changelog section for ${version}`);
   return changes;
 }
-export function validateReleaseContext({ version, ref, head, tagHead, mainContains }) {
+export function validateReleaseContext({ version, ref, head, tagHead, mainContains, acceptanceOnly = false }) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Only stable semantic versions can be released');
   const tag = `v${version}`;
   if (!['refs/heads/main', `refs/tags/${tag}`].includes(ref))
     throw new Error('Release must run from main or the exact version tag');
-  if (!commitPattern.test(head) || !commitPattern.test(tagHead) || head !== tagHead)
+  if (typeof acceptanceOnly !== 'boolean') throw new Error('Invalid acceptance-only mode');
+  if (!commitPattern.test(head)) throw new Error('Invalid checked-out commit');
+  if (acceptanceOnly && ref !== 'refs/heads/main') throw new Error('Acceptance-only mode requires main');
+  if (!acceptanceOnly && (!commitPattern.test(tagHead) || head !== tagHead))
     throw new Error('Release tag must already exist and match the checked-out commit');
   if (!mainContains) throw new Error('Release commit must be reachable from origin/main');
-  return { tag, commit: head };
+  return { tag, commit: head, publish: !acceptanceOnly };
 }

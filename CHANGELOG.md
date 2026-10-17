@@ -6,6 +6,26 @@
   remain unaccepted. Do not treat passing isolated archive checks as a complete
   release gate, or move the failed candidate tags.
 
+## 0.2.8
+
+- Add a default manual acceptance-only mode on main. It runs the complete gate
+  and prepares artifacts without requiring or creating a tag; the publication
+  job is explicitly disabled. Tag publication still requires an existing exact
+  stable tag, matching accepted commit and successful independent checks.
+- Launch the hosted gate directly with Node and isolate consumer npm commands
+  from parent project lifecycle metadata. Preserve registry/cache/proxy settings,
+  normal package scripts and all original deadlines. The prior timeout's exact
+  cause remains unproven until controlled hosted acceptance completes.
+- Prefer an installed absolute PowerShell 7 host for Windows process identity
+  and guarded stop operations, with the system Windows PowerShell fallback.
+  Keep process-generation/handle checks and the five-second read deadline.
+- Pin CI actions to immutable revisions, use the Node 24 artifact uploader,
+  distinguish artifact names by attempt and bind downloads to the producing
+  build's artifact name. Include bounded failure details with actionable npm
+  errors rather than repetitive cache-hit lines.
+- Retain the exact-ID publisher and full 71-tool catalog from the unaccepted
+  0.2.6/0.2.7 candidates. No skipped checks or production promotion is implied.
+
 ## 0.2.7
 
 **Source candidate not published.** Both hosted attempts failed acceptance.

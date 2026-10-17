@@ -4,6 +4,11 @@ on:
   push:
     tags: ['v[0-9]*']
   workflow_dispatch:
+    inputs:
+      acceptance_only:
+        description: Validate main and prepare artifacts without requiring a tag or publishing
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -19,6 +24,8 @@ jobs:
     outputs:
       tag: ${{ steps.context.outputs.tag }}
       commit: ${{ steps.context.outputs.commit }}
+      publish: ${{ steps.context.outputs.publish }}
+      asset_name: ${{ steps.context.outputs.asset_name }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -28,39 +35,43 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Verify existing tag, version and main ancestry
+      - name: Verify source, mode and existing tag when publishing
         id: context
+        env:
+          RELEASE_ACCEPTANCE_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.acceptance_only }}
         run: node scripts/github-release-context.mjs
       - run: npm ci --ignore-scripts
       - name: Install verified Godot 4.7.2
         run: node scripts/ci-install-godot.mjs
       - name: Bounded Windows release acceptance and actual package install
-        run: npm run release:gate
+        run: node scripts/release-gate-local.mjs
       - name: Independently verify acceptance and artifacts
         run: npm run release:check
       - name: Prepare exact release assets
         run: node scripts/prepare-github-release.mjs
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: release-assets
+          name: ${{ steps.context.outputs.asset_name }}
           path: runs/github-release/
           if-no-files-found: error
           retention-days: 7
       - name: Bounded failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: release-failure
+          name: release-failure-${{ github.run_attempt }}
           path: |
             runs/local-release/latest.json
             runs/local-release/last-failure-output.txt
             runs/ci/**/summary.json
-            runs/ci/**/failure.json
+            runs/ci/**/failure-summary.json
+            runs/ci/**/failure-details.txt
           if-no-files-found: ignore
           retention-days: 7
 
   publish:
     needs: build
+    if: needs.build.outputs.publish == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -68,7 +79,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          name: release-assets
+          name: ${{ needs.build.outputs.asset_name }}
           path: release-assets
       - name: Verify asset hashes
         working-directory: release-assets

@@ -1,8 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { readProcessIdentity, sameProcessIdentity, stopIdentifiedProcess } from '../src/process-identity.js';
+import {
+  readProcessIdentity,
+  sameProcessIdentity,
+  stopIdentifiedProcess,
+  windowsPowerShellExecutable,
+} from '../src/process-identity.js';
 import { getProcessStatus } from '../src/godot-runtime.js';
+
+test('Windows process helpers select an absolute installed PowerShell 7 or the system fallback, not arbitrary PATH hosts', () => {
+  const modern = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
+  assert.equal(
+    windowsPowerShellExecutable(
+      { ProgramFiles: 'C:\\Program Files', SystemRoot: 'C:\\Windows' },
+      (file) => file === modern,
+    ),
+    modern,
+  );
+  assert.equal(
+    windowsPowerShellExecutable({ ProgramFiles: 'C:\\Program Files', SystemRoot: 'D:\\Windows' }, () => false),
+    'D:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+  );
+  assert.equal(
+    windowsPowerShellExecutable({}, () => false),
+    'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+  );
+  assert.equal(
+    windowsPowerShellExecutable({ ProgramFiles: 'relative', SystemRoot: 'relative' }, () => true),
+    'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe',
+  );
+});
 
 test('process identity includes a stable OS start token and executable', async () => {
   const identity = await readProcessIdentity(process.pid);

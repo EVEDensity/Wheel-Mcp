@@ -1,9 +1,23 @@
 import { execFile } from 'node:child_process';
 import { readFile, readlink } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+
+/** Prefer the installed, absolute modern host; never install or retry another host on failure. */
+export function windowsPowerShellExecutable(
+  env: NodeJS.ProcessEnv = process.env,
+  exists: (file: string) => boolean = existsSync,
+): string {
+  if (env.ProgramFiles && path.win32.isAbsolute(env.ProgramFiles)) {
+    const modern = path.win32.join(env.ProgramFiles, 'PowerShell', '7', 'pwsh.exe');
+    if (exists(modern)) return modern;
+  }
+  const systemRoot = [env.SystemRoot, env.WINDIR].find((root) => root && path.win32.isAbsolute(root)) || 'C:\\Windows';
+  return path.win32.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+}
 
 export type ProcessIdentity = {
   platform: 'win32' | 'linux';
@@ -55,7 +69,7 @@ export async function readProcessIdentity(pid: number): Promise<ProcessIdentity 
   if (process.platform === 'win32') {
     try {
       const { stdout } = await execFileAsync(
-        'powershell.exe',
+        windowsPowerShellExecutable(),
         ['-NoProfile', '-NonInteractive', '-Command', windowsReadScript],
         {
           windowsHide: true,
@@ -117,7 +131,7 @@ export async function stopIdentifiedProcess(
   if (process.platform === 'win32') {
     try {
       const { stdout } = await execFileAsync(
-        'powershell.exe',
+        windowsPowerShellExecutable(),
         ['-NoProfile', '-NonInteractive', '-Command', windowsStopScript],
         {
           windowsHide: true,

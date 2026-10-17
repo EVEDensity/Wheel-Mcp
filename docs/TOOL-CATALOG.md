@@ -4,7 +4,7 @@
 
 [English README](../README.md) | [中文说明](../README.zh-CN.md)
 
-Current source catalog: **October 17, 2026**, `0.2.7`, **71 tools** (project 23, runtime 33, diagnostics 4, scenario 8, evidence 3). The official SDK discovery test checks the exact tool list, this catalog and permission classification against the five registration modules. Editor authoring/resource/save additions are explicitly opt-in, scoped and approval-controlled; tool count is not production qualification. A read-only discovery profile exposes a smaller subset.
+Current source catalog: **October 17, 2026**, `0.2.8`, **71 tools** (project 23, runtime 33, diagnostics 4, scenario 8, evidence 3). The official SDK discovery test checks the exact tool list, this catalog and permission classification against the five registration modules. Editor authoring/resource/save additions are explicitly opt-in, scoped and approval-controlled; tool count is not production qualification. A read-only discovery profile exposes a smaller subset.
 
 Use MCP `tools/list` on your running server for current schemas, defaults and required fields. This page is navigation, not a substitute for schema discovery. Tool count is not a gameplay-correctness score.
 

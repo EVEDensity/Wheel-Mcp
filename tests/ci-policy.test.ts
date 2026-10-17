@@ -31,6 +31,9 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   assert.equal(jobs[0]['runs-on'], 'windows-latest');
   assert.equal(jobs[0]['timeout-minutes'], 10);
   assert.equal(jobs[0].strategy, undefined);
+  for (const step of jobs[0].steps) if (step.uses) assert.match(step.uses, /@[a-f0-9]{40}$/);
+  const checkout = jobs[0].steps.find((step) => step.uses?.startsWith('actions/checkout@'))!;
+  assert.equal(checkout.with?.['persist-credentials'], false);
   const automatic = jobs[0].steps.filter((step) => !/&& inputs\.(engine|package)/.test(step.if ?? ''));
   const commands = automatic.flatMap((step) => (step.run ? [step.run] : []));
   assert.ok(commands.includes('npm run check'));
@@ -53,7 +56,9 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   for (const step of jobs[0].steps.filter((step) => step.uses?.includes('upload-artifact'))) {
     assert.equal(step.if, 'failure()');
     assert.equal(step.with?.['retention-days'], 7);
-    assert.equal(step.with?.path, 'runs/ci/');
+    for (const name of ['summary.json', 'failure-summary.json', 'failure-details.txt'])
+      assert.ok(String(step.with?.path).includes(`runs/ci/**/${name}`));
+    assert.doesNotMatch(String(step.with?.path), /stdout|stderr|\.log/);
   }
 });
 
@@ -164,6 +169,9 @@ test('CI runner refuses a process-exit-zero skipped suite and preserves bounded 
     assert.equal(report.processResult.exitCode, 0);
     assert.equal(report.qualification, 'NOT_QUALIFIED');
     assert.match(await readFile(path.join(root, 'runs/ci/negative-control/stdout.jsonl'), 'utf8'), /test:summary/);
+    const details = await readFile(path.join(root, 'runs/ci/negative-control/failure-details.txt'), 'utf8');
+    assert.match(details, /test:summary/);
+    assert.ok(details.length <= 16000);
     const scratch = await realpath(report.scratch);
     assert.equal(path.dirname(scratch), parent);
     assert.match(path.basename(scratch), /^wheel-ci-[A-Za-z0-9]+$/);

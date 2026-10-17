@@ -1,6 +1,6 @@
 {
   "name": "wheel-mcp",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "wheelReleaseProfile": "windows-local",
   "private": false,
   "type": "module",

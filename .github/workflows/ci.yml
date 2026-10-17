@@ -28,10 +28,11 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 2
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: 24
           cache: npm
@@ -57,9 +58,12 @@ jobs:
         run: node scripts/test-release-package.mjs
       - name: Keep only bounded failure diagnostics
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: ci-failure
-          path: runs/ci/
+          name: ci-failure-${{ github.run_attempt }}
+          path: |
+            runs/ci/**/summary.json
+            runs/ci/**/failure-summary.json
+            runs/ci/**/failure-details.txt
           if-no-files-found: ignore
           retention-days: 7

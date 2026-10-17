@@ -19,7 +19,16 @@ ten-minute total limit and rejects failures, skipped tests, stale evidence,
 unfinished cleanup, changed source and mismatched artifacts.
 
 Commit the accepted source to main and push it. Review the short CI result.
-Create an annotated stable version tag on that exact commit, then push the tag:
+First run the complete hosted acceptance on main without making a release:
+
+```powershell
+gh workflow run release.yml --ref main -f acceptance_only=true
+```
+
+This mode needs no tag. The build performs the same checks and prepares the
+same artifacts, but its `publish=false` output prevents the write job from
+running. An acceptance-only success is not a published Release. Review the
+receipt and source commit before creating an annotated tag on that same commit:
 
 ```powershell
 git tag -a v0.2.8 -m "Wheel-mcp 0.2.8 Windows local stable"
@@ -27,8 +36,10 @@ git push origin v0.2.8
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
-or overwrite its assets. Manual dispatch of `release.yml` also requires an
-existing tag matching the checkout and package version, reachable from origin/main.
+or overwrite its assets. To publish via manual dispatch, explicitly set
+`acceptance_only=false`; this still requires an existing tag matching the
+checkout and package version, reachable from origin/main. Tag-triggered runs
+always require that existing exact tag and repeat acceptance before publication.
 
 ## Hosted acceptance and publication
 
@@ -40,6 +51,11 @@ full authoring/renderer matrix.
 The real archive install runs before native safety and runtime tests, so a
 packaging failure is reported without first repeating engine acceptance. This
 ordering does not omit any suite or relax its deadline.
+The hosted gate starts directly with Node, matching the isolated suite entry
+points. Consumer installs do not inherit parent project npm lifecycle metadata;
+explicit registry, cache and proxy settings remain available. Windows process
+checks prefer an already-installed absolute PowerShell 7 executable, falling
+back to system Windows PowerShell without relaxing identity checks or deadlines.
 
 For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
 and `engine=false` to repeat the real archive install check without native
@@ -63,6 +79,11 @@ GitHub-reported upload state, size and SHA-256 of every asset before publishing:
 Only the publication job has repository write permission. No job publishes npm
 packages or changes repository visibility. Build artifacts and bounded failure
 diagnostics expire after seven days; published release assets remain available.
+Failure artifacts include their attempt number. Successful build artifact names
+are exported by the producing build, and the publisher downloads that exact
+name even when only its job is rerun. Do not select a failure artifact by a
+shared name across attempts. Bounded failure details are included; cache-hit
+noise is removed from npm errors without removing the underlying failure.
 
 ## Install and verify the download
 
