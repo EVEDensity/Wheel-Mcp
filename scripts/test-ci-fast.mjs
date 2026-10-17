@@ -2,7 +2,10 @@ import { runCiSuite } from './lib/ci-suite.mjs';
 
 // Critical non-engine paths, never an automatic soak/renderer suite.
 const files = [
-  'ci-policy',
+  // Safety prerequisite before process-heavy SDK/lifecycle fixtures. Keep the
+  // same five-second identity deadline; do not hide a failed platform read.
+  'process-identity',
+  'render-window',
   'production-manifest',
   'local-release',
   'github-release',
@@ -12,8 +15,6 @@ const files = [
   'response-budget',
   'retry-guidance',
   'method-authorization',
-  'process-identity',
-  'render-window',
   'project-path-policy',
   'tool-registry',
   'mcp-prompts',
@@ -24,6 +25,7 @@ const files = [
   'ui-scroll-schema',
   'project-write-approval',
   'preapproved-writes',
+  'ci-policy',
 ]
   .map((name) => `build/tests/${name}.test.js`)
   .concat('scripts/site.test.mjs');

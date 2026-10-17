@@ -81,6 +81,10 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
   assert.equal(plan.scope, 'fast-contract-only');
   assert.equal(plan.timeoutMs, 90000);
   assert.equal(plan.concurrency, 2);
+  assert.deepEqual(plan.files.slice(0, 2), [
+    'build/tests/process-identity.test.js',
+    'build/tests/render-window.test.js',
+  ]);
   assert.equal(new Set(plan.files).size, plan.files.length);
   assert.ok(plan.files.includes('build/tests/method-authorization.test.js'));
   assert.ok(plan.files.includes('build/tests/ci-policy.test.js'));

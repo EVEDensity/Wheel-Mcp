@@ -33,12 +33,19 @@ test('Windows process helpers select an absolute installed PowerShell 7 or the s
 });
 
 test('process identity includes a stable OS start token and executable', async () => {
+  const started = performance.now();
   const identity = await readProcessIdentity(process.pid);
   if (process.platform === 'win32' || process.platform === 'linux') {
-    assert.ok(identity);
+    assert.ok(identity, `Initial OS identity read failed after ${Math.round(performance.now() - started)}ms`);
     assert.ok(identity.startToken.length > 5);
     assert.ok(identity.executablePath.length > 5);
-    assert.equal(sameProcessIdentity(identity, await readProcessIdentity(process.pid)), true);
+    const secondStarted = performance.now();
+    const second = await readProcessIdentity(process.pid);
+    assert.ok(
+      second,
+      `Independent OS identity reread failed after ${Math.round(performance.now() - secondStarted)}ms; no cached identity or retry used`,
+    );
+    assert.equal(sameProcessIdentity(identity, second), true);
     assert.equal(sameProcessIdentity({ ...identity, startToken: 'wrong' }, identity), false);
   } else {
     assert.equal(identity, null);
