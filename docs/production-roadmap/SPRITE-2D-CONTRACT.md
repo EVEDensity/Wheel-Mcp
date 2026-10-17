@@ -84,3 +84,9 @@ tests. Full production qualification and the broad future engine wishlist remain
 
 Primary references: [Sprite2D](https://docs.godotengine.org/en/stable/classes/class_sprite2d.html)
 and [Godot 4.7.2 native implementation](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/2d/sprite_2d.cpp).
+
+Accepted main source `588d653` passed the hosted 228-case bounded gate and
+independent downloaded artifact verification. The first hosted timeout remains
+recorded alongside the unchanged-budget queue repair; see the
+[verification record](../releases/main-sprite-verification.json) for exact source,
+local rendering, MOCK approval and unchanged public-release boundaries.

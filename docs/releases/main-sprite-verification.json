@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "588d653895d279121d5444014dd36b694ad8499f",
+  "sourceHash": "fa5943dde15617cb5a6c60cde783027602d04bba055354a2399ab9b868132b18",
+  "featureCommit": "e1dd30af3c5d6b647b3dcae8d1cee4d23ac7ad57",
+  "change": "Bounded single-frame native Sprite2D creation, centered/offset/flip properties, controlled inline PNG/gradient textures, native Undo/Redo, actual save/reopen and local reversible pixel evidence.",
+  "contract": "docs/production-roadmap/SPRITE-2D-CONTRACT.md",
+  "upgrade": {
+    "editorBridge": "0.3.6",
+    "capability": "scene.sprite2d/v1",
+    "maximumCapabilities": 26,
+    "runtimeBridgeUnchanged": "0.3.1",
+    "hostAndPluginMustUpgradeTogether": true,
+    "implicitPluginInstallation": false
+  },
+  "boundaries": [
+    "Four bounded sprite fields only; no frame sheets, regions, arbitrary materials/scripts, atlas or character controller.",
+    "Existing permission, exact-plan approval, source CAS, texture graph validation, resource quota and external make_unique rules remain mandatory.",
+    "Reject unsupported live settings and callbacks without editing scene bytes. Native property/texture apply blocks and restores signal state, including Undo/Redo after a late callback is attached.",
+    "Native save/reopen compares stored sprite properties, pixels, ownership and shared/unique identity; not just node names or successful API returns.",
+    "Local actual renderer checks PNG quadrant colors, flips, offset/centering and zero pixel difference after restoration. Not hosted GPU, hardware or human UX qualification."
+  ],
+  "finalSourceLocalChecks": {
+    "sourceHash": "fa5943dde15617cb5a6c60cde783027602d04bba055354a2399ab9b868132b18",
+    "buildFormatLint": "PASS",
+    "core": { "tests": 136, "failed": 0, "skipped": 0, "scratchCleanup": "PASS" },
+    "safety": {
+      "report": "runs/ci/local-release-safety/summary.json",
+      "tests": 74,
+      "durationMs": 186034,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "scratchCleanup": "PASS"
+    },
+    "renderAndResources": {
+      "report": "runs/ci/sprite-scheduled-frozen/summary.json",
+      "tests": 3,
+      "durationMs": 30031,
+      "allDeclaredResourceTypes": 16,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0,
+      "scratchCleanup": "PASS"
+    },
+    "fullLocalReleaseGateExecutedThisTurn": false
+  },
+  "earlierFeatureRegression": {
+    "report": "runs/ci/sprite-final/summary.json",
+    "sourceHash": "cf16b1147825e0bd999ff006290d4d4ec692d46dca4e4573f734c094d1906fa4",
+    "tests": 8,
+    "durationMs": 77718,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "scratchCleanup": "PASS",
+    "boundary": "Before CI queue ordering and guarded documentation updates; not labeled final-source regression. Product src/ and godot-plugin/ are unchanged between feature and accepted commits."
+  },
+  "preservedFailures": {
+    "developmentReports": [
+      "runs/ci/sprite-initial/failure-summary.json",
+      "runs/ci/sprite-integration-frozen/failure-summary.json"
+    ],
+    "assertionCorrections": "New negative tests now expect existing INVALID_ARGUMENT for ui_set on non-Control Sprite2D and existing CONFLICT for unsupported stored material; refusal and unchanged scene-byte assertions remain required.",
+    "firstHostedRun": {
+      "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39066732705",
+      "head": "e1dd30af3c5d6b647b3dcae8d1cee4d23ac7ad57",
+      "conclusion": "failure",
+      "report": "runs/sprite-hosted-failure-39066732705-1/ci/local-release-safety/failure-summary.json",
+      "safetyDurationMs": 240036,
+      "finalSummaryAvailable": false,
+      "observation": "The existing two-worker queue started project-transactions at 183915ms and validation-cleanup at 238003ms; overall 240000ms deadline expired. Sprite native case passed, which cannot qualify the incomplete suite.",
+      "publish": "skipped"
+    },
+    "repair": "Schedule longer native/write/transaction workloads earlier, retaining all 18 files, 74 cases, two workers and original deadlines. Local and second hosted complete summaries pass; queue tail is observed evidence, not proof of a unique runner root cause.",
+    "failedEvidenceRetained": true,
+    "acceptanceThresholdsRelaxed": false
+  },
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39067535120",
+    "status": "success",
+    "tests": 136,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39067535156",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39067535634",
+    "mode": "acceptance_only=true",
+    "head": "588d653895d279121d5444014dd36b694ad8499f",
+    "sourceHash": "fa5943dde15617cb5a6c60cde783027602d04bba055354a2399ab9b868132b18",
+    "runId": "ee5d145d-eca2-416c-afc9-07e20aebdc3b",
+    "status": "PASS",
+    "build": "success",
+    "publish": "skipped",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 308587,
+    "tests": [
+      { "id": "core", "tests": 136, "passed": 136, "durationMs": 24701, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 4469, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 74, "passed": 74, "durationMs": 212886, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 16, "passed": 16, "durationMs": 20676, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 228,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12113712575,
+    "artifactName": "release-assets-39067535634-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "f256d756c8d8cd4e860be8e5d703b2d6fdceb5b405b29e8f1c05c1a3edbd52dc",
+      "SHA256SUMS": "505968b7b258078e44ee01130af5ed981e13bf0087e00599e43d40d1e66e5b29",
+      "acceptance.json": "9d22c264d7dc9f36fe697baa039f28a1658141b28396c4657b649925770054e6",
+      "sbom.json": "c33ca64a9d3a10a2bcc4d03925fbee0a926e7b86399a5a44ad9aee68210c86ed",
+      "wheel-mcp-0.2.8.tgz": "dcd0f339c512b080ef9b5c709390485020f48f328e921deedac62b9ceb0ce44e"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, committed head/current source/policy/guarded documents, runtime archive, SBOM and all three checksum entries."
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "fa5943dde15617cb5a6c60cde783027602d04bba055354a2399ab9b868132b18",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T20-38-02-293Z-61848/report.json",
+    "sha256": "13402b995503370ba2d7f8c85372407ba9c9d87727146a5e75b89e7f2bc0fe4c",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK installed app-server protocol, not desktop/TUI human UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "ciBoundaries": {
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "newPublisherExecution": "NOT_RUN; acceptance-only correctly skips publication. Existing publisher unit/HTTP negative controls remain mandatory."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArtifactIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-T31-T35-G4-G6-or-all-test-files",
+    "character-controller-navigation-frame-sheets-atlas-and-arbitrary-script-attachment",
+    "full-Godot-UI-3D-material-shader-physics-animation-coverage",
+    "other-platforms-clients-independent-machine-human-approval-UX-public-HTTP-long-session-high-load"
+  ],
+  "next": "Optional bounded CharacterBody2D/3D and explicit safe script-attachment contract, one minimal runtime/undo/save/reopen workflow at a time; not automatic completion of the full engine wishlist."
+}
