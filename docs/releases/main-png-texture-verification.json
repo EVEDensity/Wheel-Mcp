@@ -1,0 +1,151 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "96d382bd3dc1813230b76087f394305bc6252981",
+  "sourceHash": "837e413f1eb5c8dea4d8521df4ac25d54df3785de7f84ad7cef04b0532ed2ae1",
+  "change": "Bounded PNG source snapshots as immutable native ImageTexture -> Image resources; bind source bytes through approval/final commit, then embed independent RGBA8 pixels. Not live imported texture references.",
+  "upgrade": "Explicit host/plugin upgrade: bridge 0.3.5, scene.png_texture/v1, maximum 25 advertised capabilities. Existing frame/file limits, write opt-in and handle quota/TTL unchanged.",
+  "contracts": [
+    "Project-local regular PNG only; reject protected/absolute/traversal/link/junction/hardlink paths. SHA-256 required, 16 KiB maximum, 1..32 dimensions, non-interlaced 8-bit RGB/RGBA, only IHDR/IDAT/IEND.",
+    "Host verifies CRC/inflate/scanlines; native decodes exact source bytes and host independently compares every RGBA8 pixel. No importer-cache loading or arbitrary importer provenance claim.",
+    "Source-backed handles retain hashes through duplication/read and scene preparation. Combine scene/PNG dependencies within the existing 32-file bound; host rechecks before/after approval and native final commit checks again.",
+    "Decline and source changes leave the live document and scene bytes unchanged. Direct export of source-backed handles is refused; approve scene embedding first, then reference/export independent pixels.",
+    "Approved embedding is a snapshot, not a live PNG dependency. Removing source afterward preserves native pixels, Undo/Redo, resource export and actual scene save/reopen. External .tres still requires explicit unique embedding.",
+    "ImageTexture -> Image storage is bounded RGBA8, no scripts/metadata/mipmaps/compression/size overrides. Generic create only permits an empty-properties 1x1 white default. No in-place texture mutation.",
+    "Real post-import native scanning progress 1.85 violated the unchanged strict state schema. Plugin now bounds only the display indicator; real scanning/importing flags and readiness still govern completion.",
+    "Actual local imported PNG -> native save -> runtime capture has red/blue pixel samples, >1000 changed pixels on horizontal flip and zero difference after restoring. Not hosted GPU or human UX qualification."
+  ],
+  "frozenLocalRegression": {
+    "reports": [
+      "runs/ci/png-frozen/summary.json",
+      "runs/ci/png-ui-frozen/summary.json"
+    ],
+    "sourceHash": "837e413f1eb5c8dea4d8521df4ac25d54df3785de7f84ad7cef04b0532ed2ae1",
+    "testsPassed": 17,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "suites": [
+      {
+        "scope": "png-frozen",
+        "tests": 10,
+        "durationMs": 73266
+      },
+      {
+        "scope": "png-ui-frozen",
+        "tests": 7,
+        "durationMs": 75835
+      }
+    ],
+    "allDeclaredResourceTypes": 16,
+    "scratchCleanup": "PASS",
+    "scope": "Real native PNG/gradient storage, resource/scene reopen and local renderer; existing UI, LineEdit, ScrollContainer and plain RichTextLabel. Approval MOCK, SDK stdio primary; not full platform/GPU/human certification."
+  },
+  "preservedDevelopmentFailures": {
+    "reports": [
+      "runs/ci/png-ui-regression/failure-summary.json",
+      "runs/ci/png-render-diagnostic/failure-summary.json",
+      "runs/ci/png-render-state-diagnostic/failure-summary.json"
+    ],
+    "source": "Earlier unfrozen working tree before native progress normalization",
+    "cause": "First joint UI run: 9 pass / 1 PNG import-to-authoring failure. Two diagnostic runs narrowed it to apply_editor_scene snapshot validation and native filesystem.progress=1.85000002384186, outside 0..1.",
+    "resolution": "Normalize producer progress, retain strict host rejection and add native import-to-authoring regression to safety CI; no relaxed acceptance conditions.",
+    "failuresAndScratchRetained": true
+  },
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39063434405",
+    "status": "success",
+    "passed": 130,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39063434300",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39063447219",
+    "mode": "acceptance_only=true",
+    "status": "success",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "ab635a60-a6e4-46b1-bb70-a7c183728f18",
+    "artifactId": 12112840356,
+    "artifactName": "release-assets-39063447219-1",
+    "environment": {
+      "platform": "win32",
+      "node": "v24.21.0",
+      "godot": "4.7.2.stable.official.ed1daf0bf"
+    },
+    "durationMs": 301396,
+    "tests": {
+      "core": 130,
+      "safety": 73,
+      "engine": 15,
+      "package": 2,
+      "total": 220
+    },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "packageDurationMs": 6127,
+    "safetyDurationMs": 229183,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: exact frozen commit, current source/policy/documents, exact five-file set, runtime archive, SBOM and every checksum entry; installed Codex probe matches current source.",
+    "sha256": {
+      "acceptance.json": "492979e6a18f51ec64e70000debf3e69f3fe1467adb9e5d06e3409c664f1dcaf",
+      "RELEASE-NOTES.md": "4c6f57368ae42e83d82d982667829431b962074dd3e653123542e54e93f362db",
+      "sbom.json": "2a07dd086cacff68d050d209289da09d660b90596edb2cbdd536bed1b56e7c54",
+      "SHA256SUMS": "8b678f57e9017dd6f8fcb799131c0f040cea6c46a39bc9a5a4299e123e219e2d",
+      "wheel-mcp-0.2.8.tgz": "1b7a957ddb79f68b9da1b96963a9ba7d0a85604987a7551fe93809045f08d3b6"
+    }
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "837e413f1eb5c8dea4d8521df4ac25d54df3785de7f84ad7cef04b0532ed2ae1",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T19-40-12-610Z-58196/report.json",
+    "reportSha256": "b7ade631c48d286b2b8624107531b9b5e63bbc8232d40ef9006e3f7e88084c77",
+    "tools": 71,
+    "resources": 5,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "approval": "MOCK; installed app-server protocol, not desktop/TUI human approval UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false
+  },
+  "ciBoundaries": {
+    "oldTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "skipAcceptedAsPass": false,
+    "newHostedTests": {
+      "core": 4,
+      "nativeSafety": 1
+    },
+    "previousEvidence": "main-texture-verification.json"
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArchiveIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-or-full-UI",
+    "arbitrary-images-SVG-CompressedTexture2D-Atlas-importers-and-color-profiles",
+    "live-external-texture-file-dependency-CAS-or-hot-reload",
+    "mutable-textures-material-texture-slots-HDR-mipmaps-and-custom-resource-graphs",
+    "all-stretch-flip-layout-or-hosted-GPU-matrix",
+    "human-approval-desktop-focus-accessibility-IME",
+    "other-platforms-clients-long-session-public-HTTP"
+  ],
+  "next": "Prioritize bounded real mouse-wheel input and ScrollContainer behavioral evidence, then declared signals; do not infer full UI or IME support.",
+  "verifiedAt": "2026-10-17 19:47:26 UTC"
+}
