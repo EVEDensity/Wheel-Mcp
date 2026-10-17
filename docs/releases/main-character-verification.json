@@ -1,0 +1,202 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "acceptedCommit": "d888453fd3d733fe5c2d11f98b8c9991e9f14b01",
+  "sourceHash": "899566f14b292b82896c88023daf730150a544273e526bcac13220983116ada6",
+  "scope": "Bounded native CharacterBody2D author/save/reopen and explicit short physics-frame movement; trusted local Windows / Godot 4.7.2 / stdio. Not full character/game generation or human UX qualification.",
+  "contract": "docs/production-roadmap/CHARACTER-2D-CONTRACT.md",
+  "stages": [
+    {
+      "id": 1,
+      "commit": "e401eb83bc877a30f22f89ca326e7f9208cc3545",
+      "change": "Native body creation, six bounded character_set fields, shape/visual composition, exact-plan approval, native Undo/Redo, source/callback conflict refusal and actual saved reopen.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39068889420",
+      "shortCiStatus": "success",
+      "shortCiTests": 138,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39068888940",
+      "pagesStatus": "success",
+      "evidence": "docs/releases/main-character-stage1-verification.json"
+    },
+    {
+      "id": 2,
+      "commit": "8acf9c86721de9f2ae20b64e5d3bbd59d0e74a8b",
+      "change": "Native step_character_2d on consecutive physics frames, canonical scene-local targets, run/write ownership, exact replay/conflict and UNKNOWN late-result lookup, zero held velocity, wall/floor observations and reversible local rendered pixels.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39070021009",
+      "shortCiStatus": "success",
+      "shortCiTests": 141,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39070020743",
+      "pagesStatus": "success"
+    }
+  ],
+  "upgrade": {
+    "editorBridge": "0.3.7",
+    "editorCapability": "scene.character2d/v1",
+    "maximumEditorCapabilities": 27,
+    "runtimeBridge": "0.3.2",
+    "runtimeCapability": "character.step2d/v1",
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "earlierTightenedSourceRegression": {
+    "sourceHash": "9d56e5f434c00b0a8e1299787e9c3901c38e6fb03baf716da4361b1fdfed307c",
+    "report": "runs/ci/character-stage2-frozen/summary.json",
+    "tests": 6,
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "durationMs": 35587,
+    "scratchCleanup": "PASS",
+    "buildFormatLint": "PASS",
+    "finalCoreTests": 141,
+    "approval": "MOCK exact-plan via official SDK stdio",
+    "renderScope": "Actual local background renderer, native commanded movement and zero pixel difference after reversing; not hosted GPU, keyboard consumption or human approval UX.",
+    "boundary": "Before actual shape-owner state consistency guard and final CI phase redistribution; not relabeled final-source regression."
+  },
+  "finalSourceLocalChecks": {
+    "sourceHash": "899566f14b292b82896c88023daf730150a544273e526bcac13220983116ada6",
+    "buildFormatLint": "PASS",
+    "coreTests": 141,
+    "engine": {
+      "report": "runs/ci/engine-smoke/summary.json",
+      "tests": 19,
+      "durationMs": 45121,
+      "failed": 0,
+      "skipped": 0,
+      "scratchCleanup": "PASS"
+    },
+    "renderAndResources": {
+      "report": "runs/ci/character-final-visual/summary.json",
+      "tests": 3,
+      "durationMs": 32828,
+      "failed": 0,
+      "skipped": 0,
+      "scratchCleanup": "PASS",
+      "allDeclaredResourceTypes": 16
+    },
+    "scope": "Real native owner API divergence refusal, scripted-free command, authoring/reopen, real pixel restoration and resource persistence; approval MOCK, not full local release gate on this final source."
+  },
+  "earlierLocalGate": {
+    "sourceHash": "678e1c4cc1101a01c3750a1de8a7dbdf89cbad18ee29a04938c83fb98f75b306",
+    "runId": "b05004f9-84a0-4c15-8422-228d1ef8f3f6",
+    "status": "PASS",
+    "durationMs": 282854,
+    "tests": { "core": 141, "package": 2, "safety": 76, "engine": 16, "total": 235 },
+    "failed": 0,
+    "skipped": 0,
+    "scratchCleanup": "PASS",
+    "auditTotal": 0,
+    "boundary": "Executed before final scene-local path tightening; the independent receipt check passed for that earlier source before editing. It does not qualify the final source and must not be relabeled its full local gate."
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/ci/character-stage1-initial/failure-summary.json",
+      "cause": "New test incorrectly assumed SDK schema errors have structuredContent.code. Refusal/field identity and unchanged scene/document remain required."
+    },
+    {
+      "report": "runs/ci/fast-contract-only/failure-details.txt",
+      "cause": "Exact safety allowlist assertion needed the new native file; corrected the list without removing old cases."
+    },
+    {
+      "report": "runs/ci/character-stage2-initial/failure-summary.json",
+      "cause": "Native shape-owner inferred-Variant parse error prevented runtime startup; explicit Variant fixed it. Non-finite observation also hit existing UNSUPPORTED Variant guard before the new protocol schema; test corrected to require that original guard."
+    }
+  ],
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "899566f14b292b82896c88023daf730150a544273e526bcac13220983116ada6",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T21-29-13-264Z-24880/report.json",
+    "sha256": "a09c49c207739a2c0ff65bd22548e71c6e25bbd5a6a5a69a80d8574e6e91e6d6",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK app-server representative fixture, not desktop/TUI human UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "preservedHostedFailure": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39070022126",
+    "head": "8acf9c86721de9f2ae20b64e5d3bbd59d0e74a8b",
+    "sourceHash": "9d56e5f434c00b0a8e1299787e9c3901c38e6fb03baf716da4361b1fdfed307c",
+    "status": "FAIL",
+    "report": "runs/character-hosted-failure-39070022126-1/ci/local-release-safety/failure-summary.json",
+    "safetyDurationMs": 240022,
+    "finalSummaryAvailable": false,
+    "completedFiles": 12,
+    "incompleteOrUnstartedFiles": 8,
+    "characterCasesPassedButNotQualification": true,
+    "publish": "skipped",
+    "repair": "Move the required sprite/character files into the existing engine phase; exact disjoint file lists locked in CI policy. Keep all 235 cases, two workers, 240s safety, 60s engine and 600s total. No blind retry or partial-pass promotion."
+  },
+  "ciIntegration": {
+    "commit": "d888453fd3d733fe5c2d11f98b8c9991e9f14b01",
+    "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39071164302",
+    "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39071164179",
+    "status": "PASS",
+    "shortCiTests": 141,
+    "pagesStatus": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39071165636",
+    "mode": "acceptance_only=true",
+    "status": "PASS",
+    "head": "d888453fd3d733fe5c2d11f98b8c9991e9f14b01",
+    "sourceHash": "899566f14b292b82896c88023daf730150a544273e526bcac13220983116ada6",
+    "runId": "e7a4bf5e-7156-476c-9ca3-aa44b1e3f090",
+    "build": "success",
+    "publish": "skipped",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 293320,
+    "tests": [
+      { "id": "core", "tests": 141, "passed": 141, "durationMs": 24697, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 4682, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 73, "passed": 73, "durationMs": 197601, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 19, "passed": 19, "durationMs": 47152, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 235,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12114914248,
+    "artifactName": "release-assets-39071165636-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "188bdd531e82d5ede0717413b2e5fd19651b80a29bc220f1d367bf4dd4d2136c",
+      "SHA256SUMS": "1ee9687d6e3e551b14079fc3e0661e0418a1df5b4dd43cd5e58087a7e80409f5",
+      "acceptance.json": "9d39f8bfc5bb5feecafe726e34088a02515b1f6f7a38cb96ecd3e0fb4e20fe37",
+      "sbom.json": "af3fb749764ae7e1aff83817db92cfe65d4e7e5b3bf9f1e9242010d4c6b7d549",
+      "wheel-mcp-0.2.8.tgz": "49818463244395707a9dee9e4365e6b245b692e7a543499236b12ca0c66fdc46"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, committed head/current source/policy/guarded documents, archive, SBOM and all three checksum entries."
+  },
+  "ciBoundaries": {
+    "requiredCounts": { "core": 141, "safety": 73, "engine": 19, "package": 2, "total": 235 },
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "newPublisherExecution": "NOT_RUN; acceptance-only must skip publication."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArtifactIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-T31-T35-G4-G6-or-all-test-files",
+    "autonomous-player-controller-keyboard-consumption-jump-gravity-or-arbitrary-script-attachment",
+    "CharacterBody3D-RigidBody-navigation-skeletal-physics-or-full-engine-coverage",
+    "other-platforms-clients-independent-machine-human-approval-UX-public-HTTP-long-session-high-load"
+  ]
+}

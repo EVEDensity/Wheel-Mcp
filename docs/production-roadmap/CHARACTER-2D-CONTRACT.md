@@ -122,6 +122,12 @@ two workers in each sequential phase, 240s safety and 600s total gate. This
 does not raise deadlines, enlarge automatic CI or turn individual passes into
 qualification. Final counts: 141 core, 73 safety, 19 engine, 2 package (235).
 
+Accepted integration source `d888453` passed all 235 hosted bounded checks,
+short CI, Pages, installed Codex interface probe and independent downloaded
+artifact verification. Final local engine checks were 19/19, rendered/resource
+checks 3/3; earlier local gates are not relabeled current-source gates. See the
+[complete stage and failure record](../releases/main-character-verification.json).
+
 Primary references: [Godot CharacterBody2D](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html)
 and [CollisionObject2D shape-owner APIs](https://docs.godotengine.org/en/stable/classes/class_collisionobject2d.html).
 Full production qualification, all platforms, human approval UX and complete
