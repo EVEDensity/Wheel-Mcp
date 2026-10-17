@@ -33,6 +33,7 @@ const files = [
   'character-step-contract',
   'character-dynamics-contract',
   'animation-transform-schema',
+  'animation-copy-contract',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

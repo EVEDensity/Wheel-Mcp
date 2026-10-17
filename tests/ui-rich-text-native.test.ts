@@ -103,7 +103,7 @@ test(
       const endpointPath = path.join(f.root, '.harness/editor-endpoint.json');
       const bytes = await readFile(endpointPath);
       const endpoint = JSON.parse(bytes.toString());
-      assert.equal(endpoint.capabilities.length, 29);
+      assert.equal(endpoint.capabilities.length, 30);
       assert.ok(endpoint.capabilities.includes('scene.rich_text/v1'));
       try {
         for (const capabilities of [

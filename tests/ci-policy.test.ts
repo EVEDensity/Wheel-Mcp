@@ -103,6 +103,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'character-step-contract',
     'character-dynamics-contract',
     'animation-transform-schema',
+    'animation-copy-contract',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',

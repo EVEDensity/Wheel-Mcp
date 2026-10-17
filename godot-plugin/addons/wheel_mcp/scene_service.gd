@@ -12,9 +12,10 @@ const Sprites = preload("res://addons/wheel_mcp/sprite_service.gd")
 const Characters = preload("res://addons/wheel_mcp/character_service.gd")
 const Physics = preload("res://addons/wheel_mcp/physics_service.gd")
 const Animations = preload("res://addons/wheel_mcp/animation_service.gd")
+const AnimationSource = preload("res://addons/wheel_mcp/animation_source.gd")
 const CLASSES := ["Node", "Node2D", "Sprite2D", "CharacterBody2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "TextureRect", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
 const PROPERTIES := ["position", "rotation", "scale", "visible", "visibility_parent"]
-const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "sprite_set", "character_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
+const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "sprite_set", "character_set", "physics_set", "animation_clips", "animation_copy", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
 
 static func _instance_boundary(node: Node, root: Node) -> Node:
 	var cursor := node
@@ -375,6 +376,7 @@ class Batch extends RefCounted:
 	var expected_document: Dictionary = {}
 	var history_version: int
 	var records: Array[Dictionary] = []
+	var animation_copies: Array[Dictionary] = []
 	var before_references: Array[Dictionary] = []
 	var after_references: Array[Dictionary] = []
 	var created: Array[Node] = []
@@ -558,7 +560,7 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 	for operation in operations:
 		if not operation is Dictionary or operation.get("kind") not in OPERATIONS:
 			return _error("INVALID_ARGUMENT", "Unknown scene operation")
-		var fields: Array = ["kind", "path", "properties"] if operation.kind == "character_set" else {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "ui_set": ["kind", "path", "properties"], "sprite_set": ["kind", "path", "properties"], "physics_set": ["kind", "path", "properties"], "animation_clips": ["kind", "path", "clips"], "animation_graph": ["kind", "path", "graph"], "animation_blend": ["kind", "path", "blend"], "override": ["kind", "path", "property", "value"], "editable_children": ["kind", "path", "enabled"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
+		var fields: Array = ["kind", "path", "properties"] if operation.kind == "character_set" else {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "ui_set": ["kind", "path", "properties"], "sprite_set": ["kind", "path", "properties"], "physics_set": ["kind", "path", "properties"], "animation_clips": ["kind", "path", "clips"], "animation_copy": ["kind", "path", "sourcePath", "sourceHash", "clipId", "targets"], "animation_graph": ["kind", "path", "graph"], "animation_blend": ["kind", "path", "blend"], "override": ["kind", "path", "property", "value"], "editable_children": ["kind", "path", "enabled"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
 		if operation.size() != fields.size():
 			return _error("INVALID_ARGUMENT", "Operation has missing or extra fields")
 		for field in fields:
@@ -834,9 +836,19 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 		if prepared.has("code"): return prepared
 		batch.records.append({"kind":"physics_set", "node":real, "before":prepared.before, "after":prepared.after})
 		return {}
-	if op.kind == "animation_clips":
+	if op.kind in ["animation_clips", "animation_copy"]:
 		if not node is AnimationPlayer: return _error("INVALID_ARGUMENT", "Animation clips require AnimationPlayer")
-		var prepared := Animations.prepare(node, root, op.clips)
+		var clips: Array = []
+		if op.kind == "animation_copy":
+			var source := AnimationSource.read(op)
+			if source.has("code"): return source
+			clips = source.clips
+			if batch.instance_sources.has(op.sourcePath) and batch.instance_sources[op.sourcePath] != op.sourceHash: return _error("CONFLICT", "Animation source fingerprints disagree")
+			batch.instance_sources[op.sourcePath] = op.sourceHash
+			if batch.instance_sources.size() > 32: return _error("UNSUPPORTED", "Combined source budget exceeded")
+			batch.animation_copies.append({"sourcePath":op.sourcePath, "sourceHash":op.sourceHash, "clips":clips})
+		else: clips = op.clips
+		var prepared := Animations.prepare(node, root, clips)
 		if prepared.has("code"): return prepared
 		if node.add_animation_library(Animations.LIBRARY, prepared.library) != OK:
 			return _error("VALIDATION_FAILED", "Native AnimationPlayer rejected library")

@@ -12,6 +12,7 @@ import { spritePropertiesSchema } from './sprite-schema.js';
 import { characterPropertiesSchema } from './character-schema.js';
 import { physicsPropertiesSchema, physicsTypes } from './physics-schema.js';
 import { animationClipsSchema, animationGraphSchema, animationBlendSchema } from './animation-schema.js';
+import { readAnimationSource } from './animation-source.js';
 
 const nodePath = z.string().min(1).max(512);
 const name = z.string().min(1).max(80);
@@ -77,6 +78,18 @@ export const sceneOperationsSchema = z
       z.object({ kind: z.literal('character_set'), path: nodePath, properties: characterPropertiesSchema }).strict(),
       z.object({ kind: z.literal('physics_set'), path: nodePath, properties: physicsPropertiesSchema }).strict(),
       z.object({ kind: z.literal('animation_clips'), path: nodePath, clips: animationClipsSchema }).strict(),
+      z
+        .object({
+          kind: z.literal('animation_copy'),
+          path: nodePath,
+          sourcePath: z.string().min(1).max(512),
+          sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
+          clipId: z.string().regex(/^[a-z][a-z0-9_]{0,31}$/),
+          targets: z
+            .record(z.string().min(1).max(128), z.string().min(1).max(128))
+            .refine((v) => Object.keys(v).length >= 1 && Object.keys(v).length <= 8),
+        })
+        .strict(),
       z.object({ kind: z.literal('animation_graph'), path: nodePath, graph: animationGraphSchema }).strict(),
       z.object({ kind: z.literal('animation_blend'), path: nodePath, blend: animationBlendSchema }).strict(),
       z.object({ kind: z.literal('editable_children'), path: nodePath, enabled: z.boolean() }).strict(),
@@ -143,6 +156,10 @@ export const scenePlanSchema = z.object({
   scenePath: z.string(),
   operationId: z.string(),
   operations: sceneOperationsSchema,
+  animationCopies: z
+    .array(z.object({ sourcePath: z.string().min(1).max(512), sourceHash: hash, clips: animationClipsSchema }).strict())
+    .max(32)
+    .optional(),
   beforeHash: hash,
   afterHash: hash,
   sourceHash: hash,
@@ -198,6 +215,9 @@ export function createSceneApproval(server: McpServer, actor: string): SceneAppr
       `Transitive scene dependencies: ${JSON.stringify(plan.dependencyHashes)}`,
       `Document: ${plan.beforeHash} -> ${plan.afterHash}`,
       JSON.stringify(plan.operations, null, 2),
+      ...(plan.animationCopies?.length
+        ? ['Independent animation snapshots (source is read-only):', JSON.stringify(plan.animationCopies, null, 2)]
+        : []),
     ].join('\n');
     if (Buffer.byteLength(message) > 24000)
       throw new WheelError('FORBIDDEN', 'Exact editor preview exceeds review budget; split the batch');
@@ -228,6 +248,12 @@ export async function applyEditorScene(
 ): Promise<Record<string, unknown>> {
   const operations = sceneOperationsSchema.parse(options.operations);
   for (const operation of operations) {
+    if (operation.kind === 'animation_copy') {
+      operation.sourcePath = (
+        await readAnimationSource(options.projectPath, operation.sourcePath, operation.sourceHash)
+      ).resourcePath;
+      continue;
+    }
     if (operation.kind !== 'instantiate') continue;
     let resolved;
     try {
@@ -250,6 +276,14 @@ export async function applyEditorScene(
   try {
     if (!bridge.identity.capabilities.includes('scene.prepare'))
       throw new WheelError('FORBIDDEN', 'Editor scene writes require independent private opt-in');
+    if (
+      operations.some((op) => op.kind === 'animation_copy') &&
+      !bridge.identity.capabilities.includes('scene.animation_copy/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks bounded independent animation copies; upgrade explicitly',
+      );
     if (
       operations.some(
         (op) =>
@@ -381,6 +415,7 @@ export async function applyEditorScene(
       operations.some(
         (op) =>
           op.kind === 'animation_clips' ||
+          op.kind === 'animation_copy' ||
           op.kind === 'animation_graph' ||
           op.kind === 'animation_blend' ||
           (op.kind === 'create' && ['AnimationPlayer', 'AnimationTree'].includes(op.type)),
@@ -409,6 +444,26 @@ export async function applyEditorScene(
     )
       throw new WheelError('PROTOCOL_MISMATCH', 'Scene preview identity/operations mismatch');
     plan = parsed.data;
+    const copies = operations.filter((op) => op.kind === 'animation_copy');
+    const previews = plan.animationCopies ?? [];
+    if (
+      copies.length !== previews.length ||
+      copies.some((op, i) => {
+        const p = previews[i];
+        return (
+          p.sourcePath !== op.sourcePath ||
+          p.sourceHash !== op.sourceHash ||
+          plan!.dependencyHashes[op.sourcePath] !== op.sourceHash ||
+          p.clips.length !== 1 ||
+          p.clips[0].id !== op.clipId ||
+          p.clips[0].tracks.some(
+            (t) =>
+              !Object.values(op.targets).includes(t.target) || !['position', 'rotation', 'scale'].includes(t.property),
+          )
+        );
+      })
+    )
+      throw new WheelError('PROTOCOL_MISMATCH', 'Animation copy preview/source binding mismatch');
     await verifySceneDependencies(options.projectPath, plan.dependencyHashes, options.signal);
     const approval = await options.approve(plan, options.signal);
     if (!approval || approval.planHash !== plan.planHash || approval.actor !== options.ownerId || !approval.receipt)

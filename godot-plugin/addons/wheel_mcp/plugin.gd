@@ -84,7 +84,7 @@ func _enter_tree() -> void:
 		_release_lease()
 		return
 	_identity = {
-		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.9",
+		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.10",
 		"projectId": _config.get("projectId", ""), "projectPath": project_path,
 		"sessionId": Crypto.new().generate_random_bytes(16).hex_encode(),
 		"godotVersion": Engine.get_version_info().string, "editorPid": OS.get_process_id(),
@@ -96,6 +96,7 @@ func _enter_tree() -> void:
 		_identity.capabilities.append("scene.character2d/v1")
 		_identity.capabilities.append("scene.animation_transform2d/v1")
 		_identity.capabilities.append("scene.animation_transform3d/v1")
+		_identity.capabilities.append("scene.animation_copy/v1")
 	var staged := LEASE + "/endpoint.json"
 	var output := FileAccess.open(staged, FileAccess.WRITE)
 	if output == null:
