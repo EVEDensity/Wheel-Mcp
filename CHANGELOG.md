@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Add bounded native mouse-wheel input on runtime bridge 0.3.1 with explicit
+  input.mouse_wheel/v1 capability, viewport coordinates, four directions and
+  factor >0..8. Preserve write/run ownership, request replay and legacy key input.
+  Inject a native press/release pair; acceptance alone is not GUI consumption.
+  Check actual two-axis ScrollContainer behavior, hit testing, hidden controls,
+  limits and unchanged scene bytes in hosted headless smoke; separately check
+  reversible pixels with a real local renderer. No OS mouse control or touch/IME.
+- Document the finite personal-project handoff: no custom secrets, organization
+  approvals or self-hosted runners; read-only build and automatic GitHub token
+  write permission only in the gated publisher. Lock this policy in CI tests,
+  retain every previous case/deadline/worker limit and defer broad engine/platform
+  expansion without converting unrun work to PASS (134 core, 73 safety, 16 engine,
+  2 package checks). This integrates main; public v0.2.8 assets are unchanged.
 - Normalize native scan progress at the plugin boundary: a real post-PNG rescan
   returned 1.85 and broke the unchanged strict editor-state protocol. Clamp only
   the display indicator to 0..1; completion still checks real scanning/importing

@@ -235,6 +235,12 @@ $repo = (Get-Location).Path
 
 ## 使用边界
 
+个人维护交付采用 Windows 本机范围、普通托管 CI 和 GitHub 自带令牌，不依赖组织级权限。
+见[最终整合与维护清单](docs/PERSONAL-PROJECT-DELIVERY.zh-CN.md)；长期扩展不作为每次发布的强制阻断项。
+
+main 新增 `input.mouse_wheel/v1` 有界原生滚轮：viewport 坐标、四方向、factor 大于 0 且不超过 8。
+验证真实 ScrollContainer 响应，不控制系统鼠标；注入被接受不代表控件已消费。
+
 - 运行时属性修改不等于保存编辑器场景。编辑器保存需独立授权与精确批准，仅支持声明的原生类型；保存后 Undo 的文档/磁盘冲突会阻止普通文件覆盖。
 - 项目文件写入通常需要客户端表单精确批准，`approved: true` 本身不是授权。缺少表单支持时默认拒绝，除非另外配置了精确的本地预授权策略；不要关闭审批检查。见[事务契约](docs/production-roadmap/TRANSACTION-CONTRACT.md)。
 - 持久会话与单次运行使用不同实例，不能假设状态共享。

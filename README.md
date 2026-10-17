@@ -277,6 +277,15 @@ Advanced authoring remains experimental under the [local release profile](docs/L
 
 ## Major roadmap
 
+Personal-maintainer delivery uses a bounded Windows/local scope, ordinary hosted
+CI and the automatic GitHub token, without organization-only permissions. See
+the [completion and maintenance checklist](docs/PERSONAL-PROJECT-DELIVERY.zh-CN.md).
+The extensions below are future work, not mandatory blockers for every release.
+
+Main also adds bounded native wheel input (`input.mouse_wheel/v1`) for viewport
+coordinates, four directions and factor >0..8. It checks real ScrollContainer
+behavior, not OS mouse control; injection acceptance alone is not consumption.
+
 The limited local release is available. The following work extends its scope;
 existing bounded editor/semantic implementations are not promises of complete
 authoring support. See the [implementation plan](docs/PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md)

@@ -8,6 +8,7 @@ const files = [
   'runtime-error-contract',
   'session-isolation',
   'stdio-cleanup',
+  'mouse-wheel-native',
 ].map((name) => `build/tests/${name}.test.js`);
 const plan = { files, concurrency: 2, timeoutMs: 60000, engine: 'REAL_HEADLESS', scope: 'engine-smoke' };
 

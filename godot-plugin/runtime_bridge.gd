@@ -150,7 +150,7 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.3.0",
+			"bridgeVersion": "0.3.1",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"runtimeConditions": {
 				"renderer": RenderingServer.get_current_rendering_method(),
@@ -165,7 +165,7 @@ func _process(_delta: float) -> bool:
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -606,6 +606,26 @@ func _call_method_result(request: Dictionary) -> Dictionary:
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_METHOD_CALL", "runtime": true, "nodePath": str(persistent_instance.get_path_to(node)), "method": method_name, "value": value}
 
 func _input_result(request: Dictionary) -> Dictionary:
+	if request.get("type", "key") == "mouse_wheel":
+		for key in request:
+			if key not in ["type", "direction", "position", "factor"]: return {"error": "Unexpected wheel input field"}
+		var direction: Variant = request.get("direction")
+		var position: Variant = request.get("position")
+		var factor: Variant = request.get("factor", 1.0)
+		if direction not in ["up", "down", "left", "right"] or not position is Dictionary or position.size() != 2 or not _valid_number(position.get("x")) or not _valid_number(position.get("y")) or not _valid_number(factor): return {"error": "Invalid wheel direction, viewport position or factor"}
+		if position.x < 0 or position.y < 0 or position.x > 16384 or position.y > 16384 or factor <= 0 or factor > 8: return {"error": "Wheel input budget exceeded"}
+		var wheel := InputEventMouseButton.new()
+		wheel.position = Vector2(float(position.x), float(position.y))
+		wheel.global_position = wheel.position
+		wheel.button_index = {"up": MOUSE_BUTTON_WHEEL_UP, "down": MOUSE_BUTTON_WHEEL_DOWN, "left": MOUSE_BUTTON_WHEEL_LEFT, "right": MOUSE_BUTTON_WHEEL_RIGHT}[direction]
+		wheel.factor = float(factor)
+		wheel.pressed = true
+		Input.parse_input_event(wheel)
+		var release := wheel.duplicate() as InputEventMouseButton
+		release.pressed = false
+		Input.parse_input_event(release)
+		_emit_notification("input_injected", {"type": "mouse_wheel", "direction": direction, "position": position, "factor": factor})
+		return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "type": "mouse_wheel", "direction": direction, "position": position, "factor": factor, "accepted": true}
 	if request.get("type", "key") == "mouse_motion":
 		var relative = request.get("relative", {})
 		if not relative is Dictionary or not _valid_number(relative.get("x")) or not _valid_number(relative.get("y")):

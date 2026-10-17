@@ -1,5 +1,9 @@
 # Windows local stable release
 
+For the personal-maintainer completion checklist and minimal GitHub permissions,
+see [personal-project delivery](PERSONAL-PROJECT-DELIVERY.zh-CN.md). This local
+scope does not require completing the optional future engine-coverage wishlist.
+
 Each GitHub Release includes an `acceptance.json` for its exact source and artifacts.
 The historical [v0.2.0 receipt](releases/0.2.0-windows-local-final.json)
 does not qualify later versions. The earlier

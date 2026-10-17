@@ -1,5 +1,15 @@
 # Release readiness (Windows)
 
+## Current personal-project scope
+
+The published release is v0.2.8; main contains later development integrations,
+not replacements for that immutable package. Use the latest exact-source record
+in [feature status](FEATURE-STATUS.zh-CN.md), not the historical checkpoint prose
+below, to assess a main commit. The [personal-maintainer checklist](PERSONAL-PROJECT-DELIVERY.zh-CN.md)
+defines the finite local handoff and ordinary GitHub permissions. CI/CD is enabled;
+organization-only review/security features and broad future engine coverage are
+not prerequisites. No unrun or deferred qualification is converted into PASS.
+
 ## Local stable release revision 2
 
 The latest published [GitHub Release](https://github.com/EVEDensity/Wheel-Mcp/releases/latest)
@@ -25,7 +35,7 @@ fresh local and GitHub CI checks of this fix.
 
 ## Historical source synchronization on October 15 2026
 
-**The current commit is not accepted for stable release.** The final gate timed
+**At this historical checkpoint, that commit was not accepted for stable release.** The final gate timed
 out in the core phase after 120 seconds; build, format and lint completed, but
 the parent did not receive a complete passing test result. An earlier attempt
 also exceeded its 180-second native-safety phase budget without a cumulative

@@ -606,7 +606,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'call_runtime_bridge',
-    'Send a JSON-RPC request to a persistent Godot runtime bridge session.',
+    'Send a JSON-RPC request to a persistent Godot runtime bridge session. inject_input supports mouse_wheel with direction up/down/left/right, viewport position {x,y} and factor 0..8 (exclusive zero, default 1); requires input.mouse_wheel/v1. Acceptance is injection, not proof a control consumed it; read state or capture pixels.',
     {
       sessionId: z.string().min(1),
       method: runtimeMethod,

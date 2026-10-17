@@ -96,6 +96,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'ui-rich-text-schema',
     'ui-texture-schema',
     'png-texture-contract',
+    'mouse-wheel-contract',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -111,7 +112,8 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   );
   assert.equal(smoke.engine, 'REAL_HEADLESS');
   assert.equal(smoke.timeoutMs, 60000);
-  assert.equal(smoke.files.length, 5);
+  assert.equal(smoke.files.length, 6);
+  assert.ok(smoke.files.includes('build/tests/mouse-wheel-native.test.js'));
   assert.ok(smoke.files.every((file: string) => !/soak|authoring|outcome-ledger|production-case/.test(file)));
   const release = JSON.parse(
     execFileSync(process.execPath, ['scripts/release-gate-local.mjs', '--plan'], {
@@ -325,4 +327,27 @@ test('engine smoke cannot silently skip a missing Godot executable', () => {
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /engine smoke NOT_RUN/);
+});
+
+test('personal-project workflows need no custom secrets, organization reviewers or privileged runners', async () => {
+  const ci = parse(await readFile('.github/workflows/ci.yml', 'utf8'));
+  const release = parse(await readFile('.github/workflows/release.yml', 'utf8'));
+  for (const workflow of [ci, release]) {
+    assert.deepEqual(workflow.permissions, { contents: 'read' });
+    assert.doesNotMatch(
+      JSON.stringify(workflow),
+      /secrets\.|pull_request_target|self-hosted|id-token|attestations|security-events/,
+    );
+    for (const [name, job] of Object.entries(workflow.jobs) as Array<[string, any]>) {
+      assert.ok(['windows-latest', 'ubuntu-latest'].includes(job['runs-on']));
+      assert.equal(job.environment, undefined, 'No environment approval/reviewer dependency for packaging');
+      if (name === 'publish') assert.deepEqual(job.permissions, { contents: 'write' });
+      else assert.equal(job.permissions, undefined, 'Build/PR cannot acquire repository write permission');
+    }
+  }
+  assert.equal(release.on.workflow_dispatch.inputs.acceptance_only.default, true);
+  const publish = release.jobs.publish;
+  assert.equal(publish.if, "needs.build.outputs.publish == 'true'");
+  const step = publish.steps.find((s: any) => s.env?.GH_TOKEN);
+  assert.equal(step.env.GH_TOKEN, '${{ github.token }}');
 });

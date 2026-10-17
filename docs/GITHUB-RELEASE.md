@@ -5,6 +5,14 @@ npm registry. Releases cover Windows, Godot 4.7.2 and trusted local stdio projec
 The daily push/PR workflow stays short; the release workflow runs only on a
 version tag or explicit manual dispatch.
 
+This is a personal-maintainer workflow: no organization/team approval, paid
+security service, custom runner, PAT, npm token or extra repository secret is
+required. Builds use read-only permissions; only the publisher gets
+`contents: write` with the automatic `github.token`. Repository owners still
+need Actions enabled and permission to push/dispatch; forks without that access
+can submit a PR instead. No account or organization setting is changed by the
+gate. See the [personal-project handoff](PERSONAL-PROJECT-DELIVERY.zh-CN.md).
+
 Current published installation target: **v0.2.8**. Both acceptance-only and
 tag-triggered runs passed 193 tests; automatic publication and independent public
 download verification also passed. See the [verification record](releases/0.2.8-ci-cd-verification.json).

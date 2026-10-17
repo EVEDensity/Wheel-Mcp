@@ -31,6 +31,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 
 ## Releases and evidence
 
+- [个人项目最终整合与最小权限 / Personal-maintainer handoff](PERSONAL-PROJECT-DELIVERY.zh-CN.md).
 - [本机稳定版范围 / Local stable scope](LOCAL-STABLE-RELEASE.md).
 - [v0.2.0 验收记录 / Release receipt](releases/0.2.0-windows-local-final.json).
 - [v0.2.8 CI/CD 与公开下载核验 / CI/CD verification](releases/0.2.8-ci-cd-verification.json).

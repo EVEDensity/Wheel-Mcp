@@ -14,6 +14,7 @@ import { DEFAULT_GODOT_PROCESS_TIMEOUT_MS, DEFAULT_STOP_TIMEOUT_MS } from './tim
 import { resolveGodotPathSync } from './godot-path.js';
 import { validateVariantInput } from './protocol/variant.js';
 import { validateCollisionQuery } from './runtime/physics-query.js';
+import { validateMouseWheel } from './runtime/mouse-wheel.js';
 import { normalizeBridgeRuntimeEvent, type EventCursor, type RuntimeEvent } from './runtime-events.js';
 import {
   BridgeProtocolError,
@@ -422,6 +423,13 @@ export class PersistentRuntimeBridge {
         method,
       });
     if (method === 'set_property' && Object.hasOwn(params, 'value')) validateVariantInput(params.value);
+    if (method === 'inject_input' && params.type === 'mouse_wheel') {
+      params = validateMouseWheel(params);
+      if (!this.handshake?.capabilities.includes('input.mouse_wheel/v1'))
+        throw new BridgeRpcError('UNSUPPORTED', 'Runtime does not advertise input.mouse_wheel/v1', {
+          sessionId: this.sessionId,
+        });
+    }
     if (method === 'create_node' && Object.hasOwn(params, 'properties'))
       validateVariantInput(params.properties, 'properties');
     if (method === 'call_method' && Object.hasOwn(params, 'args')) validateVariantInput(params.args, 'args');

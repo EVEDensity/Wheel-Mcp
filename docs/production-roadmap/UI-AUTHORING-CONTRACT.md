@@ -52,6 +52,30 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 这是 headless 原生 GUI 行为和存储验收，不是鼠标滚轮、触屏拖拽、桌面焦点、像素裁剪、无障碍或不同 viewport/renderer 的资格。没有用直接设置 scroll_vertical 冒充输入后的自动滚动；直接设置仅用于关闭 follow_focus 的对照组复位。
 
+### 后续新增：有界原生滚轮输入
+
+main 的运行桥 0.3.1 新增 `input.mouse_wheel/v1`，不是编辑器桥版本变化。
+使用 `call_runtime_bridge` 的 `method:"inject_input"`，参数例如：
+
+```json
+{"type":"mouse_wheel","direction":"down","position":{"x":80,"y":80},"factor":1}
+```
+
+方向只限 up/down/left/right，viewport 坐标 x/y 为有限 0..16384，factor 为有限
+大于 0 且不超过 8，省略默认为 1；其他字段拒绝。一次调用是一个原生
+InputEventMouseButton 按下/释放对，不移动系统鼠标，不指定目标节点、不通过
+直接设置滚动值冒充 GUI 事件。超出控件命中范围的有效坐标也可能被接受但无人消费。
+`accepted:true` 仅表示注入，必须读取状态或像素证明实际响应。没有操作系统 GUI 权限要求。
+
+宿主在分发前检查参数和运行桥能力，旧桥未声明能力则 UNSUPPORTED；原生再次校验
+输入边界。保留 write/run scope、会话归属和准确 operationId；相同请求重复 ID 不会
+再次注入，未知结果先查状态而非另起 ID 重试。运行时交互不代表编辑器落盘。
+
+`mouse-wheel-native.test.ts` 从 MCP 创作保存的 ScrollContainer 验证双轴、逆向、
+窗口内外命中、隐藏控件、边界限制、参数拒绝、重复 ID 及磁盘字节不变；在托管
+headless smoke 中运行。`mouse-wheel-render.test.ts` 另在本机真实渲染检查滚动像素改变
+且恢复零差异；不声称托管 GPU、系统硬件鼠标、触控板平移、触摸、桌面焦点或 IME 资格。
+
 ## RichTextLabel 首批纯文本子集（main 开发源码）
 
 新增创建 `RichTextLabel`；这一步是该控件的纯文本展示能力，不是完整富文本格式、BBCode 或资源图支持。继续使用精确批准、CAS、原生 Undo/Redo 和独立保存。
