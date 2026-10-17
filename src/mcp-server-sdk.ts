@@ -110,7 +110,8 @@ export function createMcpServer(
   return server;
 }
 
-async function main(): Promise<void> {
+/** Shared stdio entry for the packaged binary and the source checkout launcher. */
+export async function startStdioServer(): Promise<void> {
   await runRegistry.reclaimOrphans(10_000);
   const policy = createStdioPolicy();
   if (!process.env.GODOT_PATH && policy.approvedGodotPaths.length === 1)
@@ -179,5 +180,5 @@ export async function cleanupCurrentOwnerResources(): Promise<void> {
 }
 
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
-  await main();
+  await startStdioServer();
 }

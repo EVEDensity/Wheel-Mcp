@@ -31,6 +31,7 @@ const report = {
   scope: 'Installed Codex CLI app-server stdio representative native fixture; NOT desktop/TUI human UX',
   approval: 'MOCK exact-plan fixture host',
   noModelTurn: true,
+  entrypoint: 'scripts/run-mcp.mjs',
   permanentConfigWrites: false,
   checks: [],
   requests: [],
@@ -80,7 +81,7 @@ try {
     ' = { command = ' +
     JSON.stringify(process.execPath) +
     ', args = [' +
-    JSON.stringify(path.join(root, 'build/src/mcp-server-sdk.js')) +
+    JSON.stringify(path.join(root, 'scripts/run-mcp.mjs')) +
     '], cwd = ' +
     JSON.stringify(root) +
     ', env = { ' +

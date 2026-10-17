@@ -73,7 +73,13 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
   assert.equal(new Set(plan.files).size, plan.files.length);
   assert.ok(plan.files.includes('build/tests/method-authorization.test.js'));
   assert.ok(plan.files.includes('build/tests/ci-policy.test.js'));
-  for (const name of ['stdio-client-contract', 'project-write-approval', 'preapproved-writes', 'retry-guidance'])
+  for (const name of [
+    'stdio-client-contract',
+    'mcp-launcher',
+    'project-write-approval',
+    'preapproved-writes',
+    'retry-guidance',
+  ])
     assert.ok(plan.files.includes(`build/tests/${name}.test.js`));
   assert.ok(plan.files.includes('scripts/site.test.mjs'));
   assert.ok(plan.files.every((file: string) => !/soak|e2e|outcome-ledger|production-case|index-scale/.test(file)));

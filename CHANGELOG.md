@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Run the configured MCP launcher in the client-owned Node process rather than
+  a hidden child. Reuse stdio draining/cleanup and verify real Godot orphan
+  recovery after abnormal server death. Startup no longer invokes setup/build:
+  missing or incompatible runtimes fail with stderr-only reinstall/rebuild guidance.
+  Hide Windows executable discovery/version probes. Cover the actual installed
+  package launcher and move the installed Codex probe onto the configured entry.
 - Prevent automatic retry advice for side-effecting MCP requests after timeout,
   cancellation or unknown outcome, including writes routed through the runtime
   dispatcher. Keep read-only timeout behavior and preserve inspection advice on

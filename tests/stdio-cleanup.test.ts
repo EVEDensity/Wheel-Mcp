@@ -9,6 +9,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { getProcessStatus } from '../src/godot-runtime.js';
 import { runRegistry } from '../src/run-registry.js';
+import { readProcessIdentity, stopIdentifiedProcess, type ProcessIdentity } from '../src/process-identity.js';
 
 test(
   'official stdio client close reaps its owned launch and bridge',
@@ -21,7 +22,7 @@ test(
     await writeFile(bridgePath, await readFile(path.resolve('godot-plugin/runtime_bridge.gd')));
     const transport = new StdioClientTransport({
       command: process.execPath,
-      args: [path.resolve('build/src/mcp-server-sdk.js')],
+      args: [path.resolve('scripts/run-mcp.mjs')],
       stderr: 'pipe',
       env: fixtureStdioEnv(),
     });
@@ -84,7 +85,7 @@ test(
       ) {
         const restartTransport = new StdioClientTransport({
           command: process.execPath,
-          args: [path.resolve('build/src/mcp-server-sdk.js')],
+          args: [path.resolve('scripts/run-mcp.mjs')],
           stderr: 'pipe',
           env: fixtureStdioEnv(),
         });
@@ -109,6 +110,86 @@ test(
       if (runPid && getProcessStatus(runPid).running) await runRegistry.stopByPid(runPid).catch(() => undefined);
       if (bridgePid && getProcessStatus(bridgePid).running)
         await runRegistry.stopByPid(bridgePid).catch(() => undefined);
+    }
+  },
+);
+
+test(
+  'configured launcher abnormal death leaves no hidden Node owner; reconnect reclaims only its registered Godot generation',
+  { skip: process.platform !== 'win32' || !existsSync(process.env.GODOT_PATH ?? ''), timeout: 20000 },
+  async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'wheel-stdio-crash-'));
+    const registryPath = path.join(root, 'registry.json');
+    await writeFile(path.join(root, 'project.godot'), '[application]\nrun/main_scene="res://main.tscn"\n');
+    await writeFile(path.join(root, 'main.tscn'), '[gd_scene format=3]\n[node name="Main" type="Node2D"]\n');
+    const env = fixtureStdioEnv({
+      GODOT_HARNESS_RUN_REGISTRY_PATH: registryPath,
+      MCP_STDIO_PROJECT_ROOTS: root,
+      MCP_STDIO_EVIDENCE_ROOTS: root,
+      MCP_STDIO_SCOPES: 'read,run',
+    });
+    const transport = () =>
+      new StdioClientTransport({
+        command: process.execPath,
+        args: [path.resolve('scripts/run-mcp.mjs')],
+        env,
+        stderr: 'pipe',
+      });
+    const firstTransport = transport();
+    const first = new Client({ name: 'launcher-crash-fixture', version: '1' });
+    const second = new Client({ name: 'launcher-reconnect-fixture', version: '1' });
+    let stderr = '';
+    const capture = (chunk: Buffer) => {
+      stderr = (stderr + chunk.toString()).slice(-2048);
+    };
+    firstTransport.stderr?.on('data', capture);
+    let godotPid = 0;
+    let godotIdentity: ProcessIdentity | undefined;
+    try {
+      await first.connect(firstTransport, { timeout: 10000 });
+      const result = await first.callTool(
+        {
+          name: 'launch_project',
+          arguments: {
+            projectPath: root,
+            evidenceDir: path.join(root, 'evidence'),
+            headless: true,
+          },
+        },
+        undefined,
+        { timeout: 10000 },
+      );
+      assert.notEqual(result.isError, true, JSON.stringify(result) + stderr);
+      const launched = result.structuredContent as { pid: number; run_id: string };
+      godotPid = launched.pid;
+      const records = JSON.parse(await readFile(registryPath, 'utf8'));
+      const record = records.find((entry: { runId: string }) => entry.runId === launched.run_id);
+      assert.ok(record?.processIdentity);
+      godotIdentity = record.processIdentity;
+      // Read the registered identity, never kill an arbitrary PID or freshly
+      // reinterpret a recycled process generation as owned by this test.
+      assert.equal(record.ownerPid, firstTransport.pid);
+      const serverIdentity = await readProcessIdentity(firstTransport.pid!);
+      assert.ok(serverIdentity);
+      assert.equal(await stopIdentifiedProcess(firstTransport.pid!, serverIdentity), 'STOPPED');
+      await first.close();
+      const nextTransport = transport();
+      nextTransport.stderr?.on('data', capture);
+      await second.connect(nextTransport, { timeout: 10000 });
+      assert.notEqual(
+        (await second.callTool({ name: 'get_project_info', arguments: { projectPath: root } })).isError,
+        true,
+      );
+      assert.equal(getProcessStatus(godotPid).running, false, stderr);
+      const recovered = JSON.parse(await readFile(registryPath, 'utf8')).find(
+        (entry: { runId: string }) => entry.runId === launched.run_id,
+      );
+      assert.equal(recovered.state, 'STOPPED', stderr);
+    } finally {
+      await first.close();
+      await second.close();
+      if (godotPid && godotIdentity && getProcessStatus(godotPid).running)
+        assert.equal(await stopIdentifiedProcess(godotPid, godotIdentity), 'STOPPED');
     }
   },
 );

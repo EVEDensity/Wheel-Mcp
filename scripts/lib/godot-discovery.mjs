@@ -83,7 +83,11 @@ async function collectExecutableCandidates(directory, limit = 8) {
 function discoverFromPath() {
   const command = process.platform === 'win32' ? 'where.exe' : 'which';
   try {
-    const output = execFileSync(command, ['godot'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const output = execFileSync(command, ['godot'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true,
+    });
     return output
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -148,7 +152,11 @@ export async function discoverGodotPath(options = {}) {
 export async function verifyGodotExecutable(godotPath) {
   if (!(await isReadableFile(godotPath))) return false;
   try {
-    execFileSync(godotPath, ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    execFileSync(godotPath, ['--version'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true,
+    });
     return true;
   } catch {
     return false;

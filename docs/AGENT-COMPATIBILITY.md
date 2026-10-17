@@ -73,6 +73,19 @@ tools/resources again; do not reuse resource URIs or repair tickets from the old
 server. Changing files on disk does not update an already running server.
 No automatic replay of uncertain mutations is performed.
 
+The main development launcher now runs the server in the PID owned by the client,
+not a second Node child. Missing or incompatible runtime builds fail with a short
+stderr-only instruction; startup never runs setup or a compiler. Run
+`npm.cmd run build` before reconnecting a source checkout, or reinstall a complete
+prebuilt package. This check catches missing/incompatible entry points, not every
+possible stale build: an existing compatible build is not rebuilt automatically.
+Normal stdin EOF drains the server's operations and owned runtimes. After abrupt
+termination, cleanup cannot run in the dead process; the next connection performs
+the existing identity-checked orphan recovery. It does not restart the old game
+or replay writes, and a failed identity check must not fall back to PID-only kills.
+Godot path/version probes request hidden Windows subprocesses; this is not proof
+that renderer/driver dialogs or taskbar presence are impossible.
+
 The installed Codex app-server probe uses only an isolated temporary project,
 no model turn or permanent client configuration changes. Its exact-plan approvals
 are explicit **test doubles**, not human desktop approval acceptance. Desktop

@@ -19,6 +19,7 @@ const files = [
   'mcp-prompts',
   'streamable-http',
   'stdio-client-contract',
+  'mcp-launcher',
   'project-write-approval',
   'preapproved-writes',
 ]

@@ -73,6 +73,7 @@ test(
         'godot-plugin/runtime_bridge.gd',
         'godot-plugin/addons/wheel_mcp/plugin.cfg',
         'scripts/setup.mjs',
+        'scripts/run-mcp.mjs',
         'scripts/lib/codex-config.mjs',
         'LICENSE',
         'THIRD-PARTY-NOTICES.md',
@@ -156,10 +157,13 @@ test(
       assert.equal(existsSync(path.join(installed, '.cursor')), false);
       transport = new StdioClientTransport({
         command: process.execPath,
-        args: [path.join(installed, 'build/src/mcp-server-sdk.js')],
+        args: [path.join(installed, 'scripts/run-mcp.mjs')],
         cwd: fixture,
         env: {
           ...env,
+          // Read-only metadata packaging contract; engine-free manual CI can
+          // use Node --version as an explicit executable TEST DOUBLE.
+          GODOT_PATH: env.GODOT_PATH || process.execPath,
           MCP_STDIO_SCOPES: 'read',
           MCP_STDIO_PROJECT_ROOTS: fixture,
           MCP_STDIO_EVIDENCE_ROOTS: fixture,
