@@ -1,14 +1,14 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { readFile, writeFile, mkdtemp, rm, realpath, lstat } from 'node:fs/promises';
-import { resolve, join, dirname, basename } from 'node:path';
-import os from 'node:os';
-import { spawnSync } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { parse } from 'yaml';
 
-const { validateReleaseContext } = await import(pathToFileURL(resolve('scripts/lib/github-release.mjs')).href);
+const { validateReleaseContext, releaseChanges } = await import(
+  pathToFileURL(resolve('scripts/lib/github-release.mjs')).href
+);
 const { godotArchives, verifyArchive, validateDownloadUrl } = await import(
   pathToFileURL(resolve('scripts/lib/godot-archive.mjs')).href
 );
@@ -33,6 +33,21 @@ test('release requires an existing stable tag on the accepted main commit', () =
   ]) {
     assert.throws(() => validateReleaseContext({ ...context, ...invalid }));
   }
+});
+
+test('release notes use only the exact nonempty version section, never stale or unreleased notes', async () => {
+  const history =
+    '# Changelog\r\n\r\n## Unreleased\r\n\r\nFuture\r\n\r\n## 0.2.6\r\n\r\n- Exact change.\r\n\r\n## 0.2.5\r\n\r\nOld change.\r\n';
+  assert.equal(releaseChanges(history, '0.2.6'), '- Exact change.');
+  assert.throws(() => releaseChanges(history, '0.2.7'), /Missing exact/);
+  assert.throws(() => releaseChanges(history, '0.2.6-preview'), /Invalid/);
+  assert.throws(() => releaseChanges('## 0.2.6\n\n## 0.2.5\n- Old', '0.2.6'), /Empty/);
+  const pkg = JSON.parse(await readFile('package.json', 'utf8'));
+  const changes = releaseChanges(await readFile('CHANGELOG.md', 'utf8'), pkg.version);
+  assert.ok(changes.trim().length > 0);
+  const preparation = await readFile('scripts/prepare-github-release.mjs', 'utf8');
+  assert.match(preparation, /releaseChanges\(await readFile\('CHANGELOG.md'/);
+  assert.ok(preparation.includes('${changes}'));
 });
 
 test('Godot archives are pinned and corrupt bytes fail before extraction', () => {
@@ -79,64 +94,205 @@ test('release workflow isolates packaging from write access and verifies before 
   assert.deepEqual(publish.permissions, { contents: 'write' });
   assert.ok(publish.steps.every((step: { uses?: string }) => !step.uses?.startsWith('actions/checkout@')));
   const publishCommands = publish.steps.map((step: { run?: string }) => step.run ?? '').join('\n');
-  for (const command of ['--draft --verify-tag', 'asset.digest', '--draft=false']) {
+  for (const command of ['await verifyTag()', 'asset.digest', 'draft: false', 'verifyIdentity(published, false)']) {
     assert.ok(publishCommands.includes(command));
   }
   assert.doesNotMatch(publishCommands, /npm publish|--clobber|--force/);
-  assert.match(publishCommands, /gh api --paginate --slurp/);
-  assert.doesNotMatch(publishCommands, /releases\/tags\//);
+  assert.doesNotMatch(publishCommands, /--paginate|uploaded-releases|gh release edit|releases\?per_page/);
+  assert.match(publishCommands, /await api\(`releases\/\$\{id\}`\)/);
+  assert.match(publishCommands, /redirect: 'error'/);
   for (const job of [build, publish]) {
     for (const step of job.steps) if (step.uses) assert.match(step.uses, /@[a-f0-9]{40}$/);
   }
 });
 
-test('the actual publication verifier accepts one complete draft and rejects tampering or stale source', async () => {
+test('actual publisher binds create response ID, checks every asset and fails closed without replay or overwrite', async () => {
   const workflow = parse(await readFile('.github/workflows/release.yml', 'utf8'));
   const step = workflow.jobs.publish.steps.find((item: { run?: string }) => item.run?.includes("<<'NODE'"));
   const code = step.run.match(/<<'NODE'\n([\s\S]*?)\nNODE/)[1];
-  const parent = await realpath(os.tmpdir());
-  const root = await mkdtemp(join(parent, 'wheel-publication-'));
   const tag = 'v0.2.2';
   const head = 'a'.repeat(40);
-  const receipt = { version: tag.slice(1), status: 'PASS', head };
-  try {
-    const assets = [];
-    for (const [name, text] of Object.entries({
-      'wheel-mcp-0.2.2.tgz': 'synthetic archive, not engine evidence',
-      'sbom.json': '{}',
-      'acceptance.json': JSON.stringify(receipt),
-      SHA256SUMS: 'synthetic checksum fixture',
-    })) {
-      await writeFile(join(root, name), text);
-      assets.push({
-        name,
-        size: Buffer.byteLength(text),
-        digest: `sha256:${createHash('sha256').update(text).digest('hex')}`,
-      });
-    }
-    const release = { tag_name: tag, draft: true, target_commitish: 'main', assets };
-    await writeFile(join(root, 'uploaded-releases.json'), JSON.stringify([[release]]));
-    const verify = () =>
-      spawnSync(process.execPath, ['--input-type=module', '-e', code], {
-        cwd: root,
-        windowsHide: true,
-        encoding: 'utf8',
-        timeout: 5000,
-        env: { ...process.env, RELEASE_TAG: tag, RELEASE_SHA: head },
-      });
-    assert.equal(verify().status, 0);
-    await writeFile(join(root, 'sbom.json'), '{"tampered":true}');
-    assert.notEqual(verify().status, 0);
-    await writeFile(join(root, 'sbom.json'), '{}');
-    await writeFile(join(root, 'acceptance.json'), JSON.stringify({ ...receipt, head: 'b'.repeat(40) }));
-    assert.notEqual(verify().status, 0);
-    await writeFile(join(root, 'acceptance.json'), JSON.stringify(receipt));
-    await writeFile(join(root, 'uploaded-releases.json'), JSON.stringify([[release, release]]));
-    assert.notEqual(verify().status, 0);
-  } finally {
-    assert.equal(dirname(await realpath(root)), parent);
-    assert.match(basename(root), /^wheel-publication-[A-Za-z0-9]+$/);
-    assert.equal((await lstat(root)).isSymbolicLink(), false);
-    await rm(root, { recursive: true });
+  // Execute the exact workflow body with injected files/transport, never real GitHub writes.
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const publish = new AsyncFunction(
+    'readFileSync',
+    'createHash',
+    'process',
+    'fetch',
+    'console',
+    code.replace(/^import .*;\n/gm, ''),
+  );
+  for (const fault of [
+    '',
+    'receipt-head',
+    'receipt-version',
+    'receipt-status',
+    'missing-file',
+    'missing-token',
+    'tag-missing',
+    'tag-moved',
+    'tag-moved-before-publish',
+    'tag-depth',
+    'existing-release',
+    'create-conflict',
+    'create-response-lost',
+    'create-id',
+    'create-tag',
+    'create-public',
+    'release-id',
+    'release-tag',
+    'release-prerelease',
+    'asset-count',
+    'asset-name',
+    'asset-duplicate',
+    'asset-size',
+    'asset-state',
+    'asset-digest',
+    'upload-failure',
+    'read-failure',
+    'publish-response-lost',
+    'published-draft',
+  ]) {
+    const receipt = {
+      version: fault === 'receipt-version' ? '0.0.0' : tag.slice(1),
+      status: fault === 'receipt-status' ? 'FAIL' : 'PASS',
+      head: fault === 'receipt-head' ? 'b'.repeat(40) : head,
+    };
+    const files: Record<string, Buffer> = Object.fromEntries(
+      Object.entries({
+        'wheel-mcp-0.2.2.tgz': 'synthetic archive, not engine evidence',
+        'sbom.json': '{}',
+        'acceptance.json': JSON.stringify(receipt),
+        SHA256SUMS: 'synthetic checksum fixture',
+        'RELEASE-NOTES.md': '# Synthetic notes',
+      }).map(([name, bytes]) => [name, Buffer.from(bytes)]),
+    );
+    const assets: any[] = [];
+    const requests: { path: string; method: string; body: any }[] = [];
+    let tagReads = 0;
+    const response = (value: unknown, status = 200) => ({ ok: status < 300, status, json: async () => value });
+    const identity = { id: 123, tag_name: tag, draft: true, prerelease: false };
+    const transport = async (address: string, options: any) => {
+      const url = new URL(address);
+      assert.ok(['api.github.com', 'uploads.github.com'].includes(url.hostname));
+      assert.equal(options.redirect, 'error');
+      assert.equal(options.headers.Authorization, 'Bearer synthetic-token');
+      assert.ok(options.signal instanceof AbortSignal);
+      const path = url.pathname.replace('/repos/owner/repo/', '');
+      const method = options.method;
+      const body = options.body && url.hostname === 'api.github.com' ? JSON.parse(options.body) : options.body;
+      requests.push({ path, method, body });
+      if (path === `git/ref/tags/${tag}`) {
+        tagReads++;
+        if (fault === 'tag-missing') return response({}, 404);
+        if (fault === 'tag-moved' || (fault === 'tag-moved-before-publish' && tagReads === 2))
+          return response({ object: { type: 'commit', sha: 'b'.repeat(40) } });
+        return response({ object: { type: 'tag', sha: 'c'.repeat(40) } });
+      }
+      if (path === `git/tags/${'c'.repeat(40)}`)
+        return response({
+          object: fault === 'tag-depth' ? { type: 'tag', sha: 'c'.repeat(40) } : { type: 'commit', sha: head },
+        });
+      if (path === `releases/tags/${tag}`)
+        return response(
+          fault === 'existing-release' ? { ...identity, draft: false } : {},
+          fault === 'existing-release' ? 200 : 404,
+        );
+      if (path === 'releases' && method === 'POST') {
+        assert.equal(body.draft, true);
+        assert.equal(body.target_commitish, head);
+        assert.equal(body.tag_name, tag);
+        if (fault === 'create-response-lost') throw new Error('Synthetic ambiguous create failure');
+        if (fault === 'create-conflict') return response({}, 422);
+        return response({
+          ...identity,
+          ...(fault === 'create-id' ? { id: '123' } : {}),
+          ...(fault === 'create-tag' ? { tag_name: 'v0.0.0' } : {}),
+          ...(fault === 'create-public' ? { draft: false } : {}),
+        });
+      }
+      if (path === 'releases/123/assets' && method === 'POST') {
+        assert.equal(url.hostname, 'uploads.github.com');
+        assert.equal(options.headers['Content-Type'], 'application/octet-stream');
+        if (fault === 'upload-failure') return response({}, 502);
+        const name = url.searchParams.get('name')!;
+        assert.deepEqual(body, files[name]);
+        assets.push({
+          name,
+          size: body.length,
+          state: 'uploaded',
+          digest: `sha256:${createHash('sha256').update(body).digest('hex')}`,
+        });
+        return response(assets.at(-1), 201);
+      }
+      if (path === 'releases/123' && method === 'GET') {
+        if (fault === 'read-failure') return response({}, 403);
+        const uploaded = structuredClone(assets);
+        if (fault === 'asset-count') uploaded.pop();
+        if (fault === 'asset-name') uploaded[0].name = 'unexpected.tgz';
+        if (fault === 'asset-duplicate') uploaded[1] = { ...uploaded[0] };
+        if (fault === 'asset-size') uploaded[0].size++;
+        if (fault === 'asset-state') uploaded[0].state = 'starter';
+        if (fault === 'asset-digest') uploaded[0].digest = `sha256:${'0'.repeat(64)}`;
+        return response({
+          ...identity,
+          assets: uploaded,
+          ...(fault === 'release-id' ? { id: 456 } : {}),
+          ...(fault === 'release-tag' ? { tag_name: 'v0.0.0' } : {}),
+          ...(fault === 'release-prerelease' ? { prerelease: true } : {}),
+        });
+      }
+      if (path === 'releases/123' && method === 'PATCH') {
+        assert.deepEqual(body, { draft: false, make_latest: 'true' });
+        if (fault === 'publish-response-lost') throw new Error('Synthetic ambiguous publish failure');
+        return response({ ...identity, draft: fault === 'published-draft' });
+      }
+      throw new Error(`Unexpected request: ${method} ${path}`);
+    };
+    const execute = () =>
+      publish(
+        (name: string, encoding?: string) => {
+          if (fault === 'missing-file' && name === 'sbom.json') throw new Error('Synthetic missing file');
+          assert.ok(files[name], `unexpected file ${name}`);
+          return encoding ? files[name].toString('utf8') : files[name];
+        },
+        createHash,
+        {
+          env: {
+            RELEASE_TAG: tag,
+            RELEASE_SHA: head,
+            GH_REPO: 'owner/repo',
+            GH_TOKEN: fault === 'missing-token' ? '' : 'synthetic-token',
+          },
+        },
+        transport,
+        { log: () => undefined },
+      );
+    if (fault) await assert.rejects(execute, fault);
+    else await assert.doesNotReject(execute);
+    const mutations = requests.filter((r) => r.method !== 'GET');
+    assert.ok(requests.filter((r) => r.path === 'releases').length <= 1, fault);
+    assert.ok(requests.filter((r) => r.method === 'PATCH').length <= 1, fault);
+    if (
+      [
+        'receipt-head',
+        'receipt-version',
+        'receipt-status',
+        'missing-file',
+        'missing-token',
+        'tag-missing',
+        'tag-moved',
+        'tag-depth',
+        'existing-release',
+      ].includes(fault)
+    )
+      assert.equal(mutations.length, 0, fault);
+    if (fault && !['publish-response-lost', 'published-draft'].includes(fault))
+      assert.equal(
+        requests.some((r) => r.method === 'PATCH'),
+        false,
+        fault,
+      );
+    if (!fault) assert.equal(mutations.length, 6);
   }
 });

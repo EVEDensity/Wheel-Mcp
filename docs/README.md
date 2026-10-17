@@ -15,6 +15,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 - **连接或使用出错 / Troubleshooting:** [常见问题与反馈](TROUBLESHOOTING.md).
 - **选择客户端 / Clients:** [安装器适配与兼容性边界](AGENT-COMPATIBILITY.md).
 - **查询工具 / Tools:** [工具目录](TOOL-CATALOG.md).
+- **功能与缺口 / Feature status:** [逐项功能、限制与后续优先级](FEATURE-STATUS.zh-CN.md).
 - **组织验证 / Verification:** [开发循环](DEV-LOOP.md) · [客户端修复协议](CLIENT-REPAIR.md).
 
 ## Safety and optional editor capabilities
@@ -38,7 +39,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 
 Release receipts bind to their recorded source. Historical checkpoints are not
 current-source acceptance. Full production qualification remains NOT_QUALIFIED;
-public HTTP, other platforms and long/high-load sessions are outside v0.2.0's
+public HTTP, other platforms and long/high-load sessions are outside the current
 stable profile. [Deployment notes](PRODUCTION-DEPLOYMENT.md) do not certify a public deployment.
 
 ## Contribute and maintain the site

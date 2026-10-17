@@ -82,27 +82,85 @@ jobs:
           RELEASE_SHA: ${{ needs.build.outputs.commit }}
         run: |
           set -euo pipefail
-          gh release create "$RELEASE_TAG" --draft --verify-tag --target "$RELEASE_SHA" --title "$RELEASE_TAG · Windows local stable" --notes-file RELEASE-NOTES.md wheel-mcp-*.tgz sbom.json acceptance.json SHA256SUMS
-          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > uploaded-releases.json
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
           import { createHash } from 'node:crypto';
           const tag = process.env.RELEASE_TAG;
-          const matches = JSON.parse(readFileSync('uploaded-releases.json', 'utf8')).flat().filter((item) => item.tag_name === tag && item.draft);
-          const release = matches[0];
+          const head = process.env.RELEASE_SHA;
+          const repo = process.env.GH_REPO;
+          if (!/^v\d+\.\d+\.\d+$/.test(tag ?? '') || !/^[a-f0-9]{40}$/.test(head ?? '') ||
+              !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo ?? '') || !process.env.GH_TOKEN) {
+            throw new Error('Invalid publication context or missing token');
+          }
           const acceptance = JSON.parse(readFileSync('acceptance.json', 'utf8'));
-          if (!/^v\d+\.\d+\.\d+$/.test(tag) || matches.length !== 1 || acceptance.status !== 'PASS' || acceptance.version !== tag.slice(1) || acceptance.head !== process.env.RELEASE_SHA) {
-            throw new Error('Uploaded release does not match accepted source');
+          if (acceptance.status !== 'PASS' || acceptance.version !== tag.slice(1) || acceptance.head !== head) {
+            throw new Error('Acceptance receipt status/version/commit mismatch; no release created');
           }
           const names = [`wheel-mcp-${tag.slice(1)}.tgz`, 'sbom.json', 'acceptance.json', 'SHA256SUMS'];
-          if (release.assets.length !== names.length) throw new Error('Unexpected release asset count');
-          for (const name of names) {
+          const files = names.map((name) => {
             const bytes = readFileSync(name);
-            const asset = release.assets.find((item) => item.name === name);
-            const hash = createHash('sha256').update(bytes).digest('hex');
-            if (!asset || asset.size !== bytes.length || asset.digest !== `sha256:${hash}`) {
-              throw new Error(`Uploaded asset hash mismatch: ${name}`);
+            return { name, bytes, digest: `sha256:${createHash('sha256').update(bytes).digest('hex')}` };
+          });
+          const notes = readFileSync('RELEASE-NOTES.md', 'utf8');
+          // Fixed HTTPS hosts, no redirects, no executable code from build artifacts.
+          // Never retry mutations: a lost response requires inspection, not replay.
+          async function api(path, method = 'GET', body, upload = false, allowMissing = false) {
+            const response = await fetch(`https://${upload ? 'uploads' : 'api'}.github.com/repos/${repo}/${path}`, {
+              method, redirect: 'error', signal: AbortSignal.timeout(15000),
+              headers: {
+                Authorization: `Bearer ${process.env.GH_TOKEN}`,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2026-03-10',
+                ...(body === undefined ? {} : { 'Content-Type': upload ? 'application/octet-stream' : 'application/json' }),
+              },
+              body: body === undefined ? undefined : upload ? body : JSON.stringify(body),
+            });
+            if (allowMissing && response.status === 404) return null;
+            if (!response.ok) throw new Error(`GitHub ${method} ${path}: HTTP ${response.status}; inspect any draft before retrying`);
+            return response.json();
+          }
+          async function verifyTag() {
+            let object = (await api(`git/ref/tags/${tag}`)).object;
+            for (let depth = 0; object?.type === 'tag' && depth < 4; depth++) {
+              if (!/^[a-f0-9]{40}$/.test(object.sha ?? '')) throw new Error('Invalid annotated tag identity');
+              object = (await api(`git/tags/${object.sha}`)).object;
+            }
+            if (object?.type !== 'commit' || object.sha !== head) throw new Error('Remote tag does not match accepted commit');
+          }
+          await verifyTag();
+          if (await api(`releases/tags/${tag}`, 'GET', undefined, false, true)) {
+            throw new Error('Release already exists; refusing to create or modify it');
+          }
+          // Create returns the exact numeric ID; do not rediscover a draft via the releases list.
+          // Creation conflicts fail closed; existing releases are never edited or overwritten.
+          const created = await api('releases', 'POST', {
+            tag_name: tag, target_commitish: head, draft: true, prerelease: false,
+            name: `${tag} · Windows local stable`, body: notes,
+          });
+          const id = created.id;
+          function verifyIdentity(release, draft) {
+            if (!Number.isSafeInteger(id) || id <= 0 || release.id !== id || release.tag_name !== tag ||
+                release.draft !== draft || release.prerelease !== false) {
+              throw new Error('Release ID/tag/draft/prerelease mismatch');
             }
           }
+          verifyIdentity(created, true);
+          console.log(`Created draft ${id} for ${tag} at accepted commit ${head}`);
+          for (const file of files) {
+            await api(`releases/${id}/assets?name=${encodeURIComponent(file.name)}`, 'POST', file.bytes, true);
+          }
+          const release = await api(`releases/${id}`);
+          verifyIdentity(release, true);
+          if (!Array.isArray(release.assets) || release.assets.length !== files.length) throw new Error('Unexpected release asset count');
+          for (const file of files) {
+            const matches = release.assets.filter((asset) => asset.name === file.name);
+            const asset = matches[0];
+            if (matches.length !== 1 || asset.state !== 'uploaded' || asset.size !== file.bytes.length || asset.digest !== file.digest) {
+              throw new Error(`Uploaded asset size/state/hash mismatch: ${file.name}; draft ${id} retained`);
+            }
+          }
+          await verifyTag();
+          const published = await api(`releases/${id}`, 'PATCH', { draft: false, make_latest: 'true' });
+          verifyIdentity(published, false);
+          console.log(`Published verified release ${id}: ${tag}`);
           NODE
-          gh release edit "$RELEASE_TAG" --draft=false --latest

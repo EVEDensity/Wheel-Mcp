@@ -2,11 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { releaseChanges } from './lib/github-release.mjs';
 // Read-only validation is repeated immediately before selecting upload files.
 execFileSync(process.execPath, ['scripts/check-local-release.mjs'], { stdio: 'inherit', windowsHide: true });
 const root = path.resolve('runs/local-release');
 const manifest = JSON.parse(await readFile(path.join(root, 'latest.json'), 'utf8'));
 const version = JSON.parse(await readFile('package.json', 'utf8')).version;
+const changes = releaseChanges(await readFile('CHANGELOG.md', 'utf8'), version);
 if (manifest.package.filename !== `wheel-mcp-${version}.tgz`) throw new Error('Unexpected release package filename');
 const out = path.resolve('runs/github-release');
 await mkdir(out); // Refuse stale/reused output directories instead of uploading mixed versions.
@@ -26,13 +28,7 @@ await writeFile(
   path.join(out, 'RELEASE-NOTES.md'),
   `# Wheel-mcp v${version} Windows local stable\n\n` +
     'GitHub-hosted Windows build and acceptance for trusted local Godot 4.7.2 projects over stdio.\n\n' +
-    '- Preserves restricted MCP client environment settings during installer updates; original JSON configurations are backed up.\n' +
-    '- Screenshots default to off-screen startup and minimized, unfocusable real rendering. Restart the MCP server after updating.\n' +
-    '- Godot CI downloads are SHA-256 pinned and bounded.\n\n' +
-    '- Validation-stage cleanup tolerates bounded transient Windows locks; persistent failures still prevent writes and retain their cause.\n' +
-    '- The v0.2.1 candidate failed hosted cleanup acceptance and was not published; its tag/run are retained.\n\n' +
-    '- Stdio acceptance explicitly forwards only the selected engine and scratch paths, not host credentials or implicit local .env state. The v0.2.2 candidate was also blocked, not published.\n\n' +
-    '- Real archive installation uses a locked dependency graph and bounded registry access, without requiring prewarmed offline metadata. The v0.2.3 hosted offline-install timeout is retained as a failed candidate.\n\n' +
+    `## Changes\n\n${changes}\n\n` +
     `Commit: ${process.env.GITHUB_SHA ?? manifest.head}. Source SHA-256: ${manifest.sourceHash}.\n\n` +
     'Assets: prebuilt npm-format runtime archive, CycloneDX SBOM, acceptance receipt and SHA256SUMS.\n' +
     'Download the archive and install it with Node.js/npm. Godot is installed separately; no npm registry publication is performed.\n\n' +

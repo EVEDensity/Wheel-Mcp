@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.6
+
+- Bind automated publication to the numeric release ID returned by creation,
+  not a fresh draft lookup through the release list. Verify the accepted receipt,
+  remote tag, draft identity and every uploaded asset before publishing that ID.
+  Use fixed HTTPS hosts, bounded requests and no mutation retries or overwrites.
+- Exercise the actual workflow publisher with synthetic files/HTTP, including
+  source/tag mismatches, existing releases, ambiguous network failures and
+  incorrect asset states, sizes and hashes. This is not a hosted release result.
+- Align the tool catalog with all 71 registered tools and check that alignment
+  through SDK discovery. Document the implemented subsets and remaining work.
+- Generate release notes from the exact version's changelog, rather than
+  carrying stale hard-coded descriptions of previous releases into new versions.
+
 ## 0.2.5
 
 - Reject foreign HTTP probes, malformed JSON/UTF-8 and invalid Unicode escapes

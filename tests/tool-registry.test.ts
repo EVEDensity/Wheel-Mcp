@@ -118,6 +118,10 @@ test('official client discovers every unique domain tool; composition root conta
     const result = await client.listTools();
     assert.deepEqual(result.tools.map((t) => t.name).sort(), expected);
     assert.deepEqual(Object.keys(toolPermissions).sort(), expected);
+    const catalog = await readFile('docs/TOOL-CATALOG.md', 'utf8');
+    const documented = [...catalog.matchAll(/^\|\s*`([a-z_]+)`\s*\|/gm)].map((match) => match[1]);
+    assert.deepEqual(documented.sort(), expected, 'tool catalog must match live SDK discovery without duplicates');
+    assert.ok(catalog.includes(`**${expected.length} tools**`));
     const source = await readFile('src/mcp/tool-registry.ts', 'utf8');
     assert.doesNotMatch(source, /\.tool\s*\(|registerTool\s*\(|ts-nocheck/);
     for (const name of ['project', 'runtime', 'diagnostics', 'scenario', 'evidence'])

@@ -1,4 +1,13 @@
 const commitPattern = /^[a-f0-9]{40}$/;
+export function releaseChanges(changelog, version) {
+  if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Invalid changelog version');
+  const sections = changelog.split(/^## /m).slice(1);
+  const section = sections.find((text) => text.split(/\r?\n/, 1)[0].trim() === version);
+  if (!section) throw new Error(`Missing exact changelog section for ${version}`);
+  const changes = section.replace(/^[^\n]*\n/, '').trim();
+  if (!changes) throw new Error(`Empty changelog section for ${version}`);
+  return changes;
+}
 export function validateReleaseContext({ version, ref, head, tagHead, mainContains }) {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Only stable semantic versions can be released');
   const tag = `v${version}`;

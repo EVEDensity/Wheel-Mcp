@@ -17,8 +17,8 @@ Commit the accepted source to main and push it. Review the short CI result.
 Create an annotated stable version tag on that exact commit, then push the tag:
 
 ```powershell
-git tag -a v0.2.5 -m "Wheel-mcp 0.2.5 Windows local stable"
-git push origin v0.2.5
+git tag -a v0.2.6 -m "Wheel-mcp 0.2.6 Windows local stable"
+git push origin v0.2.6
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
@@ -34,8 +34,11 @@ The build job is capped at fifteen minutes; it does not run the deferred soak or
 full authoring/renderer matrix.
 
 A separate job receives only the generated artifacts, not a source checkout.
-It checks local hashes, creates a draft, uploads four assets, then checks the
-GitHub-reported size and SHA-256 of every asset before publishing:
+It checks local hashes and the accepted receipt, resolves the remote tag to the
+accepted commit, then creates a draft. All uploads, remote hash checks and the
+final publish use the numeric release ID returned by that create request, not
+a scan of the release list. It uploads four assets, then checks the
+GitHub-reported upload state, size and SHA-256 of every asset before publishing:
 
 - `wheel-mcp-VERSION.tgz`: prebuilt runtime in npm archive format.
 - `sbom.json`: CycloneDX dependency inventory.
@@ -52,8 +55,8 @@ Download the four assets from the same release and compare their hashes against
 `SHA256SUMS` before installation. On Windows, for example:
 
 ```powershell
-Get-FileHash .\wheel-mcp-0.2.5.tgz -Algorithm SHA256
-npm.cmd install --ignore-scripts .\wheel-mcp-0.2.5.tgz
+Get-FileHash .\wheel-mcp-0.2.6.tgz -Algorithm SHA256
+npm.cmd install --ignore-scripts .\wheel-mcp-0.2.6.tgz
 ```
 
 Godot must be installed separately. Configure the installed server's absolute
@@ -67,6 +70,20 @@ A failed build cannot publish a Release. An upload or hash failure leaves a draf
 for investigation, not a public release. Do not rerun over an existing release:
 inspect the failure and choose a new version for changed source. Keep failed
 acceptance as failure rather than replacing it with a partial successful check.
+The publisher uses fixed HTTPS API hosts, rejects redirects and bounds every
+request to fifteen seconds. It does not retry creation, uploads or publication:
+a lost response may have committed the operation, so inspect the exact draft ID
+before any manual recovery. Existing versions are never overwritten. Unit tests
+exercise the actual workflow body with synthetic HTTP/files, not a live publish.
+
+The v0.2.5 run passed its second hosted build (190 tests) but failed the old
+draft-list lookup guard. Its release was subsequently independently verified
+and published manually; the red workflow remains historical failure evidence.
+That guard combined several conditions, and the failed run did not retain the
+list response, so its exact failing condition cannot now be proven. The new
+ID-bound flow removes list visibility/lookup ambiguity without weakening the
+receipt or asset checks. It still needs a fresh version-bound hosted release
+run; never move v0.2.5 to install this workflow fix.
 
 Approvals in automated acceptance are explicit test doubles. Hosted tests are
 headless; the local screenshot pixel checks do not certify hosted GPU behavior.

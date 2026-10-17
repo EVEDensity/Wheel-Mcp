@@ -78,7 +78,7 @@ requires Node.js >=20.19.0; source development also needs the current toolchain.
 Clone the release tag for a reproducible starting point:
 
 ```bash
-git clone --branch v0.2.5 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.6 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```
@@ -304,6 +304,7 @@ Engine-related changes also need real Godot tests with `GODOT_PATH` configured. 
 - [Documentation index](docs/README.md) and [first-project setup](docs/GETTING-STARTED.md)
 - [Troubleshooting and support](docs/TROUBLESHOOTING.md)
 - [Tool catalog](docs/TOOL-CATALOG.md)
+- [Feature status, limitations and proposed priorities (Chinese)](docs/FEATURE-STATUS.zh-CN.md)
 - [Development loop](docs/DEV-LOOP.md)
 - [Client repair protocol](docs/CLIENT-REPAIR.md)
 - [Deployment](docs/PRODUCTION-DEPLOYMENT.md) and [security boundaries](docs/SECURITY-THREAT-MODEL.md)
