@@ -78,5 +78,16 @@ Engine settings and deadlines were not loosened to make these assertions pass.
 Final qualification must bind this source and its separately recorded CI result;
 an earlier stage's green run does not qualify subsequent modifications.
 
+Accepted integration source `bc374af` passed 238/238 hosted bounded checks,
+short CI, Pages, installed Codex representative interface probe and independent
+downloaded artifact verification. Final local safety 73/73, engine 19/19 and
+render/resource checks 3/3 passed; these are not a complete final-source local
+release gate. The first hosted safety phase timed out at its unchanged 240s
+budget. The corrective stage reuses only this live Node process's successful
+OS identity for transaction lock creation, never foreign PID/recovery/stop
+reads, and keeps independent OS identity regression assertions. All test cases,
+two workers and deadlines remain. See the [stage and failure record](../releases/main-character-gravity-verification.json).
+No new tag, Release or npm publication; public v0.2.8 remains unchanged.
+
 References: [CharacterBody2D](https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html)
 and [PhysicsBody2D.test_move](https://docs.godotengine.org/en/stable/classes/class_physicsbody2d.html#class-physicsbody2d-method-test-move).

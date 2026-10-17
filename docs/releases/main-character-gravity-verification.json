@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "acceptedCommit": "bc374af422e5c1464a59613aed58c04c1ab3b93d",
+  "sourceHash": "f85808427836a87b8a1e098226832e5f512be3e7677880d68ede2201e38523ce",
+  "scope": "Explicit bounded CharacterBody2D world-Y gravity and fresh flat-floor jumps in trusted local Windows / Godot 4.7.2 / stdio; not a permanent controller, full engine coverage or human approval UX.",
+  "contract": "docs/production-roadmap/CHARACTER-GRAVITY-CONTRACT.md",
+  "stages": [
+    {
+      "id": 1,
+      "commit": "101627bb5da88bf2c40dc5c0987bdad2ccdc77df",
+      "sourceHash": "d0c4e8f261ab329da990ecabbe5007336acbeec455c77e07df4bcbc85c330bbf",
+      "change": "Strict optional gravity/impulse contract, independent capability refusal and exact normal/late observation correlation; native runtime still 0.3.2 at this stage.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39072164304",
+      "shortCiStatus": "success",
+      "shortCiTests": 144,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39072163810",
+      "pagesStatus": "success",
+      "legacyNative": { "report": "runs/ci/gravity-stage1-legacy/summary.json", "tests": 1, "durationMs": 15857, "scratchCleanup": "PASS" },
+      "boundary": "No native gravity implementation or complete hosted gate on this intermediate source; previous-source acceptance is not inherited."
+    },
+    {
+      "id": 2,
+      "commit": "08864f2d711ff77493d83fdc7ba726dfa5aa4d6d",
+      "sourceHash": "9a00438e5ba3bf7167b97dd1a386feda315edfd16a57179ecab167520b7e84e8",
+      "change": "Native finite gravity/jump integration, actual first-frame floor probe, speed clamp, zero held velocity, exact replay and late-result checks; shared native/render fixture without extra engine startups.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39072856625",
+      "shortCiStatus": "success",
+      "shortCiTests": 144,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39072856769",
+      "pagesStatus": "success",
+      "completeHostedAcceptance": "FAIL; safety deadline reached with four original files unfinished/unstarted; not qualified by the native/local or short CI passes."
+    },
+    {
+      "id": 3,
+      "commit": "bc374af422e5c1464a59613aed58c04c1ab3b93d",
+      "change": "Reuse only the current live Node process's successful OS identity for transaction lock creation. Failed self lookup is not cached, callers receive copies; foreign PID, stale-lock recovery and stop identity reads remain independent. Expand existing native identity assertions without dropping cases or increasing budgets.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39073647658",
+      "shortCiStatus": "success",
+      "shortCiTests": 144,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39073647350",
+      "pagesStatus": "success",
+      "completeHostedAcceptance": "PASS: 238/238 with zero skips, independently downloaded and verified; publication skipped."
+    }
+  ],
+  "upgrade": {
+    "editorBridge": "0.3.7",
+    "maximumEditorCapabilities": 27,
+    "runtimeBridge": "0.3.3",
+    "runtimeCapabilities": ["character.step2d/v1", "character.gravity2d/v1"],
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "earlierSourceLocalChecks": {
+    "sourceHash": "9a00438e5ba3bf7167b97dd1a386feda315edfd16a57179ecab167520b7e84e8",
+    "buildFormatLint": "PASS",
+    "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 144, "durationMs": 30457, "scratchCleanup": "PASS" },
+    "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 48155, "scratchCleanup": "PASS" },
+    "renderAndResources": { "report": "runs/ci/gravity-final-visual/summary.json", "tests": 3, "durationMs": 30698, "allDeclaredResourceTypes": 16, "scratchCleanup": "PASS" },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "approval": "MOCK exact-plan via official SDK stdio",
+    "renderScope": "Actual local background renderer, freefall/jump pixel changes and zero restored landing pixel difference; not headless screenshots or human focus UX.",
+    "boundary": "Historical recorded values before the live-self identity optimization; core/engine report paths are reused by final checks. Not relabeled final-source checks or complete local release acceptance."
+  },
+  "finalSourceLocalChecks": {
+    "sourceHash": "f85808427836a87b8a1e098226832e5f512be3e7677880d68ede2201e38523ce",
+    "buildFormatLint": "PASS",
+    "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 144, "durationMs": 21687, "scratchCleanup": "PASS" },
+    "safety": { "report": "runs/ci/local-release-safety/summary.json", "tests": 73, "durationMs": 140436, "scratchCleanup": "PASS" },
+    "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 41943, "scratchCleanup": "PASS" },
+    "renderAndResources": { "report": "runs/ci/gravity-optimized-final-visual/summary.json", "tests": 3, "durationMs": 20921, "allDeclaredResourceTypes": 16, "scratchCleanup": "PASS" },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "approval": "MOCK exact-plan via official SDK stdio",
+    "boundary": "Final-source bounded local checks, not a complete local release gate. Do not reuse any previous-source full local gate as current acceptance."
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/ci/gravity-native-initial/failure-summary.json",
+      "status": "FAIL",
+      "tests": 5,
+      "passed": 3,
+      "failed": 2,
+      "durationMs": 20759,
+      "scratchCleanup": "RETAINED",
+      "cause": "New jump oracle assumed contact-free motion while native move_and_slide also recovers initial floor contact within authored safe_margin=0.125. Freefall keeps the exact 0.001 integration assertion; jump uses that independently authored recovery bound plus native velocity/flags and actual pixel evidence. No engine settings loosened."
+    },
+    {
+      "report": "runs/ci/gravity-native-recovery/failure-summary.json",
+      "status": "FAIL",
+      "tests": 5,
+      "passed": 3,
+      "failed": 2,
+      "durationMs": 20313,
+      "scratchCleanup": "RETAINED",
+      "cause": "New landing oracle incorrectly required identical subpixel floor coordinates. Both landings now require independently authored floor geometry / safe_margin, actual Floor normal, zero velocity and zero restored pixel difference, not equality to a previously sampled subpixel contact."
+    }
+  ],
+  "intermediateDevelopmentCheck": {
+    "report": "runs/ci/gravity-native-contact/summary.json",
+    "tests": 5,
+    "passed": 5,
+    "durationMs": 21103,
+    "scratchCleanup": "PASS",
+    "boundary": "After both oracle corrections, before final tool description/document freeze; not relabeled final-source full acceptance."
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "f85808427836a87b8a1e098226832e5f512be3e7677880d68ede2201e38523ce",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T22-07-34-588Z-39280/report.json",
+    "sha256": "b230473e09933b52a4eb84bde08f7c63cb1806ef29e7d2d0225928fd66bf20c2",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK representative app-server fixture, not desktop/TUI human UX or a native gravity tool call from the Codex client",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39073648374",
+    "mode": "acceptance_only=true",
+    "status": "PASS",
+    "head": "bc374af422e5c1464a59613aed58c04c1ab3b93d",
+    "sourceHash": "f85808427836a87b8a1e098226832e5f512be3e7677880d68ede2201e38523ce",
+    "runId": "768480ea-004c-470b-a7f0-fcf521c1c4d7",
+    "build": "success",
+    "publish": "skipped",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 287319,
+    "tests": [
+      { "id": "core", "tests": 144, "passed": 144, "durationMs": 22208, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 5933, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 73, "passed": 73, "durationMs": 185937, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 19, "passed": 19, "durationMs": 49993, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 238,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12115454234,
+    "artifactName": "release-assets-39073648374-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "0e250a5e71fe2e54a6262759dd09b519662c8efbec4f79c4138687898fa4b83e",
+      "SHA256SUMS": "cfa08dc1588f8deee5aaf601c6886fa7fa5563d803d02da57097f502ee2e5a40",
+      "acceptance.json": "f21b2dfffe65765f781f3f8ebfd122c209c94b22434851a89bf9aca6365ec3b7",
+      "sbom.json": "5b18971f7d36ea419ace87d4cff851ddf0fc6eed28eb0d2e7cbb8883177c61e2",
+      "wheel-mcp-0.2.8.tgz": "a13720c6cf7bc576516bb51ebe31643ef1cb65c899766b62fb9766228419d43e"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, committed head/current source/policy/guarded documents, archive, SBOM and all three checksum entries."
+  },
+  "preservedHostedFailure": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39072866136",
+    "head": "08864f2d711ff77493d83fdc7ba726dfa5aa4d6d",
+    "sourceHash": "9a00438e5ba3bf7167b97dd1a386feda315edfd16a57179ecab167520b7e84e8",
+    "status": "FAIL",
+    "report": "runs/gravity-hosted-failure-39072866136-1/ci/local-release-safety/failure-summary.json",
+    "progress": "runs/gravity-hosted-failure-39072866136-1/ci/local-release-safety/progress/summary.json",
+    "safetyDurationMs": 240029,
+    "finalSummaryAvailable": false,
+    "completedFiles": 13,
+    "incompleteOrUnstartedFiles": 4,
+    "publish": "skipped",
+    "causeBoundary": "The two-worker safety phase exceeded 240s; completed files passed but no final summary. Repeated PowerShell self-identity startup per transaction lock was identified in source and removed only for the executing process. Do not assert a single host/network/engine timing cause for every old timeout."
+  },
+  "ciBoundaries": {
+    "requiredCounts": { "core": 144, "safety": 73, "engine": 19, "package": 2, "total": 238 },
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "newPublisherExecution": "NOT_RUN; acceptance-only must skip publication."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "annotatedTagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArtifactIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-T31-T35-G4-G6-or-all-test-files",
+    "permanent-player-controller-idle-gravity-keyboard-consumption-arbitrary-script-attachment",
+    "CharacterBody3D-RigidBody-navigation-skeletal-physics-or-full-engine-coverage",
+    "other-platforms-clients-independent-machine-human-approval-UX-public-HTTP-long-session-high-load"
+  ]
+}
