@@ -10,6 +10,55 @@ const track = (property: string, value: unknown, id = property) => ({
 });
 const clips = (tracks: unknown[]) => [{ id: 'turn', length: 1, loop: false, tracks }];
 
+test('3D animation uses explicit unit quaternion and positive Vector3 channels, without changing legacy grammar', () => {
+  for (const q of [
+    { x: 0, y: 0, z: 0, w: 1 },
+    { x: 0, y: Math.SQRT1_2, z: 0, w: Math.SQRT1_2 },
+    { x: 0, y: 0, z: 0, w: -1 },
+  ])
+    assert.equal(
+      animationClipsSchema.safeParse(clips([track('rotation_3d', q), track('scale_3d', { x: 0.0625, y: 16, z: 2 })]))
+        .success,
+      true,
+    );
+});
+
+test('3D animation refuses unnormalized, zero, non-finite or wrongly shaped quaternions and unsafe scales', () => {
+  for (const value of [
+    0,
+    {},
+    { x: 0, y: 0, z: 0 },
+    { x: 0, y: 0, z: 0, w: 0 },
+    { x: 0, y: 0, z: 0, w: 2 },
+    { x: NaN, y: 0, z: 0, w: 1 },
+    { x: 0, y: 0, z: 0, w: 1.000001 },
+    { x: 0, y: 0, z: 0, w: 1, order: 'YXZ' },
+  ])
+    assert.equal(animationClipsSchema.safeParse(clips([track('rotation_3d', value)])).success, false);
+  for (const value of [
+    { x: 1, y: 1 },
+    { x: 1, y: 1, z: 0 },
+    { x: 1, y: 1, z: -1 },
+    { x: 1, y: 1, z: 0.06249999999 },
+    { x: 1, y: 1, z: 16.00000001 },
+    { x: 1, y: 1, z: Infinity },
+  ])
+    assert.equal(animationClipsSchema.safeParse(clips([track('scale_3d', value)])).success, false);
+});
+
+test('3D channels retain duplicate-channel, key-count, time and unknown-track refusal', () => {
+  const rotation = track('rotation_3d', { x: 0, y: 0, z: 0, w: 1 });
+  for (const tracks of [
+    [rotation, { ...rotation, id: 'other' }],
+    [{ ...rotation, keys: [{ time: -1, value: rotation.keys[0].value }] }],
+    [{ ...rotation, keys: [{ time: 1.1, value: rotation.keys[0].value }] }],
+    [{ ...rotation, keys: Array.from({ length: 33 }, (_, i) => ({ time: i / 33, value: rotation.keys[0].value })) }],
+    [track('rotation_degrees', { x: 0, y: 90, z: 0 })],
+    [{ ...rotation, interpolation: 'cubic' }],
+  ])
+    assert.equal(animationClipsSchema.safeParse(clips(tracks)).success, false);
+});
+
 test('animation channels distinguish radians, positive 2D scale and legacy 2D/3D position', () => {
   assert.equal(
     animationClipsSchema.safeParse(

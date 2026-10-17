@@ -84,7 +84,7 @@ func _enter_tree() -> void:
 		_release_lease()
 		return
 	_identity = {
-		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.8",
+		"protocolVersion": PROTOCOL, "plane": "editor", "bridgeVersion": "0.3.9",
 		"projectId": _config.get("projectId", ""), "projectPath": project_path,
 		"sessionId": Crypto.new().generate_random_bytes(16).hex_encode(),
 		"godotVersion": Engine.get_version_info().string, "editorPid": OS.get_process_id(),
@@ -95,6 +95,7 @@ func _enter_tree() -> void:
 		_identity.capabilities.append_array(["scene.line_edit/v1", "scene.scroll/v1", "scene.rich_text/v1", "scene.texture/v1", "scene.png_texture/v1", "scene.sprite2d/v1"])
 		_identity.capabilities.append("scene.character2d/v1")
 		_identity.capabilities.append("scene.animation_transform2d/v1")
+		_identity.capabilities.append("scene.animation_transform3d/v1")
 	var staged := LEASE + "/endpoint.json"
 	var output := FileAccess.open(staged, FileAccess.WRITE)
 	if output == null:
@@ -135,7 +136,8 @@ func _reply(peer: Dictionary, id: Variant, value: Variant, code: String = "") ->
 		message["result"] = value
 	else:
 		message["error"] = {"code": -32000, "message": str(value), "data": {"code": code}}
-	var bytes := (JSON.stringify(message) + "\n").to_utf8_buffer()
+	# Exact approval must round-trip request doubles, including unit quaternions.
+	var bytes := (JSON.stringify(message, "", true, true) + "\n").to_utf8_buffer()
 	if bytes.size() > MAX_FRAME:
 		_reply(peer, id, "Editor response exceeds 64 KiB", "UNSUPPORTED")
 		return

@@ -294,7 +294,7 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 			item["instanceHash"] = FileAccess.get_sha256(node.scene_file_path)
 			item["editableChildren"] = root.is_editable_instance(node)
 		items.append(item)
-	return {"nodes": items, "hash": JSON.stringify(items).sha256_text()}
+	return {"nodes": items, "hash": JSON.stringify(items, "", true, true).sha256_text()}
 
 static func inspect_save(root: Node) -> Dictionary:
 	if root == null or EditorInterface.get_edited_scene_root() != root: return _error("ENGINE_UNAVAILABLE", "No current edited scene")

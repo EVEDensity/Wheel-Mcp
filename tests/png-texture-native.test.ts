@@ -88,7 +88,7 @@ test(
       const endpointPath = path.join(f.root, '.harness/editor-endpoint.json');
       const endpointBytes = await readFile(endpointPath),
         endpoint = JSON.parse(endpointBytes.toString());
-      assert.equal(endpoint.capabilities.length, 28);
+      assert.equal(endpoint.capabilities.length, 29);
       try {
         for (const capabilities of [
           endpoint.capabilities.filter((v: string) => v !== 'scene.png_texture/v1'),

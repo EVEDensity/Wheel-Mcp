@@ -1,7 +1,7 @@
 @tool
 extends RefCounted
 
-# Bounded native subset: local 2D/3D position and 2D rotation/scale tracks in a
+# Bounded native subset: local 2D/3D transforms in a
 # single owned library. Never edit an existing/shared library in place.
 const LIBRARY := "wheel"
 
@@ -20,12 +20,27 @@ static func _local(resource: Resource, node: Node) -> bool:
 	return owner.scene_file_path.begins_with("res://") and resource.resource_path.begins_with(owner.scene_file_path + "::")
 
 static func _bounded_value(property: String, value: Variant) -> bool:
+	if property == "rotation_3d":
+		return value is Quaternion and value.is_finite() and absf(value.length_squared() - 1.0) <= 0.000001
 	if property == "rotation":
 		return value is float and is_finite(value) and absf(value) <= 32.0
 	if not (value is Vector2 or value is Vector3) or not value.is_finite(): return false
 	if property == "scale":
 		return value is Vector2 and value.x >= 0.0625 and value.y >= 0.0625 and value.x <= 16.0 and value.y <= 16.0
+	if property == "scale_3d":
+		return value is Vector3 and value.x >= 0.0625 and value.y >= 0.0625 and value.z >= 0.0625 and value.x <= 16.0 and value.y <= 16.0 and value.z <= 16.0
 	return property == "position" and absf(value.x) <= 100000.0 and absf(value.y) <= 100000.0 and (not value is Vector3 or absf(value.z) <= 100000.0)
+
+static func _track_property(animation: Animation, index: int) -> String:
+	var path := animation.track_get_path(index)
+	var kind := animation.track_get_type(index)
+	if kind == Animation.TYPE_VALUE and path.get_subname_count() == 1:
+		var property := str(path.get_subname(0))
+		return property if property in ["position", "rotation", "scale"] else ""
+	if path.get_subname_count() == 0:
+		if kind == Animation.TYPE_ROTATION_3D: return "rotation_3d"
+		if kind == Animation.TYPE_SCALE_3D: return "scale_3d"
+	return ""
 
 static func signature(node: Node) -> Dictionary:
 	if not node is AnimationPlayer: return {}
@@ -50,16 +65,14 @@ static func signature(node: Node) -> Dictionary:
 		var tracks: Array = []
 		var seen_track_ids: Dictionary = {}
 		for index in range(animation.get_track_count()):
-			if animation.track_get_type(index) != Animation.TYPE_VALUE or not _id(track_ids[index]) or seen_track_ids.has(track_ids[index]) or animation.track_get_key_count(index) < 1 or animation.track_get_key_count(index) > 32:
+			if not _id(track_ids[index]) or seen_track_ids.has(track_ids[index]) or animation.track_get_key_count(index) < 1 or animation.track_get_key_count(index) > 32:
 				return _error("UNSUPPORTED", "Track type, ID or key count is outside subset")
 			seen_track_ids[track_ids[index]] = true
-			var track_path := animation.track_get_path(index)
-			if track_path.get_subname_count() != 1: return _error("UNSUPPORTED", "Track property is outside subset")
-			var property := str(track_path.get_subname(0))
-			if property not in ["position", "rotation", "scale"]: return _error("UNSUPPORTED", "Track property is outside subset")
+			var property := _track_property(animation, index)
+			if property.is_empty(): return _error("UNSUPPORTED", "Track property/type is outside subset")
 			# New channels use continuous linear interpolation, no angle wrapping,
 			# easing or disabled tracks. Refuse edits not captured by this contract.
-			if property != "position" and (animation.track_is_imported(index) or not animation.track_is_enabled(index) or animation.track_get_interpolation_type(index) != Animation.INTERPOLATION_LINEAR or not animation.track_get_interpolation_loop_wrap(index) or animation.value_track_get_update_mode(index) != Animation.UPDATE_CONTINUOUS):
+			if property != "position" and (animation.track_is_compressed(index) or animation.track_is_imported(index) or not animation.track_is_enabled(index) or animation.track_get_interpolation_type(index) != Animation.INTERPOLATION_LINEAR or not animation.track_get_interpolation_loop_wrap(index) or (animation.track_get_type(index) == Animation.TYPE_VALUE and animation.value_track_get_update_mode(index) != Animation.UPDATE_CONTINUOUS)):
 				return _error("UNSUPPORTED", "Transform track settings are outside subset")
 			var keys: Array = []
 			var previous := -1.0
@@ -68,9 +81,12 @@ static func signature(node: Node) -> Dictionary:
 				var time: float = animation.track_get_key_time(index, key_index)
 				if not _bounded_value(property, value) or not is_finite(time) or time < 0.0 or time <= previous or time > animation.length or (property != "position" and animation.track_get_key_transition(index, key_index) != 1.0):
 					return _error("UNSUPPORTED", "Transform key/time is outside bounded subset")
-				keys.append([time, value] if property == "rotation" else ([time, value.x, value.y, value.z] if value is Vector3 else [time, value.x, value.y]))
+				if property == "rotation_3d": keys.append([time, value.x, value.y, value.z, value.w])
+				else: keys.append([time, value] if property == "rotation" else ([time, value.x, value.y, value.z] if value is Vector3 else [time, value.x, value.y]))
 				previous = time
-			tracks.append({"id":str(track_ids[index]), "path":str(animation.track_get_path(index)), "keys":keys})
+			var record := {"id":str(track_ids[index]), "path":str(animation.track_get_path(index)), "keys":keys}
+			if property.ends_with("_3d"): record["property"] = property
+			tracks.append(record)
 		clips.append({"id":str(clip_name), "length":animation.length, "loop":animation.loop_mode, "tracks":tracks})
 	clips.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.id < b.id)
 	return {"clips":clips}
@@ -115,19 +131,23 @@ static func validate_tree(root: Node) -> Dictionary:
 			var channels: Dictionary = {}
 			for track in clip.tracks:
 				var track_path := NodePath(track.path)
-				if track_path.is_absolute() or track_path.get_subname_count() != 1:
+				var property: String = track.get("property", str(track_path.get_subname(0)) if track_path.get_subname_count() == 1 else "")
+				var dedicated := property in ["rotation_3d", "scale_3d"]
+				if track_path.is_absolute() or track_path.get_subname_count() != (0 if dedicated else 1):
 					return _error("CONFLICT", "Animation track target is outside bounded transform subset")
-				var property := str(track_path.get_subname(0))
 				var target: Node = node.get_parent().get_node_or_null(NodePath(str(track_path.get_concatenated_names())))
 				if target == null or not (target is Node2D or target is Node3D) or (target != root and (not root.is_ancestor_of(target) or target.owner != root)):
 					return _error("CONFLICT", "Animation track target is missing or outside current scene")
-				if property != "position" and not target is Node2D: return _error("CONFLICT", "Rotation/scale require a local Node2D")
+				if dedicated and not target is Node3D: return _error("CONFLICT", "Native 3D tracks require a local Node3D")
+				if property in ["rotation", "scale"] and not target is Node2D: return _error("CONFLICT", "Rotation/scale require a local Node2D")
 				for key in track.keys:
-					if key.size() != (2 if property == "rotation" else (4 if target is Node3D else 3)):
+					if key.size() != (5 if property == "rotation_3d" else (2 if property == "rotation" else (4 if target is Node3D else 3))):
 						return _error("CONFLICT", "Animation value dimension differs from target")
-				if str(node.get_parent().get_path_to(target)) + ":" + property != track.path or channels.has(track.path):
+				var canonical := str(node.get_parent().get_path_to(target))
+				var channel := canonical + ":" + property
+				if (canonical if dedicated else channel) != track.path or channels.has(channel):
 					return _error("CONFLICT", "Animation track target path is stale")
-				channels[track.path] = true
+				channels[channel] = true
 	return {}
 
 static func graph_signature(node: Node) -> Dictionary:
@@ -330,12 +350,14 @@ static func prepare(player: AnimationPlayer, root: Node, clips: Array) -> Dictio
 		var track_ids := PackedStringArray()
 		var channels: Dictionary = {}
 		for track in clip.tracks:
-			if not track is Dictionary or track.size() != 4 or not _id(track.get("id")) or track.id in track_ids or not track.get("target") is String or track.get("property") not in ["position", "rotation", "scale"] or not track.get("keys") is Array or track.keys.is_empty() or track.keys.size() > 32:
+			if not track is Dictionary or track.size() != 4 or not _id(track.get("id")) or track.id in track_ids or not track.get("target") is String or track.get("property") not in ["position", "rotation", "scale", "rotation_3d", "scale_3d"] or not track.get("keys") is Array or track.keys.is_empty() or track.keys.size() > 32:
 				return _error("INVALID_ARGUMENT", "Invalid bounded transform track")
 			var target: Node = player.get_parent().get_node_or_null(NodePath(track.target))
 			if target == null or not (target is Node2D or target is Node3D) or target == player or (target != root and (not root.is_ancestor_of(target) or target.owner != root)):
 				return _error("NOT_FOUND", "Track target must be a local Node2D or Node3D")
-			if track.property != "position" and not target is Node2D: return _error("UNSUPPORTED", "Rotation/scale tracks require Node2D")
+			var dedicated: bool = track.property in ["rotation_3d", "scale_3d"]
+			if dedicated and not target is Node3D: return _error("UNSUPPORTED", "Native 3D tracks require Node3D")
+			if track.property in ["rotation", "scale"] and not target is Node2D: return _error("UNSUPPORTED", "Rotation/scale tracks require Node2D")
 			var canonical := str(player.get_parent().get_path_to(target))
 			if canonical != track.target or canonical.contains(":") or canonical.contains("%") or canonical.contains("\\"):
 				return _error("FORBIDDEN", "Track target must use a canonical local path")
@@ -343,24 +365,35 @@ static func prepare(player: AnimationPlayer, root: Node, clips: Array) -> Dictio
 			if channels.has(channel): return _error("INVALID_ARGUMENT", "Duplicate animation target property")
 			channels[channel] = true
 			track_ids.append(track.id)
-			var index := animation.add_track(Animation.TYPE_VALUE)
-			animation.track_set_path(index, NodePath(channel))
+			var kind: int = Animation.TYPE_ROTATION_3D if track.property == "rotation_3d" else (Animation.TYPE_SCALE_3D if track.property == "scale_3d" else Animation.TYPE_VALUE)
+			var index := animation.add_track(kind)
+			animation.track_set_path(index, NodePath(canonical if dedicated else channel))
 			var previous := -1.0
 			for key in track.keys:
 				if not key is Dictionary or key.size() != 2 or not key.get("time") is float or not is_finite(key.time) or key.time < 0.0 or key.time <= previous or key.time > clip.length:
 					return _error("INVALID_ARGUMENT", "Key time/value is invalid")
 				var value: Variant = key.get("value")
-				if track.property != "rotation":
+				if track.property == "rotation_3d":
+					if not value is Dictionary or value.size() != 4: return _error("INVALID_ARGUMENT", "Rotation requires a unit quaternion")
+					var norm := 0.0
+					for axis in ["x", "y", "z", "w"]:
+						if not value.get(axis) is float or not is_finite(value[axis]) or absf(value[axis]) > 1.0: return _error("INVALID_ARGUMENT", "Quaternion component is invalid")
+						norm += value[axis] * value[axis]
+					if absf(norm - 1.0) > 0.000001: return _error("INVALID_ARGUMENT", "Quaternion must be unit length; no implicit normalization")
+					value = Quaternion(value.x, value.y, value.z, value.w)
+				elif track.property != "rotation":
 					if not value is Dictionary or value.size() != (3 if target is Node3D else 2) or not value.get("x") is float or not value.get("y") is float or (target is Node3D and not value.get("z") is float):
 						return _error("INVALID_ARGUMENT", "Key vector dimension is invalid")
 					# Check JSON doubles before Vector2's float32 conversion can round
 					# an out-of-budget scale back onto an accepted endpoint.
-					if track.property == "scale" and (not is_finite(value.x) or not is_finite(value.y) or value.x < 0.0625 or value.y < 0.0625 or value.x > 16.0 or value.y > 16.0):
+					if track.property in ["scale", "scale_3d"] and (not is_finite(value.x) or not is_finite(value.y) or value.x < 0.0625 or value.y < 0.0625 or value.x > 16.0 or value.y > 16.0 or (dedicated and (not is_finite(value.z) or value.z < 0.0625 or value.z > 16.0))):
 						return _error("INVALID_ARGUMENT", "Key scale is outside positive budget")
 					value = Vector3(value.x, value.y, value.z) if target is Node3D else Vector2(value.x, value.y)
 				if not _bounded_value(track.property, value):
 					return _error("INVALID_ARGUMENT", "Key transform is outside finite budget")
-				animation.track_insert_key(index, key.time, value)
+				if track.property == "rotation_3d": animation.rotation_track_insert_key(index, key.time, value)
+				elif track.property == "scale_3d": animation.scale_track_insert_key(index, key.time, value)
+				else: animation.track_insert_key(index, key.time, value)
 				previous = key.time
 		animation.set_meta("wheel_track_ids", track_ids)
 		if library.add_animation(clip.id, animation) != OK: return _error("VALIDATION_FAILED", "Native animation library rejected clip")

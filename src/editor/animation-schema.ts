@@ -14,6 +14,14 @@ const key = z
 const base = { id, target: z.string().min(1).max(128) };
 const timed = { time: z.number().finite().min(0).max(60) };
 const scaleAxis = z.number().finite().min(0.0625).max(16);
+const quaternionAxis = z.number().finite().min(-1).max(1);
+const quaternion = z
+  .object({ x: quaternionAxis, y: quaternionAxis, z: quaternionAxis, w: quaternionAxis })
+  .strict()
+  .refine(
+    (q) => Math.abs(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w - 1) <= 0.000001,
+    'Quaternion must be unit length; no implicit normalization',
+  );
 const track = z.discriminatedUnion('property', [
   z.object({ ...base, property: z.literal('position'), keys: z.array(key).min(1).max(32) }).strict(),
   z
@@ -22,6 +30,26 @@ const track = z.discriminatedUnion('property', [
       property: z.literal('rotation'),
       keys: z
         .array(z.object({ ...timed, value: z.number().finite().min(-32).max(32) }).strict())
+        .min(1)
+        .max(32),
+    })
+    .strict(),
+  z
+    .object({
+      ...base,
+      property: z.literal('rotation_3d'),
+      keys: z
+        .array(z.object({ ...timed, value: quaternion }).strict())
+        .min(1)
+        .max(32),
+    })
+    .strict(),
+  z
+    .object({
+      ...base,
+      property: z.literal('scale_3d'),
+      keys: z
+        .array(z.object({ ...timed, value: z.object({ x: scaleAxis, y: scaleAxis, z: scaleAxis }).strict() }).strict())
         .min(1)
         .max(32),
     })

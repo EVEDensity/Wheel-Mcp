@@ -254,13 +254,29 @@ export async function applyEditorScene(
       operations.some(
         (op) =>
           op.kind === 'animation_clips' &&
-          op.clips.some((clip) => clip.tracks.some((track) => track.property !== 'position')),
+          op.clips.some((clip) =>
+            clip.tracks.some((track) => track.property === 'rotation' || track.property === 'scale'),
+          ),
       ) &&
       !bridge.identity.capabilities.includes('scene.animation_transform2d/v1')
     )
       throw new WheelError(
         'PROTOCOL_MISMATCH',
         'Editor plugin lacks bounded 2D rotation/scale animation; upgrade explicitly',
+      );
+    if (
+      operations.some(
+        (op) =>
+          op.kind === 'animation_clips' &&
+          op.clips.some((clip) =>
+            clip.tracks.some((track) => track.property === 'rotation_3d' || track.property === 'scale_3d'),
+          ),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.animation_transform3d/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks bounded native 3D transform animation; upgrade explicitly',
       );
     if (
       operations.some((op) => op.kind === 'character_set' || (op.kind === 'create' && op.type === 'CharacterBody2D')) &&
