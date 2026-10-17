@@ -2,9 +2,11 @@
 
 ## Unreleased
 
-- Keep user installation examples on published v0.2.5 while later candidates
-  remain unaccepted. Do not treat passing isolated archive checks as a complete
-  release gate, or move the failed candidate tags.
+- Promote installation examples to verified v0.2.8 after automatic publication
+  and public-download verification. Preserve unaccepted candidate history.
+- Record two independent 193-test hosted passes on commit 9675e7d, with matching
+  source/package hashes, clean audit and successful scratch cleanup. This
+  documentation update does not requalify changed code or expand release scope.
 
 ## 0.2.8
 

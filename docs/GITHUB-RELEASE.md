@@ -5,10 +5,12 @@ npm registry. Releases cover Windows, Godot 4.7.2 and trusted local stdio projec
 The daily push/PR workflow stays short; the release workflow runs only on a
 version tag or explicit manual dispatch.
 
-Current published installation target: **v0.2.5**. v0.2.6 and v0.2.7 are retained
-source candidates, not published releases. The next tag example below must be
-advanced to a new unused version after the packaging failure is fixed; do not
-reuse or move either failed tag.
+Current published installation target: **v0.2.8**. Both acceptance-only and
+tag-triggered runs passed 193 tests; automatic publication and independent public
+download verification also passed. See the [verification record](releases/0.2.8-ci-cd-verification.json).
+v0.2.6 and v0.2.7 remain unaccepted source candidates, not published releases.
+Never reuse or move their tags. The next tag example requires the next version's
+source and changelog; it does not authorize retagging this release.
 
 ## Prepare the source
 
@@ -31,8 +33,8 @@ running. An acceptance-only success is not a published Release. Review the
 receipt and source commit before creating an annotated tag on that same commit:
 
 ```powershell
-git tag -a v0.2.8 -m "Wheel-mcp 0.2.8 Windows local stable"
-git push origin v0.2.8
+git tag -a v0.2.9 -m "Wheel-mcp 0.2.9 Windows local stable"
+git push origin v0.2.9
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
@@ -91,8 +93,8 @@ Download the four assets from the same release and compare their hashes against
 `SHA256SUMS` before installation. On Windows, for example:
 
 ```powershell
-Get-FileHash .\wheel-mcp-0.2.5.tgz -Algorithm SHA256
-npm.cmd install --ignore-scripts .\wheel-mcp-0.2.5.tgz
+Get-FileHash .\wheel-mcp-0.2.8.tgz -Algorithm SHA256
+npm.cmd install --ignore-scripts .\wheel-mcp-0.2.8.tgz
 ```
 
 Godot must be installed separately. Configure the installed server's absolute
@@ -118,8 +120,8 @@ and published manually; the red workflow remains historical failure evidence.
 That guard combined several conditions, and the failed run did not retain the
 list response, so its exact failing condition cannot now be proven. The new
 ID-bound flow removes list visibility/lookup ambiguity without weakening the
-receipt or asset checks. It still needs a fresh version-bound hosted release
-run; never move v0.2.5 to install this workflow fix.
+receipt or asset checks. v0.2.8 completed both modes and automatic publication
+with independent download verification; never move v0.2.5 to install this fix.
 
 Approvals in automated acceptance are explicit test doubles. Hosted tests are
 headless; the local screenshot pixel checks do not certify hosted GPU behavior.

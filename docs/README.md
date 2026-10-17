@@ -33,6 +33,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 
 - [本机稳定版范围 / Local stable scope](LOCAL-STABLE-RELEASE.md).
 - [v0.2.0 验收记录 / Release receipt](releases/0.2.0-windows-local-final.json).
+- [v0.2.8 CI/CD 与公开下载核验 / CI/CD verification](releases/0.2.8-ci-cd-verification.json).
 - [GitHub 打包与发布 / Packaging and release](GITHUB-RELEASE.md) · [发布审核 / Release readiness](RELEASE-READINESS.md) · [更新记录 / Changelog](../CHANGELOG.md).
 - [受控效率实验 / Benchmark](REPAIR-BENCHMARK-2026-09-13.md) · [复现 / Reproduction](../benchmarks/README.md).
 - [路线图 / Roadmap](PRODUCTION-MAIN-ASSISTANT-ROADMAP.zh-CN.md) · [任务状态 / Task ledger](production-roadmap/tasks.json).

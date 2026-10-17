@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "verifiedAt": "2026-10-17T16:00:18Z",
+  "scope": "Windows-local CI/CD and independently downloaded public assets",
+  "version": "0.2.8",
+  "tag": "v0.2.8",
+  "head": "9675e7d1de79d43296d88a85dc309a845048c11d",
+  "sourceHash": "1af6955633e4075563e943d69877296aeeb167d6600376beaccd424cb2bfd71d",
+  "releaseUrl": "https://github.com/EVEDensity/Wheel-Mcp/releases/tag/v0.2.8",
+  "releaseId": 415903701,
+  "manualAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39046290047",
+    "runId": "1f85577b-deb7-49e2-ae64-55bd67dfa3ed",
+    "conclusion": "success",
+    "build": "success",
+    "publish": "skipped",
+    "tests": 193
+  },
+  "tagPublication": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39046881871",
+    "runId": "65cb0b9e-e548-453f-9204-f66044636c80",
+    "conclusion": "success",
+    "build": "success",
+    "publish": "success",
+    "tests": 193
+  },
+  "suites": { "core": 109, "package": 2, "safety": 68, "engine": 14 },
+  "failed": 0,
+  "skipped": 0,
+  "cancelled": 0,
+  "scratchCleanup": "PASS",
+  "auditVulnerabilities": 0,
+  "sameSourceAcrossRuns": true,
+  "sameRuntimeArchiveAcrossRuns": true,
+  "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+  "publicAssets": {
+    "wheel-mcp-0.2.8.tgz": {
+      "bytes": 243550,
+      "sha256": "183184f46bccc586f7d38351683245f1013d4f37efcf02b4ee67f96591ed3401"
+    },
+    "sbom.json": { "bytes": 229046, "sha256": "43ea06076b5cd5113e054e29e8c315cd1eae28a9a9cc06793720661ccf54a2cf" },
+    "acceptance.json": { "bytes": 5774, "sha256": "7ccb3096f8e8ea41ca93f24e94eee1359144ff01141abbdebf62fd9688d657eb" },
+    "SHA256SUMS": { "bytes": 244, "sha256": "17f2a2fd2b3adeda4eea4c44bf737b96a8881d8ddad8d28088e33c55e43c196b" }
+  },
+  "productionQualification": "NOT_QUALIFIED",
+  "boundaries": [
+    "trusted local stdio",
+    "automated approval test doubles",
+    "headless hosted engine acceptance",
+    "no full authoring or renderer matrix",
+    "no other-platform/client or long-session qualification"
+  ],
+  "note": "This record binds the released tag commit, not later documentation commits. Historical failed candidates remain failures. The combined execution changes passed two hosted gates; this does not isolate each prior timeout's exact cause."
+}
