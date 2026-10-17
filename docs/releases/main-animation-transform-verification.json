@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_HOSTED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "acceptedCommit": "144a91fc7448835bf0da862e1c17167a29086741",
+  "candidateCommit": "144a91fc7448835bf0da862e1c17167a29086741",
+  "sourceHash": "ca28546911cfbc073ebcd4a1080b7f9d4754b9c0d3499442203852ad000bbe6c",
+  "scope": "Bounded local Node2D rotation and positive-scale value tracks with native undo, safe save/reopen and deterministic real-runtime sampling. Trusted Windows / Godot 4.7.2 / stdio; no 3D rotation/scale, imported animation mutation, shortest-angle interpolation, wall-clock performance or human approval UX certification.",
+  "contract": "docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md",
+  "upgrade": {
+    "editorBridge": "0.3.8",
+    "capability": "scene.animation_transform2d/v1",
+    "maximumEditorCapabilities": 28,
+    "runtimeBridge": "0.3.4",
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "localChecks": {
+    "sourceHash": "ca28546911cfbc073ebcd4a1080b7f9d4754b9c0d3499442203852ad000bbe6c",
+    "buildFormatLint": "PASS",
+    "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 150, "durationMs": 26089, "scratchCleanup": "PASS" },
+    "animation": { "report": "runs/ci/animation-final-regression/summary.json", "tests": 7, "durationMs": 44098, "scratchCleanup": "PASS" },
+    "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 52222, "scratchCleanup": "PASS" },
+    "boundary": "Bounded final-source local checks, not a complete local release gate. The animation slice also retains the existing position/state-machine/shared-library/Blend2 cases. The new native case is in the unchanged 240-second two-worker safety queue, not the unchanged 60-second engine smoke. All existing required cases remain. Minimum release counts increase to core 150, safety 74, engine 19, package 2."
+  },
+  "installedCodexProbe": {
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T22-55-11-118Z-17720/report.json",
+    "sha256": "c7e1ddbe369ecda3122b80ea1905bb9593f38eb84156cf533949228ea791d387",
+    "sourceHash": "ca28546911cfbc073ebcd4a1080b7f9d4754b9c0d3499442203852ad000bbe6c",
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK exact-plan fixture host",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "boundary": "Real installed app-server discovery and representative native scene/save fixture, not desktop/TUI human UX, a model turn, or rotation/scale calls driven through Codex."
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/ci/animation-initial/failure-summary.json",
+      "details": "runs/ci/animation-initial/failure-details.txt",
+      "status": "FAIL",
+      "tests": 4,
+      "passed": 3,
+      "failed": 1,
+      "durationMs": 9970,
+      "scratchCleanup": "RETAINED",
+      "reason": "The test approval handler incorrectly required scene-edit source SHA-256 wording in the distinct project-file save form. It raised an assertion rather than supplying approval; it did not prove a product save failure."
+    },
+    {
+      "report": "runs/ci/animation-save-diagnostic/failure-summary.json",
+      "details": "runs/ci/animation-save-diagnostic/failure-details.txt",
+      "status": "FAIL",
+      "tests": 1,
+      "failed": 1,
+      "durationMs": 8560,
+      "scratchCleanup": "RETAINED",
+      "reason": "A diagnostic assertion captured the actual distinct native-save form and identified the wrong test precondition. Fixed by checking exact plan SHA-256, before/after preview and actual rotation/scale paths for save, retaining the source-hash check for scene authoring."
+    },
+    {
+      "report": "runs/ci/animation-final-visual-resources/failure-summary.json",
+      "details": "runs/ci/animation-final-visual-resources/failure-details.txt",
+      "progress": "runs/ci/animation-final-visual-resources/progress/summary.json",
+      "sourceHash": "ca28546911cfbc073ebcd4a1080b7f9d4754b9c0d3499442203852ad000bbe6c",
+      "status": "FAIL",
+      "functionalTests": 4,
+      "functionalPassed": 4,
+      "functionalFailed": 0,
+      "processExitCode": 0,
+      "durationMs": 55178,
+      "scratchCleanup": "RETAINED",
+      "errorCode": "EPERM",
+      "scratchBasename": "wheel-ci-kGVWCS",
+      "reason": "Supplemental real-render/16-resource checks completed, but removing their workspace-owned scratch root failed. No matching live Godot actor or root readonly/link attribute was found by read-only inspection; exact cause remains unproven. No ACL changes, alternate deletion interface or blind fresh-directory retry was used. This is not a passing local render/cleanup run or a fix for the earlier system-TEMP failures."
+    }
+  ],
+  "shortCi": { "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39076982561", "status": "success", "tests": 150 },
+  "pages": { "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39076982290", "status": "success" },
+  "hostedAcceptance": {
+    "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39077004406",
+    "status": "PASS",
+    "acceptanceOnly": true,
+    "head": "144a91fc7448835bf0da862e1c17167a29086741",
+    "sourceHash": "ca28546911cfbc073ebcd4a1080b7f9d4754b9c0d3499442203852ad000bbe6c",
+    "runId": "2444e9c8-01a6-49cd-b1f5-f31b3900ee68",
+    "build": "success",
+    "publish": "skipped",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 319411,
+    "tests": [
+      { "id": "core", "tests": 150, "passed": 150, "durationMs": 21365, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 5240, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 74, "passed": 74, "durationMs": 212144, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 19, "passed": 19, "durationMs": 57799, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 245,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12117945264,
+    "artifactName": "release-assets-39077004406-1",
+    "download": "runs/animation-accepted-39077004406-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "08a04616f67b33dab8fa74f444677fd2666ab29843a78cb71ea492d75af4db3d",
+      "SHA256SUMS": "97f4108240013ee9297aa93591bc170c4db5e9f11ee58c8e4c282ef794b21ee2",
+      "acceptance.json": "aa41068555da62cfe2679b87f6e81336e57a9d0c82a03a8b5ce18dcd7bb47e66",
+      "sbom.json": "196fb620e36aabd06766015861464acbed6c1c2e40b9bf6c96663aa5ec4aed53",
+      "wheel-mcp-0.2.8.tgz": "b4f09743c326060ea027a37e983bd17c34564bbeb655cc0696a5841d3257bb43"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, accepted head/current source/policy/guarded documents, package archive, SBOM and all three exact checksum entries. This acceptance artifact is not the immutable public v0.2.8 archive."
+  },
+  "ciBoundaries": {
+    "requiredCounts": { "core": 150, "safety": 74, "engine": 19, "package": 2, "total": 245 },
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "hostedTempConfigurationChanged": false,
+    "localSupplementalRenderAndCleanup": "FAIL; not replaced by hosted headless acceptance or an earlier source's render run",
+    "newPublisherExecution": "NOT_RUN; acceptance-only skips publication"
+  },
+  "publication": { "newTag": false, "newRelease": false, "npmPublish": false, "publicVersionUnchanged": "v0.2.8" },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "annotatedTagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "unchanged": true
+  },
+  "notQualified": [
+    "local-render-suite-cleanup-or-system/workspace-TEMP-permission-root-cause",
+    "3D-rotation-scale-skeleton-audio-method-imported-animation-mutation-or-full-Godot-authoring",
+    "wall-clock-animation-performance-GPU-rendering-or-human-approval-UX",
+    "all-test-files-full-production-T31-T35-G4-G6",
+    "other-platforms-clients-independent-machine-public-HTTP-long-session-high-load"
+  ],
+  "productionQualification": "NOT_QUALIFIED"
+}
