@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import {
   readProcessIdentity,
+  readCurrentProcessIdentity,
   sameProcessIdentity,
   stopIdentifiedProcess,
   windowsPowerShellExecutable,
@@ -47,8 +48,21 @@ test('process identity includes a stable OS start token and executable', async (
     );
     assert.equal(sameProcessIdentity(identity, second), true);
     assert.equal(sameProcessIdentity({ ...identity, startToken: 'wrong' }, identity), false);
+    const [ownA, ownB] = await Promise.all([readCurrentProcessIdentity(), readCurrentProcessIdentity()]);
+    assert.ok(ownA && ownB);
+    assert.deepEqual(ownA, identity, 'Self observation must originate from the actual OS process generation');
+    assert.deepEqual(ownB, identity);
+    assert.notEqual(ownA, ownB, 'Concurrent callers receive independent copies');
+    ownA.startToken = 'caller-mutation';
+    assert.deepEqual(await readCurrentProcessIdentity(), identity, 'Caller mutation must not poison self identity');
+    assert.equal(
+      sameProcessIdentity(ownB, await readProcessIdentity(process.pid)),
+      true,
+      'General PID reads still independently inspect the OS; only the live self observation is reused',
+    );
   } else {
     assert.equal(identity, null);
+    assert.equal(await readCurrentProcessIdentity(), null);
   }
 });
 

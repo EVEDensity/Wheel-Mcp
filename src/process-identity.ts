@@ -115,6 +115,22 @@ export async function readProcessIdentity(pid: number): Promise<ProcessIdentity 
   return null;
 }
 
+// Only this still-executing Node process can reuse its successful OS identity:
+// its PID cannot be recycled while this module is executing. Never use this
+// cache for another PID, lock-owner inspection, signalling or recovery checks.
+let currentIdentity: Promise<ProcessIdentity | null> | undefined;
+export async function readCurrentProcessIdentity(): Promise<ProcessIdentity | null> {
+  currentIdentity ??= readProcessIdentity(process.pid).then((identity) => {
+    // A failed lookup is not identity evidence. A later explicit call may read
+    // the OS again; this call neither guesses an identity nor retries itself.
+    if (!identity) currentIdentity = undefined;
+    return identity;
+  });
+  const identity = await currentIdentity;
+  // Callers must not be able to poison the private successful observation.
+  return identity ? { ...identity } : null;
+}
+
 export function sameProcessIdentity(expected: ProcessIdentity, actual: ProcessIdentity | null): boolean {
   if (!actual || actual.platform !== expected.platform || actual.startToken !== expected.startToken) return false;
   return expected.platform === 'win32'

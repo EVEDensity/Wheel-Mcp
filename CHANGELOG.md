@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Retain hosted gravity acceptance failure 39072866136: safety reached 240s
+  before four original files finished/started, with no final summary. Reuse
+  only the current live Node process's successful OS identity when creating
+  transaction locks, avoiding repeated PowerShell startup per lock. Never cache
+  foreign PID reads, stale-lock recovery or stop checks; failed self lookup
+  still fails closed. Expand real self-identity isolation assertions, retain
+  every original case and the same concurrency / safety / total deadlines.
+
 - Gravity stage 2 adds runtime 0.3.3 / character.gravity2d/v1: explicit bounded
   world-Y integration, fresh flat-floor jump probe, speed clamp and native
   floor/ceiling observations. No idle gravity or permanent controller. Existing

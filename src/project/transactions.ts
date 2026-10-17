@@ -1,7 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, readdir, rename, stat, unlink, writeFile, lstat, realpath } from 'node:fs/promises';
 import path from 'node:path';
-import { readProcessIdentity, sameProcessIdentity, type ProcessIdentity } from '../process-identity.js';
+import {
+  readCurrentProcessIdentity,
+  readProcessIdentity,
+  sameProcessIdentity,
+  type ProcessIdentity,
+} from '../process-identity.js';
 import { projectRelativePath, resolveProjectPath } from './paths.js';
 import { WheelError, classifyError } from '../error-schema.js';
 
@@ -549,7 +554,7 @@ export class ProjectTransactions {
   private async lock(): Promise<() => Promise<void>> {
     const root = await this.internalRoot();
     const file = path.join(root, '.project.lock');
-    const identity = await readProcessIdentity(process.pid);
+    const identity = await readCurrentProcessIdentity();
     if (!identity) throw new Error('platform process identity unavailable for project lock');
     for (let attempt = 0; attempt < 30; attempt++) {
       try {
