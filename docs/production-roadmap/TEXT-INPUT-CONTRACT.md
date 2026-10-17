@@ -56,6 +56,18 @@ protocol schema. That guard stays in place; the corrected test explicitly
 requires it rather than relaxing validation. Native integration and final CI
 evidence must be source-bound separately from the stage-1 host-only green run.
 
+Accepted integration source `14ec2d9` passed 241/241 hosted bounded checks,
+short CI, Pages, installed Codex representative interface probe and independent
+downloaded artifact verification. The probe does not itself call Unicode input
+through Codex or certify human UX. Final local engine checks passed 19/19, and
+workspace-owned render/resource checks 4/4 with cleanup. Two system-TEMP runs
+had all four functional checks pass but cleanup EPERM; both remain FAIL, their
+data/permissions were not erased/changed, and the precise cause remains unproven.
+This is a new workspace-isolated validation, not a system-TEMP permission fix
+or a complete final-source local release gate. See the [stage and failure
+record](../releases/main-text-input-verification.json). No new tag, Release or
+npm publication; public v0.2.8 remains unchanged.
+
 References: [InputEventKey.unicode](https://docs.godotengine.org/en/stable/classes/class_inputeventkey.html#class-inputeventkey-property-unicode),
 [Input.parse_input_event](https://docs.godotengine.org/en/stable/classes/class_input.html#class-input-method-parse-input-event),
 [Godot 4.7.2 Input state](https://github.com/godotengine/godot/blob/4.7.2-stable/core/input/input.cpp)

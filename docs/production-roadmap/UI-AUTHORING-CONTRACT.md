@@ -130,6 +130,10 @@ themeType 限 Control、Label、Button、CheckButton、HSlider、PanelContainer�
 
 ## 信号与真实输入
 
+main 运行桥另有[单个已提交 Unicode 字符输入](TEXT-INPUT-CONTRACT.md)：0.3.4 /
+`input.text_scalar/v1`，沿当前游戏焦点由真实 GUI 消费，独立读取控件状态确认结果。
+它不增加编辑器信号白名单、脚本挂载、IME、粘贴或系统键盘自动化能力。
+
 新增 Button/CheckButton 的持久即时 `pressed -> hide/show`，目标为当前场景可用本地节点。无 binds/unbinds，不支持 deferred、one-shot、任意脚本回调。与 visibility_changed 的旧约束一致：会触发未受控持久回调的可见性修改先拒绝。连接与 Theme 赋值可组成一批原生 Undo，保存重开后 Callable 仍有效。
 
 `ui-authoring-e2e.test.ts` 从空 Control 场景通过官方 MCP 工具创建设置页与六格背包，真实原生 Undo/Redo、保存、关闭、同项目重开；以真实键盘 Enter 输入触发 GUI Button，而非直接 emit_signal。隐藏背包的节点状态和 PNG 像素变化同时验证。

@@ -1,0 +1,179 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "acceptedCommit": "14ec2d9c8673da3b2f383adda401c91646c32f0f",
+  "sourceHash": "22cfe2feac80636b7d998787511df85aa64d4f151bffd0ff431845d1a67cd380",
+  "scope": "One committed Unicode scalar through native runtime Input, following game focus; trusted Windows / Godot 4.7.2 / stdio. Not IME, paste, OS keyboard automation or automatic target selection.",
+  "contract": "docs/production-roadmap/TEXT-INPUT-CONTRACT.md",
+  "stages": [
+    {
+      "id": 1,
+      "commit": "58c2bc5884ca62bba95941c1f52f1fc17c0c7f88",
+      "sourceHash": "a0e1a93d9171d45d05dd8cafb3a1cf67d37f6a57962cfbc4a5c12b097adedf2f",
+      "change": "One-scalar closed grammar, independent capability refusal and exact normal/late result correlation; runtime still 0.3.3 without native text capability in this intermediate stage.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39074798773",
+      "shortCiStatus": "success",
+      "shortCiTests": 147,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39074798374",
+      "pagesStatus": "success",
+      "frozenCheck": { "report": "runs/ci/text-stage1-frozen/summary.json", "tests": 4, "durationMs": 14434, "scratchCleanup": "PASS" },
+      "boundary": "Three fast contract cases plus the actual legacy wheel fixture. Old text-capability refusal is a host handshake TEST DOUBLE, not a native text-consumption run or complete release gate."
+    },
+    {
+      "id": 2,
+      "commit": "14ec2d9c8673da3b2f383adda401c91646c32f0f",
+      "change": "Native Unicode-only press/release, GUI consumption, Latin/CJK/non-BMP storage, focus changes, noneditable/hidden/max_length constraints, replay, permissions/ownership and UNKNOWN late completion in the existing wheel fixture.",
+      "shortCi": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39075480064",
+      "shortCiStatus": "success",
+      "shortCiTests": 147,
+      "pages": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39075479269",
+      "pagesStatus": "success"
+    }
+  ],
+  "upgrade": {
+    "editorBridge": "0.3.7",
+    "maximumEditorCapabilities": 27,
+    "runtimeBridge": "0.3.4",
+    "runtimeCapability": "input.text_scalar/v1",
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "finalSourceLocalChecks": {
+    "sourceHash": "22cfe2feac80636b7d998787511df85aa64d4f151bffd0ff431845d1a67cd380",
+    "buildFormatLint": "PASS",
+    "core": { "report": "runs/ci/fast-contract-only/summary.json", "tests": 147, "durationMs": 21689, "scratchCleanup": "PASS" },
+    "engine": { "report": "runs/ci/engine-smoke/summary.json", "tests": 19, "durationMs": 45105, "scratchCleanup": "PASS" },
+    "renderAndResources": { "report": "runs/ci/text-final-workspace-visual/summary.json", "tests": 4, "durationMs": 32388, "allDeclaredResourceTypes": 16, "scratchCleanup": "PASS" },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "renderScope": "Final local run uses a fresh workspace-owned TEMP parent after two system-TEMP cleanup failures. Actual Latin text and prior wheel/character pixels restore to zero difference; CJK/non-BMP assertions cover native text storage, not fonts or glyph rendering.",
+    "approval": "MOCK exact-plan via official SDK stdio",
+    "testOnlyObserver": "The saved native scene is byte-identical. A separate TEST-ONLY project autoload observes actual input fields, a custom Unicode InputMap action and a fixed 500ms late-result barrier; it does not insert text and is not a product script-attachment feature.",
+    "boundary": "Final-source bounded local checks, not a complete local release gate or a fix/certification of system TEMP permissions. No earlier source's full gate is reused."
+  },
+  "intermediateNativeCheck": {
+    "report": "runs/ci/text-native-initial/summary.json",
+    "tests": 5,
+    "passed": 5,
+    "durationMs": 19105,
+    "scratchCleanup": "PASS",
+    "boundary": "Before added hidden-control and replay-after-focus-change assertions and final tool-description freeze; not final-source full acceptance."
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/text-stage1-contract-failure/failure-summary.json",
+      "details": "runs/text-stage1-contract-failure/failure-details.txt",
+      "status": "FAIL",
+      "tests": 147,
+      "passed": 146,
+      "failed": 1,
+      "durationMs": 21391,
+      "scratchCleanup": "RETAINED",
+      "cause": "New NaN observation assertion expected PROTOCOL_MISMATCH, but existing shared Variant guard rejects non-finite values as UNSUPPORTED first. Corrected test explicitly retains that guard; no validation or pass condition was weakened."
+    },
+    {
+      "report": "runs/ci/text-final-visual/failure-summary.json",
+      "status": "FAIL",
+      "functionalTests": 4,
+      "functionalPassed": 4,
+      "functionalFailed": 0,
+      "functionalDurationMs": 34993.6069,
+      "durationMs": 35146,
+      "scratchCleanup": "RETAINED",
+      "scratchBasename": "wheel-ci-g6w0Xh",
+      "cause": "After all functional checks passed, recursive cleanup under system TEMP returned EPERM. No live Godot process or readonly/link root attribute was found; precise OS/environment cause remains unproven. Not relabeled PASS."
+    },
+    {
+      "report": "runs/ci/text-final-visual-cleanup-check/failure-summary.json",
+      "status": "FAIL",
+      "functionalTests": 4,
+      "functionalPassed": 4,
+      "functionalFailed": 0,
+      "functionalDurationMs": 35580.4889,
+      "durationMs": 35733,
+      "scratchCleanup": "RETAINED",
+      "scratchBasename": "wheel-ci-hty3v3",
+      "cause": "A fresh system-TEMP diagnostic run reproduced cleanup EPERM on the same source, so no further system-TEMP retries were made. Final validation instead used a newly created workspace-owned parent and passed cleanup; blocked paths/permissions were not changed or manually erased."
+    }
+  ],
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "22cfe2feac80636b7d998787511df85aa64d4f151bffd0ff431845d1a67cd380",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T22-29-36-201Z-16352/report.json",
+    "sha256": "6802e02b914ff21f90049a5e08bd379adacb86abcc5759b2bef6b9961a3d0b62",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK app-server representative author/save fixture; not a native Unicode tool call through Codex, desktop/TUI typing or human approval UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39075480233",
+    "mode": "acceptance_only=true",
+    "status": "PASS",
+    "head": "14ec2d9c8673da3b2f383adda401c91646c32f0f",
+    "sourceHash": "22cfe2feac80636b7d998787511df85aa64d4f151bffd0ff431845d1a67cd380",
+    "runId": "409b219b-f994-448d-a279-2ad9bf71aad7",
+    "build": "success",
+    "publish": "skipped",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 285967,
+    "tests": [
+      { "id": "core", "tests": 147, "passed": 147, "durationMs": 22212, "scratchCleanup": "PASS" },
+      { "id": "package", "tests": 2, "passed": 2, "durationMs": 5925, "scratchCleanup": "PASS" },
+      { "id": "safety", "tests": 73, "passed": 73, "durationMs": 182753, "scratchCleanup": "PASS" },
+      { "id": "engine", "tests": 19, "passed": 19, "durationMs": 50425, "scratchCleanup": "PASS" }
+    ],
+    "totalTests": 241,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12117290626,
+    "artifactName": "release-assets-39075480233-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "df3d156e63b557ff1abc6b904b9b61eb4cc6f55f4ef23f99f6b7a1b37d15f260",
+      "SHA256SUMS": "fe274467bfb7cf809382f5a7256bbfc8ac6198c7d983d5855c11e03aef89c0d2",
+      "acceptance.json": "84e0644bb70932d26d022a2b7082473140734ae28de132ae5fa25f3ca838760c",
+      "sbom.json": "02d2d91ce539cbfa2dfe252fc9ea10d3256da291c55641f613e3642dc19efe7f",
+      "wheel-mcp-0.2.8.tgz": "ba06582d593dbbbd73b26beee7c80d1db6f7fd5a0f45e0e691dd0586a0720c80"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, committed head/current source/policy/guarded documents, archive, SBOM and all three checksum entries."
+  },
+  "ciBoundaries": {
+    "requiredCounts": { "core": 147, "safety": 73, "engine": 19, "package": 2, "total": 241 },
+    "previousTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "engineStartupCountIncreased": false,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "hostedTempConfigurationChanged": false,
+    "newPublisherExecution": "NOT_RUN; acceptance-only must skip publication."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "annotatedTagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArtifactIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "system-TEMP-cleanup-permissions-root-cause-or-guarantee",
+    "IME-composition-paste-multiscalar-batch-grapheme-correctness-font-coverage-OS-keyboard-automation",
+    "full-production-T31-T35-G4-G6-or-all-test-files",
+    "permanent-player-controller-arbitrary-script-attachment-or-full-Godot-authoring",
+    "other-platforms-clients-independent-machine-human-approval-UX-public-HTTP-long-session-high-load"
+  ]
+}
