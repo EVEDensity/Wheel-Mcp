@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add bounded native LineEdit authoring: text, placeholder, editable and 0..512
+  max_length; reject implicit truncation/control characters and existing text
+  callbacks. Pair text/limit during native undo/redo and preserve signal blocking
+  while preventing callbacks during authoring. Validate actual save/reopen and
+  focused GUI Backspace/read-only behavior over stdio with Godot 4.7.2.
+  Editor bridge 0.3.1 adds scene.line_edit/v1; upgrade host and plugin together.
+  Keep the 21-entry capability bound and original frame/file limits.
 - Run the configured MCP launcher in the client-owned Node process rather than
   a hidden child. Reuse stdio draining/cleanup and verify real Godot orphan
   recovery after abnormal server death. Startup no longer invokes setup/build:

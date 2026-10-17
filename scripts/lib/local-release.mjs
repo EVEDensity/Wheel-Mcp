@@ -45,7 +45,7 @@ export const localReleaseSteps = [
   { id: 'sbom', program: 'npm', args: ['sbom', '--sbom-format=cyclonedx'], timeoutMs: 15000 },
 ];
 
-export const minimumReleaseTests = { core: 118, safety: 68, engine: 15, package: 2 };
+export const minimumReleaseTests = { core: 120, safety: 69, engine: 15, package: 2 };
 
 export const localReleaseDocs = [
   'README.md',

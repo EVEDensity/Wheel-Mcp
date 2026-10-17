@@ -244,6 +244,19 @@ export async function applyEditorScene(
   try {
     if (!bridge.identity.capabilities.includes('scene.prepare'))
       throw new WheelError('FORBIDDEN', 'Editor scene writes require independent private opt-in');
+    if (
+      operations.some(
+        (op) =>
+          (op.kind === 'create' && op.type === 'LineEdit') ||
+          (op.kind === 'ui_set' &&
+            ['placeholder_text', 'editable', 'max_length'].some((field) => field in op.properties)),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.line_edit/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks declared LineEdit authoring capability; upgrade explicitly',
+      );
     if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
     if (

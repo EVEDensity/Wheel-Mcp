@@ -16,7 +16,9 @@ const identitySchema = z.object({
   godotVersion: z.string().min(1),
   editorPid: z.number().int().positive(),
   port: z.number().int().min(1).max(65535),
-  capabilities: z.array(z.string()).max(20),
+  // One bounded extension for scene.line_edit/v1; frames and private files
+  // retain their existing byte limits. Older clients need a coordinated upgrade.
+  capabilities: z.array(z.string()).max(21),
   authorized: z.literal(true),
 });
 type EditorIdentity = z.infer<typeof identitySchema>;

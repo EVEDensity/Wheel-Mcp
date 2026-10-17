@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。插件私有桥接版本为 `0.3.0`，新增能力 `scene.ui/v1`；缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。升级/启用须由用户显式操作，不自动改变用户项目。T17 状态和人工复核以 [任务清单](tasks.json) 为准；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.1`，沿用 `scene.ui/v1`，另增 `scene.line_edit/v1`；缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20 项能力上限不能解析新插件的 21 项写入能力公告；新版仍保留 21 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 
@@ -26,7 +26,20 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 锚点使用不隐式移动 offsets 的原生 setter。Undo 捕获全部受影响边。保存不只检查 pack 内存对象，还重新加载实际 ResourceSaver 暂存字节、实例化并比较声明的 authored UI/Theme storage、owner 和实例标记；重开会变样则 CONFLICT，原文件不写。持久信号另由同项目重开快照与真实按钮行为验收。不自动“修正”用户布局来使保存通过。
 
-## Theme 与样式
+## LineEdit 首批声明子集（main 开发源码）
+
+新增创建 `LineEdit`，使用相同的 `ui_set`、批准、CAS、Undo/Redo 和单独保存流程：
+
+- `text` 与 `placeholder_text`：≤512 的文本预算；LineEdit 拒绝换行、制表和其他 C0/DEL 控制字符，Label 的多行文本行为不变。
+- `editable`：bool；`max_length`：0..512 整数。0 是引擎“不限输入长度”，但服务写入的文本仍受 512 预算约束。最终文本不能超过非零上限；不允许自动截断来通过验证。
+- 文本和最大长度成对捕获、应用和撤销。临时放开长度后设置准确文本，最后恢复目标长度，不依赖请求字段顺序。
+- 原生编辑期间临时屏蔽 LineEdit 信号并恢复原阻塞状态，避免审批后新加的临时回调在 commit/Undo/Redo 中执行。预检检查真实节点而非只查影子副本；已有 text_changed、text_change_rejected、text_submitted、editing_toggled 回调的场景拒绝编辑。
+
+`ui-line-edit-native.test.ts` 使用真实 Godot 和官方 SDK stdio，批准为 MOCK：只读拒绝、缺新能力及超能力预算拒绝、非法输入保持场景/磁盘不变、准确 Undo/Redo、实际 ResourceSaver 保存重开，以及聚焦/编辑模式/光标定位后的 GUI Backspace 和只读文本不变。不会把直接赋值冒充键盘输入。
+
+本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；ScrollContainer、RichTextLabel、TextureRect 仍未实现。现有公开 v0.2.8 包不包含本批开发改动。
+
+## Theme 与样式（原有子集）
 
 `manage_editor_resource` 新增 Theme、StyleBoxFlat，总计 14 种受控资源。继承现有 ResourceRef 项目/会话/owner/fingerprint、64 句柄、120 秒 TTL 和共享外部资源只读约束。
 
