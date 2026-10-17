@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T16:45:37Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "13ba554fbe1833d100ec47ff6b2b500e7b510a05",
+  "sourceHash": "acf0e647b6fb65dd1e1a8c44fb86bc2dd431dd76f7fe6a222c73ba973b2b6b1d",
+  "change": "Configured scripts/run-mcp.mjs runs the stdio server in the client-owned PID. Startup no longer runs setup/compiler; missing or incompatible runtime gets stderr-only reinstall/rebuild guidance. Windows discovery/version subprocesses request windowsHide.",
+  "contracts": [
+    "Launcher and server PID match; stdin EOF exits cleanly",
+    "Missing runtime never executes setup/compiler or writes protocol noise",
+    "Incompatible entry gives actionable reinstall/rebuild guidance",
+    "Abnormal exit code propagates; next fixture launch reads replaced entry bytes",
+    "Actual SDK discovery/read/close/reconnect rejects stale resource identity",
+    "Actual Windows Godot launch owner matches client transport PID; after identity-checked forced termination, reconnect reclaims registered orphan generation",
+    "Real tarball with production dependencies starts the configured launcher"
+  ],
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39050378888",
+    "status": "success",
+    "passed": 118,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39050378524",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39050379487",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "b5f40dcb-3d22-4e02-b926-5363cc13b8ef",
+    "artifactId": 12106674063,
+    "artifactName": "release-assets-39050379487-1",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 263873,
+    "tests": { "core": 118, "package": 2, "safety": 68, "engine": 15, "total": 203 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: receipt policy/source/documents/commit and archive/SBOM/checksums",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "53e285c6b381ffd64f16e8e7d4a39ce6492037ea21a9eed2af41f630d49b37d9",
+      "sbom.json": "f4cb880eb9624aefdbf86a86f7853a9acc7a5c46ef7cac7d98680eecb6e61c96",
+      "acceptance.json": "69634b338e5c1629262023ebfa59970b47a07a686ee062581a03e71341d75d89",
+      "SHA256SUMS": "7888899afee72a7ab0bfe791c77ca037c51d64eb418cf458453ee6e87d6c3674"
+    }
+  },
+  "installedCodex": {
+    "status": "PASS_REPRESENTATIVE_NATIVE_INTERFACE",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "entrypoint": "scripts/run-mcp.mjs",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T16-38-11-857Z-9620/report.json",
+    "reportSha256": "a97ace894cfd66fa1b5227c1c7145a69d5417e4b7e57171ac6988ef2b8022d08",
+    "sourceHash": "acf0e647b6fb65dd1e1a8c44fb86bc2dd431dd76f7fe6a222c73ba973b2b6b1d",
+    "tools": 71,
+    "resources": 5,
+    "checks": ["discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene", "independent saved byte readback"],
+    "approval": "MOCK exact-plan host; NOT human desktop/TUI UX",
+    "modelTurn": false,
+    "permanentClientConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "tagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "unchanged": true,
+    "evidence": "docs/releases/0.2.8-ci-cd-verification.json",
+    "note": "The accepted main artifact still has package version 0.2.8 but is NOT the public v0.2.8 archive. No tag, release or public asset was created or replaced."
+  },
+  "remainingP0": ["Human Codex approval UX", "Actual user source-update/reconnect experience", "Renderer focus observation"],
+  "productionQualification": "NOT_QUALIFIED",
+  "boundary": "Source-bound automated Windows/local stdio qualification only, not human UI, GPU, cross-platform, public HTTP, long-session or full-authoring certification. Launcher unit fixtures use an explicit Node executable test double; hosted Godot checks and installed Codex native probe use actual Godot 4.7.2. Existing compatible builds are not automatically detected as stale or rebuilt. Later documentation commits are not the accepted source commit."
+}
