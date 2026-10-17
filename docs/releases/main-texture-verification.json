@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T19:16:56Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "d73fc5000ca8aeefcef2187d38f3967bacca02f5",
+  "sourceHash": "049b44ba67f835349e003cf82de85521fa08db3a117087fb0b8cb8a0ac7806ea",
+  "change": "Bounded TextureRect layouts/flips and native GradientTexture2D handles with a closed two-stop linear gradient graph, immutable replacement, native Undo/Redo and actual resource/scene save-reopen. Not arbitrary image/texture import support.",
+  "upgrade": "Explicit coordinated host/plugin upgrade: bridge 0.3.4, scene.texture/v1, maximum 24 advertised capabilities. Frame/private-file limits and independent write opt-in unchanged.",
+  "contracts": [
+    "Expand modes 0..1, stretch modes 0..6 and boolean flips; fields on other controls fail without mutation",
+    "Gradient textures are 1..32 per dimension, two finite 0..1 Colors, horizontal linear sRGB, non-HDR, no repeat",
+    "Only a native script-free GradientTexture2D -> Gradient graph is admitted; reject custom metadata, opaque dependencies and oversized storage",
+    "Handles retain owner/project/session/fingerprint/TTL/quota boundaries; another owner, forged fingerprint and released handle are rejected",
+    "Resource textures cannot be edited in place through resource_set; create a replacement and approve its exact scene assignment",
+    "Memory/current-scene inline handles preserve explicit shared or unique ownership and native Undo/Redo",
+    "External exported textures require make_unique before embedding; shared external references and pre-existing external TextureRect dependencies fail closed",
+    "A live gradient change during approval invalidates the document/handle fingerprint and prevents commit",
+    "Partially invalid batches leave no created node behind; rejected cases retain original scene bytes",
+    "Native ResourceSaver export/adoption and actual scene save/reopen preserve complete gradient storage, owners, groups, signals and sharing; normalize only identities and inline path identity",
+    "Local native rendered PNG changes by over 1000 pixels after horizontal flip and returns to zero difference after restoring it"
+  ],
+  "frozenLocalRegression": {
+    "report": "runs/ci/texture-frozen/summary.json",
+    "sourceHash": "049b44ba67f835349e003cf82de85521fa08db3a117087fb0b8cb8a0ac7806ea",
+    "files": ["ui-texture-native", "ui-texture-render", "resource-roundtrip"],
+    "testsPassed": 4,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "durationMs": 68792,
+    "scratchCleanup": "PASS",
+    "allDeclaredResourceTypes": 15,
+    "renderScope": "Actual local rendered runtime from MCP-authored saved scene; not a renderer matrix, desktop focus observation or human visual approval",
+    "approval": "MOCK exact-plan host; main client uses official SDK stdio, secondary owner uses independent SDK memory transport"
+  },
+  "earlierDevelopmentUiRegression": {
+    "report": "runs/ci/texture-ui-regression/summary.json",
+    "sourceHash": "a8863e4a362ab95eadb632660173de347c551690a8727cd08cbd583ff60c9f2d",
+    "testsPassed": 12,
+    "skipped": 0,
+    "durationMs": 143735,
+    "scratchCleanup": "PASS",
+    "boundary": "Before the final metadata/storage hardening. Includes existing UI, LineEdit, ScrollContainer, RichTextLabel, sharing and resource roundtrip; does not itself qualify the final source."
+  },
+  "preservedDevelopmentFailure": {
+    "report": "runs/ci/texture-native/failure-summary.json",
+    "testsPassed": 2,
+    "testsFailed": 1,
+    "source": "Earlier unfrozen working tree, not the accepted commit",
+    "cause": "The new test expected UNSUPPORTED for HDR scene save, but the existing stored-reference guard correctly rejected it with CONFLICT. Updated the exact expected code and added explicit unchanged scene-byte checks; did not relax refusal or persistence conditions.",
+    "priorFailuresRemain": true
+  },
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39061316371",
+    "status": "success",
+    "passed": 126,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39061315930",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39061326932",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "41939624-f625-4dee-adde-48afdc7df660",
+    "artifactId": 12110664928,
+    "artifactName": "release-assets-39061326932-1",
+    "environment": { "platform": "win32", "node": "v24.21.0", "godot": "4.7.2.stable.official.ed1daf0bf" },
+    "durationMs": 284087,
+    "tests": { "core": 126, "package": 2, "safety": 72, "engine": 15, "total": 215 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "packageDurationMs": 6073,
+    "safetyDurationMs": 206963,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: exact commit, current source/policy/documents, exact artifact file set, runtime archive, SBOM and every checksum entry",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "72a488cae8323ec7d1871e92dc23869810b95bce0b166de3873bc15a850ddff6",
+      "sbom.json": "fd6c5e98025db18207381b43655d02456d4af5bcc2121b72b7bc11f4a3d35a21",
+      "acceptance.json": "7785ede23d96a60268a5d457fd17508820e78f4c8284de90218b8539c350d0d5",
+      "SHA256SUMS": "27f09d05d6cf647a5fc59eece4556f98b3449d6dad947856faa16b729de9e370"
+    }
+  },
+  "installedCodexProbe": {
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "sourceHash": "049b44ba67f835349e003cf82de85521fa08db3a117087fb0b8cb8a0ac7806ea",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T19-10-52-275Z-26376/report.json",
+    "reportSha256": "1d7f5351154695397af0821b905cc5128481bf15ecce6532816ceef6dffe405e",
+    "tools": 71,
+    "resources": 5,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "approval": "MOCK; installed app-server protocol, not desktop/TUI human approval UX",
+    "noModelTurn": true,
+    "permanentConfigWrites": false
+  },
+  "ciBoundaries": {
+    "oldTestsRemoved": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "skipAcceptedAsPass": false,
+    "previousEvidence": "main-rich-text-verification.json",
+    "newHostedTests": { "schema": 2, "native": 1 },
+    "localRenderIsNotHostedGpuQualification": true
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "unchanged": true,
+    "newTagCreated": false,
+    "newReleaseCreated": false,
+    "npmPublished": false,
+    "mainArchiveIsNotThePublishedV028Archive": true
+  },
+  "notQualified": [
+    "full-production-or-full-UI",
+    "arbitrary-PNG-SVG-ImageTexture-CompressedTexture2D-or-Atlas-imports",
+    "external-texture-file-dependency-CAS",
+    "mutable-textures-material-texture-slots-HDR-or-custom-resource-graphs",
+    "all-stretch-flip-mode-pixel-layout-or-hosted-GPU-matrix",
+    "human-approval-desktop-focus-accessibility-IME",
+    "other-platforms-clients-long-session-public-HTTP"
+  ],
+  "next": "Add bounded PNG texture references with explicit source/import fingerprints and dependency CAS; do not infer arbitrary image support from generated native gradients."
+}
