@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "verifiedAt": "2026-10-17T16:23:03Z",
+  "status": "PASS_DECLARED_WINDOWS_LOCAL_SCOPE",
+  "acceptedCommit": "cda367f97c7d2d9fcd3193876dfb2f7dc83af282",
+  "sourceHash": "94d65d96f980457aa52b9a50b78c6172a6788df9009dbd449209b8cbb48f9659",
+  "change": "Side-effecting MCP TIMEOUT/CANCELLED/UNKNOWN responses prohibit automatic retry advice and direct inspection instead; concurrent policy isolation, bounded pagination and late approval regression covered.",
+  "shortCi": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39048657040",
+    "status": "success",
+    "passed": 113,
+    "skipped": 0,
+    "scratchCleanup": "PASS"
+  },
+  "pages": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39048656589",
+    "status": "success"
+  },
+  "hostedAcceptance": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39048658024",
+    "mode": "acceptance_only=true",
+    "build": "success",
+    "publish": "skipped",
+    "runId": "959e4287-02e1-4f8d-91f6-cd00698133da",
+    "artifactId": 12106872453,
+    "artifactName": "release-assets-39048658024-1",
+    "environment": {
+      "platform": "win32",
+      "node": "v24.21.0",
+      "godot": "4.7.2.stable.official.ed1daf0bf"
+    },
+    "durationMs": 279909,
+    "tests": { "core": 113, "package": 2, "safety": 68, "engine": 14, "total": 197 },
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "allScratchCleanup": "PASS",
+    "dependencyVulnerabilities": 0,
+    "independentDownloadVerification": "PASS: receipt policy/source/documents/commit and archive/SBOM/checksums",
+    "sha256": {
+      "wheel-mcp-0.2.8.tgz": "c76ce7a3f7e7f36c8aacac9a9f6ba898297ebbb63d04b4687a22b8ace00e0fff",
+      "sbom.json": "569ce750d298cc56d11e60a7410e05a0ceecb5b70ced69a15d21201c73a55b5e",
+      "acceptance.json": "9fc00bdc9f21905c654184baba5928e36eff87dd1c864208779cd35c4f6f585d",
+      "SHA256SUMS": "2008d0a846121bb82361e675b50dbc2e0ae2219e46a6f073842d460417519435"
+    }
+  },
+  "installedCodex": {
+    "status": "PASS_REPRESENTATIVE_NATIVE_INTERFACE",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T16-15-18-362Z-38280/report.json",
+    "reportSha256": "96b38a3d82cc44c37b4f6be64305fdc92f0a4b0ec3ac149885be16edc4d123a6",
+    "sourceHash": "94d65d96f980457aa52b9a50b78c6172a6788df9009dbd449209b8cbb48f9659",
+    "tools": 71,
+    "resources": 5,
+    "checks": ["discovery", "get_editor_state", "apply_editor_scene", "save_editor_scene", "independent saved byte readback"],
+    "approval": "MOCK exact-plan host; NOT human desktop/TUI UX",
+    "modelTurn": false,
+    "permanentClientConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true
+  },
+  "supersededRun": {
+    "url": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39048508110",
+    "status": "cancelled",
+    "reason": "Deliberately superseded before engine acceptance by corrected runtime recovery advice; not a passed run."
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "releaseId": 415903701,
+    "tagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "unchanged": true,
+    "evidence": "docs/releases/0.2.8-ci-cd-verification.json",
+    "note": "The accepted main artifact still has package version 0.2.8 but is NOT the public v0.2.8 archive. No tag, release or public asset was created or replaced."
+  },
+  "remainingP0": [
+    "Human Codex approval visibility and cancellation UX",
+    "Real source-update/reconnect UX and abnormal service exit in a representative isolated client workflow",
+    "Renderer window focus observation; hosted acceptance is headless, not GUI/GPU certification"
+  ],
+  "productionQualification": "NOT_QUALIFIED",
+  "boundary": "This evidence binds the accepted source commit, not later documentation commits. Native client approvals are test doubles. No Cursor, public HTTP, cross-platform, long-session or full-authoring qualification. Future CI/external-service failures remain possible."
+}
