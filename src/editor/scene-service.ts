@@ -270,6 +270,18 @@ export async function applyEditorScene(
         'PROTOCOL_MISMATCH',
         'Editor plugin lacks ScrollContainer authoring capability; upgrade explicitly',
       );
+    if (
+      operations.some(
+        (op) =>
+          (op.kind === 'create' && op.type === 'RichTextLabel') ||
+          (op.kind === 'ui_set' && ['fit_content', 'scroll_active'].some((field) => field in op.properties)),
+      ) &&
+      !bridge.identity.capabilities.includes('scene.rich_text/v1')
+    )
+      throw new WheelError(
+        'PROTOCOL_MISMATCH',
+        'Editor plugin lacks plain RichTextLabel capability; upgrade explicitly',
+      );
     if (!bridge.identity.capabilities.includes('scene.dependencies/v1'))
       throw new WheelError('PROTOCOL_MISMATCH', 'Editor plugin lacks dependency-bound scene plans; upgrade explicitly');
     if (

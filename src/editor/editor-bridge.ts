@@ -18,7 +18,7 @@ const identitySchema = z.object({
   port: z.number().int().min(1).max(65535),
   // Bounded extensions for LineEdit and ScrollContainer; frames and private files
   // retain their existing byte limits. Older clients need a coordinated upgrade.
-  capabilities: z.array(z.string()).max(22),
+  capabilities: z.array(z.string()).max(23),
   authorized: z.literal(true),
 });
 type EditorIdentity = z.infer<typeof identitySchema>;

@@ -93,6 +93,7 @@ test('fast CI uses an explicit non-engine test allowlist with a hard execution d
     'mcp-launcher',
     'ui-line-edit-schema',
     'ui-scroll-schema',
+    'ui-rich-text-schema',
     'project-write-approval',
     'preapproved-writes',
     'retry-guidance',
@@ -149,6 +150,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   assert.ok(safety.files.includes('build/tests/editor-protocol-input.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-line-edit-native.test.js'));
   assert.ok(safety.files.includes('build/tests/ui-scroll-native.test.js'));
+  assert.ok(safety.files.includes('build/tests/ui-rich-text-native.test.js'));
   assert.equal(safety.concurrency, 2);
   assert.deepEqual(safety.files.slice(0, 2), [
     'build/tests/validated-project-write.test.js',
@@ -171,6 +173,7 @@ test('optional engine smoke is small and bounded; local release prep has no redu
       'editor-outcome-smoke',
       'ui-line-edit-native',
       'ui-scroll-native',
+      'ui-rich-text-native',
     ]
       .map((name) => `build/tests/${name}.test.js`)
       .sort(),

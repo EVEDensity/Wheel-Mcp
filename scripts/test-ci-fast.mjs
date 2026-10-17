@@ -23,6 +23,7 @@ const files = [
   'mcp-launcher',
   'ui-line-edit-schema',
   'ui-scroll-schema',
+  'ui-rich-text-schema',
   'project-write-approval',
   'preapproved-writes',
   'ci-policy',

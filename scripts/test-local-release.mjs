@@ -10,6 +10,7 @@ const plan = {
     'editor-scene-save',
     'editor-outcome-smoke',
     'ui-scroll-native',
+    'ui-rich-text-native',
     'ui-line-edit-native',
     'install',
     'setup',

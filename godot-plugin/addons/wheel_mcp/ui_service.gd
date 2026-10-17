@@ -2,8 +2,8 @@
 extends RefCounted
 const UITheme = preload("res://addons/wheel_mcp/ui_theme.gd")
 
-const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
-const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
+const CLASSES := ["Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer"]
+const FIELDS := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom", "grow_horizontal", "grow_vertical", "custom_minimum_size", "size_flags_horizontal", "size_flags_vertical", "size_flags_stretch_ratio", "text", "placeholder_text", "editable", "max_length", "horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus", "fit_content", "scroll_active", "accessibility_name", "accessibility_description", "tooltip_text", "focus_mode", "mouse_filter", "autowrap_mode", "columns", "min_value", "max_value", "step", "value", "disabled", "button_pressed"]
 const LAYOUT := ["anchor_left", "anchor_top", "anchor_right", "anchor_bottom", "offset_left", "offset_top", "offset_right", "offset_bottom"]
 
 static func managed(node: Node) -> bool:
@@ -36,6 +36,30 @@ static func scroll_callbacks(node: ScrollContainer) -> bool:
 			if callback.get_object() != node or not callback.is_custom() or str(callback.get_method()) != "ScrollContainer::_scroll_moved" or int(connection.flags) != 0 or callback.get_bound_arguments_count() != 0 or callback.get_unbound_arguments_count() != 0: return true
 	return false
 
+# Plain declarative text only. BBCode/threads/effects/selection and live tag
+# stacks have no resource, callback or persistence contract in this subset.
+static func rich_text_unsafe(node: RichTextLabel) -> bool:
+	if node.bbcode_enabled or node.threaded or not node.custom_effects.is_empty() or node.selection_enabled or node.context_menu_enabled or node.scroll_following or node.scroll_following_visible_characters: return true
+	if node.text.length() > 512 or node.get_parsed_text() != node.text: return true
+	for signal_name in ["finished", "meta_clicked", "meta_hover_started", "meta_hover_ended"]:
+		if not node.get_signal_connection_list(signal_name).is_empty(): return true
+	var bar := node.get_v_scroll_bar()
+	if not is_instance_valid(bar) or bar.get_parent() != node or bar.get_script() != null or not bar.get_signal_connection_list("changed").is_empty(): return true
+	var children := node.get_children(true)
+	# Godot 4.7.2 constructs one native bar and a selection Timer. Neither is
+	# authored content; no extra leaf children or substituted callbacks allowed.
+	if children.size() != 2: return true
+	for child in children:
+		if child.get_script() != null: return true
+		var signal_name := "value_changed" if child == bar else "timeout"
+		var expected := "RichTextLabel::_scroll_changed" if child == bar else "RichTextLabel::_update_selection"
+		if child != bar and not child is Timer: return true
+		var connections: Array = child.get_signal_connection_list(signal_name)
+		if connections.size() != 1: return true
+		var callback: Callable = connections[0].callable
+		if callback.get_object() != node or not callback.is_custom() or str(callback.get_method()) != expected or int(connections[0].flags) != 0 or callback.get_bound_arguments_count() != 0 or callback.get_unbound_arguments_count() != 0: return true
+	return false
+
 static func signature(node: Control) -> Dictionary:
 	var result: Dictionary = {}
 	for field in FIELDS:
@@ -47,7 +71,7 @@ static func apply(node: Control, values: Dictionary) -> void:
 	# Authoring is not user input. Prevent callbacks introduced after preview or
 	# before Undo from running during the exact native document operation.
 	var blocked := node.is_blocking_signals()
-	if node is LineEdit: node.set_block_signals(true)
+	if node is LineEdit or node is RichTextLabel: node.set_block_signals(true)
 	var text_limit: int = node.max_length if node is LineEdit else 0
 	if node is LineEdit and (values.has("text") or values.has("max_length")):
 		node.max_length = 0
@@ -60,6 +84,7 @@ static func apply(node: Control, values: Dictionary) -> void:
 		if not field.begins_with("anchor_"): node.set(field, values[field])
 	if node is LineEdit:
 		if values.has("text") or values.has("max_length"): node.max_length = values.get("max_length", text_limit)
+	if node is LineEdit or node is RichTextLabel:
 		node.set_block_signals(blocked)
 
 static func prepare(node: Node, values: Variant) -> Dictionary:
@@ -70,6 +95,7 @@ static func prepare(node: Node, values: Variant) -> Dictionary:
 		if field not in FIELDS or field not in node: return error("UNSUPPORTED", "UI property not available for declared class")
 		if field in ["placeholder_text", "editable", "max_length"] and not node is LineEdit: return error("UNSUPPORTED", "Text input fields require LineEdit")
 		if field in ["horizontal_scroll_mode", "vertical_scroll_mode", "follow_focus"] and not node is ScrollContainer: return error("UNSUPPORTED", "Scroll fields require ScrollContainer")
+		if field in ["fit_content", "scroll_active"] and not node is RichTextLabel: return error("UNSUPPORTED", "Plain display fields require RichTextLabel")
 		if managed(node) and field in LAYOUT: return error("CONFLICT", "Container owns child anchors/offsets; use minimum sizes and size flags")
 		if field.begins_with("anchor_") and values[field] != 0 and node.get_parent() is CanvasItem and not node.get_parent() is Control: return error("CONFLICT", "Responsive UI anchors require a Control parent or top-level UI root, not Node2D")
 		var expected: Variant = node.get(field)

@@ -10,7 +10,7 @@ const Dependencies = preload("res://addons/wheel_mcp/scene_dependencies.gd")
 const UI = preload("res://addons/wheel_mcp/ui_service.gd")
 const Physics = preload("res://addons/wheel_mcp/physics_service.gd")
 const Animations = preload("res://addons/wheel_mcp/animation_service.gd")
-const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
+const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
 const PROPERTIES := ["position", "rotation", "scale", "visible", "visibility_parent"]
 const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
 
@@ -242,6 +242,7 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 		# Rechecked by commit's live snapshot: a callback attached while the
 		# approval form is open must not become a deferred layout side effect.
 		if node is ScrollContainer and UI.scroll_callbacks(node): return _error("CONFLICT", "Scroll callbacks require a separate policy")
+		if node is RichTextLabel and UI.rich_text_unsafe(node): return _error("CONFLICT", "RichTextLabel requires plain declarative text without callbacks/effects")
 		var props: Dictionary = {}
 		var animation_state := Animations.signature(node)
 		if animation_state.has("code"): return animation_state
@@ -551,6 +552,8 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 			return _error("CONFLICT", "LineEdit callbacks require a separate policy")
 		if node is ScrollContainer and UI.scroll_callbacks(node):
 			return _error("CONFLICT", "Scroll callbacks require a separate policy")
+		if node is RichTextLabel and UI.rich_text_unsafe(node):
+			return _error("CONFLICT", "RichTextLabel requires plain declarative text without callbacks/effects")
 		var boundary := _instance_boundary(node, root)
 		if boundary != null and boundary == node:
 			var source := _instance_source(boundary.scene_file_path, FileAccess.get_sha256(boundary.scene_file_path))

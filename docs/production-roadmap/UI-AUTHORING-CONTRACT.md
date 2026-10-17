@@ -1,6 +1,6 @@
 # T17 有界 UI 布局与主题
 
-本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.2`，沿用 `scene.ui/v1`、`scene.line_edit/v1`，新增 `scene.scroll/v1`；缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20/21 项能力上限不能解析新插件的 22 项写入能力公告；新版保留 22 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
+本页描述 Windows / Godot 4.7.2 上的可信本机声明子集，不是任意 UI、任意字体或跨平台资格。main 开发分支的插件私有桥接版本为 `0.3.3`，沿用 `scene.ui/v1`、`scene.line_edit/v1`、`scene.scroll/v1`，新增 `scene.rich_text/v1`；新节点创建/专用字段缺能力返回 PROTOCOL_MISMATCH，缺独立写授权仍优先 FORBIDDEN。宿主和插件须配套显式升级，旧客户端的 20/21/22 项能力上限不能解析新插件的 23 项写入能力公告；新版保留 23 项及原帧/文件字节边界。不会自动替换或启用用户项目插件。T17 原有冻结验收与本轮新增回归分开；生产仍 NOT_QUALIFIED。
 
 ## 可编辑的节点与操作
 
@@ -37,7 +37,7 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 
 `ui-line-edit-native.test.ts` 使用真实 Godot 和官方 SDK stdio，批准为 MOCK：只读拒绝、缺新能力及超能力预算拒绝、非法输入保持场景/磁盘不变、准确 Undo/Redo、实际 ResourceSaver 保存重开，以及聚焦/编辑模式/光标定位后的 GUI Backspace 和只读文本不变。不会把直接赋值冒充键盘输入。
 
-本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；RichTextLabel、TextureRect 仍未实现。现有公开 v0.2.8 包不包含这些 main 开发改动。
+本批未扩展 Theme 类型槽、文本信号连接、任意脚本、IME、字符输入注入、剪贴板或屏幕阅读器资格；RichTextLabel 的后续纯文本子集见下节，TextureRect 尚未实现。现有公开 v0.2.8 包不包含这些 main 开发改动。
 
 ## ScrollContainer 首批声明子集（main 开发源码）
 
@@ -51,6 +51,17 @@ Container 管理的直接 Control 子节点不接受 anchors/offsets。其通用
 `ui-scroll-native.test.ts` 使用真实 Godot、官方 SDK stdio 和 MOCK 批准，检查只读/缺能力/超能力预算拒绝、控件类型与内部路径拒绝、整批失败无残留、准确 Undo/Redo、实际 ResourceSaver 保存重开并按路径归一化身份后比较全部声明存储。运行时通过真实 Tab 键事件将焦点从首按钮移至末按钮，读取自动滚动及末按钮垂直几何；关闭 follow_focus 后再 Tab，焦点改变但滚动位置不变。
 
 这是 headless 原生 GUI 行为和存储验收，不是鼠标滚轮、触屏拖拽、桌面焦点、像素裁剪、无障碍或不同 viewport/renderer 的资格。没有用直接设置 scroll_vertical 冒充输入后的自动滚动；直接设置仅用于关闭 follow_focus 的对照组复位。
+
+## RichTextLabel 首批纯文本子集（main 开发源码）
+
+新增创建 `RichTextLabel`；这一步是该控件的纯文本展示能力，不是完整富文本格式、BBCode 或资源图支持。继续使用精确批准、CAS、原生 Undo/Redo 和独立保存。
+
+- `text` ≤512，支持多行；`autowrap_mode` 0..3 沿用既有字段。`[img]`、`[url]` 等字符串按字面显示，不解析为资源或链接。`fit_content`、`scroll_active` 为 bool，仅对 RichTextLabel 开放。没有开放 `bbcode_enabled`（包括 false）、threaded、可见字符计数、选择/剪贴板、菜单、滚动跟随或任意字体/图片配置。
+- 当前节点必须保持 BBCode/线程/选择/菜单/滚动跟随关闭，custom_effects 为空，parsed text 与声明 text 相同且在预算内；不隐式清除或转换不符合条件的已有内容。拒绝 finished/meta_* 回调。内部原生 VScrollBar 和选择 Timer 不纳入 authored 节点，必须保留固定 Godot 4.7.2 的单一原生 `_scroll_changed` / `_update_selection` 无 bind/flags 连接；额外叶子子节点、滚动条脚本和外部回调拒绝。实时快照在提交前再次检查。
+- 此契约仅针对可信、无脚本、声明式纯文本场景。`push_*`/`append_text` 等非持久手动 tag stack 不属于可编辑文档；parsed-text 不一致可检测并拒绝，但不能据此声称能识别每种“文字相同、格式不同”的内存栈。没有开放上述方法为编辑器操作，也没有对任意手动栈提供格式保存或撤销保证。
+- 不排除 text、fit_content、scroll_active 或布局边界来让保存通过；引擎改变声明存储时仍拒绝。Theme 的类型槽保持原有白名单，不因新增控件而自动扩展字体/纹理资源权限。
+
+`ui-rich-text-native.test.ts` 通过真实 Godot、官方 SDK stdio 和 MOCK 批准验收：只读/缺能力/超预算拒绝、字面标签与 512/空文本、类型与内部路径边界、整批失败无残留、审批期间增加回调拒绝、原生创建/删除/编辑 Undo/Redo、实际 ResourceSaver 保存重开并比较全部声明存储。headless 运行时读取原生 parsed text、行数和内容高度，缩窄控件后必须实际重新换行；这不是像素排版、CJK 字体、链接交互或人工视觉验收。
 
 ## Theme 与样式（原有子集）
 
@@ -81,4 +92,4 @@ themeType 限 Control、Label、Button、CheckButton、HSlider、PanelContainer�
 
 ## API 依据
 
-[Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[ScrollContainer](https://docs.godotengine.org/en/stable/classes/class_scrollcontainer.html)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。
+[Control](https://docs.godotengine.org/en/stable/classes/class_control.html)、[Container](https://docs.godotengine.org/en/stable/classes/class_container.html)、[ScrollContainer](https://docs.godotengine.org/en/stable/classes/class_scrollcontainer.html)、[RichTextLabel](https://docs.godotengine.org/en/stable/classes/class_richtextlabel.html) 与 [4.7.2 原生实现](https://github.com/godotengine/godot/blob/4.7.2-stable/scene/gui/rich_text_label.cpp)、[Theme](https://docs.godotengine.org/en/stable/classes/class_theme.html)、[StyleBoxFlat](https://docs.godotengine.org/en/stable/classes/class_styleboxflat.html)。使用公开 API；声明结果由固定版本真实测试确认，不从文档推断跨版本资格。

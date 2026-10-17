@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add bounded native plain-text RichTextLabel creation, multiline text up to
+  512 characters, autowrap, fit_content and scroll_active. Keep BBCode, threaded
+  parsing, effects, selection/menu, links and manual format stacks outside scope.
+  Reject unsafe live settings and callbacks again at commit; protect the native
+  scrollbar/timer and retain native Undo/Redo and actual save/reopen verification.
+  Check literal tag text and native runtime reflow, not a synthetic line estimate.
+  Bridge 0.3.3 adds scene.rich_text/v1 with a 23-entry capability budget; explicitly
+  upgrade host and plugin together. No public v0.2.8 asset is replaced. Add the
+  new schema/native cases to existing CI gates without removing tests or extending
+  deadlines (124 core, 71 safety, 15 engine, 2 package).
 - Run hosted test fixtures under GitHub's runner-owned temporary directory,
   not the Windows user-profile temp path. Keep package consumers outside the
   checkout so missing production imports cannot fall back to source node_modules.
