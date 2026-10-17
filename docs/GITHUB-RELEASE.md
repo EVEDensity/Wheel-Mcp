@@ -17,8 +17,8 @@ Commit the accepted source to main and push it. Review the short CI result.
 Create an annotated stable version tag on that exact commit, then push the tag:
 
 ```powershell
-git tag -a v0.2.6 -m "Wheel-mcp 0.2.6 Windows local stable"
-git push origin v0.2.6
+git tag -a v0.2.7 -m "Wheel-mcp 0.2.7 Windows local stable"
+git push origin v0.2.7
 ```
 
 Use the next unused version for subsequent releases. Never move a published tag
@@ -32,6 +32,9 @@ and a SHA-256 verified Godot download. It repeats the bounded release gate,
 including native safety, headless runtime and installation of the actual archive.
 The build job is capped at fifteen minutes; it does not run the deferred soak or
 full authoring/renderer matrix.
+The real archive install runs before native safety and runtime tests, so a
+packaging failure is reported without first repeating engine acceptance. This
+ordering does not omit any suite or relax its deadline.
 
 For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
 and `engine=false` to repeat the real archive install check without native
@@ -62,8 +65,8 @@ Download the four assets from the same release and compare their hashes against
 `SHA256SUMS` before installation. On Windows, for example:
 
 ```powershell
-Get-FileHash .\wheel-mcp-0.2.6.tgz -Algorithm SHA256
-npm.cmd install --ignore-scripts .\wheel-mcp-0.2.6.tgz
+Get-FileHash .\wheel-mcp-0.2.7.tgz -Algorithm SHA256
+npm.cmd install --ignore-scripts .\wheel-mcp-0.2.7.tgz
 ```
 
 Godot must be installed separately. Configure the installed server's absolute

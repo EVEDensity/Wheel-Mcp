@@ -5,7 +5,7 @@ import { sha256 } from './production-manifest.mjs';
 export const localReleasePolicy = {
   id: 'windows-local',
   revision: 2,
-  version: '0.2.6',
+  version: '0.2.7',
   platform: 'win32',
   godot: '4.7.2',
   transport: 'stdio',
@@ -32,9 +32,9 @@ export const localReleaseSteps = [
   },
   { id: 'lint', program: 'node', args: ['node_modules/eslint/bin/eslint.js', 'src', 'tests'], timeoutMs: 45000 },
   { id: 'core', program: 'node', args: ['scripts/test-ci-fast.mjs'], timeoutMs: 100000 },
+  { id: 'package', program: 'node', args: ['scripts/test-release-package.mjs'], timeoutMs: 50000 },
   { id: 'safety', program: 'node', args: ['scripts/test-local-release.mjs'], timeoutMs: 250000 },
   { id: 'engine', program: 'node', args: ['scripts/test-godot-ci.mjs'], timeoutMs: 70000 },
-  { id: 'package', program: 'node', args: ['scripts/test-release-package.mjs'], timeoutMs: 50000 },
   { id: 'pack', program: 'npm', args: ['pack', '--ignore-scripts', '--json'], timeoutMs: 30000 },
   {
     id: 'audit',

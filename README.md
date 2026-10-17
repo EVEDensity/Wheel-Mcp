@@ -78,7 +78,7 @@ requires Node.js >=20.19.0; source development also needs the current toolchain.
 Clone the release tag for a reproducible starting point:
 
 ```bash
-git clone --branch v0.2.6 https://github.com/EVEDensity/Wheel-Mcp.git
+git clone --branch v0.2.7 https://github.com/EVEDensity/Wheel-Mcp.git
 cd Wheel-Mcp
 npm.cmd run go:global
 ```

@@ -122,6 +122,10 @@ test('local release plan excludes long tests but keeps native safety and real pa
   assert.doesNotMatch(JSON.stringify(plan.steps), /soak|verify:production|matrix:generate|test:built/);
   assert.ok(plan.steps.some((step: { id: string }) => step.id === 'safety'));
   assert.ok(plan.steps.some((step: { id: string }) => step.id === 'package'));
+  const order = plan.steps.map((step: { id: string }) => step.id);
+  assert.ok(order.indexOf('core') < order.indexOf('package'));
+  assert.ok(order.indexOf('package') < order.indexOf('safety'));
+  assert.ok(order.indexOf('package') < order.indexOf('engine'));
 });
 
 test('local release rejects stale suite receipts and reduced coverage', () => {

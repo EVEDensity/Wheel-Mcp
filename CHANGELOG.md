@@ -1,17 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.2.7
 
+- Include the exact-ID publication flow, source/asset verification, current
+  71-tool catalog and version-bound notes from the unpublished v0.2.6 candidate.
 - Add an opt-in, engine-free archive installation check to manual CI dispatch.
   Keep it disabled on normal pushes and PRs, so packaging failures can be
   diagnosed without repeating native engine acceptance.
 - Include bounded npm verbose diagnostics on package installation failure;
   retain the 30-second command bound and normal consumer lifecycle checks.
+- Run archive installation before native safety/runtime acceptance for earlier
+  failure feedback, without dropping tests or extending deadlines. The isolated
+  hosted archive check passed after two full-gate timeouts; this ordering change
+  does not establish the exact cause of those prior installation timeouts.
 - v0.2.6 passed core, native safety and runtime checks in both hosted attempts,
   but its actual archive installation exceeded the unchanged command bound.
   It was not published; keep its tag and failed attempts as evidence.
 
-## 0.2.6
+## 0.2.6 source candidate not published
 
 - Bind automated publication to the numeric release ID returned by creation,
   not a fresh draft lookup through the release list. Verify the accepted receipt,
