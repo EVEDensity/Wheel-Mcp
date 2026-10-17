@@ -14,6 +14,8 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   assert.deepEqual(ci.on.pull_request.branches, ['main']);
   assert.equal(ci.on.workflow_dispatch.inputs.engine.type, 'boolean');
   assert.equal(ci.on.workflow_dispatch.inputs.engine.default, false);
+  assert.equal(ci.on.workflow_dispatch.inputs.package.type, 'boolean');
+  assert.equal(ci.on.workflow_dispatch.inputs.package.default, false);
   assert.deepEqual((await readdir('.github/workflows')).filter((name) => /\.ya?ml$/.test(name)).sort(), [
     'ci.yml',
     'release.yml',
@@ -29,14 +31,14 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
   assert.equal(jobs[0]['runs-on'], 'windows-latest');
   assert.equal(jobs[0]['timeout-minutes'], 10);
   assert.equal(jobs[0].strategy, undefined);
-  const automatic = jobs[0].steps.filter((step) => !step.if?.includes('&& inputs.engine'));
+  const automatic = jobs[0].steps.filter((step) => !/&& inputs\.(engine|package)/.test(step.if ?? ''));
   const commands = automatic.flatMap((step) => (step.run ? [step.run] : []));
   assert.ok(commands.includes('npm run check'));
   const audit = jobs[0].steps.find((step) => step.run === 'npm run audit:dependencies')!;
   assert.equal(audit.if, "github.event_name == 'workflow_dispatch' || steps.dependencies.outputs.audit == 'true'");
   assert.doesNotMatch(
     commands.join('\n'),
-    /npm test|build\/tests\/\*|test:godot|soak|verify:production|matrix:generate|ci-install-godot|release:gate/,
+    /npm test|build\/tests\/\*|test:godot|soak|verify:production|matrix:generate|ci-install-godot|release:gate|test-release-package/,
   );
   const engine = jobs[0].steps.filter((step) => step.if?.includes('&& inputs.engine'));
   assert.deepEqual(
@@ -44,6 +46,10 @@ test('automatic CI is bounded and does not run the engine matrix, full tests or 
     ['node scripts/ci-install-godot.mjs', 'node scripts/test-godot-ci.mjs'],
   );
   for (const step of engine) assert.equal(step.if, "github.event_name == 'workflow_dispatch' && inputs.engine");
+  const archive = jobs[0].steps.filter((step) => step.if?.includes('&& inputs.package'));
+  assert.equal(archive.length, 1);
+  assert.equal(archive[0].if, "github.event_name == 'workflow_dispatch' && inputs.package");
+  assert.equal(archive[0].run, 'node scripts/test-release-package.mjs');
   for (const step of jobs[0].steps.filter((step) => step.uses?.includes('upload-artifact'))) {
     assert.equal(step.if, 'failure()');
     assert.equal(step.with?.['retention-days'], 7);

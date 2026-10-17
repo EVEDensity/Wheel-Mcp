@@ -33,6 +33,13 @@ including native safety, headless runtime and installation of the actual archive
 The build job is capped at fifteen minutes; it does not run the deferred soak or
 full authoring/renderer matrix.
 
+For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
+and `engine=false` to repeat the real archive install check without native
+engine acceptance. Normal push/PR CI does not run that optional check. It retains
+the same bounded install and consumer lifecycle checks, with npm verbose output
+included only in bounded failure diagnostics. This diagnostic run cannot replace
+the complete source-bound release gate.
+
 A separate job receives only the generated artifacts, not a source checkout.
 It checks local hashes and the accepted receipt, resolves the remote tag to the
 accepted commit, then creates a draft. All uploads, remote hash checks and the

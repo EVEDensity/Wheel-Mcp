@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Add an opt-in, engine-free archive installation check to manual CI dispatch.
+  Keep it disabled on normal pushes and PRs, so packaging failures can be
+  diagnosed without repeating native engine acceptance.
+- Include bounded npm verbose diagnostics on package installation failure;
+  retain the 30-second command bound and normal consumer lifecycle checks.
+- v0.2.6 passed core, native safety and runtime checks in both hosted attempts,
+  but its actual archive installation exceeded the unchanged command bound.
+  It was not published; keep its tag and failed attempts as evidence.
+
 ## 0.2.6
 
 - Bind automated publication to the numeric release ID returned by creation,

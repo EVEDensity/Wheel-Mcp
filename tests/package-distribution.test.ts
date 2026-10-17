@@ -33,7 +33,7 @@ test(
     delete env.NODE_TEST_CONTEXT;
     delete env.MCP_STDIO_PREAPPROVED_WRITES;
     const runNpm = (args: string[], cwd: string) => {
-      const result = spawnSync(process.execPath, [npmCli, ...args], {
+      const result = spawnSync(process.execPath, [npmCli, ...args, '--loglevel=verbose'], {
         cwd,
         env,
         encoding: 'utf8',

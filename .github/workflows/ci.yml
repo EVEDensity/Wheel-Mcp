@@ -11,6 +11,10 @@ on:
         description: Also run the short headless Godot smoke
         type: boolean
         default: false
+      package:
+        description: Also verify the real runtime archive installation (no engine)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,6 +52,9 @@ jobs:
       - name: Short headless Godot smoke (no rebuild)
         if: github.event_name == 'workflow_dispatch' && inputs.engine
         run: node scripts/test-godot-ci.mjs
+      - name: Optional real archive install check (no engine or rebuild)
+        if: github.event_name == 'workflow_dispatch' && inputs.package
+        run: node scripts/test-release-package.mjs
       - name: Keep only bounded failure diagnostics
         if: failure()
         uses: actions/upload-artifact@v4
