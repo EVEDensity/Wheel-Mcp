@@ -9,6 +9,7 @@ const plan = {
     'editor-scene-rpc',
     'editor-scene-save',
     'editor-outcome-smoke',
+    'sprite-native',
     'ui-scroll-native',
     'ui-rich-text-native',
     'ui-texture-native',

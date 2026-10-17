@@ -2,6 +2,15 @@
 extends RefCounted
 const Png = preload("res://addons/wheel_mcp/png_texture.gd")
 
+static func inline_texture(texture: Texture2D, root: Node) -> bool:
+	if texture == null: return true
+	if not (texture is GradientTexture2D or texture is ImageTexture) or texture.get_script() != null: return false
+	var leaf: Resource = texture.gradient if texture is GradientTexture2D else texture.get_image()
+	for resource in [texture, leaf]:
+		if resource == null or resource.get_script() != null: return false
+		if not resource.resource_path.is_empty() and not resource.resource_path.begins_with(root.scene_file_path + "::"): return false
+	return true
+
 # A closed native resource graph, not a loader for arbitrary project images.
 static func error(message: String, code: String = "UNSUPPORTED") -> Dictionary:
 	return {"status": "FAIL", "code": code, "message": message, "persisted": false}

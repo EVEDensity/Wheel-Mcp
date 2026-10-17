@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add bounded native Sprite2D creation and sprite_set flags/offset, reusing
+  immutable inline PNG/gradient handles with explicit sharing and source CAS.
+  Single frame only; reject region/material/external texture dependencies and
+  drawing callbacks. Suppress signals during authored texture/property updates
+  and native Undo/Redo, recheck live state at commit, and compare actual native
+  save/reopen storage and sharing. Bridge 0.3.6 adds scene.sprite2d/v1 (26 entries);
+  explicitly upgrade host/plugin together. Keep previous CI tests, limits and
+  deadlines; add two schema cases and one native safety case (136 core, 74 safety,
+  16 engine, 2 package). Local four-quadrant PNG pixels verify flips, offset and
+  centering separately; no hosted GPU or full 2D controller/atlas certification.
 - Add bounded native mouse-wheel input on runtime bridge 0.3.1 with explicit
   input.mouse_wheel/v1 capability, viewport coordinates, four directions and
   factor >0..8. Preserve write/run ownership, request replay and legacy key input.

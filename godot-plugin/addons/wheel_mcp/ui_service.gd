@@ -13,13 +13,7 @@ static func managed(node: Node) -> bool:
 # This first texture subset has no external image/dependency CAS grammar.
 # Embed an explicit unique copy rather than saving a live external reference.
 static func inline_texture(node: TextureRect, root: Node) -> bool:
-	if node.texture == null: return true
-	if not (node.texture is GradientTexture2D or node.texture is ImageTexture) or node.texture.get_script() != null: return false
-	var leaf: Resource = node.texture.gradient if node.texture is GradientTexture2D else node.texture.get_image()
-	for resource in [node.texture, leaf]:
-		if resource == null or resource.get_script() != null: return false
-		if not resource.resource_path.is_empty() and not resource.resource_path.begins_with(root.scene_file_path + "::"): return false
-	return true
+	return Textures.inline_texture(node.texture, root)
 
 # Container-owned geometry is derived, not a stable authored offset.
 static func derived(node: Node, property: String) -> bool:

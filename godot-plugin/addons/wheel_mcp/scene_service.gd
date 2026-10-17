@@ -8,11 +8,12 @@ extends RefCounted
 const Resources = preload("res://addons/wheel_mcp/resource_service.gd")
 const Dependencies = preload("res://addons/wheel_mcp/scene_dependencies.gd")
 const UI = preload("res://addons/wheel_mcp/ui_service.gd")
+const Sprites = preload("res://addons/wheel_mcp/sprite_service.gd")
 const Physics = preload("res://addons/wheel_mcp/physics_service.gd")
 const Animations = preload("res://addons/wheel_mcp/animation_service.gd")
-const CLASSES := ["Node", "Node2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "TextureRect", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
+const CLASSES := ["Node", "Node2D", "Sprite2D", "Node3D", "Marker2D", "Marker3D", "MeshInstance3D", "StaticBody2D", "StaticBody3D", "CollisionShape2D", "CollisionShape3D", "Control", "Label", "Camera3D", "Button", "CheckButton", "HSlider", "LineEdit", "ScrollContainer", "RichTextLabel", "TextureRect", "PanelContainer", "MarginContainer", "VBoxContainer", "HBoxContainer", "GridContainer", "Area3D", "RayCast3D", "AnimationPlayer", "AnimationTree"]
 const PROPERTIES := ["position", "rotation", "scale", "visible", "visibility_parent"]
-const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
+const OPERATIONS := ["create", "instantiate", "delete", "rename", "reparent", "set", "ui_set", "sprite_set", "physics_set", "animation_clips", "animation_graph", "animation_blend", "override", "editable_children", "connect", "disconnect", "resource_assign", "resource_set"]
 
 static func _instance_boundary(node: Node, root: Node) -> Node:
 	var cursor := node
@@ -83,6 +84,9 @@ static func _verify_native_pack(root: Node, packed: PackedScene) -> Dictionary:
 		if not failure.is_empty(): break
 		if node is Control and UI.signature(node) != UI.signature(restored):
 			failure = _error("CONFLICT", "Native pack would lose authored UI properties")
+			break
+		if node is Sprite2D and Sprites.signature(node) != Sprites.signature(restored):
+			failure = _error("CONFLICT", "Native pack would lose sprite properties or texture storage")
 			break
 		if Physics.signature(node) != Physics.signature(restored):
 			failure = _error("CONFLICT", "Native pack would lose authored physics properties")
@@ -241,6 +245,9 @@ static func document(root: Node, mapping: Dictionary = {}) -> Dictionary:
 	for node in nodes:
 		# Rechecked by commit's live snapshot: a callback attached while the
 		# approval form is open must not become a deferred layout side effect.
+		if node is Sprite2D:
+			var sprite := Sprites.validate(node, root)
+			if sprite.has("code"): return sprite
 		if node is ScrollContainer and UI.scroll_callbacks(node): return _error("CONFLICT", "Scroll callbacks require a separate policy")
 		if node is TextureRect and not UI.inline_texture(node, root): return _error("CONFLICT", "TextureRect requires inline native texture data; external dependencies are not declared")
 		if node is RichTextLabel and UI.rich_text_unsafe(node): return _error("CONFLICT", "RichTextLabel requires plain declarative text without callbacks/effects")
@@ -394,6 +401,9 @@ class Batch extends RefCounted:
 			pair.node.owner = pair.owner
 
 	func _execute(record: Dictionary, reverse: bool) -> void:
+		if record.kind == "sprite_set":
+			Sprites.apply(record.node, record.before if reverse else record.after)
+			return
 		if record.kind == "physics_set":
 			Physics.apply(record.node, record.before if reverse else record.after)
 			return
@@ -433,7 +443,9 @@ class Batch extends RefCounted:
 			"rename", "set":
 				if record.kind == "set" and record.property == "visibility_parent":
 					return # Restored only after all structural operations below.
-				node.set(record.property, record.before if reverse else record.after)
+				if record.kind == "set" and node is Sprite2D:
+					Sprites.apply(node, {record.property: record.before if reverse else record.after})
+				else: node.set(record.property, record.before if reverse else record.after)
 			"reparent":
 				var parent: Node = record.before_parent if reverse else record.after_parent
 				node.get_parent().remove_child(node)
@@ -534,7 +546,7 @@ static func prepare(root: Node, operations: Array, manager: EditorUndoRedoManage
 	for operation in operations:
 		if not operation is Dictionary or operation.get("kind") not in OPERATIONS:
 			return _error("INVALID_ARGUMENT", "Unknown scene operation")
-		var fields: Array = {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "ui_set": ["kind", "path", "properties"], "physics_set": ["kind", "path", "properties"], "animation_clips": ["kind", "path", "clips"], "animation_graph": ["kind", "path", "graph"], "animation_blend": ["kind", "path", "blend"], "override": ["kind", "path", "property", "value"], "editable_children": ["kind", "path", "enabled"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
+		var fields: Array = {"create": ["kind", "parent", "name", "type"], "instantiate": ["kind", "parent", "name", "scenePath", "sourceHash", "policy"], "delete": ["kind", "path"], "rename": ["kind", "path", "name"], "reparent": ["kind", "path", "parent"], "set": ["kind", "path", "property", "value"], "ui_set": ["kind", "path", "properties"], "sprite_set": ["kind", "path", "properties"], "physics_set": ["kind", "path", "properties"], "animation_clips": ["kind", "path", "clips"], "animation_graph": ["kind", "path", "graph"], "animation_blend": ["kind", "path", "blend"], "override": ["kind", "path", "property", "value"], "editable_children": ["kind", "path", "enabled"], "resource_assign": ["kind", "path", "property", "ref", "policy"], "resource_set": ["kind", "path", "property", "properties", "policy"], "connect": ["kind", "path", "signal", "target", "method"], "disconnect": ["kind", "path", "signal", "target", "method"]}[operation.kind]
 		if operation.size() != fields.size():
 			return _error("INVALID_ARGUMENT", "Operation has missing or extra fields")
 		for field in fields:
@@ -669,7 +681,7 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 		if target == null or _instance_boundary(target, root) != null or op.get("property") not in Resources.NODE_PROPERTIES or op.get("policy") not in ["shared", "make_unique"]:
 			return _error("FORBIDDEN", "Resource operation requires a local node, declared property and explicit sharing policy")
 		var expected := ""
-		if op.property == "texture" and not target is TextureRect: return _error("UNSUPPORTED", "Texture references require TextureRect")
+		if op.property == "texture" and not (target is TextureRect or target is Sprite2D): return _error("UNSUPPORTED", "Texture references require TextureRect or declared Sprite2D")
 		for info in target.get_property_list():
 			if str(info.name) == op.property and int(info.type) == TYPE_OBJECT: expected = info.hint_string
 		if expected.is_empty(): return _error("INVALID_ARGUMENT", "Node has no declared resource property")
@@ -716,7 +728,8 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 			if staged.is_class(type.strip_edges()): compatible = true
 		if not compatible: return _error("INVALID_ARGUMENT", "Resource type does not match node property")
 		mapping[staged] = live
-		target.set(op.property, staged)
+		if target is Sprite2D: Sprites.apply(target, {op.property: staged})
+		else: target.set(op.property, staged)
 		if op.kind == "resource_assign" or op.policy == "make_unique":
 			batch.records.append({"kind": "set", "node": mapping[target], "property": op.property, "before": mapping.get(original, original), "after": live})
 		return {}
@@ -793,6 +806,11 @@ static func _prepare_one(root: Node, op: Dictionary, mapping: Dictionary, batch:
 		var prepared := UI.prepare(node, op.properties)
 		if prepared.has("code"): return prepared
 		batch.records.append({"kind": "ui_set", "node": real, "before": prepared.before, "after": prepared.after})
+		return {}
+	if op.kind == "sprite_set":
+		var prepared := Sprites.prepare(node, op.properties)
+		if prepared.has("code"): return prepared
+		batch.records.append({"kind": "sprite_set", "node": real, "before": prepared.before, "after": prepared.after})
 		return {}
 	if op.kind == "physics_set":
 		var prepared := Physics.prepare(node, op.properties)

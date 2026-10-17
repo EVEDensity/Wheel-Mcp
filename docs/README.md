@@ -24,6 +24,7 @@ Wheel-mcp 将 MCP 客户端接入可信的本地 Godot 项目。建议先安装�
 - [权限与根目录 / Authorization](production-roadmap/AUTHORIZATION-POLICY.md) · [文件事务 / Transactions](production-roadmap/TRANSACTION-CONTRACT.md).
 - [编辑器连接 / Editor bridge](production-roadmap/EDITOR-BRIDGE-CONTRACT.md) · [安全保存 / Safe save](production-roadmap/SAFE-SAVE-CONTRACT.md).
 - Bounded authoring contracts: [UI](production-roadmap/UI-AUTHORING-CONTRACT.md), [3D physics](production-roadmap/PHYSICS-3D-CONTRACT.md), [animation](production-roadmap/ANIMATION-AUTHORING-CONTRACT.md), [shaders](production-roadmap/SHADER-AUTHORING-CONTRACT.md), [content import](production-roadmap/CONTENT-WORKFLOWS-CONTRACT.md).
+- [Sprite2D single-frame textures / 原生单帧精灵](production-roadmap/SPRITE-2D-CONTRACT.md): bounded main development, not a complete character controller or arbitrary sprite sheet workflow.
 - [语义服务 / Semantic service](production-roadmap/SCRIPT-SEMANTIC-CONTRACT.md): heuristic analysis and editor/LSP results have distinct limits; neither alone authorizes a rename.
 
 这些为声明类型与能力范围内的可选接口，不等于完整编辑器替代或所有客户端均通过实测。
