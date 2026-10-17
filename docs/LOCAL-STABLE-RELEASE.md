@@ -65,6 +65,13 @@ progress survives timeouts; it is diagnostic only, not acceptance evidence.
 Individual passes without a complete final summary, or workers that do not
 exit, fail the gate. The runner never uses forced exit to manufacture success.
 
+The safety queue also front-loads the longer transaction, PNG and installer
+files instead of leaving transactions behind short setup work. Hosted run
+39066732705 started transactions at 184 seconds and cleanup at 238 seconds,
+then hit the unchanged 240-second bound without a global summary. That failure
+is retained. Scheduling addresses the observed tail, not proof of a unique
+runner-performance cause, and never removes tests or increases concurrency.
+
 Revision 2 separates build, format, lint and core test budgets instead of putting
 a 90-second test inside a 120-second npm parent with its setup work. Child suite
 deadlines fit inside parent budgets. Every suite must carry the current run

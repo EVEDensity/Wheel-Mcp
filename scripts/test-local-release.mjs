@@ -3,26 +3,28 @@ import { statSync } from 'node:fs';
 
 const plan = {
   files: [
-    // Long native/validation files first. Every prior file remains in the queue;
-    // concurrency and the overall deadline are unchanged.
+    // Fixed two-worker longest-work-first queue. Hosted trace 39066732705
+    // started the ~50s transaction file at 184s and cleanup at 238s, losing
+    // the final summary at 240s. Do not leave these files behind short work.
+    // Every file, test, deadline and concurrency limit remains unchanged.
     'validated-project-write',
     'editor-scene-rpc',
     'editor-scene-save',
-    'editor-outcome-smoke',
+    'project-transactions',
+    'png-texture-native',
+    'install',
     'sprite-native',
     'ui-scroll-native',
     'ui-rich-text-native',
     'ui-texture-native',
-    'png-texture-native',
     'ui-line-edit-native',
-    'install',
-    'setup',
-    'project-transactions',
-    'transaction-recovery',
-    'owned-process',
     'streamable-http-security',
+    'owned-process',
     'editor-protocol-input',
     'validation-cleanup',
+    'transaction-recovery',
+    'setup',
+    'editor-outcome-smoke',
   ].map((name) => `build/tests/${name}.test.js`),
   scope: 'local-release-safety',
   concurrency: 2,

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Front-load long transaction/PNG/install files in the unchanged two-worker
+  native safety queue. A hosted run reached 240 seconds without a final summary
+  after starting transactions at 184s and cleanup at 238s; retain that failure.
+  Keep every test and existing timeout; a partial per-file pass is not acceptance.
 - Add bounded native Sprite2D creation and sprite_set flags/offset, reusing
   immutable inline PNG/gradient handles with explicit sharing and source CAS.
   Single frame only; reject region/material/external texture dependencies and

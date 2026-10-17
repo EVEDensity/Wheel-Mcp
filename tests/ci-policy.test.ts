@@ -162,6 +162,12 @@ test('optional engine smoke is small and bounded; local release prep has no redu
     'build/tests/validated-project-write.test.js',
     'build/tests/editor-scene-rpc.test.js',
   ]);
+  assert.deepEqual(safety.files.slice(2, 6), [
+    'build/tests/editor-scene-save.test.js',
+    'build/tests/project-transactions.test.js',
+    'build/tests/png-texture-native.test.js',
+    'build/tests/install.test.js',
+  ]);
   assert.deepEqual(
     [...safety.files].sort(),
     [
