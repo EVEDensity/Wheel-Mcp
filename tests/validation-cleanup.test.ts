@@ -7,6 +7,7 @@ import { mkdtemp, writeFile, rm, realpath, lstat, mkdir, symlink, readFile } fro
 import path from 'node:path';
 import os from 'node:os';
 import { cleanupValidationStage } from '../src/project/validated-write.js';
+import { windowsPowerShellExecutable } from '../src/process-identity.js';
 
 async function lockedStage() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'wheel-validate-'));
@@ -14,7 +15,10 @@ async function lockedStage() {
   await writeFile(file, 'preserved until the lock is released');
   const script =
     '$ErrorActionPreference="Stop"; $f=[IO.File]::Open($env:WHEEL_CLEANUP_LOCK,[IO.FileMode]::Open,[IO.FileAccess]::Read,[IO.FileShare]::None); try { [Console]::WriteLine("LOCKED"); [Console]::In.ReadLine() | Out-Null } finally { $f.Dispose() }';
-  const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+  const executable = windowsPowerShellExecutable();
+  const started = performance.now();
+  let deadlineExpired = false;
+  const child = spawn(executable, ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script], {
     windowsHide: true,
     env: { ...process.env, WHEEL_CLEANUP_LOCK: file },
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -22,18 +26,34 @@ async function lockedStage() {
   const closed = once(child, 'close');
   let stderr = '';
   child.stderr.on('data', (bytes) => {
-    stderr += bytes.toString();
+    stderr = (stderr + bytes.toString()).slice(-4000);
   });
   const ready = new Promise<void>((resolve, reject) => {
     let output = '';
     child.stdout.on('data', (bytes) => {
       output += bytes.toString();
-      if (output.includes('LOCKED')) resolve();
+      if (/(^|\r?\n)LOCKED\r?\n/.test(output)) resolve();
     });
     child.once('error', reject);
-    child.once('close', () => reject(new Error(`Lock helper exited before readiness: ${stderr}`)));
+    child.once('close', (code, signal) =>
+      reject(
+        new Error(
+          `Lock helper not ready: ${JSON.stringify({
+            executable,
+            code,
+            signal,
+            deadlineExpired,
+            elapsedMs: Math.round(performance.now() - started),
+            stderr,
+          })}`,
+        ),
+      ),
+    );
   });
-  const deadline = setTimeout(() => child.kill(), 10000);
+  const deadline = setTimeout(() => {
+    deadlineExpired = true;
+    child.kill();
+  }, 10000);
   try {
     await ready;
   } catch (error) {
