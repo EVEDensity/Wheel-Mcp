@@ -113,6 +113,9 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   assert.doesNotMatch(JSON.stringify(release.steps), /verify:production|matrix:generate|test:built|soak/);
   assert.ok(release.steps.some((step: { id: string }) => step.id === 'safety'));
   assert.ok(release.steps.some((step: { id: string }) => step.id === 'package'));
+  const packageRunner = await readFile('scripts/test-release-package.mjs', 'utf8');
+  assert.match(packageRunner, /godotPath: process\.env\.GODOT_PATH \?\? ''/);
+  assert.match(packageRunner, /timeoutMs: 40000/);
   const safety = JSON.parse(
     execFileSync(process.execPath, ['scripts/test-local-release.mjs', '--list'], {
       encoding: 'utf8',

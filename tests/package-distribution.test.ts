@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, writeFile, realpath, lstat, rm, readdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -25,6 +25,28 @@ test(
   'real tarball installs with locked production dependencies and starts the isolated read-only MCP',
   { timeout: 90000 },
   async () => {
+    // Persist only phase names and elapsed times, even if an outer timeout kills
+    // the reporter before it can emit a test summary. Never log consumer env.
+    const progressDir = path.resolve('runs/ci/package-progress');
+    mkdirSync(progressDir, { recursive: true });
+    const started = Date.now();
+    const phases: { phase: string; elapsedMs: number }[] = [];
+    const mark = (phase: string) => {
+      phases.push({ phase, elapsedMs: Date.now() - started });
+      writeFileSync(
+        path.join(progressDir, 'summary.json'),
+        JSON.stringify(
+          {
+            runId: process.env.WHEEL_RELEASE_RUN_ID ?? null,
+            executable: process.env.GODOT_PATH ? 'configured-engine' : 'node-version-test-double',
+            phases,
+          },
+          null,
+          2,
+        ),
+      );
+    };
+    mark('start');
     const parent = await realpath(os.tmpdir());
     const root = await mkdtemp(path.join(parent, 'wheel-package-'));
     const npmCli = [
@@ -60,11 +82,13 @@ test(
     let client: Client | undefined;
     let transport: StdioClientTransport | undefined;
     try {
+      mark('pack:start');
       // The test runner already built the source. Do not build into the live
       // checkout a second time while tests are running.
       const [pack] = JSON.parse(
         runNpm(['pack', '--ignore-scripts', '--json', '--pack-destination', root], process.cwd()),
       );
+      mark('pack:complete');
       const names = new Set<string>(pack.files.map((file: { path: string }) => file.path));
       for (const file of [
         'build/src/cli.js',
@@ -126,6 +150,7 @@ test(
       await writeFile(path.join(fixture, 'project.godot'), '[application]\nconfig/name="Packed MCP fixture"\n');
       // Do not ignore lifecycle scripts: this is the regression for a
       // production-only dependency installation without a compiler.
+      mark('install:start');
       runNpm(
         [
           'ci',
@@ -138,6 +163,7 @@ test(
         ],
         consumer,
       );
+      mark('install:complete');
       const installed = path.join(consumer, 'node_modules/wheel-mcp');
       assert.equal(existsSync(path.join(installed, 'node_modules/typescript')), false);
       assert.equal(existsSync(path.join(consumer, 'node_modules/typescript')), false);
@@ -145,6 +171,7 @@ test(
         for (const name of ['.env', '.mcp.json', '.cursor', '.vscode'])
           assert.equal(existsSync(path.join(folder, name)), false);
       }
+      mark('setup:start');
       const setup = spawnSync(process.execPath, ['scripts/setup.mjs', '--build-only'], {
         cwd: installed,
         env,
@@ -155,6 +182,7 @@ test(
       assert.equal(setup.status, 0, setup.stderr);
       assert.equal(existsSync(path.join(installed, '.env')), false);
       assert.equal(existsSync(path.join(installed, '.cursor')), false);
+      mark('setup:complete');
       transport = new StdioClientTransport({
         command: process.execPath,
         args: [path.join(installed, 'scripts/run-mcp.mjs')],
@@ -172,7 +200,9 @@ test(
         stderr: 'pipe',
       });
       client = new Client({ name: 'real-package-test', version: '1.0.0' });
+      mark('connect:start');
       await client.connect(transport, { timeout: 10000 });
+      mark('connect:complete');
       assert.deepEqual(client.getServerVersion(), { name: sourcePackage.name, version: sourcePackage.version });
       const tools = await client.listTools({}, { timeout: 10000 });
       assert.ok(tools.tools.some((tool) => tool.name === 'get_project_info'));
@@ -182,6 +212,7 @@ test(
         { timeout: 10000 },
       );
       assert.notEqual(result.isError, true, JSON.stringify(result));
+      mark('metadata:complete');
       // Each emitted relative module import must resolve in the actual package,
       // not accidentally to the developer's source or devDependencies.
       const walk = async (dir: string): Promise<string[]> =>
@@ -198,14 +229,19 @@ test(
         for (const [, specifier] of text.matchAll(/(?:from\s*|import\s*\()\s*['"](\.[^'"]+)['"]/g))
           assert.ok(existsSync(path.resolve(path.dirname(file), specifier)), `missing package import ${specifier}`);
       }
+      mark('imports:complete');
     } finally {
+      mark('close:start');
       await client?.close();
       await transport?.close();
+      mark('close:complete');
       const exact = await realpath(root);
       assert.equal(path.dirname(exact), parent);
       assert.match(path.basename(exact), /^wheel-package-[A-Za-z0-9]+$/);
       assert.equal((await lstat(root)).isSymbolicLink(), false);
+      mark('cleanup:start');
       await rm(exact, { recursive: true });
+      mark('cleanup:complete');
     }
   },
 );
