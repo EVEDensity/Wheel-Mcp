@@ -63,7 +63,7 @@ test(
     delete env.NODE_TEST_CONTEXT;
     delete env.MCP_STDIO_PREAPPROVED_WRITES;
     const runNpm = (args: string[], cwd: string) => {
-      const result = spawnSync(process.execPath, [npmCli, ...args, '--loglevel=verbose'], {
+      const result = spawnSync(process.execPath, [npmCli, ...args, '--loglevel=silly'], {
         cwd,
         env,
         encoding: 'utf8',
@@ -121,8 +121,10 @@ test(
       };
       await writeFile(path.join(consumer, 'package.json'), JSON.stringify(consumerPackage));
       // Freeze registry dependency resolution, not the artifact under test.
-      // This test installs the real tarball with normal lifecycle handling;
-      // it is not a network availability or independent clean-machine test.
+      // This test installs the real tarball with normal lifecycle handling from
+      // the cache primed by the required source npm ci. Fail on cache misses;
+      // do not let registry availability change this packaging contract. This
+      // is not a cold-cache network or independent clean-machine test.
       const sourceLock = JSON.parse(await readFile('package-lock.json', 'utf8'));
       const sourcePackage = JSON.parse(await readFile('package.json', 'utf8'));
       const packages = { ...sourceLock.packages };
@@ -152,15 +154,7 @@ test(
       // production-only dependency installation without a compiler.
       mark('install:start');
       runNpm(
-        [
-          'ci',
-          '--prefer-offline',
-          '--omit=dev',
-          '--no-audit',
-          '--no-fund',
-          '--fetch-retries=0',
-          '--fetch-timeout=10000',
-        ],
+        ['ci', '--offline', '--omit=dev', '--no-audit', '--no-fund', '--fetch-retries=0', '--fetch-timeout=10000'],
         consumer,
       );
       mark('install:complete');

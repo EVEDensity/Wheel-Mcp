@@ -5,7 +5,10 @@
 - Preserve the configured Godot executable in the actual package-install gate;
   use the explicit Node executable test double only in engine-free CI. Keep
   bounded phase/elapsed-only package diagnostics when an outer timeout prevents
-  a final test report. Installation and suite deadlines remain unchanged.
+  a final test report. The locked consumer install uses the cache primed by the
+  required source npm ci and fails on a cache miss instead of fetching again;
+  lifecycle handling stays enabled. Cold-cache network installation remains
+  outside this packaging test. Installation and suite deadlines remain unchanged.
 - Add bounded native LineEdit authoring: text, placeholder, editable and 0..512
   max_length; reject implicit truncation/control characters and existing text
   callbacks. Pair text/limit during native undo/redo and preserve signal blocking

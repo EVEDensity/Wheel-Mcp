@@ -116,6 +116,14 @@ test('optional engine smoke is small and bounded; local release prep has no redu
   const packageRunner = await readFile('scripts/test-release-package.mjs', 'utf8');
   assert.match(packageRunner, /godotPath: process\.env\.GODOT_PATH \?\? ''/);
   assert.match(packageRunner, /timeoutMs: 40000/);
+  const packageTest = await readFile('tests/package-distribution.test.ts', 'utf8');
+  const consumerInstall = packageTest.slice(
+    packageTest.indexOf("mark('install:start')"),
+    packageTest.indexOf("mark('install:complete')"),
+  );
+  assert.match(consumerInstall, /'ci'/);
+  assert.match(consumerInstall, /'--offline'/);
+  assert.doesNotMatch(consumerInstall, /ignore-scripts|prefer-offline/);
   const safety = JSON.parse(
     execFileSync(process.execPath, ['scripts/test-local-release.mjs', '--list'], {
       encoding: 'utf8',

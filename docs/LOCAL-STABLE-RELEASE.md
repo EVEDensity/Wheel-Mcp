@@ -39,8 +39,12 @@ native permissions/undo/save/validation and transaction crash recovery, runs a
 headless runtime smoke, and installs the actual tarball in an isolated consumer.
 It also audits dependencies, produces an SBOM and binds evidence to current
 source, release documentation and the tarball hash. Package installation uses
-the controlled lock graph and prefers the local cache, with bounded registry
-access for missing metadata. The local test is not a separate clean Windows machine.
+the controlled lock graph and the integrity-checked cache primed by the required
+source `npm ci`. The consumer uses `--offline` with normal lifecycle handling;
+missing cache entries fail instead of triggering more registry requests. This
+packaging contract is not cold-cache network installation or a separate clean
+Windows machine. The source dependency installation and audit still require
+their normal registry checks.
 
 Every test suite must finish with zero failures, skips, cancellations and todos,
 and clean its owned scratch directory. A missing engine, failed audit, changed

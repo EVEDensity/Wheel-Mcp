@@ -58,11 +58,16 @@ points. Consumer installs do not inherit parent project npm lifecycle metadata;
 explicit registry, cache and proxy settings remain available. Windows process
 checks prefer an already-installed absolute PowerShell 7 executable, falling
 back to system Windows PowerShell without relaxing identity checks or deadlines.
+The locked consumer archive check uses `--offline` against the cache primed by
+the required source `npm ci`, still verifies integrity and runs normal lifecycle
+handling. A cache miss fails; it does not silently use source node_modules,
+retry installation or certify cold-cache/network installation. Phase names and
+elapsed times survive an outer timeout, without recording environment values.
 
 For a packaging-only failure, manually dispatch `ci.yml` with `package=true`
 and `engine=false` to repeat the real archive install check without native
 engine acceptance. Normal push/PR CI does not run that optional check. It retains
-the same bounded install and consumer lifecycle checks, with npm verbose output
+the same bounded install and consumer lifecycle checks, with npm diagnostic output
 included only in bounded failure diagnostics. This diagnostic run cannot replace
 the complete source-bound release gate.
 
