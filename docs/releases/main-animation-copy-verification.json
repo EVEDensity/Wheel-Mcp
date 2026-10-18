@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS_DECLARED_HOSTED_WINDOWS_LOCAL_SCOPE",
+  "verifiedLocalDate": "2026-10-18 Asia/Shanghai",
+  "candidateCommit": "89e2427844e559d307cd27cda63c3a1dcdca5ea1",
+  "acceptedCommit": "25fee46cc79405f2eb27b2d106f1853ffd2c29fc",
+  "sourceHash": "41ab5d40bc54c8e15462a780c7b56327507ed4aae3f12ae896eb1d2a9d33070e",
+  "scope": "Non-destructive standalone project-local native Animation .tres snapshots, explicit node mapping, bounded value tracks and exact source/converted-plan approval. Windows / Godot 4.7.2 / trusted local stdio. Not arbitrary imported scenes, FBX/GLB, bones, dedicated 3D source tracks or full animation support.",
+  "contract": "docs/production-roadmap/ANIMATION-AUTHORING-CONTRACT.md",
+  "upgrade": {
+    "editorBridge": "0.3.10",
+    "capability": "scene.animation_copy/v1",
+    "baseCapabilities": [
+      "scene.animation/v1",
+      "scene.dependencies/v1"
+    ],
+    "maximumEditorCapabilities": 30,
+    "runtimeBridge": "0.3.4",
+    "explicitHostAndPluginUpgradeRequired": true,
+    "implicitInstallationOrScriptAttachment": false
+  },
+  "localChecks": {
+    "sourceHash": "41ab5d40bc54c8e15462a780c7b56327507ed4aae3f12ae896eb1d2a9d33070e",
+    "buildFormatLint": "PASS",
+    "core": {
+      "report": "runs/ci/fast-contract-only/summary.json",
+      "tests": 157,
+      "durationMs": 23848,
+      "scratchCleanup": "PASS"
+    },
+    "animation": {
+      "report": "runs/ci/animation-copy-post-ci-fix/summary.json",
+      "tests": 17,
+      "durationMs": 42046,
+      "scratchCleanup": "PASS"
+    },
+    "engine": {
+      "report": "runs/ci/engine-smoke/summary.json",
+      "tests": 19,
+      "durationMs": 52333,
+      "scratchCleanup": "PASS"
+    },
+    "approval": "MOCK exact-plan fixture host through official SDK stdio",
+    "coverage": [
+      "real Godot exported Animation value tracks copied to a new independent local library with explicit target mapping",
+      "read-only/old capability refusal; source traversal, links/junctions/hard links, UTF-8, byte and combined dependency budgets",
+      "malformed/duplicate/executable sources, method/dedicated 3D source tracks, wrong boolean/numeric settings, missing/unused/noncanonical mappings fail before approval",
+      "stale source hash and mutation during approval fail; document and scene bytes unchanged; source never rewritten by product",
+      "populated library replacement refused, exact plan includes all converted keys, one native Undo/Redo and idempotent replay",
+      "after commit source changes do not affect detached library; native save/reopen and actual runtime four-time position/rotation/scale readback",
+      "existing direct 2D/3D, position/state-machine/shared-library/Blend2 and engine cases retained"
+    ],
+    "boundary": "Final-source bounded local checks, not a complete local gate, GPU/wall-clock test or human approval UX. No expected transforms assigned by observers.",
+    "lockHelper": {
+      "report": "runs/ci/animation-copy-lock-helper-fix/summary.json",
+      "tests": 3,
+      "durationMs": 3503,
+      "sha256": "68cd1672b974b202cd25b8dea535270f3b58071b7599382a93ee76d386e540eb",
+      "sourceHash": "41ab5d40bc54c8e15462a780c7b56327507ed4aae3f12ae896eb1d2a9d33070e"
+    }
+  },
+  "preservedFailures": [
+    {
+      "report": "runs/ci/animation-copy-regression/failure-summary.json",
+      "details": "runs/ci/animation-copy-regression/failure-details.txt",
+      "sha256": "3503cc31432810a9189c875b2c50c09df0303a1de019df6ea59f953cbe68b221",
+      "status": "FAIL",
+      "durationMs": 90018,
+      "scratchCleanup": "RETAINED",
+      "reason": "Added native path-control check used inferred typing on a Variant receiver; Godot rejected codepoint. Other fixtures could not finish and the 90-second wrapper expired. Fixed explicit int type; did not increase deadlines."
+    },
+    {
+      "report": "runs/ci/animation-copy-type-fix/failure-summary.json",
+      "details": "runs/ci/animation-copy-type-fix/failure-details.txt",
+      "sha256": "881cf3cc8d5606efc68419018b5a4e410a555e4ec14a9daa5d0b3fc6749c97ee",
+      "status": "FAIL",
+      "tests": 5,
+      "passed": 4,
+      "failed": 1,
+      "durationMs": 9219,
+      "scratchCleanup": "RETAINED",
+      "reason": "Populated library correctly returned CONFLICT under the existing replacement policy; test incorrectly expected UNSUPPORTED. Corrected only that assertion, retaining strict refusal."
+    },
+    {
+      "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39080377385",
+      "head": "89e2427844e559d307cd27cda63c3a1dcdca5ea1",
+      "sourceHash": "bde751650ba6b65a92c0530bca924aef0a9756d39e1939041ae5b095a463869d",
+      "artifactId": 12118289552,
+      "artifactName": "release-failure-1",
+      "download": "runs/animation-copy-failure-39080377385-1",
+      "report": "runs/animation-copy-failure-39080377385-1/local-release/latest.json",
+      "sha256": "ca71f26fc663add648578934af812abc085e25d5b01bc8982a17cb19bdf44b64",
+      "status": "FAIL",
+      "durationMs": 273165,
+      "core": "157/157 PASS",
+      "package": "2/2 PASS",
+      "safety": "73/74; 1 failed, 0 skipped/cancelled",
+      "engine": "NOT_RUN",
+      "publish": "skipped",
+      "reason": "Windows transient-file-lock helper did not report readiness at 10066ms, matching its unchanged 10s kill deadline; prior diagnostic omitted timeout/exit/host context. Exact OS startup cause is not proven. Reused absolute installed PowerShell 7/system fallback selection, strict readiness line and bounded exit/timeout diagnostics; did not relax lock assertions, timers or suite deadlines."
+    }
+  ],
+  "installedCodexProbe": {
+    "report": "runs/production-roadmap/T30/codex-probe-2026-10-17T23-57-23-179Z-33632/report.json",
+    "sha256": "a2256076f071ddc3701c0fb3273dba28b84e55b2a8c7b4f66322e282f98ed006",
+    "sourceHash": "41ab5d40bc54c8e15462a780c7b56327507ed4aae3f12ae896eb1d2a9d33070e",
+    "status": "PASS",
+    "client": "codex-cli 0.163.0-alpha.10.2",
+    "tools": 71,
+    "resources": 5,
+    "approval": "MOCK exact-plan fixture host",
+    "noModelTurn": true,
+    "permanentConfigWrites": false,
+    "cleanup": true,
+    "fixtureDiscarded": true,
+    "boundary": "Installed app-server discovery and representative native scene author/save, not the new animation_copy driven through Codex, a model turn or human desktop/TUI approval UX."
+  },
+  "shortCi": {
+    "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39080866235",
+    "status": "success",
+    "tests": 157
+  },
+  "pages": {
+    "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39080865994",
+    "status": "success"
+  },
+  "ciBoundaries": {
+    "requiredCounts": {
+      "core": 157,
+      "safety": 74,
+      "engine": 19,
+      "package": 2,
+      "total": 252
+    },
+    "previousTestsRemoved": false,
+    "newNativeFixtureOrEngineStartupAddedToRequiredSuites": false,
+    "deadlinesIncreased": false,
+    "concurrencyIncreased": false,
+    "dailyCiHasNoAutomaticEngineOrFullMatrix": true,
+    "customSecretsOrOrganizationPermissionsRequired": false,
+    "hostedTempConfigurationChanged": false,
+    "newPublisherExecution": "NOT_RUN; acceptance-only skips publication"
+  },
+  "cleanup": {
+    "successfulSuites": "PASS; owned scratch automatically removed",
+    "currentStageFailureScratch": [
+      {
+        "path": "runs/animation-copy-owned-temp-20261018/wheel-ci-9VyEfY",
+        "bytes": 738199790
+      },
+      {
+        "path": "runs/animation-copy-owned-temp-20261018/wheel-ci-AVQhzu",
+        "bytes": 184560885
+      }
+    ],
+    "failureScratchDeletion": "BLOCKED_BY_ENVIRONMENT_POLICY after containment/link and relevant-process checks; no bypass, alternate interface or retry",
+    "failureSummariesRetained": true,
+    "priorRenderCleanup": {
+      "evidence": "docs/releases/main-animation-transform-verification.json",
+      "report": "runs/ci/animation-final-visual-resources/failure-summary.json",
+      "scratchBasename": "wheel-ci-kGVWCS",
+      "status": "FAIL",
+      "code": "EPERM",
+      "rootCauseFixed": false,
+      "currentStageRenderSuite": "NOT_RUN",
+      "noBlindRetryAclChangeOrAlternateDeletion": true
+    }
+  },
+  "publication": {
+    "newTag": false,
+    "newRelease": false,
+    "npmPublish": false,
+    "publicVersionUnchanged": "v0.2.8"
+  },
+  "publicRelease": {
+    "tag": "v0.2.8",
+    "sourceCommit": "9675e7d1de79d43296d88a85dc309a845048c11d",
+    "annotatedTagObject": "1df2c080f4547e8a36ba3da78cf5faf9a5adfa59",
+    "tagAndFourAssetHashesUnchanged": true
+  },
+  "notQualified": [
+    "arbitrary-imported-scenes-FBX-GLB-skeleton-retargeting-dedicated-3D-source-tracks-in-place-mutation",
+    "all-test-files-full-production-T31-T35-G4-G6",
+    "GPU-wall-clock-human-approval-UX",
+    "prior-render-cleanup-or-local-TEMP-permission-root-cause",
+    "other-platforms-clients-independent-machine-public-HTTP-long-session-high-load"
+  ],
+  "productionQualification": "NOT_QUALIFIED",
+  "preCiFixLocalChecks": {
+    "sourceHash": "bde751650ba6b65a92c0530bca924aef0a9756d39e1939041ae5b095a463869d",
+    "animation": {
+      "report": "runs/ci/animation-copy-final-regression/summary.json",
+      "tests": 14,
+      "durationMs": 69548
+    },
+    "boundary": "Earlier 14-case animation regression preceded the test-helper-only CI fix. It is not passed off as final-source evidence; final-source combined regression is recorded separately."
+  },
+  "hostedAcceptance": {
+    "run": "https://github.com/EVEDensity/Wheel-Mcp/actions/runs/39080866298",
+    "status": "PASS",
+    "acceptanceOnly": true,
+    "head": "25fee46cc79405f2eb27b2d106f1853ffd2c29fc",
+    "sourceHash": "41ab5d40bc54c8e15462a780c7b56327507ed4aae3f12ae896eb1d2a9d33070e",
+    "runId": "56562d3a-a096-4271-98a5-547bbe0f84e8",
+    "environment": {
+      "platform": "win32",
+      "node": "v24.21.0",
+      "godot": "4.7.2.stable.official.ed1daf0bf"
+    },
+    "build": "success",
+    "publish": "skipped",
+    "durationMs": 320357,
+    "tests": [
+      {
+        "id": "core",
+        "tests": 157,
+        "passed": 157,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "durationMs": 23081,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "package",
+        "tests": 2,
+        "passed": 2,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "durationMs": 6283,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "safety",
+        "tests": 74,
+        "passed": 74,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "durationMs": 203781,
+        "scratchCleanup": "PASS"
+      },
+      {
+        "id": "engine",
+        "tests": 19,
+        "passed": 19,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0,
+        "todo": 0,
+        "durationMs": 59277,
+        "scratchCleanup": "PASS"
+      }
+    ],
+    "totalTests": 252,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "auditTotal": 0,
+    "artifactId": 12119011202,
+    "artifactName": "release-assets-39080866298-1",
+    "download": "runs/animation-copy-accepted-39080866298-1",
+    "hashes": {
+      "RELEASE-NOTES.md": "5489baee903e7630eb477eb444daed56b6d25624154e46429fdd46af2a7fbc75",
+      "SHA256SUMS": "9e98e523908919f3354fcd50d2a6ea23557f0461b1571b788ae0570bcbfc3927",
+      "acceptance.json": "a907d6f67a8025f92d9d93104a2df7275c54645aa7edcb04739dbd0d86f8105c",
+      "sbom.json": "989e10455274e604aabe4ebc2202740388de7e14a99eff513f84edae465286ab",
+      "wheel-mcp-0.2.8.tgz": "e76f51e8505954c1ee826c6ef8138aa0b53d4be4088e525971948c31db5ca5a3"
+    },
+    "independentDownloadVerification": "PASS: exact five-file set, accepted head/current source/policy/guarded documents, archive, SBOM and all three exact checksum entries. Main acceptance artifact, not the immutable public v0.2.8 archive."
+  },
+  "ciFix": {
+    "commit": "25fee46cc79405f2eb27b2d106f1853ffd2c29fc",
+    "files": [
+      "tests/validation-cleanup.test.ts"
+    ],
+    "productCodeChanged": false,
+    "readinessDeadlineMs": 10000,
+    "perTestDeadlineMs": 20000,
+    "strictActualWindowsLockAssertionsRetained": true,
+    "extraDiagnosticBytesMaximum": 4000,
+    "retryAdded": false,
+    "exactOldOsStartupCauseProven": false
+  }
+}
