@@ -5,9 +5,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
-import { RunRegistry } from '../src/run-registry.js';
+import { RunRegistry, defaultRunRegistryPath } from '../src/run-registry.js';
 import { stopProcess, getProcessStatus } from '../src/godot-runtime.js';
 import { readProcessIdentity, stopIdentifiedProcess } from '../src/process-identity.js';
+
+test('default registry path is user-writable and independent of a protected process cwd', () => {
+  const expected = path.join(os.homedir(), '.wheel-mcp', 'run-registry.json');
+  assert.equal(defaultRunRegistryPath(), expected);
+  assert.equal(path.isAbsolute(expected), true);
+});
 
 test('RunRegistry persists records, enforces concurrency, and marks dead runs orphaned', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'run-registry-'));

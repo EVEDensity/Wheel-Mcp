@@ -1,3 +1,4 @@
+import os from 'node:os';
 import {
   existsSync,
   readFileSync,
@@ -57,7 +58,7 @@ export class RunRegistry {
   readonly maxConcurrent: number;
 
   constructor(options: RunRegistryOptions = {}) {
-    this.storagePath = path.resolve(options.storagePath ?? path.join(process.cwd(), '.harness', 'run-registry.json'));
+    this.storagePath = path.resolve(options.storagePath ?? defaultRunRegistryPath());
     this.lockPath = `${this.storagePath}.lock`;
     this.maxConcurrent = options.maxConcurrent ?? 4;
     this.withLock(() => {
@@ -551,6 +552,12 @@ export class RunRegistry {
     if (!run) throw new Error(`run not found: ${runId}`);
     return run;
   }
+}
+
+// MCP hosts may launch with System32 or another protected cwd. The registry is process
+// metadata, not project evidence, so its default belongs in a user-writable location.
+export function defaultRunRegistryPath(): string {
+  return path.join(os.homedir(), '.wheel-mcp', 'run-registry.json');
 }
 
 export const runRegistry = new RunRegistry({
