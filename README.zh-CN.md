@@ -169,6 +169,12 @@ MCP 的 `launch_project` 和 `open_runtime_bridge` 默认 `headless: true`，逻
 更新后重启 MCP 服务以加载新代码与桥接脚本。CLI/底层启动默认值不变，
 CLI 后台启动请使用 `--headless true`。
 
+桥接0.3.5新增`screenshot.observation/v1`：截图包含请求/读回的帧与场景身份、
+实际窗口/焦点/鼠标模式及渲染器信息。读回等待本次请求自身的延迟强制绘制，
+重叠截图或跨场景返回`CONFLICT`；这些观测不认证OS输入隔离、任意游戏状态与
+像素对应或screen present。Windows/Godot4.7.2采样曾在最小化且不可聚焦时报告
+`focused:true`，无焦点验收仍**FAIL**，OS前台归属未测。详见[截图证据及SDK会话用法](docs/TROUBLESHOOTING.md#capture-observations)。
+
 GitHub CI 已启用，main 的 push 和 PR 自动执行短时检查。Pages 发布现有展示页；
 独立的标签/手动发布流程通过有时限的验收后才打包、创建 Release；所有流程都不发布 npm。
 

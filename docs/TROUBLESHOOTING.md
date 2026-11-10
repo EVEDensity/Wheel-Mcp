@@ -60,6 +60,92 @@ Restart the MCP server after updating; existing sessions keep their old policy.
 OS/driver dialogs and startup focus changes requested by project code are not
 fully suppressed. Editor tools connect to an already authorized editor.
 
+<a id="capture-observations"></a>
+
+## 截图证据 Capture observations
+
+桥接0.3.5的握手包含`runtimeConditions.windowObservation`和能力
+`screenshot.observation/v1`；截图返回`captureObservation`：
+
+- `request` / `readback`：process/physics帧、单调微秒、post-draw事件序号及场景实例ID。
+- `window`：Godot实际窗口模式、是否可聚焦、Godot焦点和鼠标模式、位置及大小。
+- `renderer` / `viewportRid`：实际渲染方法、适配器名称和读回目标；不是GPU计时。
+- `stateConsistency` / `screenPresent` / `inputIsolation`明确为`NOT_VERIFIED`；
+  `foregroundOwner`为`NOT_MEASURED`，不把Godot焦点当作OS前台窗口归属。
+
+截图等到本次请求自身的延迟强制绘制返回，再同步读回。无post-draw观测或空图像
+返回`ENGINE_UNAVAILABLE`；读回前后场景变化或另一次截图未结束返回`CONFLICT`。
+每次await截图后再请求下一张，不并发发起截图。截图可能推进渲染帧，不能作为自然
+帧率测量；同一场景身份和绘制序号也不证明任意项目的延迟相机/子视口已经更新。
+headless截图返回`ENGINE_UNAVAILABLE`，缺路径返回`INVALID_ARGUMENT`。
+旧桥接仍可使用原截图字段；没有新观测时不能声称已获得这层证据。
+Windows/Godot4.7.2实测曾在`mode:1, unfocusable:true`同时报告`focused:true`。
+无焦点验收保留FAIL；未测OS前台归属，不把它直接归为OS抢焦点或修改返回值掩盖。
+
+Bridge 0.3.5 adds request/readback frame counters, monotonic time, scene identity,
+renderer and observed Godot window/mouse state. It waits for its own deferred
+forced draw, not an unrelated post-draw signal. Await each capture: overlap or a
+scene change returns `CONFLICT`; a headless/empty capture returns
+`ENGINE_UNAVAILABLE`. No OS foreground ownership, input-isolation, arbitrary
+state-to-pixel or screen-present guarantee is made. Forced draws are not natural
+frame-rate measurements. Older bridges without these fields remain compatible.
+
+## SDK返回值与进程归属 SDK return values and ownership
+
+批量动作优先使用现有`execute_scenario`，或在同一个MCP会话里顺序调用。
+直接调用Node库时，`openRuntimeBridge()`返回的是元数据，不是可调用`.request()`的实例。
+Windows绝对路径导入应转换为file URL；独立Node进程不会继承另一个MCP服务的环境变量。
+下面的参数值来自调用者，路径应指向受信任项目，不能用来接管其他进程的会话：
+
+```js
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+const wheelRoot = process.env.WHEEL_ROOT;
+const projectPath = process.env.WHEEL_PROJECT;
+const evidenceDir = process.env.WHEEL_EVIDENCE;
+const godotPath = process.env.GODOT_PATH;
+if (![wheelRoot, projectPath, evidenceDir, godotPath].every(Boolean)) {
+  throw new Error('Set WHEEL_ROOT, WHEEL_PROJECT, WHEEL_EVIDENCE and GODOT_PATH');
+}
+const api = await import(pathToFileURL(path.join(wheelRoot, 'build/src/persistent-runtime-bridge.js')).href);
+let sessionId;
+let failed = false;
+try {
+  const opened = await api.openRuntimeBridge({
+    projectPath,
+    evidenceDir,
+    godotPath,
+    bridgePath: path.join(wheelRoot, 'godot-plugin/runtime_bridge.gd'),
+    headless: true,
+  });
+  sessionId = opened.session_id;
+  console.log(await api.callRuntimeBridge(sessionId, 'get_scene_tree'));
+} catch (error) {
+  failed = true;
+  throw error;
+} finally {
+  if (sessionId) {
+    try {
+      await api.stopRuntimeBridge(sessionId);
+    } catch (cleanupError) {
+      if (!failed) throw cleanupError;
+      console.error('Cleanup also failed; original error retained:', cleanupError);
+    }
+  }
+}
+```
+
+`PersistentRuntimeBridge.start()`才返回底层实例，实例上可调用`.request()` / `.stop()`。
+不要混用两种API；清理只使用成功取得的本进程sessionId。`FORBIDDEN`不能通过切换
+客户端、直接调用registry或扩大权限来绕过。
+
+`openRuntimeBridge()` returns metadata (`session_id`); the lower-level
+`PersistentRuntimeBridge.start()` returns an instance. Use `pathToFileURL` for
+Windows imports, pass the engine explicitly and retain the original exception
+if cleanup also fails. Sessions belong to their creating process/client; no
+cross-client adoption or ownership bypass is introduced.
+
 ## 展示页能玩是否代表 MCP 已连接 Website versus local service
 
 不是。GitHub Pages 只托管静态页面；浏览器示意与小游戏不是远端 Godot 验证结果。

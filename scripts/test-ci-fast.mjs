@@ -6,6 +6,7 @@ const files = [
   // same five-second identity deadline; do not hide a failed platform read.
   'process-identity',
   'render-window',
+  'screenshot-observation',
   'production-manifest',
   'local-release',
   'github-release',

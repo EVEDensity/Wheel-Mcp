@@ -2,6 +2,10 @@ extends SceneTree
 
 const BRIDGE_PROTOCOL_VERSION := "wheel-runtime/1"
 
+signal screenshot_draw_complete
+var screenshot_in_progress: bool = false
+var post_draw_sequence: int = 0
+
 var event_sequence: int = 0
 var persistent_peer: StreamPeerTCP
 var persistent_buffer: String = ""
@@ -43,6 +47,7 @@ func _configure_background_window() -> void:
 		RenderingServer.viewport_set_update_mode(root.get_viewport_rid(), RenderingServer.VIEWPORT_UPDATE_ALWAYS)
 
 func _initialize_runtime() -> void:
+	RenderingServer.frame_post_draw.connect(_record_post_draw)
 	_configure_background_window()
 	var replay_seed := OS.get_environment("GODOT_HARNESS_REPLAY_SEED")
 	if not replay_seed.is_empty():
@@ -150,7 +155,7 @@ func _process(_delta: float) -> bool:
 	if not persistent_level_started_sent:
 		_emit_json({"jsonrpc": "2.0", "method": "runtime/ready", "params": {
 			"protocolVersion": BRIDGE_PROTOCOL_VERSION,
-			"bridgeVersion": "0.3.4",
+			"bridgeVersion": "0.3.5",
 			"godotVersion": str(Engine.get_version_info().get("string", "")),
 			"runtimeConditions": {
 				"renderer": RenderingServer.get_current_rendering_method(),
@@ -160,12 +165,13 @@ func _process(_delta: float) -> bool:
 				"physicsFrame": Engine.get_physics_frames(),
 				"replaySeed": int(OS.get_environment("GODOT_HARNESS_REPLAY_SEED")) if not OS.get_environment("GODOT_HARNESS_REPLAY_SEED").is_empty() else null,
 				"window": {"background": OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1", "mode": root.mode, "unfocusable": root.unfocusable},
+				"windowObservation": _window_observation(),
 			},
 			"plane": "runtime",
 			"projectPath": ProjectSettings.globalize_path("res://").trim_suffix("/"),
 			"runId": persistent_run_id,
 			"scene": persistent_main_scene,
-			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1", "character.gravity2d/v1", "input.text_scalar/v1"],
+			"capabilities": ["get_scene_tree", "get_property", "set_property", "create_node", "delete_node", "call_method", "reload_scene", "inject_input", "capture_screenshot", "subscribe_events", "stop", "wait_physics_frames", "get_specialized_state", "get_game_state", "query_collisions", "physics3d/v1", "input.mouse_wheel/v1", "step_character_2d", "character.step2d/v1", "character.gravity2d/v1", "input.text_scalar/v1", "screenshot.observation/v1"],
 		}})
 		_emit_notification("level_started", {"scene": persistent_main_scene})
 		persistent_level_started_sent = true
@@ -314,7 +320,7 @@ func _handle_persistent_request(request: Dictionary) -> void:
 	if method == "capture_screenshot":
 		var screenshot_result := await _screenshot_result(params)
 		if screenshot_result.has("error"):
-			_respond_error(request_id, -32000, str(screenshot_result.get("error")))
+			_respond_error(request_id, int(screenshot_result.get("errorCode", -32050)), str(screenshot_result.get("error")))
 		else:
 			_respond(request_id, screenshot_result)
 		return
@@ -769,24 +775,66 @@ func _input_result(request: Dictionary) -> Dictionary:
 	_emit_notification("input_injected", {"keycode": keycode, "pressed": event.pressed})
 	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_INPUT_INJECTION", "runtime": true, "keycode": keycode, "pressed": event.pressed, "accepted": true}
 
+func _record_post_draw() -> void:
+	post_draw_sequence += 1
+
+func _window_observation() -> Dictionary:
+	return {"backgroundRequested":OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1",
+		"mode":root.mode,"unfocusable":root.unfocusable,"focused":root.has_focus(),
+		"mouseMode":Input.mouse_mode,"position":{"x":root.position.x,"y":root.position.y},
+		"size":{"width":root.size.x,"height":root.size.y},
+		"inputIsolation":"NOT_VERIFIED","foregroundOwner":"NOT_MEASURED"}
+
+func _capture_sample() -> Dictionary:
+	return {"processFrame":Engine.get_process_frames(),"physicsFrame":Engine.get_physics_frames(),
+		"postDrawSequence":post_draw_sequence,"ticksUsec":Time.get_ticks_usec(),
+		"sceneInstanceId":str(current_scene.get_instance_id()) if is_instance_valid(current_scene) else null}
+
+func _draw_screenshot_frame() -> void:
+	# Signal only after this request's own deferred draw has returned. A different
+	# frame_post_draw must not release a readback while this draw is still queued.
+	RenderingServer.force_draw(false)
+	screenshot_draw_complete.emit()
+
 func _screenshot_result(request: Dictionary) -> Dictionary:
 	var screenshot_path := str(request.get("path", ""))
 	if screenshot_path.is_empty():
-		return {"error": "path is required for capture_screenshot"}
+		return {"error":"path is required for capture_screenshot","errorCode":-32602}
 	if DisplayServer.get_name() == "headless":
-		return {"error":"screenshots require a rendering display; headless has no framebuffer"}
+		return {"error":"screenshots require a rendering display; headless has no framebuffer","errorCode":-32050}
+	if screenshot_in_progress:
+		return {"error":"a screenshot is already in progress; await it before capturing again","errorCode":-32009}
+	screenshot_in_progress = true
+	var result := await _capture_rendered_image(screenshot_path)
+	screenshot_in_progress = false
+	return result
+
+func _capture_rendered_image(screenshot_path: String) -> Dictionary:
 	_configure_background_window()
-	# Static/low-processor-mode projects may not schedule another draw on their own.
-	RenderingServer.force_draw.call_deferred()
-	await RenderingServer.frame_post_draw
+	var requested: Dictionary = _capture_sample()
+	if requested.sceneInstanceId == null:
+		return {"error":"scene is changing before screenshot capture","errorCode":-32009}
+	_draw_screenshot_frame.call_deferred()
+	await screenshot_draw_complete
 	var viewport := get_root()
 	var image := viewport.get_texture().get_image() if viewport.get_texture() != null else null
+	var readback: Dictionary = _capture_sample()
+	if requested.sceneInstanceId != readback.sceneInstanceId:
+		return {"error":"scene changed during screenshot capture","errorCode":-32009}
+	if readback.postDrawSequence <= requested.postDrawSequence:
+		return {"error":"no completed render was observed during screenshot capture","errorCode":-32050}
 	if image == null or image.is_empty():
-		return {"error": "viewport image is empty"}
+		return {"error":"viewport image is empty","errorCode":-32050}
+	var observation: Dictionary = {"request":requested,"readback":readback,
+		"window":_window_observation(),"renderer":{"method":RenderingServer.get_current_rendering_method(),"adapterName":RenderingServer.get_video_adapter_name()},
+		"viewportRid":str(viewport.get_viewport_rid().get_id()),"synchronization":"deferred_force_draw",
+		"stateConsistency":"NOT_VERIFIED","screenPresent":"NOT_VERIFIED"}
 	var error := image.save_png(screenshot_path)
 	if error != OK:
-		return {"error": "save_png failed with code: " + str(error)}
-	return {"schema_version": "0.1", "source": "REAL", "capability": "RUNTIME_SCREENSHOT", "runtime": true, "path": screenshot_path, "width": image.get_width(), "height": image.get_height(), "window": {"background": OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1", "mode": root.mode, "unfocusable": root.unfocusable}}
+		return {"error":"save_png failed with code: " + str(error),"errorCode":-32050}
+	return {"schema_version":"0.1","source":"REAL","capability":"RUNTIME_SCREENSHOT","runtime":true,
+		"path":screenshot_path,"width":image.get_width(),"height":image.get_height(),"captureObservation":observation,
+		"window":{"background":OS.get_environment("GODOT_HARNESS_BACKGROUND_RENDER") == "1","mode":root.mode,"unfocusable":root.unfocusable}}
 
 func _write_property(response_path: String, instance: Node, request: Dictionary) -> void:
 	var node_path: String = str(request.get("nodePath", "."))

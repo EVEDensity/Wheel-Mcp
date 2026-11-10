@@ -535,7 +535,7 @@ export function registerRuntimeTools(context: ToolRegistrationContext): void {
 
   server.tool(
     'capture_runtime_screenshot',
-    'Capture a PNG from a new rendered Godot process. Background rendering is enabled by default: start off-screen, then minimize and disable focus before loading the scene. This is not headless. For shared state reuse call_runtime_bridge capture_screenshot on a session opened with headless:false, background:true. Set background:false only for an explicit visible preview. OS/driver startup dialogs are not suppressed.',
+    'Capture a PNG from a new rendered Godot process. Background rendering is enabled by default: start off-screen, then minimize and disable focus before loading the scene. This is not headless. For shared state reuse call_runtime_bridge capture_screenshot on a session opened with headless:false, background:true. Set background:false only for an explicit visible preview. OS/driver startup dialogs are not suppressed. Await each capture; draw/readback observations do not certify OS input isolation or screen present.',
     {
       godotPath,
       projectPath,

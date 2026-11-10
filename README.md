@@ -183,6 +183,14 @@ process; existing headless sessions cannot be converted to rendered ones in plac
 Restart the MCP server after updating to load the new code/bridge. CLI/core launch
 defaults are unchanged; use `--headless true` for CLI background launches.
 
+Bridge 0.3.5 advertises `screenshot.observation/v1`: screenshots include request/readback
+frame and scene identities, observed window/focus/mouse state and renderer information.
+Readback waits for its own deferred forced draw; overlapping captures and scene changes
+return `CONFLICT`. These observations do not certify OS input isolation, arbitrary game
+state-to-pixel consistency or screen present. A Windows/Godot 4.7.2 capture reported
+`focused:true` while minimized and unfocusable; the no-focus acceptance remains **FAIL**,
+with OS foreground ownership unmeasured. See [capture evidence and SDK session use](docs/TROUBLESHOOTING.md#capture-observations).
+
 GitHub CI is enabled for pushes and pull requests to main. Pages publishes the
 existing showcase. A separate tag/manual release workflow packages and publishes
 only after its bounded acceptance passes; none of these workflows publishes to npm.

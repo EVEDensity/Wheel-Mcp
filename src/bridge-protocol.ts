@@ -5,6 +5,11 @@ import { physics3dResultSchema } from './protocol/physics3d.js';
 import { mouseWheelSchema } from './runtime/mouse-wheel.js';
 import { characterStepResultSchema } from './runtime/character-step.js';
 import { textInputResultSchema } from './runtime/text-input.js';
+import {
+  captureObservationSchema,
+  windowObservationSchema,
+  type WindowObservation,
+} from './runtime/screenshot-observation.js';
 
 export const BRIDGE_PROTOCOL_VERSION = 'wheel-runtime/1';
 
@@ -25,6 +30,7 @@ export type BridgeHandshake = {
     physicsFrame: number;
     replaySeed: number | null;
     window?: { background: boolean; mode: number; unfocusable: boolean };
+    windowObservation?: WindowObservation;
   };
 };
 
@@ -134,6 +140,8 @@ export function validateBridgeHandshake(
         typeof data.window.unfocusable !== 'boolean')
     )
       throw new BridgeProtocolError('bridge window conditions are invalid');
+    if (data.windowObservation !== undefined && !windowObservationSchema.safeParse(data.windowObservation).success)
+      throw new BridgeProtocolError('bridge window observation is invalid');
   }
   if (match && (Number(match[1]) !== 4 || Number(match[2]) < 3))
     throw new BridgeRpcError('UNSUPPORTED', 'Godot version is outside the supported runtime range', {
@@ -198,6 +206,11 @@ export function validateBridgeResult(method: string, value: unknown): Record<str
         key,
       });
   validateVariantOutput(value, `bridge.${method}`);
+  if (method === 'capture_screenshot' && has(value, 'captureObservation')) {
+    const observation = captureObservationSchema.safeParse(value.captureObservation);
+    if (!observation.success)
+      throw new BridgeProtocolError('Invalid screenshot capture observation', { issues: observation.error.issues });
+  }
   if (method === 'step_character_2d') {
     const parsed = characterStepResultSchema.safeParse(value);
     if (!parsed.success)
